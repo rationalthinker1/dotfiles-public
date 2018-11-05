@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ## Bashrc Related ##
 alias dirbashrc="grep -nT '^#|' ~/.bashrc"
 alias bashrc="vim ~/.bashrc"
@@ -64,20 +66,20 @@ alias hgrep="history | grep"
 
 # Extract archives files
 function extract() {
-    if [ -f $1 ] ; then
-        case $1 in
-            *.tar.bz2)   tar xvjf $1     ;;
-            *.tar.xz)    tar xvJf $1     ;;
-            *.tar.gz)    tar xvzf $1     ;;
-            *.bz2)       bunzip2 $1      ;;
-            *.rar)       unrar x $1      ;;
-            *.gz)        gunzip $1       ;;
-            *.tar)       tar xvf $1      ;;
-            *.tbz2)      tar xvjf $1     ;;
-            *.tgz)       tar xvzf $1     ;;
-            *.zip)       unzip $1        ;;
-            *.Z)         uncompress $1   ;;
-            *.7z)        7z x $1         ;;
+    if [ -f "$1" ] ; then
+        case "$1" in
+            *.tar.bz2)   tar xvjf "$1"     ;;
+            *.tar.xz)    tar xvJf "$1"     ;;
+            *.tar.gz)    tar xvzf "$1"     ;;
+            *.bz2)       bunzip2 "$1"      ;;
+            *.rar)       unrar x "$1"      ;;
+            *.gz)        gunzip "$1"       ;;
+            *.tar)       tar xvf "$1"      ;;
+            *.tbz2)      tar xvjf "$1"     ;;
+            *.tgz)       tar xvzf "$1"     ;;
+            *.zip)       unzip "$1"        ;;
+            *.Z)         uncompress "$1"   ;;
+            *.7z)        7z x "$1"         ;;
             *)           echo "'$1' cannot be extracted via >extract<" ;;
         esac
     else
@@ -98,14 +100,14 @@ alias upgrade='sudo apt-get update && sudo apt-get upgrade'
 #=======================================================================================
 # Git Aliases and functions
 #=======================================================================================
-function c { git checkout $@; }
-function b { git branch $@; }
+function c { git checkout "$@"; }
+function b { git branch "$@"; }
 alias gcam="git commit -a --amend"
 alias gc="git commit -am"
 alias gs="git status"
-alias gd="git diff --ignore-all-space"
-alias dc="git diff --cached"
-alias dv="git diff | vim -"
+alias gd="git diff --ignore-all-space --ignore-space-at-eol --ignore-space-change --ignore-blank-lines -- . ':(exclude)*package-lock.json'"
+#alias dc="git diff --cached"
+#alias dv="git diff | vim -"
 alias gl="git log"
 alias gp="git pull"
 alias gpu="git push"
@@ -145,11 +147,13 @@ alias cu="composer update"
 alias ci="composer install"
 alias cda="composer dump-autoload -o"
 alias pacc="php artisan clear-compiled"
+
 #=======================================================================================
 # Nginx Aliases and functions
 #=======================================================================================
 alias ncon="cd /etc/nginx/sites-available/"
 alias nerr="cd /var/log/nginx/"
+
 # Reload Nginx Configuration
 alias nreload="sudo nginx -s reload"
 
@@ -159,6 +163,7 @@ alias nreload="sudo nginx -s reload"
 # Easy access to Apache logs
 alias acon="cd /etc/apache2/sites-available/"
 alias aerr="cd /var/log/apache2/"
+
 # Restart Apache
 alias aprel='sudo service apache2 reload'
 alias ape='tail -f /var/log/apache2/*error.log'
@@ -177,6 +182,117 @@ alias lsp='sudo /opt/lampp/lampp stop'
 alias alog='sudo tail -f /opt/lampp/logs/*'
 
 #=======================================================================================
+# Docker Aliases and functions
+#=======================================================================================
+# Runs docker-compose command looking at other files
+dc() {
+  if [ -e "docker-compose.yml" ]; then
+    docker-compose "$@"
+  elif [ -e "./docker/docker-compose.yml" ]; then
+    docker-compose -f "./docker/docker-compose.yml" --project-directory ../ "$@"
+  fi
+}
+
+# Runs the docker-compose detached
+dcu() {
+  if [ -e "docker.sh" ]; then
+    ./docker.sh "$@"
+  else
+    dc up -d
+  fi
+}
+
+dcip() { docker inspect --format '{{$e := . }}{{with .NetworkSettings}} {{$e.Name}} 
+{{range $index, $net := .Networks}}{{$index}} IP:{{.IPAddress}}; Gateway:{{.Gateway}}
+{{end}}{{end}}' $(dcp -q); }
+
+# Get the log of the docker compose
+dclo() { dc logs -tf; }
+
+# Get process included stop container
+dcp() { dc ps "$@"; }
+
+# Execute command in Docker Compose service
+dexec() { docker exec -it $(dc ps -q $1) $2; }
+
+# Run a bash shell in the specified container (with docker-compose).
+dceb() {
+  SCRIPT="/bin/bash"
+  if [ $# -lt 1 ]; then
+    echo "Usage: ${FUNCNAME[0]} CONTAINER_ID"
+    return 1
+  fi
+  if [ -n "$2" ]; then
+    SCRIPT="$2"
+  fi
+
+  dc exec "$1" "$SCRIPT"
+}
+
+# Get latest container ID
+alias dl="docker ps -l -q"
+
+# Get container process
+alias dps="docker ps"
+
+# Get process included stop container
+alias dpa="docker ps -a"
+
+# Get images
+alias di="docker images"
+
+# Get container IP
+alias dip="docker inspect --format '{{ .NetworkSettings.IPAddress }}'"
+
+# Run deamonized container, e.g., $dkd base /bin/echo hello
+alias dkd="docker run -d -P"
+
+# Run interactive container, e.g., $dki base /bin/bash
+alias dki="docker run -i -t -P"
+
+# Stop and Remove all containers
+alias drmf='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)'
+
+# Get IP addresses of containers
+alias dps="docker ps -q | xargs docker inspect --format '{{ .Id }} - {{ .Name }} - {{ .NetworkSettings.IPAddress }}'"
+
+# Remove all containers
+drc() { docker rm $(docker ps -a -q); }
+
+# Remove all images
+#dri() { docker rmi $(docker images -q); }
+
+# Dockerfile build, e.g., $dbu tcnksm/test
+dbu() { docker build -t=$1 .; }
+
+# Run a bash shell in the specified container.
+dexbash() {
+  if [ $# -ne 1 ]; then
+    echo "Usage: ${FUNCNAME[0]} CONTAINER_ID"
+    return 1
+  fi
+
+  docker exec -it "$1" /bin/bash
+}
+
+
+# Runs Docker build and tag it with the given name.
+dbt() {
+  if [ $# -lt 1 ]; then
+    echo "Usage ${FUNCNAME[0]} DIRNAME [TAGNAME ...]"
+    return 1
+  fi
+
+  ARGS="$1"
+  shift
+  if [ $# -ge 2 ]; then
+    ARGS="$ARGS -t $@"
+  fi
+
+  docker build $ARGS
+}
+
+#=======================================================================================
 # Install functions
 #=======================================================================================
 ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURCE[0]}"`
@@ -186,21 +302,19 @@ CURRENT_USER="$(whoami | awk '{print $1}')"
 export $CURRENT_USER
 
 function install() {
-    for application in "$@"
+    for filename in "$@"
     do
-        filename="${application}"
-        ${BASE_DIR}/installers/${filename}.sh
+        "${BASE_DIR}/installers/${filename}".sh
     done
 }
-export -f install
 
 function gnome-install() {
     for extension_id in "$@"
     do
-        ${BASE_DIR}/installers/gnome-extension-installer.sh "${extension_id}"
+        "${BASE_DIR}"/installers/gnome-extension-installer.sh "${extension_id}"
     done
 }
-export -f gnome-install
+
 
 function apt-install() {
     for application in "$@"
@@ -208,12 +322,10 @@ function apt-install() {
         sudo apt-get install -f -y "${application}"
     done
 }
-export -f apt-install
 
 function apt-update() {
     sudo apt-get -y update
 }
-export -f apt-update
 
 function add-repo() {
     for repository in "$@"
@@ -221,7 +333,6 @@ function add-repo() {
         sudo add-apt-repository -y "${repository}"
     done
 }
-export -f add-repo
 
 # simple-install ppa:numix/ppa numix-gtk-theme numix-icon-theme-circle
 function simple-install() {
@@ -240,4 +351,4 @@ function simple-install() {
         apt-install "${application}"
     done
 }
-export -f simple-install
+
