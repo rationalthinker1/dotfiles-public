@@ -1,2 +1,0 @@
-source $SSHHOME/.sshrc.d/.bash_aliases
-export VIMINIT="let \$MYVIMRC='$SSHHOME/.sshrc.d/.vimrc' | source \$MYVIMRC"
