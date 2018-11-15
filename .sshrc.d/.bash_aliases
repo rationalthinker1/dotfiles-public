@@ -1,1 +1,1 @@
-../.bash_aliases
+/home/raza/.bash_aliases
