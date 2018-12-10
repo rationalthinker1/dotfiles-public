@@ -417,6 +417,9 @@ set visualbell           " don't beep
 set noerrorbells         " don't beep
 set autowrite  "Save on buffer switch
 set mouse=a
+set clipboard=unnamedplus "register to global clipboard
+set guioptions+=a
+
 
 " With a map leader it's possible to do extra key combinations
 " like <leader>w saves the current file
@@ -458,22 +461,22 @@ filetype off                  " required
 set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
 Plugin 'VundleVim/Vundle.vim'
-Plugin 'tpope/vim-fugitive'
-Plugin 'git://git.wincent.com/command-t.git'
-Plugin 'rstacruz/sparkup', {'rtp': 'vim/'}
-Plugin 'scrooloose/nerdtree'
-Plugin 'scrooloose/syntastic'
-Plugin 'vim-airline/vim-airline'
-Plugin 'vim-airline/vim-airline-themes'
-Plugin 'Yggdroot/indentLine'
 Plugin 'httplog'
 Plugin 'apachelogs.vim'
 Plugin 'apachestyle'
 Plugin 'stanangeloff/php.vim'
+Plugin 'scrooloose/nerdtree'
 Plugin 'noahfrederick/vim-laravel'
 Plugin 'jwalton512/vim-blade'
 Plugin 'sirver/ultisnips'
 Plugin 'honza/vim-snippets'
+Plugin 'Yggdroot/indentLine'
+Plugin 'vim-airline/vim-airline'
+Plugin 'vim-airline/vim-airline-themes'
+"Plugin 'tpope/vim-fugitive'
+"Plugin 'git://git.wincent.com/command-t.git'
+"Plugin 'rstacruz/sparkup', {'rtp': 'vim/'}
+"Plugin 'scrooloose/syntastic'
 let g:UltiSnipsExpandTrigger="<tab>"
 call vundle#end()            " required
 filetype plugin indent on    " required

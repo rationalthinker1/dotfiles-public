@@ -1099,3 +1099,14 @@ rm .sshrc.d/
 rm -f .sshrc.d/
 #1525722575
 rm -rf .sshrc.d/
+./ts-node
+chmod 777 tsc
+./tsc
+chmod 777 ts-node
+./ts-node
+portal
+./node_modules/.bin/ts-node 
+
+./node_modules/.bin/ts-node public/js/prototypes.ts 
+cat public/js/prototypes.ts 
+subl public/js/prototypes.ts 

@@ -168,7 +168,7 @@ alias aerr="cd /var/log/apache2/"
 alias aprel='sudo service apache2 reload'
 alias ape='tail -f /var/log/apache2/*error.log'
 alias apa='tail -f /var/log/apache2/*access.log'
-
+alias html='cd /var/www/html'
 #=======================================================================================
 # Node Aliases and functions
 #=======================================================================================
