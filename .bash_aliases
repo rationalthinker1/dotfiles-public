@@ -64,6 +64,11 @@ alias myip="curl http://ipecho.net/plain; echo"
 # Searches up history commands
 alias hgrep="history | grep"
 
+# Search current directory (SCD) in grep recursively
+function scd() {
+  grep -r "$@" ./
+}
+
 # Extract archives files
 function extract() {
     if [ -f "$1" ] ; then
@@ -86,7 +91,6 @@ function extract() {
         echo "'$1' is not a valid file!"
     fi
 }
-
 
 #=======================================================================================
 # Installing, updating or removing applications aliases and functions
@@ -169,6 +173,7 @@ alias aprel='sudo service apache2 reload'
 alias ape='tail -f /var/log/apache2/*error.log'
 alias apa='tail -f /var/log/apache2/*access.log'
 alias html='cd /var/www/html'
+alias aplist='sudo apache2ctl -S'
 #=======================================================================================
 # Node Aliases and functions
 #=======================================================================================
@@ -290,65 +295,5 @@ dbt() {
   fi
 
   docker build $ARGS
-}
-
-#=======================================================================================
-# Install functions
-#=======================================================================================
-ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURCE[0]}"`
-BASE_DIR=$(dirname ${ABSOLUTE_PATH})
-
-CURRENT_USER="$(whoami | awk '{print $1}')"
-export $CURRENT_USER
-
-function install() {
-    for filename in "$@"
-    do
-        "${BASE_DIR}/installers/${filename}".sh
-    done
-}
-
-function gnome-install() {
-    for extension_id in "$@"
-    do
-        "${BASE_DIR}"/installers/gnome-extension-installer.sh "${extension_id}"
-    done
-}
-
-
-function apt-install() {
-    for application in "$@"
-    do
-        sudo apt-get install -f -y "${application}"
-    done
-}
-
-function apt-update() {
-    sudo apt-get -y update
-}
-
-function add-repo() {
-    for repository in "$@"
-    do
-        sudo add-apt-repository -y "${repository}"
-    done
-}
-
-# simple-install ppa:numix/ppa numix-gtk-theme numix-icon-theme-circle
-function simple-install() {
-    repository=$1
-
-    # Add the repository
-    add-repo "${repository}"
-    shift
-
-    # Update list of available packages
-    apt-update
-
-    for application in "$@"
-    do
-        # Install application
-        apt-install "${application}"
-    done
 }
 
