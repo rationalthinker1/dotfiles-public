@@ -417,8 +417,14 @@ set visualbell           " don't beep
 set noerrorbells         " don't beep
 set autowrite  "Save on buffer switch
 set mouse=a
+
+" Clipboard
 set clipboard=unnamedplus "register to global clipboard
 set guioptions+=a
+" Copy with Y
+noremap <Leader>Y "+y
+" Paste with P
+noremap <Leader>P "+p
 
 
 " With a map leader it's possible to do extra key combinations
