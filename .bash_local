@@ -1,4 +1,5 @@
 export PATH=/opt/lampp/bin:$PATH
+export GOPATH="$HOME/go:/opt"
 alias portal='cd /opt/lampp/htdocs/geeg'
 alias eco='sshrc -p 222 raza@138.197.166.221'
 alias ohs='sshrc -p 222 raza@138.197.162.117'
