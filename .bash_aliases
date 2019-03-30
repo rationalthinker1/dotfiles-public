@@ -207,6 +207,7 @@ dcu() {
   fi
 }
 
+# Get the ip addresses of the dockers
 dcip() { docker inspect --format '{{$e := . }}{{with .NetworkSettings}} {{$e.Name}} 
 {{range $index, $net := .Networks}}{{$index}} IP:{{.IPAddress}}; Gateway:{{.Gateway}}
 {{end}}{{end}}' $(dcp -q); }
