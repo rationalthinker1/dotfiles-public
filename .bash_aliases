@@ -1,9 +1,9 @@
 #!/bin/bash
 
 ## Bashrc Related ##
-alias dirbashrc="grep -nT '^#|' ~/.bashrc"
-alias bashrc="vim ~/.bashrc"
-alias rebash='source ~/.bashrc'
+alias dirbashrc="grep -nT '^#|' $HOME/.bashrc"
+alias bashrc="vim $HOME/.bashrc"
+alias rebash="source $HOME/.bashrc"
 
 ## Colorize the ls output ##
 alias ls='ls --color=auto'
@@ -29,7 +29,7 @@ alias .4='cd ../../../../'
 alias .5='cd ../../../../..'
 alias r='cd /'
 alias c="clear" # Typing the whole word is annoying
-alias h="cd ~/" # Go home
+alias h="cd $HOME/" # Go home
 
 ## Colorize the grep command output for ease of use (good for log files)##
 alias grep='grep --color=auto'
@@ -43,7 +43,7 @@ alias mkdir='mkdir -pv'
 alias pls='sudo !!'
 
 # Quickly edit this script and load it
-alias vpr='vim ~/.bashrc && source ~/.bashrc'
+alias vpr='vim $HOME/.bashrc && source $HOME/.bashrc'
 
 # sshfs with proper default settings
 alias sshfs='sshfs -o allow_other,uid=1000,gid=1000'
@@ -123,7 +123,7 @@ git_reset() {
     then
         COMMIT="HEAD~$1"
     fi
-    git reset --hard "${COMMIT}" 
+    git reset --hard "${COMMIT}"
 }
 alias gre=git_reset
 
@@ -208,7 +208,7 @@ dcu() {
 }
 
 # Get the ip addresses of the dockers
-dcip() { docker inspect --format '{{$e := . }}{{with .NetworkSettings}} {{$e.Name}} 
+dcip() { docker inspect --format '{{$e := . }}{{with .NetworkSettings}} {{$e.Name}}
 {{range $index, $net := .Networks}}{{$index}} IP:{{.IPAddress}}; Gateway:{{.Gateway}}
 {{end}}{{end}}' $(dcp -q); }
 
@@ -297,4 +297,3 @@ dbt() {
 
   docker build $ARGS
 }
-

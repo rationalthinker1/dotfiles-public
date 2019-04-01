@@ -67,7 +67,7 @@ plugins=(
   bundler
   dotenv
   colorize
-  zsh-syntax-highlighting  
+  zsh-syntax-highlighting
   zsh-autosuggestions
 )
 
@@ -103,6 +103,35 @@ source $ZSH/oh-my-zsh.sh
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 #=======================================================================================
+# Powerline 9k theme
+#=======================================================================================
+POWERLEVEL9K_MODE='nerdfont-fontconfig'
+POWERLEVEL9K_COLOR_SCHEME='dark'
+
+POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(context dir vcs)
+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=()
+
+POWERLEVEL9K_VIRTUALENV_BACKGROUND='000'
+POWERLEVEL9K_CONTEXT_DEFAULT_BACKGROUND='233'
+POWERLEVEL9K_CONTEXT_DEFAULT_FOREGROUND='white'
+POWERLEVEL9K_DIR_HOME_BACKGROUND='032'
+POWERLEVEL9K_DIR_HOME_FOREGROUND='white'
+POWERLEVEL9K_DIR_HOME_SUBFOLDER_BACKGROUND='024'
+POWERLEVEL9K_DIR_HOME_SUBFOLDER_FOREGROUND='white'
+POWERLEVEL9K_OS_ICON_BACKGROUND='grey0'
+POWERLEVEL9K_OS_ICON_FOREGROUND='deepskyblue3'
+POWERLEVEL9K_VCS_CLEAN_FOREGROUND='green'
+POWERLEVEL9K_VCS_CLEAN_BACKGROUND='grey11'
+POWERLEVEL9K_VCS_UNTRACKED_FOREGROUND='yellow'
+POWERLEVEL9K_VCS_UNTRACKED_BACKGROUND='grey11'
+POWERLEVEL9K_VCS_MODIFIED_FOREGROUND='red'
+POWERLEVEL9K_VCS_MODIFIED_BACKGROUND='grey11'
+POWERLEVEL9K_STATUS_OK_BACKGROUND='springgreen2'
+POWERLEVEL9K_STATUS_OK_FOREGROUND='black'
+POWERLEVEL9K_STATUS_ERROR_BACKGROUND='red'
+POWERLEVEL9K_STATUS_ERROR_FOREGROUND='black'
+
+#=======================================================================================
 # Basic Settings
 #=======================================================================================
 export HISTSIZE=1000            # bash history will save N commands
@@ -116,15 +145,15 @@ export VISUAL=vim
 #=======================================================================================
 # Aliases and functions
 #=======================================================================================
-if [ -f ~/.bash_aliases ]; then
-    source ~/.bash_aliases
+if [ -f $HOME/.bash_aliases ]; then
+    source $HOME/.bash_aliases
 fi
 
 #=======================================================================================
 # Local Aliases and functions
 #=======================================================================================
-if [ -f ~/.bash_local ]; then
-    source ~/.bash_local
+if [ -f $HOME/.bash_local ]; then
+    source $HOME/.bash_local
 fi
 
 # added by Anaconda3 installer
