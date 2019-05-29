@@ -42,6 +42,9 @@ alias mkdir='mkdir -pv'
 # Repeat the previous command with sudo
 alias pls='sudo !!'
 
+# Repeat the previous command with sudo
+alias sudoi='sudo "PATH=$PATH"'
+
 # Quickly edit this script and load it
 alias vpr='vim $HOME/.bashrc && source $HOME/.bashrc'
 
@@ -100,6 +103,12 @@ alias install='sudo apt-get install -y '
 alias remove='sudo apt-get remove'
 alias update='sudo apt-get update -y'
 alias upgrade='sudo apt-get update && sudo apt-get upgrade'
+
+#=======================================================================================
+# Yarn Aliases
+#=======================================================================================
+alias ya="yarn add '$@'"
+alias yad="yarn add -D '$@'"
 
 #=======================================================================================
 # Git Aliases and functions

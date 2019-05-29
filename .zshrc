@@ -7,9 +7,12 @@
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
-# See https://github.com/robbyrussell/oh-my-zsh/wiki/Themes
-ZSH_THEME="avit"
+# See https://github.com/robbyrussell/oh-my-zsh/wiki/Themes``
 
+ZSH_THEME="bullet-train"
+BULLETTRAIN_TIME_12HR=true
+BULLETTRAIN_CONTEXT_DEFAULT_USER="$USER"
+BULLETTRAIN_DIR_EXTENDED=0
 # Set list of themes to pick from when loading at random
 # Setting this variable when ZSH_THEME=random will cause zsh to load
 # a theme from this variable instead of looking in ~/.oh-my-zsh/themes/
@@ -103,35 +106,6 @@ source $ZSH/oh-my-zsh.sh
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 #=======================================================================================
-# Powerline 9k theme
-#=======================================================================================
-POWERLEVEL9K_MODE='nerdfont-fontconfig'
-POWERLEVEL9K_COLOR_SCHEME='dark'
-
-POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(context dir vcs)
-POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=()
-
-POWERLEVEL9K_VIRTUALENV_BACKGROUND='000'
-POWERLEVEL9K_CONTEXT_DEFAULT_BACKGROUND='233'
-POWERLEVEL9K_CONTEXT_DEFAULT_FOREGROUND='white'
-POWERLEVEL9K_DIR_HOME_BACKGROUND='032'
-POWERLEVEL9K_DIR_HOME_FOREGROUND='white'
-POWERLEVEL9K_DIR_HOME_SUBFOLDER_BACKGROUND='024'
-POWERLEVEL9K_DIR_HOME_SUBFOLDER_FOREGROUND='white'
-POWERLEVEL9K_OS_ICON_BACKGROUND='grey0'
-POWERLEVEL9K_OS_ICON_FOREGROUND='deepskyblue3'
-POWERLEVEL9K_VCS_CLEAN_FOREGROUND='green'
-POWERLEVEL9K_VCS_CLEAN_BACKGROUND='grey11'
-POWERLEVEL9K_VCS_UNTRACKED_FOREGROUND='yellow'
-POWERLEVEL9K_VCS_UNTRACKED_BACKGROUND='grey11'
-POWERLEVEL9K_VCS_MODIFIED_FOREGROUND='red'
-POWERLEVEL9K_VCS_MODIFIED_BACKGROUND='grey11'
-POWERLEVEL9K_STATUS_OK_BACKGROUND='springgreen2'
-POWERLEVEL9K_STATUS_OK_FOREGROUND='black'
-POWERLEVEL9K_STATUS_ERROR_BACKGROUND='red'
-POWERLEVEL9K_STATUS_ERROR_FOREGROUND='black'
-
-#=======================================================================================
 # Basic Settings
 #=======================================================================================
 export HISTSIZE=1000            # bash history will save N commands
@@ -158,3 +132,5 @@ fi
 
 # added by Anaconda3 installer
 export PATH="/opt/anaconda3/bin:$PATH"
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
