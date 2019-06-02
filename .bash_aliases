@@ -107,8 +107,8 @@ alias upgrade='sudo apt-get update && sudo apt-get upgrade'
 #=======================================================================================
 # Yarn Aliases
 #=======================================================================================
-alias ya="yarn add '$@'"
-alias yad="yarn add -D '$@'"
+alias ya="yarn add $@"
+alias yad="yarn add -D $@"
 
 #=======================================================================================
 # Git Aliases and functions
@@ -149,9 +149,11 @@ alias vkill='vagrant destroy'
 #=======================================================================================
 # Laravel Aliases and functions
 #=======================================================================================
-alias pa="php artisan"
-alias par="php artisan routes"
-alias pam="php artisan migrate"
+alias pa="docker-compose exec php php artisan"
+#alias par="php artisan routes"
+#alias pam="php artisan migrate"
+alias pam="docker-compose exec php php artisan migrate"
+
 alias pam:r="php artisan migrate:refresh"
 alias pam:roll="php artisan migrate:rollback"
 alias pam:rs="php artisan migrate:refresh --seed"
