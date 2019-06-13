@@ -72,6 +72,14 @@ function scd() {
   grep -r "$@" ./
 }
 
+# wgets portion of a line. Default is 10 lines
+function wcsv() {
+	#wget http://riptide-reflection.s3.amazonaws.com/export_2_.csv -qO - | head -10
+	LIMIT=${2:-10}
+	wget "$1" -qO - | head "-${LIMIT}"
+	#echo "wget $1 -qO - | head -${LIMIT}"
+}
+
 # Extract archives files
 function extract() {
     if [ -f "$1" ] ; then
