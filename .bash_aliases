@@ -158,10 +158,10 @@ alias vkill='vagrant destroy'
 #=======================================================================================
 # Laravel Aliases and functions
 #=======================================================================================
-alias pa="docker-compose exec php php artisan"
+alias pa="php artisan"
 #alias par="php artisan routes"
 #alias pam="php artisan migrate"
-alias pam="docker-compose exec php php artisan migrate"
+alias pam="php artisan migrate"
 
 alias pam:r="php artisan migrate:refresh"
 alias pam:roll="php artisan migrate:rollback"
