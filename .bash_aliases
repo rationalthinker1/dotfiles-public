@@ -161,7 +161,7 @@ alias vkill='vagrant destroy'
 alias pa="php artisan"
 #alias par="php artisan routes"
 #alias pam="php artisan migrate"
-alias pam="php artisan migrate"
+alias pam="docker-compose exec php php artisan migrate"
 
 alias pam:r="php artisan migrate:refresh"
 alias pam:roll="php artisan migrate:rollback"
