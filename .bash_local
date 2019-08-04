@@ -1,5 +1,20 @@
-export PATH=/opt/lampp/bin:$PATH
+#export PATH=/opt/lampp/bin:$PATH
 export GOPATH="$HOME/go:/opt"
+
+export PATH=/opt/lampp/bin:$PATH:/usr/local/go/bin:/opt/anaconda/bin
+export GOROOT=/usr/local/go
+
+# added by Anaconda3 installer
+export PATH="/opt/anaconda3/bin:$PATH"
+
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+export JAVA_HOME=/usr/lib/jvm/jdk1.8.0_221
+
+
 alias portal='cd /opt/lampp/htdocs/geeg'
 alias eco='sshrc -p 222 raza@138.197.166.221'
 alias ohs='sshrc -p 222 raza@138.197.162.117'

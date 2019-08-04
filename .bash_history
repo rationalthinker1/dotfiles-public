@@ -1,80 +1,3 @@
-vim app/Models/Job.php 
-#1525419312
-source ~/.vimrc
-#1525419315
-vim app/Models/Job.php 
-#1525419447
-vim
-#1525419559
-vim app/Models/Job.php 
-#1525419614
-vim
-#1525419641
-vim resources/views/default/job/partials/partial-jobs.blade.php 
-#1525419655
-vim resources/views/default/job/edit.blade.php 
-#1525419747
-vim resources/views/default/job/partials/partial-jobs.blade.php 
-#1525420239
-touch ~/.bash_default
-#1525420272
-touch ~/.bash_aliases
-#1525420334
-touch ~/.sshrc
-#1525420363
-mkdir ~/.sshrc.d
-#1525420385
-touch ~/.sshrc.d/{.bash_aliases,.vimrc}
-#1525420668
-source ~/.bashrc
-#1525420671
-portal
-#1525420675
-alias portal
-#1525420697
-vim ~/.bash_local
-#1525420723
-source ~/.bashrc
-#1525420726
-alias portal
-#1525420728
-portal
-#1525420792
-vim ~/.bash_local
-#1525420882
-source ~/.bashrc
-#1525420891
-php --version
-#1525420944
-mv composer.phar /usr/local/bin/composer
-#1525420948
-sudo mv composer.phar /usr/local/bin/composer
-#1525420979
-mysql -u root -p123 -e "DROP DATABASE IF EXISTS ecoenergy; CREATE DATABASE ecoenergy; USE ecoenergy;"
-#1525420982
-lst
-#1525420987
-mysql -u root -p123 -e "DROP DATABASE IF EXISTS ecoenergy; CREATE DATABASE ecoenergy; USE ecoenergy;"
-#1525421002
-alias lst
-#1525421050
-curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
-#1525421076
-`sudo apt-get install -y nodejs
-#1525421079
-sudo apt-get install -y nodejs
-#1525421160
-curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-#1525421136
-sudo apt-get install -y build-essential
-#1525421183
-sudo apt-get update && sudo apt-get install yarn
-#1525421011
-composer install
-#1525421262
-cda
-#1525421266
-composer install
 #1525421295
 mkdir -p storage/framework/{sessions,views,cache}
 #1525421297
@@ -999,3 +922,111 @@ portal
 cat public/js/prototypes.ts 
 subl public/js/prototypes.ts 
 chsh -s $(which zsh)
+install git
+sudo apt update && sudo apt dist-upgrade
+sudo cp -r ../biosans /usr/share/fonts/opentype/
+sudo fc-cache -f -v
+cd /usr/share/fonts/truetype/
+cd opentype/
+cd malayalam/
+...
+lsb_release -cs
+sudo chown -R $USER:$USER ~/
+sudo apt install gnome-tweaks
+sudo apt install ubuntu-restricted-extras
+sudo apt install chrome-gnome-shell
+sudo add-apt-repository ppa:system76/pop
+sudo apt install flatpak
+sudo apt install gnome-software-plugin-flatpak
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+sudo apt autoremove
+sudo apt install virtualbox
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu disco stable"
+sudo apt update
+apt-cache policy docker-ce
+sudo apt install docker-ce
+upgrade
+sudo apt install docker
+docker --version
+sudo snap install docker
+docker --version
+upgrade
+sudo apt install bleachbit
+sudo apt-get install preload
+service --status-all 
+sudo apt-get install guake
+sudo add-apt-repository ppa:linuxuprising/guake
+du -sh ~/.config/*
+du -ah | sort -h
+du -sh ~/.config/*
+sudo apt install guake
+sudo add-apt-repository ppa:tista/plata-theme
+sudo apt-get update
+install plata-theme
+k
+update
+upgrade
+sudo apt install virtualbox-ext-pack
+wget -q https://www.virtualbox.org/download/oracle_vbox.asc -O- | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] http://download.virtualbox.org/virtualbox/debian 
+sudo apt-get update
+upgrade
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+history 
+grep -r "byobu-disable" ~/
+byobu-disable
+sudo apt-get remove byobu.
+sudo apt-get remove byobu
+sudo apt-get remove --auto-remove byobu
+sudo apt-get purge byobu
+sudo apt-get purge --auto-remove byobu
+cd .config/
+install byobu
+sudo apt-get remove --auto-remove byobu
+cd .dotfiles/
+grep -r "byobu" ./
+vim .bashrc 
+sudo apt install vim-gtk3
+vim .bashrc 
+apt install zsh
+sudo apt install zsh
+echo $SHELL
+chsh -s /usr/bin/zsh root
+sudo chsh -s /usr/bin/zsh root
+echo $SHELL
+chsh -s /bin/zsh
+echo $SHELL
+sudo apt-get install zsh curl git
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+echo $SHELL
+zsh --version
+sudo usermod -s /usr/bin/zsh $(whoami)
+sudo apt-get install powerline fonts-powerline
+sudo apt-get install zsh-theme-powerlevel9k
+vim ~/.zshrc 
+sudo apt-get install zsh-syntax-highlighting
+cd Downloads/
+llt
+sudo mv docker-compose-Darwin-x86_64 /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+docker-compose --version
+sudo rm /usr/local/bin/docker-compose
+sudo curl -L https://github.com/docker/compose/releases/download/1.24.1/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+docker-compose --version
+portal
+dcu
+cat docker.sh 
+instll net-tools
+install net-tools
+ifconfig
+dcu
+uname -s
+uname -m
+dcu
+docker-machine start default
+sudo systemctl start docker
+sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+sudo systemctl start docker
+dcu
+curl -sSL https://get.docker.com/ | sh
