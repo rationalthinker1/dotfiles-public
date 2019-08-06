@@ -19,9 +19,9 @@ fi
 #=======================================================================================
 # Basic Settings
 #=======================================================================================
-export HISTSIZE=1000            # bash history will save N commands
+export HISTSIZE=10000           # bash history will save N commands
 export HISTFILESIZE=${HISTSIZE} # bash will remember N commands
-export HISTCONTROL=ignoreboth   # ingore duplicates and spaces
+export HISTCONTROL=ignoreboth   # ignore duplicates and spaces
 export HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
 
 # Default editor is set to vim
