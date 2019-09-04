@@ -219,6 +219,10 @@ map <leader>to :tabonly<cr>
 map <leader>tc :tabclose<cr>
 map <leader>tm :tabmove
 
+map <S-2> :tabn<CR>
+map <S-4> :tabp<CR>
+map <S-3> :tabnew<CR>
+
 " Opens a new tab with the current buffer's path
 " Super useful when editing files in the same directory
 map <leader>te :tabedit <c-r>=expand("%:p:h")<cr>/
@@ -478,14 +482,13 @@ Plugin 'junegunn/fzf.vim'
 Plugin 'vim-airline/vim-airline'
 Plugin 'vim-airline/vim-airline-themes'
 Plugin 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
-Plugin 'git://git.wincent.com/command-t.git'
 Plugin 'terryma/vim-multiple-cursors'
+Plugin 'ctrlpvim/ctrlp.vim'
 set laststatus=2
 set term=xterm-256color
 set termencoding=utf-8
 set guifont=Ubuntu\ Mono\ derivative\ Powerline:10
 "Plugin 'tpope/vim-fugitive'
-"Plugin 'git://git.wincent.com/command-t.git'
 "Plugin 'rstacruz/sparkup', {'rtp': 'vim/'}
 "Plugin 'scrooloose/syntastic'
 let g:UltiSnipsExpandTrigger="<tab>"
@@ -500,4 +503,8 @@ filetype plugin indent on    " required
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 autocmd StdinReadPre * let s:std_in=1
 autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
-map <C-n> :NERDTreeToggle<CR>
+"map <C-n> :NERDTreeToggle<CR>
+nnoremap <silent> <expr> <C-b> g:NERDTree.IsOpen() ? "\:NERDTreeClose<CR>" : bufexists(expand('%')) ? "\:NERDTreeFind<CR>" : "\:NERDTree<CR>"
+
+"ctrlp.vim plugin
+

@@ -5,17 +5,31 @@ alias dirbashrc="grep -nT '^#|' $HOME/.bashrc"
 alias bashrc="vim $HOME/.bashrc"
 alias rebash="source $HOME/.bashrc"
 
-## Colorize the ls output ##
-alias ls='ls --color=auto'
+## if exa exists, use it instead of ls
+if  [ -x "$(command -v exa)" ]; then
+	## Colorize the ls output ##
+	alias ls='exa --color=auto'
 
-## Use a long listing format ##
-alias l="ls --color=auto -lh --group-directories-first" # List all, with human readable filesizes
-alias ll="ls --color=auto -lah --group-directories-first" # List all, with human readable filesizes
-alias llt="ls --color=auto -lahFtr --group-directories-first" # Same as above, but ordered by date
-alias lls="ls --color=auto -lahFSr --group-directories-first" # Same as above, but ordered by size
+	## Use a long listing format ##
+	alias l="exa --color=auto -lh --group-directories-first" # List all, with human readable filesizesexaalias ll="ls --color=auto -lah --group-directories-first" # List all, with human readable filesizesexaalias llt="ls --color=auto -lahFtr --group-directories-first" # Same as above, but ordered by date
+	alias ll="exa --color=auto -lah --group-directories-first" # List all, with human readable filesizes
+	alias lls="exa --color=auto -lahFSr --group-directories-first" # Same as above, but ordered by size
+	alias llt="exa --color=auto -lahFr --sort oldest --group-directories-first" # Same as above, but ordered by date
+	## Show hidden files ##
+	alias l.='exa -d .* --color=auto'
+else
+	## Colorize the ls output ##
+	alias ls='ls --color=auto'
 
-## Show hidden files ##
-alias l.='ls -d .* --color=auto'
+	## Use a long listing format ##
+	alias l="ls --color=auto -lh --group-directories-first" # List all, with human readable filesizes
+	alias ll="ls --color=auto -lah --group-directories-first" # List all, with human readable filesizes
+	alias llt="ls --color=auto -lahFtr --group-directories-first" # Same as above, but ordered by date
+	alias lls="ls --color=auto -lahFSr --group-directories-first" # Same as above, but ordered by size
+
+	## Show hidden files ##
+	alias l.='ls -d .* --color=auto'
+fi
 
 ## get rid of command not found ##
 alias cd..='cd ..'
@@ -176,24 +190,32 @@ alias pacc="php artisan clear-compiled"
 #=======================================================================================
 # Nginx Aliases and functions
 #=======================================================================================
-alias ncon="cd /etc/nginx/sites-available/"
+# common directories
+alias ncon="cd /etc/nginx/sites-enabled/"
 alias nerr="cd /var/log/nginx/"
 
-# Reload Nginx Configuration
-alias nreload="sudo nginx -s reload"
+# view logs
+alias npe='tail -f /var/log/nginx/*error.log'
+alias npa='tail -f /var/log/nginx/*access.log'
 
+# reload nginx
+alias nrel='sudo nginx -s reload'
 #=======================================================================================
 # Apache Aliases and functions
 #=======================================================================================
-# Easy access to Apache logs
+# common directories
 alias acon="cd /etc/apache2/sites-available/"
 alias aerr="cd /var/log/apache2/"
+alias html='cd /var/www/html'
 
-# Restart Apache
-alias aprel='sudo service apache2 reload'
+# view logs
 alias ape='tail -f /var/log/apache2/*error.log'
 alias apa='tail -f /var/log/apache2/*access.log'
-alias html='cd /var/www/html'
+
+# reload apache
+alias aprel='sudo service apache2 reload'
+
+# view active virtual hosts
 alias aplist='sudo apache2ctl -S'
 #=======================================================================================
 # Node Aliases and functions

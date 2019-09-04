@@ -1,268 +1,3 @@
-#1525421295
-mkdir -p storage/framework/{sessions,views,cache}
-#1525421297
-mkdir -p bootstrap/cache
-#1525421300
-composer install
-#1525421330
-npm install
-#1525446974
-portal
-#1525446980
-gulp
-#1525446998
-sudo npm install -g gulp
-#1525447062
-npm install
-#1525447688
-ssh-copy-id
-#1525447739
-ssh-copy-id -p 222 raza@138.197.166.221
-#1525447754
-sshrc -p 222 raza@138.197.166.221
-#1525447757
-ssh -p 222 raza@138.197.166.221
-#1525447826
-$ sudo add-apt-repository ppa:russell-s-stewart/ppa
-#1525447829
-sudo add-apt-repository ppa:russell-s-stewart/ppa
-#1525447840
-sudo apt-get update
-#1525447875
-wget https://raw.githubusercontent.com/Russell91/sshrc/master/sshrc
-#1525447880
-chmod +x sshrc
-#1525447885
-sudo mv sshrc /usr/local/bin
-#1525447888
-llt
-#1525447893
-sshrc
-#1525447900
-sshrc -p 222 raza@138.197.166.221
-#1525448832
-ssh -p 222 root@138.197.166.221
-#1525448972
-cat ~/.ssh/id_rsa.pub 
-#1525449654
-sshrc -p 222 raza@138.197.166.221
-#1525451248
-portal
-#1525451250
-lst
-#1525451316
-mysqladmin --user=root password "123"
-#1525451454
-sudo apt-get purge --auto-remove nodejs
-#1525451336
-./bin/get_local_from_production.sh 
-#1525451483
-curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
-#1525451489
-sudo apt-get install -y nodejs
-#1525451502
-node --version
-#1525451643
-curl -sL https://deb.nodesource.com/setup_10.x -o te.sh
-#1525451731
-sudo vim /etc/apt/sources.list.d/nodesource.list
-#1525451760
-curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
-#1525451775
-curl -sL https://deb.nodesource.com/setup_8.x -o te8.sh
-#1525451779
-vim te8.sh 
-#1525451799
-cd /etc/apt/sources.list.d/
-#1525451804
-rm nodesource.list*
-#1525451809
-sudo rm nodesource.list*
-#1525451812
-..
-#1525451818
-sudo vim sources.list
-#1525451833
-curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
-#1525451848
-sudo vim sources.list
-#1525451862
-cd sources.list.d/
-#1525451864
-..
-#1525451903
-cd sources.list.d/
-#1525451910
-sudo rm russell-s-stewart-ubuntu-ppa-bionic.list 
-#1525451915
-curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
-#1525451928
-sudo apt-get install -y nodejs
-#1525451954
-sudo apt-get purge --auto-remove nodejs
-#1525451967
-curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
-#1525451977
-sudo apt-get install -y nodejs
-#1525451991
-node --version
-#1525451998
-npm install
-#1525452010
-gulp
-#1525452024
-`npm rebuild node-sass --force
-#1525452026
-npm rebuild node-sass --force
-#1525452043
-npm install node-sass
-#1525452056
-npm install
-#1525452066
-npm install node-sass --save
-#1525452079
-npm install gulp --save
-#1525452103
-npm install
-#1525452112
-gulp
-#1525451647
-vim te.sh 
-#1525452192
-cd /opt/lampp/var/log/
-#1525452196
-tail -f *
-#1525452199
-..
-#1525452201
-cd log
-#1525452228
-cda
-#1525452330
-44mkdir -p storage/logs
-#1525452331
-mkdir -p storage/logs
-#1525452351
-chmod -R 777 storage/logs/
-#1525452365
-chmod -R 777 storage/logs/ bootstrap/cache/
-#1525452369
-sudo chmod -R 777 storage/logs/ bootstrap/cache/
-#1525452383
-sudo chmod -R 777 storage/ bootstrap
-#1525452395
-alias cda
-#1525453661
-composer dump-autoload
-#1525453662
-php artisan optimize --force
-#1525453665
-php artisan view:clear
-#1525453665
-php artisan cache:clear
-#1525453666
-php artisan clear-compiled
-#1525453677
-gl
-#1525454165
-cd ~/Downloads/testdisk-7.1-WIP/
-#1525454167
-llt
-#1525454169
-./photorec_static 
-#1525454175
-sudo ./photorec_static 
-#1525452205
-tail -f *
-#1525455116
-portal
-#1525455123
-cd database/migrations/
-#1525455165
-find . -t d -iname "*.php"
-#1525455170
-find . -d d -iname "*.php"
-#1525455173
-find . -f d -iname "*.php"
-#1525455182
-find . -type d -iname "*.php"
-#1525455197
-find . -type f -iname "*.php"
-#1525455219
-portal
-#1525455223
-cd database/migrations/
-#1525455265
-cat recup_dir.37/f45172480.php 
-#1525455295
-find . -type f -iname "re*.php"
-#1525455300
-find . -type f -iname "f*.php"
-#1525459825
-find . -type f -iname "re*.php" -exec grep -i "2012"
-#1525459836
-find . -type f -iname "re*.php" -exec grep -i "2012" {} \;
-#1525459848
-find . -type f -iname "re*.php" -exec grep -i '2012' {} \;
-#1525459851
-find . -type f -iname "re*.php" -exec grep -i '201' {} \;
-#1525459854
-find . -type f -iname "re*.php" -exec grep -i '20' {} \;
-#1525459860
-find . -type f -iname "re*.php" -exec grep -i 'auto' {} \;
-#1525459883
-find . -type f -iname "re*.php" -exec grep -i 'User' {} \;
-#1525459909
-find . -type f -iname "re*.php" -exec grep  'User' {} \;
-#1525459915
-find . -type f -iname "re*.php" -exec grep 'tUserable' {} \;
-#1525459921
-find . -type f -iname "re*.php" -exec grep 'tUserable' {}
-#1525459925
-find . -type f -iname "re*.php" -exec grep 'tUserable' {} \;
-#1525459936
-grep -r "2012"
-#1525459943
-grep -r "2012"./
-#1525459961
-find . -type f -iname "re*.php" -exec grep -r '2012' {} \;
-#1525459982
-find . -type f -iname "re*.php" -exec grep -H '2012' {} \;
-#1525459997
-find . -type f -iname "re*.php" -exec grep -H 'tUserable' {} \;
-#1525460005
-find . -type f -iname "re*.php";
-#1525460007
-find . -type f -iname "re*.php"
-#1525460020
-find . -type f -iname "*.php" -exec grep -H '2012' {} \;
-#1525460038
-find . -type f -iname "*.php" -exec grep -H 'ecoenergy_2012' {} \;
-#1525460150
-htop
-#1525460184
-find . -type f -iname "*.php" -exec grep -H 'ecoenergy' {} \;
-#1525460197
-find . -type f -iname "*.php" -exec grep -H '2012_ecoenergy' {} \;
-#1525460272
-find . -type f -iname "*.php" -exec grep -H '2013_ecoenergy' {} \;
-#1525460402
-llt
-#1525460415
-rm -rf recup_dir.*
-#1525460435
-q
-#1525460418
-sudo rm -rf recup_dir.*
-#1525460456
-portal
-#1525460457
-,,
-#1525460457
-..
-#1525460461
-sudo rm -rf recup_dir.*
-#1525461736
 htop
 #1525461907
 portal
@@ -1030,3 +765,60 @@ sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 sudo systemctl start docker
 dcu
 curl -sSL https://get.docker.com/ | sh
+sudo apt update
+sudo apt update && sudo apt upgrade
+sudo apt install ubuntu-restricted-extras
+sudo apt install flatpak
+sudo apt install gnome-software-plugin-flatpak
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+sudo apt install gnome-tweak-tool
+sudo apt autoremove
+sudo apt install chrome-gnome-shell
+sudo apt dist-upgrade
+sudo apt install libavcodec-extra
+sudo apt install tmux
+sudo apt install nodejs npm
+sudo apt install git vim
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo apt install git vim curl
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable edge"
+sudo apt-get update
+apt-cache policy docker-ce
+sudo apt-get install -y docker-ce
+sudo usermod -aG docker ${USER}
+gsettings set org.gnome.shell.extensions.dash-to-dock click-action 'minimize'
+ll
+cat .bashrc 
+mv .bashrc .bashrc.bak
+ln -nfs ./.dotfiles/.vim ./
+rm -rf .ssh
+ln -nfs ./.dotfiles/.ssh ./
+ln -nfs ./.dotfiles/.vimrc ./
+ln -nfs ./.dotfiles/.bash_{local,aliases,default,history} ./
+ll
+ln -nfs ./.dotfiles/.viminfo ./
+ln -nfs ./.dotfiles/.sshrc ./
+ln -nfs ./.dotfiles/.sshrc.d/ ./
+sudo apt-get install fish
+chsh -s /usr/bin/fish
+fish
+tmux
+sudo apt-get install guake
+sudo apt-get install fzf
+zf
+fzf
+it clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+~/.fzf/install
+l
+ll
+ls
+ls -al
+sudo apt-get install openvpn
+sudo apt-get install network-manager-openvpn  
+sudo apt-get install network-manager-openvpn-gnome  
+sudo visudo
+sudo update-alternatives --config editor
+sudo visudo
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
