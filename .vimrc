@@ -141,7 +141,7 @@ nnoremap <leader>bl :ls<CR>
 " => Colors and Fonts
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Enable syntax highlighting
-syntax enable
+"syntax enable
 
 set background=dark
 set termguicolors
@@ -482,11 +482,13 @@ Plugin 'peitalin/vim-jsx-typescript'
 Plugin 'pangloss/vim-javascript'
 Plugin 'airblade/vim-gitgutter'
 Plugin 'godlygeek/tabular'
+Bundle "daylerees/colour-schemes", { "rtp": "vim/" }
 "Plugin 'tpope/vim-fugitive'
 "Plugin 'rstacruz/sparkup', {'rtp': 'vim/'}
 "Plugin 'scrooloose/syntastic'
 call vundle#end()            " required
-
+syntax enable on
+colorscheme gloom-contrast
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Airline Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
