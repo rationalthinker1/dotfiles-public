@@ -1,1 +1,1 @@
-/home/raza/.vimrc
+/home/canaan/.dotfiles/.vimrc

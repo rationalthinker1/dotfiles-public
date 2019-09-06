@@ -1,1 +1,1 @@
-/home/raza/.bash_aliases
+/home/canaan/.dotfiles/.bash_aliases

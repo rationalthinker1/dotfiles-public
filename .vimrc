@@ -70,6 +70,7 @@ set so=7
 
 " Turn on the WiLd menu
 set wildmenu
+set wildmode=longest:full,full
 
 " Ignore compiled files
 set wildignore=*.o,*~,*.pyc
@@ -426,37 +427,20 @@ set autowrite  "Save on buffer switch
 set mouse=a
 set clipboard=unnamedplus "register to global clipboard
 
-
-" With a map leader it's possible to do extra key combinations
-" like <leader>w saves the current file
-let mapleader = ","
-let g:mapleader = ","
-
-" Fast saves
-nmap <leader>w :w!<cr>
-
-set nocompatible   " Disable vi-compatibility
-set number
 set pastetoggle=<F3>
-" set shiftwidth=2
-" set tabstop=2
 map <C-B> :w !php -l %<CR>
-
-nmap <leader>lb :e ~/.bashrc<cr>
+nmap <leader>lb :e ~/.zshrc<cr>
 
 " Move up/down current line
 nmap <C-S-Up> :m -2<CR>
 nmap <C-S-Down> :m +1<CR>
 
-" save on Ctrl + S
-nmap <C-S> :w<CR>
-
 
 "insert and remove comments in visual and normal mode
-vmap <leader>ic :s/^/#/g<CR>:let @/ = ""<CR>
-map  <leader>ic :s/^/#/g<CR>:let @/ = ""<CR>
-vmap <leader>rc :s/^#//g<CR>:let @/ = ""<CR>
-map  <leader>rc :s/^#//g<CR>:let @/ = ""<CR>
+vnoremap <leader>ic :s/^/#/g<CR>:let @/ = ""<CR>
+noremap  <leader>ic :s/^/#/g<CR>:let @/ = ""<CR>
+vnoremap <leader>rc :s/^#//g<CR>:let @/ = ""<CR>
+noremap  <leader>rc :s/^#//g<CR>:let @/ = ""<CR>
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => VundleVim Configurations
@@ -484,6 +468,12 @@ Plugin 'vim-airline/vim-airline-themes'
 Plugin 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
 Plugin 'terryma/vim-multiple-cursors'
 Plugin 'ctrlpvim/ctrlp.vim'
+Plugin 'quramy/tsuquyomi'
+Plugin 'leafgarland/typescript-vim'
+Plugin 'peitalin/vim-jsx-typescript'
+Plugin 'pangloss/vim-javascript'
+Plugin 'airblade/vim-gitgutter'
+Plugin 'godlygeek/tabular'
 set laststatus=2
 set term=xterm-256color
 set termencoding=utf-8

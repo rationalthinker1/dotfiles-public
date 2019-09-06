@@ -13,10 +13,14 @@ if  [ -x "$(command -v exa)" ]; then
 	## Use a long listing format ##
 	alias l="exa --color=auto -lh --group-directories-first" # List all, with human readable filesizesexaalias ll="ls --color=auto -lah --group-directories-first" # List all, with human readable filesizesexaalias llt="ls --color=auto -lahFtr --group-directories-first" # Same as above, but ordered by date
 	alias ll="exa --color=auto -lah --group-directories-first" # List all, with human readable filesizes
-	alias lls="exa --color=auto -lahFSr --group-directories-first" # Same as above, but ordered by size
+	alias lls="exa --color=auto -lahF --sort size --group-directories-first" # Same as above, but ordered by size
 	alias llt="exa --color=auto -lahFr --sort oldest --group-directories-first" # Same as above, but ordered by date
+
 	## Show hidden files ##
 	alias l.='exa -d .* --color=auto'
+
+	## Show only directories
+	alias ld='exa --color=auto -alD'
 else
 	## Colorize the ls output ##
 	alias ls='ls --color=auto'
@@ -83,7 +87,7 @@ alias hgrep="history | grep"
 
 # Search current directory (SCD) in grep recursively
 function scd() {
-  grep -r "$@" ./
+  grep -ir "$@" ./
 }
 
 # wgets portion of a line. Default is 10 lines
