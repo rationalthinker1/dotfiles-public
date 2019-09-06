@@ -61,29 +61,6 @@ let g:mapleader = ","
 " Fast saving
 nmap <leader>w :w!<cr>
 
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => VIM user interface
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Set 7 lines to the cursor - when moving vertically using j/k
-set so=7
-
-" Turn on the WiLd menu
-set wildmenu
-set wildmode=longest:full,full
-
-" Ignore compiled files
-set wildignore=*.o,*~,*.pyc
-
-"Always show current position
-set ruler
-
-" Height of the command bar
-set cmdheight=2
-
-" A buffer becomes hidden when it is abandoned
-set hid
-
 " Configure backspace so it acts as it should act
 set backspace=eol,start,indent
 set whichwrap+=<,>,h,l
@@ -109,7 +86,7 @@ set magic
 " Show matching brackets when text indicator is over them
 set showmatch
 " How many tenths of a second to blink when matching brackets
-set mat=2
+set matchtime=5
 
 " No annoying sound on errors
 set noerrorbells
@@ -117,6 +94,48 @@ set novisualbell
 set t_vb=
 set tm=500
 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => VIM user interface
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Set 7 lines to the cursor - when moving vertically using j/k
+set scrolloff=7
+
+" Turn on the WiLd menu
+set wildmenu
+set wildmode=longest:full,full
+
+" Ignore compiled files
+set wildignore=*.o,*~,*.pyc
+
+"Always show current position
+set ruler
+
+" Height of the command bar
+set cmdheight=2
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Buffer Settings
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" This allows buffers to be hidden if you've modified a buffer.
+" This is almost a must if you wish to use buffers in this way.
+set hidden
+
+" To open a new empty buffer
+" This replaces :tabnew which I used to bind to this mapping
+nnoremap <leader>T :enew<cr>
+
+" Move to the next buffer
+nnoremap <leader>l :bnext<CR>
+
+" Move to the previous buffer
+nnoremap <leader>h :bprevious<CR>
+
+" Close the current buffer and move to the previous one
+" This replicates the idea of closing a tab
+nnoremap <leader>bq :bp <BAR> bd #<CR>
+
+" Show all open buffers and their status
+nnoremap <leader>bl :ls<CR>
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Colors and Fonts
@@ -126,8 +145,11 @@ syntax enable
 
 set background=dark
 set termguicolors
-"colorscheme material-monokai
 colorscheme material-theme
+set term=xterm-256color
+set termencoding=utf-8
+set guifont=Ubuntu\ Mono\ derivative\ Powerline:10
+
 let g:materialmonokai_subtle_spell=1
 
 " Set extra options when running in GUI mode
@@ -144,7 +166,6 @@ set encoding=utf8
 " Use Unix as the standard file type
 set ffs=unix,dos,mac
 
-
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Files, backups and undo
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -160,23 +181,18 @@ set noswapfile
 " Use tabs instead of spaces
 set autoindent
 set noexpandtab
-set tabstop=4
-set shiftwidth=4
 
 " Be smart when using tabs ;)
 set smarttab
 
 " 1 tab == 4 spaces
+set softtabstop=4               " when hitting <BS>, pretend like a tab is removed, even if spaces
 set shiftwidth=4
 set tabstop=4
 
 " Linebreak on 500 characters
 set lbr
 set tw=500
-
-set ai "Auto indent
-set si "Smart indent
-set wrap "Wrap lines
 
 
 """"""""""""""""""""""""""""""
@@ -192,12 +208,12 @@ vnoremap <silent> # :call VisualSelection('b')<CR>
 " => Moving around, tabs, windows and buffers
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Treat long lines as break lines (useful when moving around in them)
-map j gj
-map k gk
+nnoremap <expr> k (v:count == 0 ? 'gk' : 'k')
+nnoremap <expr> j (v:count == 0 ? 'gj' : 'j')
 
 " Map <Space> to / (search) and Ctrl-<Space> to ? (backwards search)
-map <space> /
-map <c-space> ?
+noremap <space> /
+noremap <c-space> ?
 
 " Disable highlight when <leader><cr> is pressed
 map <silent> <leader><cr> :noh<cr>
@@ -220,9 +236,9 @@ map <leader>to :tabonly<cr>
 map <leader>tc :tabclose<cr>
 map <leader>tm :tabmove
 
-map <S-2> :tabn<CR>
-map <S-4> :tabp<CR>
-map <S-3> :tabnew<CR>
+nnoremap <S-2> :tabn<CR>
+nnoremap <S-4> :tabp<CR>
+nnoremap <S-3> :tabnew<CR>
 
 " Opens a new tab with the current buffer's path
 " Super useful when editing files in the same directory
@@ -264,10 +280,10 @@ set statusline=\ %{HasPaste()}%F%m%r%h\ %w\ \ CWD:\ %r%{getcwd()}%h\ \ \ Line:\ 
 map 0 ^
 
 " Move a line of text using ALT+[jk] or Comamnd+[jk] on mac
-nmap <M-j> mz:m+<cr>`z
-nmap <M-k> mz:m-2<cr>`z
-vmap <M-j> :m'>+<cr>`<my`>mzgv`yo`z
-vmap <M-k> :m'<-2<cr>`>my`<mzgv`yo`z
+" Move visual block
+vnoremap J :m '>+1<CR>gv=gv
+vnoremap K :m '<-2<CR>gv=gv
+
 
 if has("mac") || has("macunix")
   nmap <D-j> <M-j>
@@ -408,28 +424,20 @@ endfunction
 "  Raza's custom commands
 set showmode                    " always show what mode we're currently editing in
 set nowrap                      " don't wrap lines
-set tabstop=4                   " a tab is four spaces
 set smarttab
 set tags=tags
 set softtabstop=4               " when hitting <BS>, pretend like a tab is removed, even if spaces
 set shiftwidth=4                " number of spaces to use for autoindenting
 set shiftround                  " use multiple of shiftwidth when indenting with '<' and '>'
-set backspace=indent,eol,start  " allow backspacing over everything in insert mode
-set autoindent                  " always set autoindenting on
 set copyindent                  " copy the previous indentation on autoindenting
 set number                      " always show line numbers
-set ignorecase                  " ignore case when searching
-set smartcase                   " ignore case if search pattern is all lowercase,
 set timeout timeoutlen=200 ttimeoutlen=100
-set visualbell           " don't beep
-set noerrorbells         " don't beep
 set autowrite  "Save on buffer switch
 set mouse=a
 set clipboard=unnamedplus "register to global clipboard
 
 set pastetoggle=<F3>
 map <C-B> :w !php -l %<CR>
-nmap <leader>lb :e ~/.zshrc<cr>
 
 " Move up/down current line
 nmap <C-S-Up> :m -2<CR>
@@ -474,19 +482,44 @@ Plugin 'peitalin/vim-jsx-typescript'
 Plugin 'pangloss/vim-javascript'
 Plugin 'airblade/vim-gitgutter'
 Plugin 'godlygeek/tabular'
-set laststatus=2
-set term=xterm-256color
-set termencoding=utf-8
-set guifont=Ubuntu\ Mono\ derivative\ Powerline:10
 "Plugin 'tpope/vim-fugitive'
 "Plugin 'rstacruz/sparkup', {'rtp': 'vim/'}
 "Plugin 'scrooloose/syntastic'
-let g:UltiSnipsExpandTrigger="<tab>"
-let g:airline_theme = 'deus'
-let g:airline#extensions#tabline#enabled = 1
-let g:airline_powerline_fonts = 1
 call vundle#end()            " required
-filetype plugin indent on    " required
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Airline Configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:airline_theme = 'deus'
+let g:airline_powerline_fonts = 1
+" Enable the list of buffers
+let g:airline#extensions#tabline#enabled = 1
+" Show just the filename
+let g:airline#extensions#tabline#fnamemod = ':t'
+
+let g:UltiSnipsExpandTrigger="<tab>"
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => CtrlP Configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Setup some default ignores
+let g:ctrlp_custom_ignore = {
+  \ 'dir':  '\v[\/](\.(git|hg|svn)|\_site)$',
+  \ 'file': '\v\.(exe|so|dll|class|png|jpg|jpeg)$',
+\}
+
+" Use the nearest .git directory as the cwd
+" This makes a lot of sense if you are working on a project that is in version
+" control. It also supports works with .svn, .hg, .bzr.
+let g:ctrlp_working_path_mode = 'r'
+
+" Use a leader instead of the actual named binding
+nmap <leader>p :CtrlP<cr>
+
+" Easy bindings for its various modes
+nmap <leader>bb :CtrlPBuffer<cr>
+nmap <leader>bm :CtrlPMixed<cr>
+nmap <leader>bs :CtrlPMRU<cr>
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => NERDTree Configurations

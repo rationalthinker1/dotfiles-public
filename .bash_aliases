@@ -130,6 +130,42 @@ alias remove='sudo apt-get remove'
 alias update='sudo apt-get update -y'
 alias upgrade='sudo apt-get update && sudo apt-get upgrade'
 
+function apt-install() {
+	for application in "$@"
+	do
+		sudo apt-get install -f -y "${application}"
+    done
+}
+
+function apt-update() {
+	sudo apt-get -y update
+}
+
+function add-repo() {
+	for repository in "$@"
+	do
+		sudo add-apt-repository -y "${repository}"
+    done
+}
+
+# simple-install ppa:numix/ppa numix-gtk-theme numix-icon-theme-circle
+function simple-install() {
+	repository=$1
+
+	# Add the repository
+	add-repo "${repository}"
+	shift
+
+	# Update list of available packages
+	apt-update
+
+	for application in "$@"
+	do
+		# Install application
+		apt-install "${application}"
+	done
+}
+
 #=======================================================================================
 # Yarn Aliases
 #=======================================================================================
