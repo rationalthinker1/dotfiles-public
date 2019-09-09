@@ -166,6 +166,30 @@ function simple-install() {
 	done
 }
 
+function unzipd() {
+	filename="${1}"
+	directory="${filename%.zip}"
+	directory="${directory##*/}"
+	unzip "${filename}" -d "${directory}"
+}
+
+function install-font-folder() {:
+	directory="${1}"
+	sudo mkdir -p /usr/share/fonts/{true,open}type/"${directory}"
+	find ./"${directory}" -type f -name "*.otf" | xargs -I{} sudo cp {} /usr/share/fonts/opentype/"${directory}"
+	find ./"${directory}" -type f -name "*.ttf" | xargs -I{} sudo cp {} /usr/share/fonts/truetype/"${directory}"
+	fc-cache -f -v | grep "${directory}"
+}
+
+function install-font-zip() {
+	filename="${1}"
+	directory="${filename%.zip}"
+	directory="${directory##*/}"
+	unzipd "${filename}"
+	install-font-folder "${directory}"
+	rm -rf ./"${directory}"
+}
+
 #=======================================================================================
 # Yarn Aliases
 #=======================================================================================

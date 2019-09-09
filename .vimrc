@@ -219,14 +219,22 @@ noremap <c-space> ?
 map <silent> <leader><cr> :noh<cr>
 
 " Smart way to move between windows
-map <C-j> <C-W>j
-map <C-k> <C-W>k
-map <C-h> <C-W>h
-map <C-l> <C-W>l
+"map <C-j> <C-W>j
+"map <C-k> <C-W>k
+"map <C-h> <C-W>h
+"map <C-l> <C-W>l
+
+nnoremap <C-W>- <C-W>s
+nnoremap <C-w><Bar> <C-w>v
+nnoremap <A-Right> <C-W>l
+nnoremap <A-Left> <C-W>h
+nnoremap <A-Up> <C-W>j
+nnoremap <A-Down> <C-W>k
+
 
 " Close the current buffer
 map <leader>bd :Bclose<cr>
-
+nnoremap confr :source $MYVIMRC<CR>
 " Close all the buffers
 map <leader>ba :1,1000 bd!<cr>
 
@@ -439,6 +447,9 @@ set clipboard=unnamedplus "register to global clipboard
 set pastetoggle=<F3>
 map <C-B> :w !php -l %<CR>
 
+" delete a word with ctrl-w in insert mode
+inoremap <C-w> <esc>hdawi
+
 " Move up/down current line
 nmap <C-S-Up> :m -2<CR>
 nmap <C-S-Down> :m +1<CR>
@@ -464,6 +475,7 @@ Plugin 'httplog'
 Plugin 'apachelogs.vim'
 Plugin 'apachestyle'
 Plugin 'stanangeloff/php.vim'
+Plugin 'shawncplus/phpcomplete.vim'
 Plugin 'scrooloose/nerdtree'
 Plugin 'noahfrederick/vim-laravel'
 Plugin 'jwalton512/vim-blade'

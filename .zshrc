@@ -1,6 +1,26 @@
-export ZSH="/home/$USER/.config/.oh-my-zsh"
-export ZDOTDIR="$ZSH/dump"
-source $ZSH/antigen.zsh
+export LOCAL_CONFIG="/home/${USER}/.config"
+export ZSH="${LOCAL_CONFIG}/oh-my-zsh"
+export ADOTDIR="${LOCAL_CONFIG}/antigen"
+export PATH="/opt/anaconda3/bin:${PATH}"
+
+#=======================================================================================
+# Basic Settings
+#=======================================================================================
+export HISTSIZE=2000            # bash history will save N commands
+export HISTFILESIZE="${HISTSIZE}" # bash will remember N commands
+export HISTCONTROL=ignoreboth   # ingore duplicates and spaces
+export HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
+export VISUAL=vim
+
+
+# Load tmux
+if [[ ! $TERM =~ screen ]]; then
+    exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
+fi
+#=======================================================================================
+# Antigen
+#=======================================================================================
+source "$ADOTDIR"/antigen.zsh
 
 # Load the oh-my-zsh's library.
 antigen use oh-my-zsh
@@ -17,26 +37,17 @@ antigen bundle zsh-users/zsh-autosuggestions
 #antigen bundle unixorn/autoupdate-antigen.zshplugin
 
 # Load the theme.
-antigen theme https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train
 BULLETTRAIN_TIME_12HR=true
 BULLETTRAIN_CONTEXT_DEFAULT_USER="$USER"
 BULLETTRAIN_DIR_EXTENDED=0
-
+antigen theme https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train
 
 # Tell antigen that you're done.
 antigen apply
 
-
-#=======================================================================================
-# Basic Settings
-#=======================================================================================
-export HISTSIZE=2000            # bash history will save N commands
-export HISTFILESIZE=${HISTSIZE} # bash will remember N commands
-export HISTCONTROL=ignoreboth   # ingore duplicates and spaces
-export HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
-
-# Default editor is set to vim
-export VISUAL=vim
+autoload -U +X compinit && compinit
+autoload -U +X bashcompinit && bashcompinit
+bashcompinit -i
 
 #=======================================================================================
 # Aliases and functions
@@ -52,11 +63,7 @@ if [ -f $HOME/.bash_local ]; then
     source $HOME/.bash_local
 fi
 
-# added by Anaconda3 installer
-export PATH="/opt/anaconda3/bin:$PATH"
 
-[ -f ~/.config/fzf/.fzf.zsh ] && source ~/.config/fzf/.fzf.zsh
 
-if [[ ! $TERM =~ screen ]]; then
-    exec tmux -f ~/.config/tmux/tmux.conf
-fi
+# Load fzf
+[ -f "${LOCAL_CONFIG}"/fzf/.fzf.zsh ] && source "${LOCAL_CONFIG}"/fzf/.fzf.zsh
