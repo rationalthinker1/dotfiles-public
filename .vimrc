@@ -92,6 +92,8 @@ set novisualbell
 set t_vb=
 set tm=500
 
+"  applies substitutions globally by default on lines. For example, instead of :%s/foo/bar/g you just type :%s/foo/bar/
+set gdefault
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => VIM user interface
@@ -112,6 +114,9 @@ set ruler
 " Height of the command bar
 set cmdheight=2
 
+" Use tabs to switch between brackets
+nnoremap <tab> %
+vnoremap <tab> %
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Buffer Settings
@@ -219,10 +224,10 @@ nnoremap <c-space> ?
 noremap <silent> <leader><cr> :noh<cr>
 
 " Smart way to move between windows
-xnoremap <A-Right> <C-W>l
-xnoremap <A-Left> <C-W>h
-xnoremap <A-Up> <C-W>j
-xnoremap <A-Down> <C-W>k
+nnoremap <A-Right> <C-W>l
+nnoremap <A-Left> <C-W>h
+nnoremap <A-Up> <C-W>j
+nnoremap <A-Down> <C-W>k
 
 " Close the current buffer
 noremap <leader>bd :Bclose<cr>
@@ -329,6 +334,10 @@ noremap <leader>co ggVGy:tabnew<cr>:set syntax=qf<cr>pgg
 noremap <leader>n :cn<cr>
 noremap <leader>p :cp<cr>
 
+" when searching, you can use Perl's regex rather than using vim's own regex system
+nnoremap / /\v
+vnoremap / /\v
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Spell checking
@@ -356,8 +365,9 @@ noremap <leader>q :e ~/buffer<cr>
 noremap <leader>pp :setlocal paste!<cr>
 
 " creates title banner 
-nnoremap <leader>title 63i"<ESC><ESC>o" =><SPACE><SPACE><ESC>moi<CR><ESC>63i"<ESC><ESC>A<CR><ESC>`oi<SPACE>
-vnoremap <leader>title ydd63i"<ESC><ESC>o" =><SPACE><SPACE><ESC>moi<CR><ESC>63i"<ESC><ESC>A<CR><ESC>`opi<BS>
+nnoremap <leader>title 63i"<esc><esc>o" =><space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`oi<space>
+vnoremap <leader>title ydd63i"<esc><esc>o" =><space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`opi<bs>
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Helper functions
@@ -432,10 +442,6 @@ set mouse=a
 set clipboard=unnamedplus "register to global clipboard
 set splitright
 set pastetoggle=<F3>
-noremap <C-B> :w !php -l %<CR>
-
-" delete a word with ctrl-w in insert mode
-inoremap <C-w> <esc>hdawi
 
 " Move up/down current line
 nnoremap <C-S-Up> :m -2<CR>
@@ -480,7 +486,7 @@ Plugin 'peitalin/vim-jsx-typescript'
 Plugin 'pangloss/vim-javascript'
 Plugin 'airblade/vim-gitgutter'
 Plugin 'godlygeek/tabular'
-Plugin 'tomtom/tcomment_vim'
+Plugin 'scrooloose/nerdcommenter'
 Plugin 'nathanaelkane/vim-indent-guides'
 Plugin 'tpope/vim-eunuch'
 Plugin 'hzchirs/vim-material'
@@ -492,8 +498,8 @@ syntax enable on
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Theme 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-set background=dark
 colorscheme gloom-contrast
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Airline Configurations
@@ -521,6 +527,7 @@ let g:multi_cursor_prev_key            = '<C-p>'
 let g:multi_cursor_skip_key            = '<C-x>'
 let g:multi_cursor_quit_key            = '<Esc>'
 
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => CtrlP Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -543,6 +550,7 @@ nnoremap <leader>bb :CtrlPBuffer<cr>
 nnoremap <leader>bm :CtrlPMixed<cr>
 nnoremap <leader>bs :CtrlPMRU<cr>
 
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => NERDTree Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -551,5 +559,4 @@ autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
 "noremap <C-n> :NERDTreeToggle<CR>
 nnoremap <silent> <expr> <C-b> g:NERDTree.IsOpen() ? "\:NERDTreeClose<CR>" : bufexists(expand('%')) ? "\:NERDTreeFind<CR>" : "\:NERDTree<CR>"
 
-"ctrlp.vim plugin
 
