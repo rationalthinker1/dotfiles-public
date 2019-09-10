@@ -38,9 +38,6 @@
 "    -> Helper functions
 "
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => General
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Sets how many lines of history VIM has to remember
@@ -59,7 +56,7 @@ let mapleader = ","
 let g:mapleader = ","
 
 " Fast saving
-nmap <leader>w :w!<cr>
+nnoremap <leader>w :w!<cr>
 
 " Configure backspace so it acts as it should act
 set backspace=eol,start,indent
@@ -85,6 +82,7 @@ set magic
 
 " Show matching brackets when text indicator is over them
 set showmatch
+
 " How many tenths of a second to blink when matching brackets
 set matchtime=5
 
@@ -93,6 +91,7 @@ set noerrorbells
 set novisualbell
 set t_vb=
 set tm=500
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => VIM user interface
@@ -112,6 +111,7 @@ set ruler
 
 " Height of the command bar
 set cmdheight=2
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Buffer Settings
@@ -137,6 +137,7 @@ nnoremap <leader>bq :bp <BAR> bd #<CR>
 " Show all open buffers and their status
 nnoremap <leader>bl :ls<CR>
 
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Colors and Fonts
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -145,8 +146,6 @@ nnoremap <leader>bl :ls<CR>
 
 set background=dark
 set termguicolors
-colorscheme material-theme
-set term=xterm-256color
 set termencoding=utf-8
 set guifont=Ubuntu\ Mono\ derivative\ Powerline:10
 
@@ -165,6 +164,7 @@ set encoding=utf8
 
 " Use Unix as the standard file type
 set ffs=unix,dos,mac
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Files, backups and undo
@@ -186,7 +186,7 @@ set noexpandtab
 set smarttab
 
 " 1 tab == 4 spaces
-set softtabstop=4               " when hitting <BS>, pretend like a tab is removed, even if spaces
+set softtabstop=4
 set shiftwidth=4
 set tabstop=4
 
@@ -212,37 +212,32 @@ nnoremap <expr> k (v:count == 0 ? 'gk' : 'k')
 nnoremap <expr> j (v:count == 0 ? 'gj' : 'j')
 
 " Map <Space> to / (search) and Ctrl-<Space> to ? (backwards search)
-noremap <space> /
-noremap <c-space> ?
+nnoremap <space> /
+nnoremap <c-space> ?
 
 " Disable highlight when <leader><cr> is pressed
-map <silent> <leader><cr> :noh<cr>
+noremap <silent> <leader><cr> :noh<cr>
 
 " Smart way to move between windows
-"map <C-j> <C-W>j
-"map <C-k> <C-W>k
-"map <C-h> <C-W>h
-"map <C-l> <C-W>l
-
-nnoremap <C-W>- <C-W>s
-nnoremap <C-w><Bar> <C-w>v
-nnoremap <A-Right> <C-W>l
-nnoremap <A-Left> <C-W>h
-nnoremap <A-Up> <C-W>j
-nnoremap <A-Down> <C-W>k
-
+xnoremap <A-Right> <C-W>l
+xnoremap <A-Left> <C-W>h
+xnoremap <A-Up> <C-W>j
+xnoremap <A-Down> <C-W>k
 
 " Close the current buffer
-map <leader>bd :Bclose<cr>
-nnoremap confr :source $MYVIMRC<CR>
+noremap <leader>bd :Bclose<cr>
+
+" Reloads vimrc
+nnoremap <leader>rr :w<CR>:source $MYVIMRC<CR>
+
 " Close all the buffers
-map <leader>ba :1,1000 bd!<cr>
+noremap <leader>ba :1,1000 bd!<cr>
 
 " Useful mappings for managing tabs
-map <leader>tn :tabnew<cr>
-map <leader>to :tabonly<cr>
-map <leader>tc :tabclose<cr>
-map <leader>tm :tabmove
+noremap <leader>tn :tabnew<cr>
+noremap <leader>to :tabonly<cr>
+noremap <leader>tc :tabclose<cr>
+noremap <leader>tm :tabmove
 
 nnoremap <S-2> :tabn<CR>
 nnoremap <S-4> :tabp<CR>
@@ -250,10 +245,10 @@ nnoremap <S-3> :tabnew<CR>
 
 " Opens a new tab with the current buffer's path
 " Super useful when editing files in the same directory
-map <leader>te :tabedit <c-r>=expand("%:p:h")<cr>/
+noremap <leader>te :tabedit <c-r>=expand("%:p:h")<cr>/
 
 " Switch CWD to the directory of the open buffer
-map <leader>cd :cd %:p:h<cr>:pwd<cr>
+noremap <leader>cd :cd %:p:h<cr>:pwd<cr>
 
 " Specify the behavior when switching between buffers
 try
@@ -285,20 +280,13 @@ set statusline=\ %{HasPaste()}%F%m%r%h\ %w\ \ CWD:\ %r%{getcwd()}%h\ \ \ Line:\ 
 " => Editing mappings
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Remap VIM 0 to first non-blank character
-map 0 ^
+nnoremap 0 ^
 
 " Move a line of text using ALT+[jk] or Comamnd+[jk] on mac
 " Move visual block
 vnoremap J :m '>+1<CR>gv=gv
 vnoremap K :m '<-2<CR>gv=gv
 
-
-if has("mac") || has("macunix")
-  nmap <D-j> <M-j>
-  nmap <D-k> <M-k>
-  vmap <D-j> <M-j>
-  vmap <D-k> <M-k>
-endif
 
 " Delete trailing white space on save, useful for Python and CoffeeScript ;)
 func! DeleteTrailingWS()
@@ -317,10 +305,10 @@ autocmd BufWrite *.coffee :call DeleteTrailingWS()
 vnoremap <silent> gv :call VisualSelection('gv')<CR>
 
 " Open vimgrep and put the cursor in the right position
-map <leader>g :vimgrep // **/*.<left><left><left><left><left><left><left>
+noremap <leader>g :vimgrep // **/*.<left><left><left><left><left><left><left>
 
 " Vimgreps in the current file
-map <leader><space> :vimgrep // <C-R>%<C-A><right><right><right><right><right><right><right><right><right>
+noremap <leader><space> :vimgrep // <C-R>%<C-A><right><right><right><right><right><right><right><right><right>
 
 " When you press <leader>r you can search and replace the selected text
 vnoremap <silent> <leader>r :call VisualSelection('replace')<CR>
@@ -336,23 +324,23 @@ vnoremap <silent> <leader>r :call VisualSelection('replace')<CR>
 " To go to the previous search results do:
 "   <leader>p
 "
-map <leader>cc :botright cope<cr>
-map <leader>co ggVGy:tabnew<cr>:set syntax=qf<cr>pgg
-map <leader>n :cn<cr>
-map <leader>p :cp<cr>
+noremap <leader>cc :botright cope<cr>
+noremap <leader>co ggVGy:tabnew<cr>:set syntax=qf<cr>pgg
+noremap <leader>n :cn<cr>
+noremap <leader>p :cp<cr>
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Spell checking
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Pressing ,ss will toggle and untoggle spell checking
-map <leader>ss :setlocal spell!<cr>
+noremap <leader>ss :setlocal spell!<cr>
 
 " Shortcuts using <leader>
-map <leader>sn ]s
-map <leader>sp [s
-map <leader>sa zg
-map <leader>s? z=
+noremap <leader>sn ]s
+noremap <leader>sp [s
+noremap <leader>sa zg
+noremap <leader>s? z=
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -362,12 +350,14 @@ map <leader>s? z=
 noremap <Leader>m mmHmt:%s/<C-V><cr>//ge<cr>'tzt'm
 
 " Quickly open a buffer for scripbble
-map <leader>q :e ~/buffer<cr>
+noremap <leader>q :e ~/buffer<cr>
 
 " Toggle paste mode on and off
-map <leader>pp :setlocal paste!<cr>
+noremap <leader>pp :setlocal paste!<cr>
 
-
+" creates title banner 
+nnoremap <leader>title 63i"<ESC><ESC>o" =><SPACE><SPACE><ESC>moi<CR><ESC>63i"<ESC><ESC>A<CR><ESC>`oi<SPACE>
+vnoremap <leader>title ydd63i"<ESC><ESC>o" =><SPACE><SPACE><ESC>moi<CR><ESC>63i"<ESC><ESC>A<CR><ESC>`opi<BS>
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Helper functions
@@ -432,30 +422,26 @@ endfunction
 "  Raza's custom commands
 set showmode                    " always show what mode we're currently editing in
 set nowrap                      " don't wrap lines
-set smarttab
 set tags=tags
-set softtabstop=4               " when hitting <BS>, pretend like a tab is removed, even if spaces
-set shiftwidth=4                " number of spaces to use for autoindenting
 set shiftround                  " use multiple of shiftwidth when indenting with '<' and '>'
 set copyindent                  " copy the previous indentation on autoindenting
 set number                      " always show line numbers
-set timeout timeoutlen=200 ttimeoutlen=100
+set notimeout
 set autowrite  "Save on buffer switch
 set mouse=a
 set clipboard=unnamedplus "register to global clipboard
-
+set splitright
 set pastetoggle=<F3>
-map <C-B> :w !php -l %<CR>
+noremap <C-B> :w !php -l %<CR>
 
 " delete a word with ctrl-w in insert mode
 inoremap <C-w> <esc>hdawi
 
 " Move up/down current line
-nmap <C-S-Up> :m -2<CR>
-nmap <C-S-Down> :m +1<CR>
+nnoremap <C-S-Up> :m -2<CR>
+nnoremap <C-S-Down> :m +1<CR>
 
-
-"insert and remove comments in visual and normal mode
+" insert and remove comments in visual and normal mode
 vnoremap <leader>ic :s/^/#/g<CR>:let @/ = ""<CR>
 noremap  <leader>ic :s/^/#/g<CR>:let @/ = ""<CR>
 vnoremap <leader>rc :s/^#//g<CR>:let @/ = ""<CR>
@@ -494,13 +480,21 @@ Plugin 'peitalin/vim-jsx-typescript'
 Plugin 'pangloss/vim-javascript'
 Plugin 'airblade/vim-gitgutter'
 Plugin 'godlygeek/tabular'
-Bundle "daylerees/colour-schemes", { "rtp": "vim/" }
-"Plugin 'tpope/vim-fugitive'
-"Plugin 'rstacruz/sparkup', {'rtp': 'vim/'}
-"Plugin 'scrooloose/syntastic'
-call vundle#end()            " required
+Plugin 'tomtom/tcomment_vim'
+Plugin 'nathanaelkane/vim-indent-guides'
+Plugin 'tpope/vim-eunuch'
+Plugin 'hzchirs/vim-material'
+Plugin 'daylerees/colour-schemes', { 'rtp': 'vim/' }
+call vundle#end()
 syntax enable on
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Theme 
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+set background=dark
 colorscheme gloom-contrast
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Airline Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -512,6 +506,20 @@ let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#fnamemod = ':t'
 
 let g:UltiSnipsExpandTrigger="<tab>"
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => vim-multiple-cursors Configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:multi_cursor_use_default_mapping = 0
+let g:multi_cursor_start_word_key      = '<C-n>'
+let g:multi_cursor_select_all_word_key = '<A-j>'
+let g:multi_cursor_start_key           = 'g<C-n>'
+let g:multi_cursor_select_all_key      = 'g<A-j>'
+let g:multi_cursor_next_key            = '<C-n>'
+let g:multi_cursor_prev_key            = '<C-p>'
+let g:multi_cursor_skip_key            = '<C-x>'
+let g:multi_cursor_quit_key            = '<Esc>'
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => CtrlP Configurations
@@ -528,19 +536,19 @@ let g:ctrlp_custom_ignore = {
 let g:ctrlp_working_path_mode = 'r'
 
 " Use a leader instead of the actual named binding
-nmap <leader>p :CtrlP<cr>
+nnoremap <leader>p :CtrlP<cr>
 
 " Easy bindings for its various modes
-nmap <leader>bb :CtrlPBuffer<cr>
-nmap <leader>bm :CtrlPMixed<cr>
-nmap <leader>bs :CtrlPMRU<cr>
+nnoremap <leader>bb :CtrlPBuffer<cr>
+nnoremap <leader>bm :CtrlPMixed<cr>
+nnoremap <leader>bs :CtrlPMRU<cr>
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => NERDTree Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 autocmd StdinReadPre * let s:std_in=1
 autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
-"map <C-n> :NERDTreeToggle<CR>
+"noremap <C-n> :NERDTreeToggle<CR>
 nnoremap <silent> <expr> <C-b> g:NERDTree.IsOpen() ? "\:NERDTreeClose<CR>" : bufexists(expand('%')) ? "\:NERDTreeFind<CR>" : "\:NERDTree<CR>"
 
 "ctrlp.vim plugin

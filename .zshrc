@@ -1,8 +1,9 @@
+#export TERM="xterm-256color"
 export LOCAL_CONFIG="/home/${USER}/.config"
 export ZSH="${LOCAL_CONFIG}/oh-my-zsh"
 export ADOTDIR="${LOCAL_CONFIG}/antigen"
 export PATH="/opt/anaconda3/bin:${PATH}"
-
+source /home/"${USER}"/.dotfiles/.theme
 #=======================================================================================
 # Basic Settings
 #=======================================================================================
@@ -21,7 +22,7 @@ fi
 # Antigen
 #=======================================================================================
 source "$ADOTDIR"/antigen.zsh
-
+export TERM="xterm-256color"
 # Load the oh-my-zsh's library.
 antigen use oh-my-zsh
 
@@ -41,6 +42,7 @@ BULLETTRAIN_TIME_12HR=true
 BULLETTRAIN_CONTEXT_DEFAULT_USER="$USER"
 BULLETTRAIN_DIR_EXTENDED=0
 antigen theme https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train
+#antigen theme bhilburn/powerlevel9k powerlevel9k
 
 # Tell antigen that you're done.
 antigen apply
@@ -62,8 +64,6 @@ fi
 if [ -f $HOME/.bash_local ]; then
     source $HOME/.bash_local
 fi
-
-
 
 # Load fzf
 [ -f "${LOCAL_CONFIG}"/fzf/.fzf.zsh ] && source "${LOCAL_CONFIG}"/fzf/.fzf.zsh
