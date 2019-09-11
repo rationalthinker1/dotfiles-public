@@ -115,8 +115,8 @@ set ruler
 set cmdheight=2
 
 " Use tabs to switch between brackets
-nnoremap <tab> %
-vnoremap <tab> %
+"nnoremap <tab> %
+"vnoremap <tab> %
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Buffer Settings
@@ -270,6 +270,9 @@ autocmd BufReadPost *
 " Remember info about open buffers on close
 set viminfo^=%
 
+" NOT WORKING. jumping list aliases
+nnoremap <C-A-q> <C-o>
+nnoremap <C-A-e> <C-i>
 
 """"""""""""""""""""""""""""""
 " => Status line
@@ -368,7 +371,11 @@ noremap <leader>pp :setlocal paste!<cr>
 nnoremap <leader>title 63i"<esc><esc>o" =><space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`oi<space>
 vnoremap <leader>title ydd63i"<esc><esc>o" =><space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`opi<bs>
 
+" copy current line while in insert mode
+inoremap <C-d> <esc>yypi
 
+" clears content from the cursor to the end while in insert mode
+inoremap <C-c> <esc>lc$
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Helper functions
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -491,6 +498,7 @@ Plugin 'nathanaelkane/vim-indent-guides'
 Plugin 'tpope/vim-eunuch'
 Plugin 'hzchirs/vim-material'
 Plugin 'daylerees/colour-schemes', { 'rtp': 'vim/' }
+Plugin 'Valloric/YouCompleteMe'
 call vundle#end()
 syntax enable on
 
@@ -498,7 +506,11 @@ syntax enable on
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Theme 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-colorscheme gloom-contrast
+"colorscheme gloom-contrast
+let g:material_style='palenight'
+set background=dark
+colorscheme vim-material
+let g:airline_theme='material'
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -511,7 +523,7 @@ let g:airline#extensions#tabline#enabled = 1
 " Show just the filename
 let g:airline#extensions#tabline#fnamemod = ':t'
 
-let g:UltiSnipsExpandTrigger="<tab>"
+let g:UltiSnipsExpandTrigger="<C-Tab>"
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -560,3 +572,8 @@ autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
 nnoremap <silent> <expr> <C-b> g:NERDTree.IsOpen() ? "\:NERDTreeClose<CR>" : bufexists(expand('%')) ? "\:NERDTreeFind<CR>" : "\:NERDTree<CR>"
 
 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Yggdroot/indentLine
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:indentLine_color_term = 239
+let g:indentLine_char = '┊'
