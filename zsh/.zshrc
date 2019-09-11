@@ -54,15 +54,15 @@ bashcompinit -i
 #=======================================================================================
 # Aliases and functions
 #=======================================================================================
-if [ -f $HOME/.bash_aliases ]; then
-    source $HOME/.bash_aliases
+if [ -f "${LOCAL_CONFIG}"/zsh/aliases.zsh ]; then
+    source "${LOCAL_CONFIG}"/zsh/aliases.zsh
 fi
 
 #=======================================================================================
 # Local Aliases and functions
 #=======================================================================================
-if [ -f $HOME/.bash_local ]; then
-    source $HOME/.bash_local
+if [ -f "${LOCAL_CONFIG}"/zsh/local.zsh ]; then
+    source "${LOCAL_CONFIG}"/zsh/local.zsh
 fi
 
 # Load fzf

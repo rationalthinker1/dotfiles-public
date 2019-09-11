@@ -92,6 +92,9 @@ set novisualbell
 set t_vb=
 set tm=500
 
+" Show the keys that vim is receiving (what you are typing) in command
+set showcmd
+
 "  applies substitutions globally by default on lines. For example, instead of :%s/foo/bar/g you just type :%s/foo/bar/
 set gdefault
 
@@ -118,6 +121,9 @@ set cmdheight=2
 "nnoremap <tab> %
 "vnoremap <tab> %
 
+" Allow using alt keys in vim for mapping
+set winaltkeys=no
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Buffer Settings
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -134,6 +140,9 @@ nnoremap <M-PageDown> :bnext<CR>
 
 " Move to the previous buffer
 nnoremap <M-PageUp> :bprevious<CR>
+
+" Close buffer like closing Chrome's tab
+nnoremap <C-w> :bd<CR>
 
 " Close the current buffer and move to the previous one
 " This replicates the idea of closing a tab
@@ -245,6 +254,13 @@ noremap <leader>tm :tabmove
 nnoremap <S-2> :tabn<CR>
 nnoremap <S-4> :tabp<CR>
 nnoremap <S-3> :tabnew<CR>
+
+"function! Reindent_File()
+  "execute "normal! gg=G"
+"endfunction
+
+"nnoremap [^L :call Reindent_File()<cr>
+"nnoremap ^[^L :call Reindent_File()<cr>
 
 " Opens a new tab with the current buffer's path
 " Super useful when editing files in the same directory
@@ -497,8 +513,19 @@ Plugin 'tpope/vim-eunuch'
 Plugin 'hzchirs/vim-material'
 Plugin 'daylerees/colour-schemes', { 'rtp': 'vim/' }
 Plugin 'Valloric/YouCompleteMe'
+Plugin 'ekalinin/Dockerfile.vim'
+Plugin 'stephpy/vim-yaml'
+Plugin 'gisphm/vim-gitignore'
+Plugin 'luochen1990/rainbow'
+Plugin 'tmux-plugins/vim-tmux'
 call vundle#end()
 syntax enable on
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => YouCompleteMe Configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:ycm_autoclose_preview_window_after_insertion = 1
+let g:ycm_autoclose_preview_window_after_completion = 1
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -515,13 +542,12 @@ let g:airline_theme='material'
 " => Airline Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:airline_theme = 'deus'
+let g:UltiSnipsExpandTrigger="<C-Tab>"
 let g:airline_powerline_fonts = 1
 " Enable the list of buffers
 let g:airline#extensions#tabline#enabled = 1
 " Show just the filename
 let g:airline#extensions#tabline#fnamemod = ':t'
-
-let g:UltiSnipsExpandTrigger="<C-Tab>"
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -564,10 +590,65 @@ nnoremap <leader>bs :CtrlPMRU<cr>
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => NERDTree Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"noremap <C-n> :NERDTreeToggle<CR>
 autocmd StdinReadPre * let s:std_in=1
 autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
-"noremap <C-n> :NERDTreeToggle<CR>
 nnoremap <silent> <expr> <C-b> g:NERDTree.IsOpen() ? "\:NERDTreeClose<CR>" : bufexists(expand('%')) ? "\:NERDTreeFind<CR>" : "\:NERDTree<CR>"
+let NERDTreeMinimalUI = 1
+let NERDTreeDirArrows = 1
+let g:nerd_preview_enabled = 1
+let g:preview_last_buffer  = 0
+
+function! NerdTreePreview()
+  " Only on nerdtree window
+  if (&ft ==# 'nerdtree')
+    " Get filename
+    let l:filename = substitute(getline("."), "^\\s\\+\\|\\s\\+$","","g")
+
+    " Preview if it is not a folder
+    let l:lastchar = strpart(l:filename, strlen(l:filename) - 1, 1)
+    if (l:lastchar != "/" && strpart(l:filename, 0 ,2) != "..")
+
+      let l:store_buffer_to_close = 1
+      if (bufnr(l:filename) > 0)
+        " Don't close if the buffer is already open
+        let l:store_buffer_to_close = 0
+      endif
+
+      " Do preview
+      execute "normal go"
+
+      " Close previews buffer
+      if (g:preview_last_buffer > 0)
+        execute "bwipeout " . g:preview_last_buffer
+        let g:preview_last_buffer = 0
+      endif
+
+      " Set last buffer to close it later
+      if (l:store_buffer_to_close)
+        let g:preview_last_buffer = bufnr(l:filename)
+      endif
+    endif
+  elseif (g:preview_last_buffer > 0)
+    " Close last previewed buffer
+    let g:preview_last_buffer = 0
+  endif
+endfunction
+
+function! NerdPreviewToggle()
+  if (g:nerd_preview_enabled)
+    let g:nerd_preview_enabled = 0
+    augroup nerdpreview
+      autocmd!
+      augroup END
+  else
+    let g:nerd_preview_enabled = 1
+    augroup nerdpreview
+      autocmd!
+      autocmd CursorMoved * nested call NerdTreePreview()
+    augroup END
+  endif
+endfunction
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -575,3 +656,8 @@ nnoremap <silent> <expr> <C-b> g:NERDTree.IsOpen() ? "\:NERDTreeClose<CR>" : buf
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:indentLine_color_term = 239
 let g:indentLine_char = '┊'
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Rainbow Parentheses
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:rainbow_active = 1
