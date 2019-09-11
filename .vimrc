@@ -130,10 +130,10 @@ set hidden
 nnoremap <leader>T :enew<cr>
 
 " Move to the next buffer
-nnoremap <leader>l :bnext<CR>
+nnoremap <M-PageDown> :bnext<CR>
 
 " Move to the previous buffer
-nnoremap <leader>h :bprevious<CR>
+nnoremap <M-PageUp> :bprevious<CR>
 
 " Close the current buffer and move to the previous one
 " This replicates the idea of closing a tab
@@ -153,8 +153,6 @@ set background=dark
 set termguicolors
 set termencoding=utf-8
 set guifont=Ubuntu\ Mono\ derivative\ Powerline:10
-
-let g:materialmonokai_subtle_spell=1
 
 " Set extra options when running in GUI mode
 if has("gui_running")
