@@ -477,49 +477,46 @@ noremap  <leader>rc :s/^#//g<CR>:let @/ = ""<CR>
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => VundleVim Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-set nocompatible              " be iMproved, required
-filetype off                  " required
-
-set rtp+=$HOME/.vim/bundle/Vundle.vim
 set rtp+=~/.fzf
-call vundle#begin()
-Plugin 'VundleVim/Vundle.vim'
-Plugin 'httplog'
-Plugin 'apachelogs.vim'
-Plugin 'apachestyle'
-Plugin 'stanangeloff/php.vim'
-Plugin 'shawncplus/phpcomplete.vim'
-Plugin 'scrooloose/nerdtree'
-Plugin 'noahfrederick/vim-laravel'
-Plugin 'jwalton512/vim-blade'
-Plugin 'sirver/ultisnips'
-Plugin 'honza/vim-snippets'
-Plugin 'Yggdroot/indentLine'
-Plugin 'junegunn/fzf.vim'
-Plugin 'vim-airline/vim-airline'
-Plugin 'vim-airline/vim-airline-themes'
-Plugin 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
-Plugin 'terryma/vim-multiple-cursors'
-Plugin 'ctrlpvim/ctrlp.vim'
-Plugin 'quramy/tsuquyomi'
-Plugin 'leafgarland/typescript-vim'
-Plugin 'peitalin/vim-jsx-typescript'
-Plugin 'pangloss/vim-javascript'
-Plugin 'airblade/vim-gitgutter'
-Plugin 'godlygeek/tabular'
-Plugin 'scrooloose/nerdcommenter'
-Plugin 'nathanaelkane/vim-indent-guides'
-Plugin 'tpope/vim-eunuch'
-Plugin 'hzchirs/vim-material'
-Plugin 'daylerees/colour-schemes', { 'rtp': 'vim/' }
-Plugin 'Valloric/YouCompleteMe'
-Plugin 'ekalinin/Dockerfile.vim'
-Plugin 'stephpy/vim-yaml'
-Plugin 'gisphm/vim-gitignore'
-Plugin 'luochen1990/rainbow'
-Plugin 'tmux-plugins/vim-tmux'
-call vundle#end()
-syntax enable on
+call plug#begin('~/.vim/plugged')
+Plug 'vim-scripts/httplog'
+Plug 'vim-scripts/apachelogs.vim'
+Plug 'vim-scripts/apachestyle'
+Plug 'stanangeloff/php.vim'
+Plug 'shawncplus/phpcomplete.vim'
+Plug 'scrooloose/nerdtree'
+Plug 'noahfrederick/vim-laravel'
+Plug 'jwalton512/vim-blade'
+Plug 'sirver/ultisnips'
+Plug 'honza/vim-snippets'
+Plug 'Yggdroot/indentLine'
+Plug 'junegunn/fzf.vim'
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+Plug 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
+Plug 'terryma/vim-multiple-cursors'
+Plug 'ctrlpvim/ctrlp.vim'
+Plug 'quramy/tsuquyomi'
+Plug 'leafgarland/typescript-vim'
+Plug 'peitalin/vim-jsx-typescript'
+Plug 'pangloss/vim-javascript'
+Plug 'airblade/vim-gitgutter'
+Plug 'godlygeek/tabular'
+Plug 'scrooloose/nerdcommenter'
+Plug 'nathanaelkane/vim-indent-guides'
+Plug 'tpope/vim-eunuch'
+Plug 'hzchirs/vim-material'
+Plug 'daylerees/colour-schemes', { 'rtp': 'vim/' }
+Plug 'Valloric/YouCompleteMe', { 'do': 'python3 ./install.py' }
+Plug 'ekalinin/Dockerfile.vim'
+Plug 'stephpy/vim-yaml'
+Plug 'gisphm/vim-gitignore'
+Plug 'luochen1990/rainbow'
+Plug 'tmux-plugins/vim-tmux'
+Plug 'sheerun/vim-polyglot'
+Plug 'mileszs/ack.vim'
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
+call plug#end()
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => YouCompleteMe Configurations

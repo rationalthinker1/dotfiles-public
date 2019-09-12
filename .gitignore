@@ -1,1 +1,5 @@
-.vim/bundle/
+.vim/bundle
+.vim/plugged
+.ssh.bak
+.ssh/known_hosts
+
