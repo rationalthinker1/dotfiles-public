@@ -407,7 +407,14 @@ nnoremap <leader>title 63i"<esc><esc>o" =><space><space><esc>moi<cr><esc>63i"<es
 vnoremap <leader>title ydd63i"<esc><esc>o" =><space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`opi<bs>
 
 " copy current line while in insert mode
-inoremap <C-d> <esc>yypi
+function! PasteLineBelow()
+	let l:y = line('.')
+	let l:x = col('.')
+	execute "normal! yyp"
+	cal cursor(l:y+1, l:x+1)
+	call feedkeys('i')
+endfunc
+inoremap <C-d> <esc>:call PasteLineBelow()<cr>
 
 " clears content from the cursor to the end while in insert mode
 inoremap <C-c> <esc>lc$
@@ -536,7 +543,21 @@ Plug 'sheerun/vim-polyglot'
 Plug 'mileszs/ack.vim'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'evturn/cosmic-barf'
+Plug 'ludovicchabant/vim-gutentags'
+Plug 'w0rp/ale'
 call plug#end()
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Vim-Gutentags Configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Exclude css, html, js files from generating tag files
+let g:gutentags_exclude = ['*.css', '*.html', '*.js', '*.json', '*.xml',
+                            \ '*.phar', '*.ini', '*.rst', '*.md',
+                            \ '*vendor/*/test*', '*vendor/*/Test*',
+                            \ '*vendor/*/fixture*', '*vendor/*/Fixture*',
+                            \ '*var/cache*', '*var/log*']
+" Where to store tag files
+let g:gutentags_cache_dir = '~/.vim/gutentags'
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -544,7 +565,8 @@ call plug#end()
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:ycm_autoclose_preview_window_after_insertion = 1
 let g:ycm_autoclose_preview_window_after_completion = 1
-
+let g:ycm_keep_logfiles = 1
+let g:ycm_log_level = 'debug'
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Theme
