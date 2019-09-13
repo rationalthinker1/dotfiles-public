@@ -280,7 +280,7 @@ nnoremap <S-3> :tabnew<CR>
 "nnoremap [^L :call Reindent_File()<cr>
 "nnoremap ^[^L :call Reindent_File()<cr>
 
-" change current file to working directory  
+" change current file to working directory
 nnoremap <leader>cd :cd %:p:h<CR>:pwd<CR>
 
 " Opens a new tab with the current buffer's path
@@ -402,7 +402,7 @@ noremap <leader>q :e ~/buffer<cr>
 " Toggle paste mode on and off
 noremap <leader>pp :setlocal paste!<cr>
 
-" creates title banner 
+" creates title banner
 nnoremap <leader>title 63i"<esc><esc>o" =><space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`oi<space>
 vnoremap <leader>title ydd63i"<esc><esc>o" =><space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`opi<bs>
 
@@ -547,7 +547,7 @@ let g:ycm_autoclose_preview_window_after_completion = 1
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => Theme 
+" => Theme
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "colorscheme gloom-contrast
 syntax enable
