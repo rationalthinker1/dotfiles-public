@@ -151,24 +151,37 @@ nnoremap <leader>bq :bp <BAR> bd #<CR>
 " Show all open buffers and their status
 nnoremap <leader>bl :ls<CR>
 
+" Setup undo history persistent
+set undofile                " Save undos after file closes
+set undodir=$HOME/.vim/undo " where to save undo histories
+set undolevels=1000         " How many undos
+set undoreload=10000        " number of lines to save for undo
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Colors and Fonts
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Enable syntax highlighting
-"syntax enable
-
+syntax enable
 set background=dark
 set termguicolors
 set termencoding=utf-8
 set guifont=Ubuntu\ Mono\ derivative\ Powerline:10
-
+set guifont=IBM\ Plex\ Mono\ Semi-Bold\ 10
 " Set extra options when running in GUI mode
 if has("gui_running")
-    set guioptions-=T
-    set guioptions+=e
-    set t_Co=256
-    set guitablabel=%M\ %t
+	set guioptions=abegmrLtT
+	"set guioptions-=T
+	set guioptions+=e
+	set t_Co=256
+	set guitablabel=%M\ %t
+	" Show popup menu if right click.
+    set mousemodel=popup
+
+    " Don't focus the window when the mouse pointer is moved.
+    set nomousefocus
+    map <S-Insert> <MiddleMouse>
+    map! <S-Insert> <MiddleMouse>
 endif
 
 " Set utf8 as standard encoding and en_US as the standard language
@@ -239,8 +252,13 @@ nnoremap <A-Down> <C-W>k
 " Close the current buffer
 noremap <leader>bd :Bclose<cr>
 
-" Reloads vimrc
-nnoremap <leader>rr :w<CR>:source $MYVIMRC<CR>
+" Automatically reload vimrc when it's saved
+augroup vimrc
+	autocmd!
+	autocmd BufWritePost .vimrc :echom "Reloading .vimrc"
+	autocmd BufWritePost .vimrc :sleep 500m
+	autocmd BufWritePost .vimrc :source $MYVIMRC
+augroup END
 
 " Close all the buffers
 noremap <leader>ba :1,1000 bd!<cr>
@@ -261,6 +279,9 @@ nnoremap <S-3> :tabnew<CR>
 
 "nnoremap [^L :call Reindent_File()<cr>
 "nnoremap ^[^L :call Reindent_File()<cr>
+
+" change current file to working directory  
+nnoremap <leader>cd :cd %:p:h<CR>:pwd<CR>
 
 " Opens a new tab with the current buffer's path
 " Super useful when editing files in the same directory
@@ -475,7 +496,7 @@ vnoremap <leader>rc :s/^#//g<CR>:let @/ = ""<CR>
 noremap  <leader>rc :s/^#//g<CR>:let @/ = ""<CR>
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => VundleVim Configurations
+" => Vim-Plug Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 set rtp+=~/.fzf
 call plug#begin('~/.vim/plugged')
@@ -514,7 +535,9 @@ Plug 'tmux-plugins/vim-tmux'
 Plug 'sheerun/vim-polyglot'
 Plug 'mileszs/ack.vim'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
+Plug 'evturn/cosmic-barf'
 call plug#end()
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => YouCompleteMe Configurations
@@ -527,11 +550,14 @@ let g:ycm_autoclose_preview_window_after_completion = 1
 " => Theme 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "colorscheme gloom-contrast
-let g:material_style='palenight'
+syntax enable
 set background=dark
-colorscheme vim-material
 let g:airline_theme='material'
+"colorscheme vim-material
+"let g:material_style='palenight'
 
+colorscheme cosmic-barf
+let g:colors_name = 'cosmic-barf'
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Airline Configurations
@@ -589,10 +615,11 @@ nnoremap <leader>bs :CtrlPMRU<cr>
 autocmd StdinReadPre * let s:std_in=1
 autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
 nnoremap <silent> <expr> <C-b> g:NERDTree.IsOpen() ? "\:NERDTreeClose<CR>" : bufexists(expand('%')) ? "\:NERDTreeFind<CR>" : "\:NERDTree<CR>"
+let NERDTreeShowHidden = 1
 let NERDTreeMinimalUI = 1
 let NERDTreeDirArrows = 1
 let g:nerd_preview_enabled = 1
-let g:preview_last_buffer  = 0
+let g:preview_last_buffer = 0
 
 function! NerdTreePreview()
   " Only on nerdtree window

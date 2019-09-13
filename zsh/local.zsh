@@ -2,7 +2,7 @@
 export GOPATH="$HOME/go:/opt"
 export GOROOT="/usr/local/go"
 export JAVA_HOME="/usr/lib/jvm/jdk-12.0.2"
-export PATH="$HOME/.cargo/bin:/opt/lampp/bin:$PATH:/usr/local/go/bin:/opt/anaconda/bin"
+export PATH="$HOME/.cargo/bin:/opt/lampp/bin:/usr/local/go/bin:/opt/anaconda3/bin:$PATH"
 
 export NVM_DIR="$HOME/.nvm"
 [ -f "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
@@ -15,4 +15,4 @@ alias ews='sshrc -p 222 raza@159.203.8.43'
 alias str='sshrc -p 222 raza@178.128.227.95'
 alias pcs='sshrc -p 22 root@142.93.124.131'
 alias html='cd /opt/lampp/htdocs'
-export PATH="$HOME/.cargo/bin:$PATH"
+
