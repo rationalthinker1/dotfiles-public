@@ -683,3 +683,13 @@ let g:indentLine_char = '┊'
 " => Rainbow Parentheses
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:rainbow_active = 1
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Tabular Configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+vnoremap a= :Tabularize /=<CR>
+vnoremap a; :Tabularize /::<CR>
+vnoremap a- :Tabularize /=><CR>
+vnoremap a, :Tabularize /<-<CR>
+vnoremap al :Tabularize /[\[\\|,]<CR>
+
