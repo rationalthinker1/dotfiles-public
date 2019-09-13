@@ -3,6 +3,6 @@
 .ssh.bak
 .ssh/known_hosts
 .oh-my-zsh
-
+tmp
 .vim/undo/*
 !.vim/undo/.gitkeep

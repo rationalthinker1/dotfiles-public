@@ -544,12 +544,15 @@ Plug 'Valloric/YouCompleteMe', { 'do': 'python3 ./install.py' }
 Plug 'ekalinin/Dockerfile.vim'
 Plug 'stephpy/vim-yaml'
 Plug 'luochen1990/rainbow'
+Plug 'tmux-plugins/vim-tmux-focus-events'
 Plug 'tmux-plugins/vim-tmux'
 Plug 'sheerun/vim-polyglot'
 Plug 'mileszs/ack.vim'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'evturn/cosmic-barf'
 Plug 'w0rp/ale'
+Plug 'bronson/vim-trailing-whitespace'
+Plug 'chr4/nginx.vim'
 call plug#end()
 
 
