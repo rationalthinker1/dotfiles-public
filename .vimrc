@@ -224,7 +224,6 @@ set tw=500
 " => Visual mode related
 """"""""""""""""""""""""""""""
 " Visual mode pressing * or # searches for the current selection
-" Super useful! From an idea by Michael Naumann
 vnoremap <silent> * :call VisualSelection('f')<CR>
 vnoremap <silent> # :call VisualSelection('b')<CR>
 
@@ -252,12 +251,19 @@ nnoremap <A-Down> <C-W>k
 " Close the current buffer
 noremap <leader>bd :Bclose<cr>
 
+" auto place mark on file based on text
+function! AutoPlaceMarkBasedOnText(text, code)
+	let l:line = search(a:text, 'nc')
+	call setpos(a:code, [0,l:line,1,0])
+endfunction
+
 " Automatically reload vimrc when it's saved
 augroup vimrc
 	autocmd!
 	autocmd BufWritePost .vimrc :echom "Reloading .vimrc"
 	autocmd BufWritePost .vimrc :sleep 500m
 	autocmd BufWritePost .vimrc :source $MYVIMRC
+	autocmd BufWritePost .vimrc :call AutoPlaceMarkBasedOnText('^call plug#end()', "'p")
 augroup END
 
 " Close all the buffers
@@ -528,8 +534,8 @@ Plug 'leafgarland/typescript-vim'
 Plug 'peitalin/vim-jsx-typescript'
 Plug 'pangloss/vim-javascript'
 Plug 'airblade/vim-gitgutter'
-Plug 'godlygeek/tabular'
 Plug 'scrooloose/nerdcommenter'
+Plug 'junegunn/vim-easy-align'
 Plug 'nathanaelkane/vim-indent-guides'
 Plug 'tpope/vim-eunuch'
 Plug 'hzchirs/vim-material'
@@ -543,21 +549,8 @@ Plug 'sheerun/vim-polyglot'
 Plug 'mileszs/ack.vim'
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'evturn/cosmic-barf'
-Plug 'ludovicchabant/vim-gutentags'
 Plug 'w0rp/ale'
 call plug#end()
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => Vim-Gutentags Configurations
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Exclude css, html, js files from generating tag files
-let g:gutentags_exclude = ['*.css', '*.html', '*.js', '*.json', '*.xml',
-                            \ '*.phar', '*.ini', '*.rst', '*.md',
-                            \ '*vendor/*/test*', '*vendor/*/Test*',
-                            \ '*vendor/*/fixture*', '*vendor/*/Fixture*',
-                            \ '*var/cache*', '*var/log*']
-" Where to store tag files
-let g:gutentags_cache_dir = '~/.vim/gutentags'
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -567,7 +560,17 @@ let g:ycm_autoclose_preview_window_after_insertion = 1
 let g:ycm_autoclose_preview_window_after_completion = 1
 let g:ycm_keep_logfiles = 1
 let g:ycm_log_level = 'debug'
-
+let g:ycm_filetype_blacklist = {
+    \ 'tagbar' : 1,
+    \ 'gitcommit' : 1,
+	\ 'qf': 1,
+	\ 'notes': 1,
+	\ 'markdown': 1,
+	\ 'unite': 1,
+	\ 'text': 1,
+	\ 'vimwiki': 1,
+	\ '.vimrc': 1,
+    \}
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Theme
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -707,11 +710,10 @@ let g:indentLine_char = '┊'
 let g:rainbow_active = 1
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => Tabular Configurations
+" => EasyAlign Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-vnoremap a= :Tabularize /=<CR>
-vnoremap a; :Tabularize /::<CR>
-vnoremap a- :Tabularize /=><CR>
-vnoremap a, :Tabularize /<-<CR>
-vnoremap al :Tabularize /[\[\\|,]<CR>
+" Start interactive EasyAlign in visual mode (e.g. vipga)
+xmap ga <Plug>(EasyAlign)
 
+" Start interactive EasyAlign for a motion/text object (e.g. gaip)
+nmap ga <Plug>(EasyAlign)

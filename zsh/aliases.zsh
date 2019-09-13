@@ -11,10 +11,16 @@ if  [ -x "$(command -v exa)" ]; then
 	alias ls='exa --color=auto'
 
 	## Use a long listing format ##
-	alias l="exa --color=auto -lh --group-directories-first" # List all, with human readable filesizesexaalias ll="ls --color=auto -lah --group-directories-first" # List all, with human readable filesizesexaalias llt="ls --color=auto -lahFtr --group-directories-first" # Same as above, but ordered by date
-	alias ll="exa --color=auto -lah --group-directories-first" # List all, with human readable filesizes
-	alias lls="exa --color=auto -lahF --sort size --group-directories-first" # Same as above, but ordered by size
-	alias llt="exa --color=auto -lahFr --sort oldest --group-directories-first" # Same as above, but ordered by date
+	# List all, with human readable filesizes
+	alias l="exa --color=auto --long --header --group-directories-first"
+	# List all, with human readable filesizes
+	alias ll="exa --color=auto --long --header --all --group-directories-first"
+	# Same as above, but ordered by size
+	alias lls="exa --color=auto --long --header --all --sort size --group-directories-first"
+	# Same as above, but ordered by date
+	alias llt="exa --color=auto --long --header --all --sort oldest --group-directories-first"
+	# Show tree level 2
+	alias lt="exa --color=auto --long --header --all --tree --level=2 --group-directories-first"
 
 	## Show hidden files ##
 	alias l.='exa -d .* --color=auto'
