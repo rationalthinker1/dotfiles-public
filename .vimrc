@@ -1,42 +1,71 @@
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Maintainer:
-"       Amir Salihefendic
-"       http://amix.dk - amix@amix.dk
-"
-" Version:
-"       5.0 - 29/05/12 15:43:36
-"
-" Blog_post:
-"       http://amix.dk/blog/post/19691#The-ultimate-Vim-configuration-on-Github
-"
-" Awesome_version:
-"       Get this config, nice color schemes and lots of plugins!
-"
-"       Install the awesome version from:
-"
-"           https://github.com/amix/vimrc
-"
-" Syntax_highlighted:
-"       http://amix.dk/vim/vimrc.html
-"
-" Raw_version:
-"       http://amix.dk/vim/vimrc.txt
-"
-" Sections:
-"    -> General
-"    -> VIM user interface
-"    -> Colors and Fonts
-"    -> Files and backups
-"    -> Text, tab and indent related
-"    -> Visual mode related
-"    -> Moving around, tabs and buffers
-"    -> Status line
-"    -> Editing mappings
-"    -> vimgrep searching and cope displaying
-"    -> Spell checking
-"    -> Misc
-"    -> Helper functions
-"
+" => Vim-Plug Configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Automatically install vim-plug and run PlugInstall if vim-plug not found
+if empty(glob('~/.vim/autoload/plug.vim'))
+  silent !curl -fLo ~/.vim/autoload/plug.vim --create-dirs
+    \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+  autocmd VimEnter * PlugInstall | source $MYVIMRC
+endif
+
+call plug#begin('~/.vim/plugged')
+Plug 'vim-scripts/httplog'
+Plug 'vim-scripts/apachelogs.vim'
+Plug 'vim-scripts/apachestyle'
+Plug 'stanangeloff/php.vim'
+Plug 'shawncplus/phpcomplete.vim'
+Plug 'scrooloose/nerdtree'
+Plug 'noahfrederick/vim-laravel'
+Plug 'jwalton512/vim-blade'
+Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
+Plug 'Yggdroot/indentLine'
+Plug 'junegunn/fzf.vim'
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+Plug 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
+Plug 'terryma/vim-multiple-cursors'
+Plug 'ctrlpvim/ctrlp.vim'
+Plug 'quramy/tsuquyomi'
+Plug 'leafgarland/typescript-vim'
+Plug 'peitalin/vim-jsx-typescript'
+Plug 'pangloss/vim-javascript'
+Plug 'airblade/vim-gitgutter'
+Plug 'scrooloose/nerdcommenter'
+Plug 'junegunn/vim-easy-align'
+Plug 'nathanaelkane/vim-indent-guides'
+Plug 'tpope/vim-eunuch'
+Plug 'hzchirs/vim-material'
+Plug 'daylerees/colour-schemes', { 'rtp': 'vim/' }
+Plug 'ekalinin/Dockerfile.vim'
+Plug 'stephpy/vim-yaml'
+Plug 'luochen1990/rainbow'
+Plug 'tmux-plugins/vim-tmux-focus-events'
+Plug 'tmux-plugins/vim-tmux'
+Plug 'sheerun/vim-polyglot'
+Plug 'mileszs/ack.vim'
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
+Plug 'evturn/cosmic-barf'
+Plug 'w0rp/ale'
+Plug 'bronson/vim-trailing-whitespace'
+Plug 'chr4/nginx.vim'
+Plug 'Shougo/deoplete.nvim'
+Plug 'roxma/nvim-yarp'
+Plug 'roxma/vim-hug-neovim-rpc'
+Plug 'deoplete-plugins/deoplete-zsh'
+Plug 'tbodt/deoplete-tabnine', { 'do': './install.sh' }
+Plug 'carlitux/deoplete-ternjs', { 'do': 'npm install -g tern' }
+Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
+Plug 'kristijanhusak/deoplete-phpactor'
+Plug 'shougo/neco-vim'
+Plug 'altercation/vim-colors-solarized'
+call plug#end()
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" => Deoplete Configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:deoplete#enable_at_startup = 1
+
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => General
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -95,9 +124,11 @@ set tm=500
 " Show the keys that vim is receiving (what you are typing) in command
 set showcmd
 
-"  applies substitutions globally by default on lines. For example, instead of :%s/foo/bar/g you just type :%s/foo/bar/
+" applies substitutions globally by default on lines. For example, instead of :%s/foo/bar/g you just type :%s/foo/bar/
 set gdefault
 
+" load fzf for vim
+set rtp+=~/.fzf
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => VIM user interface
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -111,7 +142,7 @@ set wildmode=longest:full,full
 " Ignore compiled files
 set wildignore=*.o,*~,*.pyc
 
-"Always show current position
+" always show current position
 set ruler
 
 " Height of the command bar
@@ -251,10 +282,18 @@ nnoremap <A-Down> <C-W>k
 " Close the current buffer
 noremap <leader>bd :Bclose<cr>
 
+function! SavePositionOfTextOnRegister(text)
+	let @p = search(a:text, 'nc')
+endfunction
+
 " auto place mark on file based on text
 function! AutoPlaceMarkBasedOnText(text, code)
-	let l:line = search(a:text, 'nc')
-	call setpos(a:code, [0,l:line,1,0])
+	let l:old_position = @p
+	let l:new_position = search(a:text, 'nc')
+	call setpos(a:code, [0,l:new_position,1,0])
+	if l:old_position != l:new_position
+		PlugInstall
+	endif
 endfunction
 
 " Automatically reload vimrc when it's saved
@@ -263,6 +302,7 @@ augroup vimrc
 	autocmd BufWritePost .vimrc :echom "Reloading .vimrc"
 	autocmd BufWritePost .vimrc :sleep 500m
 	autocmd BufWritePost .vimrc :source $MYVIMRC
+	autocmd BufReadPost  .vimrc :call SavePositionOfTextOnRegister('^call plug#end()')
 	autocmd BufWritePost .vimrc :call AutoPlaceMarkBasedOnText('^call plug#end()', "'p")
 augroup END
 
@@ -508,72 +548,6 @@ noremap  <leader>ic :s/^/#/g<CR>:let @/ = ""<CR>
 vnoremap <leader>rc :s/^#//g<CR>:let @/ = ""<CR>
 noremap  <leader>rc :s/^#//g<CR>:let @/ = ""<CR>
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => Vim-Plug Configurations
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-set rtp+=~/.fzf
-call plug#begin('~/.vim/plugged')
-Plug 'vim-scripts/httplog'
-Plug 'vim-scripts/apachelogs.vim'
-Plug 'vim-scripts/apachestyle'
-Plug 'stanangeloff/php.vim'
-Plug 'shawncplus/phpcomplete.vim'
-Plug 'scrooloose/nerdtree'
-Plug 'noahfrederick/vim-laravel'
-Plug 'jwalton512/vim-blade'
-Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
-Plug 'Yggdroot/indentLine'
-Plug 'junegunn/fzf.vim'
-Plug 'vim-airline/vim-airline'
-Plug 'vim-airline/vim-airline-themes'
-Plug 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
-Plug 'terryma/vim-multiple-cursors'
-Plug 'ctrlpvim/ctrlp.vim'
-Plug 'quramy/tsuquyomi'
-Plug 'leafgarland/typescript-vim'
-Plug 'peitalin/vim-jsx-typescript'
-Plug 'pangloss/vim-javascript'
-Plug 'airblade/vim-gitgutter'
-Plug 'scrooloose/nerdcommenter'
-Plug 'junegunn/vim-easy-align'
-Plug 'nathanaelkane/vim-indent-guides'
-Plug 'tpope/vim-eunuch'
-Plug 'hzchirs/vim-material'
-Plug 'daylerees/colour-schemes', { 'rtp': 'vim/' }
-Plug 'Valloric/YouCompleteMe', { 'do': 'python3 ./install.py' }
-Plug 'ekalinin/Dockerfile.vim'
-Plug 'stephpy/vim-yaml'
-Plug 'luochen1990/rainbow'
-Plug 'tmux-plugins/vim-tmux-focus-events'
-Plug 'tmux-plugins/vim-tmux'
-Plug 'sheerun/vim-polyglot'
-Plug 'mileszs/ack.vim'
-Plug 'neoclide/coc.nvim', {'branch': 'release'}
-Plug 'evturn/cosmic-barf'
-Plug 'w0rp/ale'
-Plug 'bronson/vim-trailing-whitespace'
-Plug 'chr4/nginx.vim'
-call plug#end()
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => YouCompleteMe Configurations
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-let g:ycm_autoclose_preview_window_after_insertion = 1
-let g:ycm_autoclose_preview_window_after_completion = 1
-let g:ycm_keep_logfiles = 1
-let g:ycm_log_level = 'debug'
-let g:ycm_filetype_blacklist = {
-    \ 'tagbar' : 1,
-    \ 'gitcommit' : 1,
-	\ 'qf': 1,
-	\ 'notes': 1,
-	\ 'markdown': 1,
-	\ 'unite': 1,
-	\ 'text': 1,
-	\ 'vimwiki': 1,
-	\ '.vimrc': 1,
-    \}
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Theme
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
