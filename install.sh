@@ -43,3 +43,22 @@ createSymlink "${BASE_DIR}/tmux" "${HOME}/.config/tmux"
 createSymlink "${BASE_DIR}/oh-my-zsh" "${HOME}/.config/oh-my-zsh"
 createSymlink "${BASE_DIR}/fzf" "${HOME}/.config/fzf"
 createSymlink "${BASE_DIR}/.Xresources" "${HOME}/.Xresources"
+
+# Installing zsh
+#if [ $(dpkg-query -W -f='${Status}' zsh 2>/dev/null | grep -c "ok installed") -eq 0 ];
+#then
+	#echo "installing zsh..."
+	#sudo apt-get --assume-yes --no-install-recommends install zsh
+	#sudo echo /usr/bin/zsh | sudo tee -a /etc/shells
+	#sudo chsh -s /usr/bin/zsh
+#else
+	#echo "zsh is already installed... moving on"
+	#echo "checking of zsh is your default shell..."
+	#if [ $SHELL != "/usr/bin/zsh" ] || [ $SHELL != "/bin/zsh" ]; then
+		#echo "zsh is not your default shell";
+		#echo "making zsh your default shell...";
+		#sudo chsh -s /usr/bin/zsh
+	#else
+		#echo "zsh is already your default shell... moving on";
+	#fi
+#fi

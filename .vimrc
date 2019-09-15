@@ -45,7 +45,7 @@ Plug 'sheerun/vim-polyglot'
 Plug 'mileszs/ack.vim'
 "Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'evturn/cosmic-barf'
-Plug 'w0rp/ale'
+Plug 'dense-analysis/ale'
 Plug 'bronson/vim-trailing-whitespace'
 Plug 'chr4/nginx.vim'
 Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
