@@ -6,3 +6,4 @@
 tmp
 .vim/undo/*
 !.vim/undo/.gitkeep
+backup

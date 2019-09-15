@@ -43,22 +43,24 @@ Plug 'tmux-plugins/vim-tmux-focus-events'
 Plug 'tmux-plugins/vim-tmux'
 Plug 'sheerun/vim-polyglot'
 Plug 'mileszs/ack.vim'
-Plug 'neoclide/coc.nvim', {'branch': 'release'}
+"Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'evturn/cosmic-barf'
 Plug 'w0rp/ale'
 Plug 'bronson/vim-trailing-whitespace'
 Plug 'chr4/nginx.vim'
-Plug 'Shougo/deoplete.nvim'
-Plug 'roxma/nvim-yarp'
-Plug 'roxma/vim-hug-neovim-rpc'
-Plug 'deoplete-plugins/deoplete-zsh'
-Plug 'tbodt/deoplete-tabnine', { 'do': './install.sh' }
-Plug 'carlitux/deoplete-ternjs', { 'do': 'npm install -g tern' }
 Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
-Plug 'kristijanhusak/deoplete-phpactor'
-Plug 'shougo/neco-vim'
 Plug 'tpope/vim-surround'
+
+" Deplete wo
+Plug 'roxma/nvim-yarp' | Plug 'roxma/vim-hug-neovim-rpc' | Plug 'Shougo/deoplete.nvim'
+Plug 'tbodt/deoplete-tabnine', { 'do': './install.sh' }
+Plug 'kristijanhusak/deoplete-phpactor'
+Plug 'carlitux/deoplete-ternjs', { 'do': 'npm install -g tern' }
+Plug 'deoplete-plugins/deoplete-zsh'
+Plug 'shougo/neco-vim'
+Plug 'thinca/vim-visualstar'
 call plug#end()
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Deoplete Configurations
@@ -292,6 +294,11 @@ nnoremap <A-Right> <C-W>l
 nnoremap <A-Left> <C-W>h
 nnoremap <A-Up> <C-W>j
 nnoremap <A-Down> <C-W>k
+
+inoremap <A-Right> <C-W>l
+inoremap <A-Left> <C-W>h
+inoremap <A-Up> <C-W>j
+inoremap <A-Down> <C-W>k
 
 " Close the current buffer
 noremap <leader>bd :Bclose<cr>
@@ -588,15 +595,15 @@ nnoremap <C-S-Down> :m +1<CR>
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Theme
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"colorscheme gloom-contrast
 syntax enable
-set background=dark
-let g:airline_theme='material'
+"set background=dark
+"let g:airline_theme='material'
 "colorscheme vim-material
-"let g:material_style='palenight'
+colorscheme gloom-contrast
+let g:material_style='palenight'
 
-colorscheme cosmic-barf
-let g:colors_name = 'cosmic-barf'
+"colorscheme cosmic-barf
+"let g:colors_name = 'cosmic-barf'
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Airline Configurations
@@ -614,11 +621,11 @@ let g:airline#extensions#tabline#fnamemod = ':t'
 " => vim-multiple-cursors Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:multi_cursor_use_default_mapping = 0
-let g:multi_cursor_start_word_key      = '<C-n>'
-let g:multi_cursor_select_all_word_key = '<A-j>'
-let g:multi_cursor_start_key           = 'g<C-n>'
-let g:multi_cursor_select_all_key      = 'g<A-j>'
-let g:multi_cursor_next_key            = '<C-n>'
+let g:multi_cursor_start_word_key      = '<M-j>'
+let g:multi_cursor_select_all_word_key = '<S-M-j>'
+let g:multi_cursor_start_key           = 'g<M-j>'
+let g:multi_cursor_select_all_key      = 'g<S-M-j>'
+let g:multi_cursor_next_key            = '<M-j>'
 let g:multi_cursor_prev_key            = '<C-p>'
 let g:multi_cursor_skip_key            = '<C-x>'
 let g:multi_cursor_quit_key            = '<Esc>'
