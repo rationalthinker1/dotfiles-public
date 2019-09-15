@@ -1,9 +1,10 @@
 #export TERM="xterm-256color"
 export LOCAL_CONFIG="/home/${USER}/.config"
 export ZSH="${LOCAL_CONFIG}/oh-my-zsh"
-export ADOTDIR="${LOCAL_CONFIG}/antigen"
+export ADOTDIR="${LOCAL_CONFIG}/zsh/antigen"
 export PATH="/opt/anaconda3/bin:${PATH}"
-source /home/"${USER}"/.dotfiles/.theme
+#source "${HOME}"/.theme
+
 #=======================================================================================
 # Basic Settings
 #=======================================================================================
@@ -13,15 +14,15 @@ export HISTCONTROL=ignoreboth   # ingore duplicates and spaces
 export HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
 export VISUAL=vim
 
-
 # Load tmux
 if [[ ! $TERM =~ screen ]]; then
     exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
 fi
+
 #=======================================================================================
 # Antigen
 #=======================================================================================
-source "$ADOTDIR"/antigen.zsh
+source "${LOCAL_CONFIG}/zsh/antigen.zsh"
 export TERM="xterm-256color"
 # Load the oh-my-zsh's library.
 antigen use oh-my-zsh
@@ -39,7 +40,7 @@ antigen bundle zsh-users/zsh-autosuggestions
 
 # Load the theme.
 BULLETTRAIN_TIME_12HR=true
-BULLETTRAIN_CONTEXT_DEFAULT_USER="$USER"
+BULLETTRAIN_CONTEXT_DEFAULT_USER="${USER}"
 BULLETTRAIN_DIR_EXTENDED=0
 antigen theme https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train
 #antigen theme bhilburn/powerlevel9k powerlevel9k

@@ -1,0 +1,1069 @@
+[WRN][1568578154.1447951794] /home/canaan/.config/zsh/antigen.zsh:266
+[WRN][1568578154.1447951794] -antigen-interactive-mode: file:file:shfunc:shfunc $_ANTIGEN_INTERACTIVE = 
+[WRN][1568578154.1451156139] /home/canaan/.config/zsh/antigen.zsh:1572
+[WRN][1568578154.1451156139] -antigen-lock-init return code was 0
+[LOG][1568578154.1451637745] /home/canaan/.config/zsh/antigen.zsh:1574
+[LOG][1568578154.1451637745] LOADED EXTENSION lock EXT
+[WRN][1568578154.1464650631] /home/canaan/.config/zsh/antigen.zsh:1684
+[WRN][1568578154.1464650631] Init parallel extension PARALLEL
+[WRN][1568578154.1465675831] /home/canaan/.config/zsh/antigen.zsh:266
+[WRN][1568578154.1465675831] -antigen-interactive-mode: file:file:shfunc:shfunc:shfunc:eval:shfunc:shfunc $_ANTIGEN_INTERACTIVE = 
+[WRN][1568578154.1466765404] /home/canaan/.config/zsh/antigen.zsh:1572
+[WRN][1568578154.1466765404] -antigen-parallel-init return code was 0
+[LOG][1568578154.1467454433] /home/canaan/.config/zsh/antigen.zsh:1574
+[LOG][1568578154.1467454433] LOADED EXTENSION parallel EXT
+[WRN][1568578154.1468124390] /home/canaan/.config/zsh/antigen.zsh:1692
+[WRN][1568578154.1468124390] Exec parallel extension PARALLEL
+[WRN][1568578154.1471698284] /home/canaan/.config/zsh/antigen.zsh:266
+[WRN][1568578154.1471698284] -antigen-interactive-mode: file:file:shfunc:shfunc:shfunc:eval:shfunc:shfunc $_ANTIGEN_INTERACTIVE = 
+[WRN][1568578154.1472764015] /home/canaan/.config/zsh/antigen.zsh:1572
+[WRN][1568578154.1472764015] -antigen-defer-init return code was 0
+[LOG][1568578154.1473333836] /home/canaan/.config/zsh/antigen.zsh:1574
+[LOG][1568578154.1473333836] LOADED EXTENSION defer EXT
+[WRN][1568578154.1481471062] /home/canaan/.config/zsh/antigen.zsh:266
+[WRN][1568578154.1481471062] -antigen-interactive-mode: file:file:shfunc:shfunc:shfunc:eval:shfunc:shfunc $_ANTIGEN_INTERACTIVE = 
+[WRN][1568578154.1483802795] /home/canaan/.config/zsh/antigen.zsh:1572
+[WRN][1568578154.1483802795] -antigen-cache-init return code was 0
+[LOG][1568578154.1484365463] /home/canaan/.config/zsh/antigen.zsh:1574
+[LOG][1568578154.1484365463] LOADED EXTENSION cache EXT
+[WRN][1568578154.1500766277] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1500766277] Updated meta: target antigen mode once type pre called 1
+[WRN][1568578154.1501481533] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1501481533] Processing hooks: antigen-lock
+[WRN][1568578154.1501972675] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1501972675] Pre hook: antigen-lock use oh-my-zsh
+[LOG][1568578154.1502561569] /home/canaan/.config/zsh/antigen.zsh:1658
+[LOG][1568578154.1502561569] antigen-lock called
+[WRN][1568578154.1503374577] /home/canaan/.config/zsh/antigen.zsh:1669
+[WRN][1568578154.1503374577] Creating antigen-lock file at /home/canaan/.config/zsh/antigen/.lock
+[WRN][1568578154.1512529850] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578154.1512529850] -antigen-hook-antigen use oh-my-zsh
+[WRN][1568578154.1515438557] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1515438557] Updated meta: target antigen-bundle mode repeat type replace called 1
+[WRN][1568578154.1516294479] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1516294479] Updated meta: target antigen-bundle mode repeat type pre called 1
+[WRN][1568578154.1516835690] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1516835690] Processing hooks: antigen-bundle-defer antigen-bundle-cached
+[WRN][1568578154.1517372131] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1517372131] Pre hook: antigen-bundle-cached --loc=lib
+[WRN][1568578154.1518208981] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1518208981] Replace hook: antigen-bundle-defer --loc=lib
+[WRN][1568578154.1518838406] /home/canaan/.config/zsh/antigen.zsh:1500
+[WRN][1568578154.1518838406] antigen-bundle-defer shortcircuited
+[LOG][1568578154.1519711018] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1519711018] Return from hook antigen with 0
+[WRN][1568578154.1521062851] /home/canaan/.config/zsh/antigen.zsh:1462
+[WRN][1568578154.1521062851] Ignoring hook due to mode once: antigen-lock
+[WRN][1568578154.1521596909] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1521596909] Processing hooks: antigen-lock
+[WRN][1568578154.1522078514] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578154.1522078514] -antigen-hook-antigen bundle git
+[WRN][1568578154.1523325443] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1523325443] Updated meta: target antigen-bundle mode repeat type replace called 2
+[WRN][1568578154.1524202824] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1524202824] Updated meta: target antigen-bundle mode repeat type pre called 2
+[WRN][1568578154.1524717808] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1524717808] Processing hooks: antigen-bundle-defer antigen-bundle-cached
+[WRN][1568578154.1525139809] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1525139809] Pre hook: antigen-bundle-cached git
+[WRN][1568578154.1526243687] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1526243687] Replace hook: antigen-bundle-defer git
+[WRN][1568578154.1526989937] /home/canaan/.config/zsh/antigen.zsh:1500
+[WRN][1568578154.1526989937] antigen-bundle-defer shortcircuited
+[LOG][1568578154.1527724266] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1527724266] Return from hook antigen with 0
+[WRN][1568578154.1529109478] /home/canaan/.config/zsh/antigen.zsh:1462
+[WRN][1568578154.1529109478] Ignoring hook due to mode once: antigen-lock
+[WRN][1568578154.1529552937] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1529552937] Processing hooks: antigen-lock
+[WRN][1568578154.1530022621] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578154.1530022621] -antigen-hook-antigen bundle heroku
+[WRN][1568578154.1531245708] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1531245708] Updated meta: target antigen-bundle mode repeat type replace called 3
+[WRN][1568578154.1531982422] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1531982422] Updated meta: target antigen-bundle mode repeat type pre called 3
+[WRN][1568578154.1532590389] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1532590389] Processing hooks: antigen-bundle-defer antigen-bundle-cached
+[WRN][1568578154.1533100605] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1533100605] Pre hook: antigen-bundle-cached heroku
+[WRN][1568578154.1533901691] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1533901691] Replace hook: antigen-bundle-defer heroku
+[WRN][1568578154.1534633636] /home/canaan/.config/zsh/antigen.zsh:1500
+[WRN][1568578154.1534633636] antigen-bundle-defer shortcircuited
+[LOG][1568578154.1535561085] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1535561085] Return from hook antigen with 0
+[WRN][1568578154.1537003517] /home/canaan/.config/zsh/antigen.zsh:1462
+[WRN][1568578154.1537003517] Ignoring hook due to mode once: antigen-lock
+[WRN][1568578154.1537559032] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1537559032] Processing hooks: antigen-lock
+[WRN][1568578154.1538159847] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578154.1538159847] -antigen-hook-antigen bundle pip
+[WRN][1568578154.1539700031] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1539700031] Updated meta: target antigen-bundle mode repeat type replace called 4
+[WRN][1568578154.1540629864] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1540629864] Updated meta: target antigen-bundle mode repeat type pre called 4
+[WRN][1568578154.1541264057] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1541264057] Processing hooks: antigen-bundle-defer antigen-bundle-cached
+[WRN][1568578154.1541779041] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1541779041] Pre hook: antigen-bundle-cached pip
+[WRN][1568578154.1542642117] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1542642117] Replace hook: antigen-bundle-defer pip
+[WRN][1568578154.1543376446] /home/canaan/.config/zsh/antigen.zsh:1500
+[WRN][1568578154.1543376446] antigen-bundle-defer shortcircuited
+[LOG][1568578154.1544373035] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1544373035] Return from hook antigen with 0
+[WRN][1568578154.1546165943] /home/canaan/.config/zsh/antigen.zsh:1462
+[WRN][1568578154.1546165943] Ignoring hook due to mode once: antigen-lock
+[WRN][1568578154.1546993256] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1546993256] Processing hooks: antigen-lock
+[WRN][1568578154.1547863483] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578154.1547863483] -antigen-hook-antigen bundle lein
+[WRN][1568578154.1550369263] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1550369263] Updated meta: target antigen-bundle mode repeat type replace called 5
+[WRN][1568578154.1551959515] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1551959515] Updated meta: target antigen-bundle mode repeat type pre called 5
+[WRN][1568578154.1552977562] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1552977562] Processing hooks: antigen-bundle-defer antigen-bundle-cached
+[WRN][1568578154.1553823948] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1553823948] Pre hook: antigen-bundle-cached lein
+[WRN][1568578154.1555252075] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1555252075] Replace hook: antigen-bundle-defer lein
+[WRN][1568578154.1556448936] /home/canaan/.config/zsh/antigen.zsh:1500
+[WRN][1568578154.1556448936] antigen-bundle-defer shortcircuited
+[LOG][1568578154.1557934284] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1557934284] Return from hook antigen with 0
+[WRN][1568578154.1559786797] /home/canaan/.config/zsh/antigen.zsh:1462
+[WRN][1568578154.1559786797] Ignoring hook due to mode once: antigen-lock
+[WRN][1568578154.1560389996] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1560389996] Processing hooks: antigen-lock
+[WRN][1568578154.1561002731] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578154.1561002731] -antigen-hook-antigen bundle command-not-found
+[WRN][1568578154.1562592983] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1562592983] Updated meta: target antigen-bundle mode repeat type replace called 6
+[WRN][1568578154.1563556194] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1563556194] Updated meta: target antigen-bundle mode repeat type pre called 6
+[WRN][1568578154.1564195156] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1564195156] Processing hooks: antigen-bundle-defer antigen-bundle-cached
+[WRN][1568578154.1564714909] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1564714909] Pre hook: antigen-bundle-cached command-not-found
+[WRN][1568578154.1565597057] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1565597057] Replace hook: antigen-bundle-defer command-not-found
+[WRN][1568578154.1566715240] /home/canaan/.config/zsh/antigen.zsh:1500
+[WRN][1568578154.1566715240] antigen-bundle-defer shortcircuited
+[LOG][1568578154.1567642689] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1567642689] Return from hook antigen with 0
+[WRN][1568578154.1569066048] /home/canaan/.config/zsh/antigen.zsh:1462
+[WRN][1568578154.1569066048] Ignoring hook due to mode once: antigen-lock
+[WRN][1568578154.1569609642] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1569609642] Processing hooks: antigen-lock
+[WRN][1568578154.1570184231] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578154.1570184231] -antigen-hook-antigen bundle hlissner/zsh-autopair
+[WRN][1568578154.1571688652] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1571688652] Updated meta: target antigen-bundle mode repeat type replace called 7
+[WRN][1568578154.1572587490] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1572587490] Updated meta: target antigen-bundle mode repeat type pre called 7
+[WRN][1568578154.1573200226] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1573200226] Processing hooks: antigen-bundle-defer antigen-bundle-cached
+[WRN][1568578154.1573693752] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1573693752] Pre hook: antigen-bundle-cached hlissner/zsh-autopair
+[WRN][1568578154.1574606895] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1574606895] Replace hook: antigen-bundle-defer hlissner/zsh-autopair
+[WRN][1568578154.1575324535] /home/canaan/.config/zsh/antigen.zsh:1500
+[WRN][1568578154.1575324535] antigen-bundle-defer shortcircuited
+[LOG][1568578154.1576209068] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1576209068] Return from hook antigen with 0
+[WRN][1568578154.1577637196] /home/canaan/.config/zsh/antigen.zsh:1462
+[WRN][1568578154.1577637196] Ignoring hook due to mode once: antigen-lock
+[WRN][1568578154.1578180790] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1578180790] Processing hooks: antigen-lock
+[WRN][1568578154.1578755379] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578154.1578755379] -antigen-hook-antigen bundle zdharma/fast-syntax-highlighting
+[WRN][1568578154.1580257416] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1580257416] Updated meta: target antigen-bundle mode repeat type replace called 8
+[WRN][1568578154.1581161022] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1581161022] Updated meta: target antigen-bundle mode repeat type pre called 8
+[WRN][1568578154.1581766605] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1581766605] Processing hooks: antigen-bundle-defer antigen-bundle-cached
+[WRN][1568578154.1582264900] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1582264900] Pre hook: antigen-bundle-cached zdharma/fast-syntax-highlighting
+[WRN][1568578154.1583125591] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1583125591] Replace hook: antigen-bundle-defer zdharma/fast-syntax-highlighting
+[WRN][1568578154.1583843231] /home/canaan/.config/zsh/antigen.zsh:1500
+[WRN][1568578154.1583843231] antigen-bundle-defer shortcircuited
+[LOG][1568578154.1584732533] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1584732533] Return from hook antigen with 0
+[WRN][1568578154.1586146355] /home/canaan/.config/zsh/antigen.zsh:1462
+[WRN][1568578154.1586146355] Ignoring hook due to mode once: antigen-lock
+[WRN][1568578154.1586685181] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1586685181] Processing hooks: antigen-lock
+[WRN][1568578154.1587262154] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578154.1587262154] -antigen-hook-antigen bundle zsh-users/zsh-autosuggestions
+[WRN][1568578154.1588759422] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1588759422] Updated meta: target antigen-bundle mode repeat type replace called 9
+[WRN][1568578154.1589655876] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1589655876] Updated meta: target antigen-bundle mode repeat type pre called 9
+[WRN][1568578154.1590254307] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1590254307] Processing hooks: antigen-bundle-defer antigen-bundle-cached
+[WRN][1568578154.1590745449] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1590745449] Pre hook: antigen-bundle-cached zsh-users/zsh-autosuggestions
+[WRN][1568578154.1591587067] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1591587067] Replace hook: antigen-bundle-defer zsh-users/zsh-autosuggestions
+[WRN][1568578154.1592304707] /home/canaan/.config/zsh/antigen.zsh:1500
+[WRN][1568578154.1592304707] antigen-bundle-defer shortcircuited
+[LOG][1568578154.1593191624] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1593191624] Return from hook antigen with 0
+[WRN][1568578154.1594893932] /home/canaan/.config/zsh/antigen.zsh:1462
+[WRN][1568578154.1594893932] Ignoring hook due to mode once: antigen-lock
+[WRN][1568578154.1595432758] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1595432758] Processing hooks: antigen-lock
+[WRN][1568578154.1596019268] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578154.1596019268] -antigen-hook-antigen theme https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train
+[WRN][1568578154.1620635986] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1620635986] Updated meta: target antigen-bundle mode repeat type replace called 10
+[WRN][1568578154.1621901989] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1621901989] Updated meta: target antigen-bundle mode repeat type pre called 10
+[WRN][1568578154.1622591019] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1622591019] Processing hooks: antigen-bundle-defer antigen-bundle-cached
+[WRN][1568578154.1623144150] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1623144150] Pre hook: antigen-bundle-cached https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train --btype=theme
+[WRN][1568578154.1624116898] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1624116898] Replace hook: antigen-bundle-defer https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train --btype=theme
+[WRN][1568578154.1624913216] /home/canaan/.config/zsh/antigen.zsh:1500
+[WRN][1568578154.1624913216] antigen-bundle-defer shortcircuited
+[LOG][1568578154.1626179218] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1626179218] Return from hook antigen with 0
+[WRN][1568578154.1627810001] /home/canaan/.config/zsh/antigen.zsh:1462
+[WRN][1568578154.1627810001] Ignoring hook due to mode once: antigen-lock
+[WRN][1568578154.1628367901] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1628367901] Processing hooks: antigen-lock
+[WRN][1568578154.1628949642] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578154.1628949642] -antigen-hook-antigen apply
+[WRN][1568578154.1630506516] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1630506516] Updated meta: target antigen-apply mode once type post called 1
+[WRN][1568578154.1631431580] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1631431580] Updated meta: target antigen-apply mode once type pre called 1
+[WRN][1568578154.1632318497] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1632318497] Updated meta: target antigen-apply mode once type replace called 1
+[WRN][1568578154.1633174419] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1633174419] Updated meta: target antigen-apply mode once type pre called 1
+[WRN][1568578154.1634008884] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1634008884] Updated meta: target antigen-apply mode once type post called 1
+[WRN][1568578154.1634616852] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1634616852] Processing hooks: antigen-apply-lock antigen-apply-parallel antigen-apply-parallel-execute antigen-apply-defer antigen-apply-cached
+[WRN][1568578154.1635129452] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1635129452] Pre hook: antigen-apply-parallel
+[WRN][1568578154.1635656357] /home/canaan/.config/zsh/antigen.zsh:1744
+[WRN][1568578154.1635656357] Parallel pre-apply PARALLEL PRE-APPLY
+[WRN][1568578154.1637086868] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1637086868] Pre hook: antigen-apply-defer
+[WRN][1568578154.1637637615] /home/canaan/.config/zsh/antigen.zsh:1623
+[WRN][1568578154.1637637615] Defer pre-apply DEFER PRE-APPLY
+[LOG][1568578154.1639187336] /home/canaan/.config/zsh/antigen.zsh:1629
+[LOG][1568578154.1639187336] Processing deferred bundle: --loc=lib DEFER
+[WRN][1568578154.1640572548] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1640572548] Updated meta: target antigen-bundle mode repeat type pre called 11
+[WRN][1568578154.1641495228] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1641495228] Updated meta: target antigen-bundle mode repeat type replace called 1
+[WRN][1568578154.1642122269] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1642122269] Processing hooks: antigen-bundle-cached antigen-bundle-parallel
+[WRN][1568578154.1642632484] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1642632484] Pre hook: antigen-bundle-cached --loc=lib
+[WRN][1568578154.1643512249] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1643512249] Replace hook: antigen-bundle-parallel --loc=lib
+[TRA][1568578154.1644175053] /home/canaan/.zshrc:1748
+[TRA][1568578154.1644175053] antigen-bundle-parallel: --loc=lib PARALLEL
+[TRA][1568578154.1644175053] TRACE
+antigen-bundle-parallel
+-antigen-hook-handler
+antigen-bundle
+antigen-apply-defer
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578154.1644933224] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578154.1644933224] Replaced hooked function.
+[LOG][1568578154.1645464897] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1645464897] Return from hook antigen-bundle with 0
+[LOG][1568578154.1646616459] /home/canaan/.config/zsh/antigen.zsh:1629
+[LOG][1568578154.1646616459] Processing deferred bundle: git DEFER
+[WRN][1568578154.1647992134] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1647992134] Updated meta: target antigen-bundle mode repeat type pre called 12
+[WRN][1568578154.1648890972] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1648890972] Updated meta: target antigen-bundle mode repeat type replace called 2
+[WRN][1568578154.1649501324] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1649501324] Processing hooks: antigen-bundle-cached antigen-bundle-parallel
+[WRN][1568578154.1650004387] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1650004387] Pre hook: antigen-bundle-cached git
+[WRN][1568578154.1650860310] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1650860310] Replace hook: antigen-bundle-parallel git
+[TRA][1568578154.1651425362] /home/canaan/.zshrc:1748
+[TRA][1568578154.1651425362] antigen-bundle-parallel: git PARALLEL
+[TRA][1568578154.1651425362] TRACE
+antigen-bundle-parallel
+-antigen-hook-handler
+antigen-bundle
+antigen-apply-defer
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578154.1652152538] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578154.1652152538] Replaced hooked function.
+[LOG][1568578154.1652681828] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1652681828] Return from hook antigen-bundle with 0
+[LOG][1568578154.1653378010] /home/canaan/.config/zsh/antigen.zsh:1629
+[LOG][1568578154.1653378010] Processing deferred bundle: heroku DEFER
+[WRN][1568578154.1654672623] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1654672623] Updated meta: target antigen-bundle mode repeat type pre called 13
+[WRN][1568578154.1655559540] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1655559540] Updated meta: target antigen-bundle mode repeat type replace called 3
+[WRN][1568578154.1656174660] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1656174660] Processing hooks: antigen-bundle-cached antigen-bundle-parallel
+[WRN][1568578154.1656675339] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1656675339] Pre hook: antigen-bundle-cached heroku
+[WRN][1568578154.1657514572] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1657514572] Replace hook: antigen-bundle-parallel heroku
+[TRA][1568578154.1658074856] /home/canaan/.zshrc:1748
+[TRA][1568578154.1658074856] antigen-bundle-parallel: heroku PARALLEL
+[TRA][1568578154.1658074856] TRACE
+antigen-bundle-parallel
+-antigen-hook-handler
+antigen-bundle
+antigen-apply-defer
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578154.1658790112] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578154.1658790112] Replaced hooked function.
+[LOG][1568578154.1659317017] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1659317017] Return from hook antigen-bundle with 0
+[LOG][1568578154.1660008430] /home/canaan/.config/zsh/antigen.zsh:1629
+[LOG][1568578154.1660008430] Processing deferred bundle: pip DEFER
+[WRN][1568578154.1661293507] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1661293507] Updated meta: target antigen-bundle mode repeat type pre called 14
+[WRN][1568578154.1662173271] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1662173271] Updated meta: target antigen-bundle mode repeat type replace called 4
+[WRN][1568578154.1662857533] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1662857533] Processing hooks: antigen-bundle-cached antigen-bundle-parallel
+[WRN][1568578154.1663372517] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1663372517] Pre hook: antigen-bundle-cached pip
+[WRN][1568578154.1664218903] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1664218903] Replace hook: antigen-bundle-parallel pip
+[TRA][1568578154.1664776802] /home/canaan/.zshrc:1748
+[TRA][1568578154.1664776802] antigen-bundle-parallel: pip PARALLEL
+[TRA][1568578154.1664776802] TRACE
+antigen-bundle-parallel
+-antigen-hook-handler
+antigen-bundle
+antigen-apply-defer
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578154.1665494442] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578154.1665494442] Replaced hooked function.
+[LOG][1568578154.1666045189] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1666045189] Return from hook antigen-bundle with 0
+[LOG][1568578154.1667175293] /home/canaan/.config/zsh/antigen.zsh:1629
+[LOG][1568578154.1667175293] Processing deferred bundle: lein DEFER
+[WRN][1568578154.1669068336] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1669068336] Updated meta: target antigen-bundle mode repeat type pre called 15
+[WRN][1568578154.1670377254] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1670377254] Updated meta: target antigen-bundle mode repeat type replace called 5
+[WRN][1568578154.1671223640] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1671223640] Processing hooks: antigen-bundle-cached antigen-bundle-parallel
+[WRN][1568578154.1671755314] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1671755314] Pre hook: antigen-bundle-cached lein
+[WRN][1568578154.1672613621] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1672613621] Replace hook: antigen-bundle-parallel lein
+[TRA][1568578154.1673183441] /home/canaan/.zshrc:1748
+[TRA][1568578154.1673183441] antigen-bundle-parallel: lein PARALLEL
+[TRA][1568578154.1673183441] TRACE
+antigen-bundle-parallel
+-antigen-hook-handler
+antigen-bundle
+antigen-apply-defer
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578154.1673917770] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578154.1673917770] Replaced hooked function.
+[LOG][1568578154.1674449444] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1674449444] Return from hook antigen-bundle with 0
+[LOG][1568578154.1675150394] /home/canaan/.config/zsh/antigen.zsh:1629
+[LOG][1568578154.1675150394] Processing deferred bundle: command-not-found DEFER
+[WRN][1568578154.1676456928] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1676456928] Updated meta: target antigen-bundle mode repeat type pre called 16
+[WRN][1568578154.1677343845] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1677343845] Updated meta: target antigen-bundle mode repeat type replace called 6
+[WRN][1568578154.1677954197] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1677954197] Processing hooks: antigen-bundle-cached antigen-bundle-parallel
+[WRN][1568578154.1678454876] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1678454876] Pre hook: antigen-bundle-cached command-not-found
+[WRN][1568578154.1679298878] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1679298878] Replace hook: antigen-bundle-parallel command-not-found
+[TRA][1568578154.1679861546] /home/canaan/.zshrc:1748
+[TRA][1568578154.1679861546] antigen-bundle-parallel: command-not-found PARALLEL
+[TRA][1568578154.1679861546] TRACE
+antigen-bundle-parallel
+-antigen-hook-handler
+antigen-bundle
+antigen-apply-defer
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578154.1680581570] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578154.1680581570] Replaced hooked function.
+[LOG][1568578154.1681108475] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1681108475] Return from hook antigen-bundle with 0
+[LOG][1568578154.1681864262] /home/canaan/.config/zsh/antigen.zsh:1629
+[LOG][1568578154.1681864262] Processing deferred bundle: hlissner/zsh-autopair DEFER
+[WRN][1568578154.1683161259] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1683161259] Updated meta: target antigen-bundle mode repeat type pre called 17
+[WRN][1568578154.1684043407] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1684043407] Updated meta: target antigen-bundle mode repeat type replace called 7
+[WRN][1568578154.1684648991] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1684648991] Processing hooks: antigen-bundle-cached antigen-bundle-parallel
+[WRN][1568578154.1685147285] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1685147285] Pre hook: antigen-bundle-cached hlissner/zsh-autopair
+[WRN][1568578154.1686270237] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1686270237] Replace hook: antigen-bundle-parallel hlissner/zsh-autopair
+[TRA][1568578154.1686871052] /home/canaan/.zshrc:1748
+[TRA][1568578154.1686871052] antigen-bundle-parallel: hlissner/zsh-autopair PARALLEL
+[TRA][1568578154.1686871052] TRACE
+antigen-bundle-parallel
+-antigen-hook-handler
+antigen-bundle
+antigen-apply-defer
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578154.1687476635] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578154.1687476635] Replaced hooked function.
+[LOG][1568578154.1687905788] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1687905788] Return from hook antigen-bundle with 0
+[LOG][1568578154.1688475609] /home/canaan/.config/zsh/antigen.zsh:1629
+[LOG][1568578154.1688475609] Processing deferred bundle: zdharma/fast-syntax-highlighting DEFER
+[WRN][1568578154.1689858437] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1689858437] Updated meta: target antigen-bundle mode repeat type pre called 18
+[WRN][1568578154.1690607071] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1690607071] Updated meta: target antigen-bundle mode repeat type replace called 8
+[WRN][1568578154.1691119671] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1691119671] Processing hooks: antigen-bundle-cached antigen-bundle-parallel
+[WRN][1568578154.1691551208] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1691551208] Pre hook: antigen-bundle-cached zdharma/fast-syntax-highlighting
+[WRN][1568578154.1692552567] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1692552567] Replace hook: antigen-bundle-parallel zdharma/fast-syntax-highlighting
+[TRA][1568578154.1693122387] /home/canaan/.zshrc:1748
+[TRA][1568578154.1693122387] antigen-bundle-parallel: zdharma/fast-syntax-highlighting PARALLEL
+[TRA][1568578154.1693122387] TRACE
+antigen-bundle-parallel
+-antigen-hook-handler
+antigen-bundle
+antigen-apply-defer
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578154.1693739891] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578154.1693739891] Replaced hooked function.
+[LOG][1568578154.1694266796] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1694266796] Return from hook antigen-bundle with 0
+[LOG][1568578154.1694827080] /home/canaan/.config/zsh/antigen.zsh:1629
+[LOG][1568578154.1694827080] Processing deferred bundle: zsh-users/zsh-autosuggestions DEFER
+[WRN][1568578154.1695883274] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1695883274] Updated meta: target antigen-bundle mode repeat type pre called 19
+[WRN][1568578154.1696598530] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1696598530] Updated meta: target antigen-bundle mode repeat type replace called 9
+[WRN][1568578154.1697089672] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1697089672] Processing hooks: antigen-bundle-cached antigen-bundle-parallel
+[WRN][1568578154.1697494984] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1697494984] Pre hook: antigen-bundle-cached zsh-users/zsh-autosuggestions
+[WRN][1568578154.1698241234] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1698241234] Replace hook: antigen-bundle-parallel zsh-users/zsh-autosuggestions
+[TRA][1568578154.1698703766] /home/canaan/.zshrc:1748
+[TRA][1568578154.1698703766] antigen-bundle-parallel: zsh-users/zsh-autosuggestions PARALLEL
+[TRA][1568578154.1698703766] TRACE
+antigen-bundle-parallel
+-antigen-hook-handler
+antigen-bundle
+antigen-apply-defer
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578154.1699295044] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578154.1699295044] Replaced hooked function.
+[LOG][1568578154.1699724197] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1699724197] Return from hook antigen-bundle with 0
+[LOG][1568578154.1700286865] /home/canaan/.config/zsh/antigen.zsh:1629
+[LOG][1568578154.1700286865] Processing deferred bundle: https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train --btype=theme DEFER
+[WRN][1568578154.1701478958] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1701478958] Updated meta: target antigen-bundle mode repeat type pre called 20
+[WRN][1568578154.1702511311] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578154.1702511311] Updated meta: target antigen-bundle mode repeat type replace called 10
+[WRN][1568578154.1703004837] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578154.1703004837] Processing hooks: antigen-bundle-cached antigen-bundle-parallel
+[WRN][1568578154.1703619957] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578154.1703619957] Pre hook: antigen-bundle-cached https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train --btype=theme
+[WRN][1568578154.1704335213] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1704335213] Replace hook: antigen-bundle-parallel https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train --btype=theme
+[TRA][1568578154.1704809666] /home/canaan/.zshrc:1748
+[TRA][1568578154.1704809666] antigen-bundle-parallel: https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train --btype=theme PARALLEL
+[TRA][1568578154.1704809666] TRACE
+antigen-bundle-parallel
+-antigen-hook-handler
+antigen-bundle
+antigen-apply-defer
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578154.1705527306] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578154.1705527306] Replaced hooked function.
+[LOG][1568578154.1706066132] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578154.1706066132] Return from hook antigen-bundle with 0
+[WRN][1568578154.1706891060] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578154.1706891060] Replace hook: antigen-apply-parallel-execute
+[WRN][1568578154.1707341671] /home/canaan/.config/zsh/antigen.zsh:1756
+[WRN][1568578154.1707341671] Parallel replace-apply PARALLEL REPLACE-APPLY
+[WRN][1568578154.1708657742] /home/canaan/.config/zsh/antigen.zsh:1695
+[WRN][1568578154.1708657742] Parallel antigen-bundle-parallel-execute PARALLEL
+[WRN][1568578154.1709470749] /home/canaan/.config/zsh/antigen.zsh:1699
+[WRN][1568578154.1709470749] Gonna install in parallel 10 bundles. PARALLEL
+[WRN][1568578154.1710104942] /home/canaan/.config/zsh/antigen.zsh:1701
+[WRN][1568578154.1710104942] --loc=lib git heroku pip lein command-not-found hlissner/zsh-autopair zdharma/fast-syntax-highlighting zsh-users/zsh-autosuggestions https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train --btype=theme PARALLEL
+[WRN][1568578154.1714434624] /home/canaan/.config/zsh/antigen.zsh:1708
+[WRN][1568578154.1714434624] Install in parallel robbyrussell/oh-my-zsh. PARALLEL
+[WRN][1568578154.1722440720] /home/canaan/.config/zsh/antigen.zsh:1715
+[WRN][1568578154.1722440720] Bundle robbyrussell/oh-my-zsh already cloned locally. PARALLEL
+[WRN][1568578154.1726315022] /home/canaan/.config/zsh/antigen.zsh:1715
+[WRN][1568578154.1726315022] Bundle robbyrussell/oh-my-zsh already cloned locally. PARALLEL
+[WRN][1568578154.1729555130] /home/canaan/.config/zsh/antigen.zsh:1715
+[WRN][1568578154.1729555130] Bundle robbyrussell/oh-my-zsh already cloned locally. PARALLEL
+[WRN][1568578154.1732673645] /home/canaan/.config/zsh/antigen.zsh:1715
+[WRN][1568578154.1732673645] Bundle robbyrussell/oh-my-zsh already cloned locally. PARALLEL
+[WRN][1568578154.1736309528] /home/canaan/.config/zsh/antigen.zsh:1715
+[WRN][1568578154.1736309528] Bundle robbyrussell/oh-my-zsh already cloned locally. PARALLEL
+[WRN][1568578154.1741330624] /home/canaan/.config/zsh/antigen.zsh:1708
+[WRN][1568578154.1741330624] Install in parallel hlissner/zsh-autopair. PARALLEL
+[WRN][1568578154.1750605106] /home/canaan/.config/zsh/antigen.zsh:1708
+[WRN][1568578154.1750605106] Install in parallel zdharma/fast-syntax-highlighting. PARALLEL
+[WRN][1568578154.1759307384] /home/canaan/.config/zsh/antigen.zsh:1708
+[WRN][1568578154.1759307384] Install in parallel zsh-users/zsh-autosuggestions. PARALLEL
+[WRN][1568578154.1769297123] /home/canaan/.config/zsh/antigen.zsh:1708
+[WRN][1568578154.1769297123] Install in parallel caiogondim/bullet-train-oh-my-zsh-theme. PARALLEL
+[WRN][1568578168.5531692505] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5531692505] Updated meta: target antigen-bundle mode repeat type pre called 21
+[WRN][1568578168.5535106659] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5535106659] Processing hooks: antigen-bundle-cached
+[WRN][1568578168.5537056923] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578168.5537056923] Pre hook: antigen-bundle-cached --loc=lib
+[WRN][1568578168.5539977551] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578168.5539977551] -antigen-hook-antigen-bundle --loc=lib
+[TRA][1568578168.5541915894] /home/canaan/.config/zsh/antigen.zsh:1438
+[TRA][1568578168.5541915894] Called antigen-bundle with --loc=lib BUNDLE
+[TRA][1568578168.5541915894] TRACE
+-antigen-hook-antigen-bundle
+-antigen-hook-handler
+antigen-bundle
+antigen-bundle-parallel-execute
+antigen-apply-parallel-execute
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578168.5568451881] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5568451881] Updated meta: target -antigen-load-env mode repeat type replace called 1
+[WRN][1568578168.5571205616] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5571205616] Processing hooks: -antigen-load-env-cached
+[WRN][1568578168.5574047565] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5574047565] Replace hook: -antigen-load-env-cached dir /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh btype plugin url https://github.com/robbyrussell/oh-my-zsh.git loc lib name robbyrussell/oh-my-zsh make_local_clone true
+[WRN][1568578168.5578196049] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5578196049] Replaced hooked function.
+[LOG][1568578168.5580098629] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5580098629] Return from hook -antigen-load-env with 0
+[WRN][1568578168.5587446690] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5587446690] Updated meta: target -antigen-load-source mode repeat type replace called 1
+[WRN][1568578168.5589792728] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5589792728] Processing hooks: -antigen-load-source-cached
+[WRN][1568578168.5592761040] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5592761040] Replace hook: -antigen-load-source-cached /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/bzr.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/clipboard.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/compfix.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/completion.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/correction.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/diagnostics.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/directories.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/functions.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/git.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/grep.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/history.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/key-bindings.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/misc.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/nvm.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/prompt_info_functions.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/spectrum.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/termsupport.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/theme-and-appearance.zsh
+[WRN][1568578168.5598638058] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5598638058] Replaced hooked function.
+[LOG][1568578168.5600736141] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5600736141] Return from hook -antigen-load-source with 0
+[LOG][1568578168.5604448318] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5604448318] Return from hook antigen-bundle with 0
+[WRN][1568578168.5609991550] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5609991550] Updated meta: target antigen-bundle mode repeat type pre called 22
+[WRN][1568578168.5612218380] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5612218380] Processing hooks: antigen-bundle-cached
+[WRN][1568578168.5613939762] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578168.5613939762] Pre hook: antigen-bundle-cached git
+[WRN][1568578168.5616681576] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578168.5616681576] -antigen-hook-antigen-bundle git
+[TRA][1568578168.5618555546] /home/canaan/.config/zsh/antigen.zsh:1438
+[TRA][1568578168.5618555546] Called antigen-bundle with git BUNDLE
+[TRA][1568578168.5618555546] TRACE
+-antigen-hook-antigen-bundle
+-antigen-hook-handler
+antigen-bundle
+antigen-bundle-parallel-execute
+antigen-apply-parallel-execute
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578168.5638835430] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5638835430] Updated meta: target -antigen-load-env mode repeat type replace called 2
+[WRN][1568578168.5641481876] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5641481876] Processing hooks: -antigen-load-env-cached
+[WRN][1568578168.5644223690] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5644223690] Replace hook: -antigen-load-env-cached dir /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh btype plugin url https://github.com/robbyrussell/oh-my-zsh.git loc plugins/git name robbyrussell/oh-my-zsh make_local_clone true
+[WRN][1568578168.5648574829] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5648574829] Replaced hooked function.
+[LOG][1568578168.5650551319] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5650551319] Return from hook -antigen-load-env with 0
+[WRN][1568578168.5655975342] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5655975342] Updated meta: target -antigen-load-source mode repeat type replace called 2
+[WRN][1568578168.5658280849] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5658280849] Processing hooks: -antigen-load-source-cached
+[WRN][1568578168.5660595894] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5660595894] Replace hook: -antigen-load-source-cached /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/plugins/git/git.plugin.zsh
+[WRN][1568578168.5663261414] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5663261414] Replaced hooked function.
+[LOG][1568578168.5665099621] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5665099621] Return from hook -antigen-load-source with 0
+[LOG][1568578168.5669050217] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5669050217] Return from hook antigen-bundle with 0
+[WRN][1568578168.5674285889] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5674285889] Updated meta: target antigen-bundle mode repeat type pre called 23
+[WRN][1568578168.5676448345] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5676448345] Processing hooks: antigen-bundle-cached
+[WRN][1568578168.5678167343] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578168.5678167343] Pre hook: antigen-bundle-cached heroku
+[WRN][1568578168.5680842400] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578168.5680842400] -antigen-hook-antigen-bundle heroku
+[TRA][1568578168.5682699680] /home/canaan/.config/zsh/antigen.zsh:1438
+[TRA][1568578168.5682699680] Called antigen-bundle with heroku BUNDLE
+[TRA][1568578168.5682699680] TRACE
+-antigen-hook-antigen-bundle
+-antigen-hook-handler
+antigen-bundle
+antigen-bundle-parallel-execute
+antigen-apply-parallel-execute
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578168.5691852570] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5691852570] Updated meta: target -antigen-load-env mode repeat type replace called 3
+[WRN][1568578168.5692727566] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5692727566] Processing hooks: -antigen-load-env-cached
+[WRN][1568578168.5693638325] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5693638325] Replace hook: -antigen-load-env-cached dir /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh btype plugin url https://github.com/robbyrussell/oh-my-zsh.git loc plugins/heroku name robbyrussell/oh-my-zsh make_local_clone true
+[WRN][1568578168.5694973469] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5694973469] Replaced hooked function.
+[LOG][1568578168.5695600510] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5695600510] Return from hook -antigen-load-env with 0
+[WRN][1568578168.5697395802] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5697395802] Updated meta: target -antigen-load-source mode repeat type replace called 3
+[WRN][1568578168.5698211193] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5698211193] Processing hooks: -antigen-load-source-cached
+[WRN][1568578168.5698850155] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5698850155] Replace hook: -antigen-load-source-cached /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/plugins/heroku/heroku.plugin.zsh
+[WRN][1568578168.5699589252] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5699589252] Replaced hooked function.
+[LOG][1568578168.5700092316] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5700092316] Return from hook -antigen-load-source with 0
+[LOG][1568578168.5701055527] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5701055527] Return from hook antigen-bundle with 0
+[WRN][1568578168.5702478886] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5702478886] Updated meta: target antigen-bundle mode repeat type pre called 24
+[WRN][1568578168.5703067780] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5703067780] Processing hooks: antigen-bundle-cached
+[WRN][1568578168.5703537464] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578168.5703537464] Pre hook: antigen-bundle-cached pip
+[WRN][1568578168.5704271793] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578168.5704271793] -antigen-hook-antigen-bundle pip
+[TRA][1568578168.5704779625] /home/canaan/.config/zsh/antigen.zsh:1438
+[TRA][1568578168.5704779625] Called antigen-bundle with pip BUNDLE
+[TRA][1568578168.5704779625] TRACE
+-antigen-hook-antigen-bundle
+-antigen-hook-handler
+antigen-bundle
+antigen-bundle-parallel-execute
+antigen-apply-parallel-execute
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578168.5710027218] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5710027218] Updated meta: target -antigen-load-env mode repeat type replace called 4
+[WRN][1568578168.5710685253] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5710685253] Processing hooks: -antigen-load-env-cached
+[WRN][1568578168.5711340904] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5711340904] Replace hook: -antigen-load-env-cached dir /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh btype plugin url https://github.com/robbyrussell/oh-my-zsh.git loc plugins/pip name robbyrussell/oh-my-zsh make_local_clone true
+[WRN][1568578168.5712292194] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5712292194] Replaced hooked function.
+[LOG][1568578168.5712733269] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5712733269] Return from hook -antigen-load-env with 0
+[WRN][1568578168.5714001656] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5714001656] Updated meta: target -antigen-load-source mode repeat type replace called 4
+[WRN][1568578168.5714540482] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5714540482] Processing hooks: -antigen-load-source-cached
+[WRN][1568578168.5715081692] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5715081692] Replace hook: -antigen-load-source-cached /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/plugins/pip/pip.plugin.zsh
+[WRN][1568578168.5715706348] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5715706348] Replaced hooked function.
+[LOG][1568578168.5716142654] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5716142654] Return from hook -antigen-load-source with 0
+[LOG][1568578168.5716958046] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5716958046] Return from hook antigen-bundle with 0
+[WRN][1568578168.5718152523] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5718152523] Updated meta: target antigen-bundle mode repeat type pre called 25
+[WRN][1568578168.5718650818] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5718650818] Processing hooks: antigen-bundle-cached
+[WRN][1568578168.5719056129] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578168.5719056129] Pre hook: antigen-bundle-cached lein
+[WRN][1568578168.5719692707] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578168.5719692707] -antigen-hook-antigen-bundle lein
+[TRA][1568578168.5720129013] /home/canaan/.config/zsh/antigen.zsh:1438
+[TRA][1568578168.5720129013] Called antigen-bundle with lein BUNDLE
+[TRA][1568578168.5720129013] TRACE
+-antigen-hook-antigen-bundle
+-antigen-hook-handler
+antigen-bundle
+antigen-bundle-parallel-execute
+antigen-apply-parallel-execute
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578168.5725033283] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5725033283] Updated meta: target -antigen-load-env mode repeat type replace called 5
+[WRN][1568578168.5725657940] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5725657940] Processing hooks: -antigen-load-env-cached
+[WRN][1568578168.5726590157] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5726590157] Replace hook: -antigen-load-env-cached dir /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh btype plugin url https://github.com/robbyrussell/oh-my-zsh.git loc plugins/lein name robbyrussell/oh-my-zsh make_local_clone true
+[WRN][1568578168.5727550983] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5727550983] Replaced hooked function.
+[LOG][1568578168.5727996826] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5727996826] Return from hook -antigen-load-env with 0
+[WRN][1568578168.5729243755] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5729243755] Updated meta: target -antigen-load-source mode repeat type replace called 5
+[WRN][1568578168.5729782581] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5729782581] Processing hooks: -antigen-load-source-cached
+[WRN][1568578168.5730311871] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5730311871] Replace hook: -antigen-load-source-cached
+[WRN][1568578168.5730934143] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5730934143] Replaced hooked function.
+[LOG][1568578168.5731363297] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5731363297] Return from hook -antigen-load-source with 0
+[LOG][1568578168.5732183456] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5732183456] Return from hook antigen-bundle with 0
+[WRN][1568578168.5733387470] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5733387470] Updated meta: target antigen-bundle mode repeat type pre called 26
+[WRN][1568578168.5733895302] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5733895302] Processing hooks: antigen-bundle-cached
+[WRN][1568578168.5734298229] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578168.5734298229] Pre hook: antigen-bundle-cached command-not-found
+[WRN][1568578168.5734922886] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578168.5734922886] -antigen-hook-antigen-bundle command-not-found
+[TRA][1568578168.5735356808] /home/canaan/.config/zsh/antigen.zsh:1438
+[TRA][1568578168.5735356808] Called antigen-bundle with command-not-found BUNDLE
+[TRA][1568578168.5735356808] TRACE
+-antigen-hook-antigen-bundle
+-antigen-hook-handler
+antigen-bundle
+antigen-bundle-parallel-execute
+antigen-apply-parallel-execute
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578168.5740118027] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5740118027] Updated meta: target -antigen-load-env mode repeat type replace called 6
+[WRN][1568578168.5740735531] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5740735531] Processing hooks: -antigen-load-env-cached
+[WRN][1568578168.5741372108] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5741372108] Replace hook: -antigen-load-env-cached dir /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh btype plugin url https://github.com/robbyrussell/oh-my-zsh.git loc plugins/command-not-found name robbyrussell/oh-my-zsh make_local_clone true
+[WRN][1568578168.5742321014] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5742321014] Replaced hooked function.
+[LOG][1568578168.5742769241] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5742769241] Return from hook -antigen-load-env with 0
+[WRN][1568578168.5744042397] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5744042397] Updated meta: target -antigen-load-source mode repeat type replace called 6
+[WRN][1568578168.5744581223] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5744581223] Processing hooks: -antigen-load-source-cached
+[WRN][1568578168.5745117664] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5745117664] Replace hook: -antigen-load-source-cached /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/plugins/command-not-found/command-not-found.plugin.zsh
+[WRN][1568578168.5745747089] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5745747089] Replaced hooked function.
+[LOG][1568578168.5746173859] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5746173859] Return from hook -antigen-load-source with 0
+[LOG][1568578168.5746984482] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5746984482] Return from hook antigen-bundle with 0
+[WRN][1568578168.5748181343] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5748181343] Updated meta: target antigen-bundle mode repeat type pre called 27
+[WRN][1568578168.5748674870] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5748674870] Processing hooks: antigen-bundle-cached
+[WRN][1568578168.5749075413] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578168.5749075413] Pre hook: antigen-bundle-cached hlissner/zsh-autopair
+[WRN][1568578168.5749719143] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578168.5749719143] -antigen-hook-antigen-bundle hlissner/zsh-autopair
+[TRA][1568578168.5750155449] /home/canaan/.config/zsh/antigen.zsh:1438
+[TRA][1568578168.5750155449] Called antigen-bundle with hlissner/zsh-autopair BUNDLE
+[TRA][1568578168.5750155449] TRACE
+-antigen-hook-antigen-bundle
+-antigen-hook-handler
+antigen-bundle
+antigen-bundle-parallel-execute
+antigen-apply-parallel-execute
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578168.5754983425] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5754983425] Updated meta: target -antigen-load-env mode repeat type replace called 7
+[WRN][1568578168.5755600929] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5755600929] Processing hooks: -antigen-load-env-cached
+[WRN][1568578168.5756356716] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5756356716] Replace hook: -antigen-load-env-cached dir /home/canaan/.config/zsh/antigen/bundles/hlissner/zsh-autopair btype plugin url https://github.com/hlissner/zsh-autopair.git loc / name hlissner/zsh-autopair make_local_clone true
+[WRN][1568578168.5757431984] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5757431984] Replaced hooked function.
+[LOG][1568578168.5757877827] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5757877827] Return from hook -antigen-load-env with 0
+[WRN][1568578168.5759136677] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5759136677] Updated meta: target -antigen-load-source mode repeat type replace called 7
+[WRN][1568578168.5759818554] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5759818554] Processing hooks: -antigen-load-source-cached
+[WRN][1568578168.5760447979] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5760447979] Replace hook: -antigen-load-source-cached /home/canaan/.config/zsh/antigen/bundles/hlissner/zsh-autopair///autopair.plugin.zsh
+[WRN][1568578168.5761175156] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5761175156] Replaced hooked function.
+[LOG][1568578168.5761675835] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5761675835] Return from hook -antigen-load-source with 0
+[LOG][1568578168.5762619972] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5762619972] Return from hook antigen-bundle with 0
+[WRN][1568578168.5764026642] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5764026642] Updated meta: target antigen-bundle mode repeat type pre called 28
+[WRN][1568578168.5764608383] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5764608383] Processing hooks: antigen-bundle-cached
+[WRN][1568578168.5765075684] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578168.5765075684] Pre hook: antigen-bundle-cached zdharma/fast-syntax-highlighting
+[WRN][1568578168.5765872002] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578168.5765872002] -antigen-hook-antigen-bundle zdharma/fast-syntax-highlighting
+[TRA][1568578168.5766408443] /home/canaan/.config/zsh/antigen.zsh:1438
+[TRA][1568578168.5766408443] Called antigen-bundle with zdharma/fast-syntax-highlighting BUNDLE
+[TRA][1568578168.5766408443] TRACE
+-antigen-hook-antigen-bundle
+-antigen-hook-handler
+antigen-bundle
+antigen-bundle-parallel-execute
+antigen-apply-parallel-execute
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578168.5771863461] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5771863461] Updated meta: target -antigen-load-env mode repeat type replace called 8
+[WRN][1568578168.5772588253] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5772588253] Processing hooks: -antigen-load-env-cached
+[WRN][1568578168.5773341656] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5773341656] Replace hook: -antigen-load-env-cached dir /home/canaan/.config/zsh/antigen/bundles/zdharma/fast-syntax-highlighting btype plugin url https://github.com/zdharma/fast-syntax-highlighting.git loc / name zdharma/fast-syntax-highlighting make_local_clone true
+[WRN][1568578168.5774326324] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5774326324] Replaced hooked function.
+[LOG][1568578168.5774824619] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5774824619] Return from hook -antigen-load-env with 0
+[WRN][1568578168.5776326656] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5776326656] Updated meta: target -antigen-load-source mode repeat type replace called 8
+[WRN][1568578168.5776870251] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5776870251] Processing hooks: -antigen-load-source-cached
+[WRN][1568578168.5777416229] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5777416229] Replace hook: -antigen-load-source-cached /home/canaan/.config/zsh/antigen/bundles/zdharma/fast-syntax-highlighting///fast-syntax-highlighting.plugin.zsh
+[WRN][1568578168.5778043270] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5778043270] Replaced hooked function.
+[LOG][1568578168.5778470039] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5778470039] Return from hook -antigen-load-source with 0
+[LOG][1568578168.5779278278] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5779278278] Return from hook antigen-bundle with 0
+[WRN][1568578168.5780487061] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5780487061] Updated meta: target antigen-bundle mode repeat type pre called 29
+[WRN][1568578168.5780985355] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5780985355] Processing hooks: antigen-bundle-cached
+[WRN][1568578168.5781393051] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578168.5781393051] Pre hook: antigen-bundle-cached zsh-users/zsh-autosuggestions
+[WRN][1568578168.5782032013] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578168.5782032013] -antigen-hook-antigen-bundle zsh-users/zsh-autosuggestions
+[TRA][1568578168.5782470703] /home/canaan/.config/zsh/antigen.zsh:1438
+[TRA][1568578168.5782470703] Called antigen-bundle with zsh-users/zsh-autosuggestions BUNDLE
+[TRA][1568578168.5782470703] TRACE
+-antigen-hook-antigen-bundle
+-antigen-hook-handler
+antigen-bundle
+antigen-bundle-parallel-execute
+antigen-apply-parallel-execute
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578168.5787355900] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5787355900] Updated meta: target -antigen-load-env mode repeat type replace called 9
+[WRN][1568578168.5787975788] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5787975788] Processing hooks: -antigen-load-env-cached
+[WRN][1568578168.5788614750] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5788614750] Replace hook: -antigen-load-env-cached dir /home/canaan/.config/zsh/antigen/bundles/zsh-users/zsh-autosuggestions btype plugin url https://github.com/zsh-users/zsh-autosuggestions.git loc / name zsh-users/zsh-autosuggestions make_local_clone true
+[WRN][1568578168.5789573193] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5789573193] Replaced hooked function.
+[LOG][1568578168.5790019035] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5790019035] Return from hook -antigen-load-env with 0
+[WRN][1568578168.5791294575] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5791294575] Updated meta: target -antigen-load-source mode repeat type replace called 9
+[WRN][1568578168.5791835785] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5791835785] Processing hooks: -antigen-load-source-cached
+[WRN][1568578168.5792374611] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5792374611] Replace hook: -antigen-load-source-cached /home/canaan/.config/zsh/antigen/bundles/zsh-users/zsh-autosuggestions///zsh-autosuggestions.plugin.zsh
+[WRN][1568578168.5792989731] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5792989731] Replaced hooked function.
+[LOG][1568578168.5793414116] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5793414116] Return from hook -antigen-load-source with 0
+[LOG][1568578168.5794236660] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5794236660] Return from hook antigen-bundle with 0
+[WRN][1568578168.5795524120] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5795524120] Updated meta: target antigen-bundle mode repeat type pre called 30
+[WRN][1568578168.5796024799] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5796024799] Processing hooks: antigen-bundle-cached
+[WRN][1568578168.5796430111] /home/canaan/.config/zsh/antigen.zsh:1487
+[WRN][1568578168.5796430111] Pre hook: antigen-bundle-cached https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train --btype=theme
+[WRN][1568578168.5797083378] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578168.5797083378] -antigen-hook-antigen-bundle https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train --btype=theme
+[TRA][1568578168.5797536373] /home/canaan/.config/zsh/antigen.zsh:1438
+[TRA][1568578168.5797536373] Called antigen-bundle with https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train --btype=theme BUNDLE
+[TRA][1568578168.5797536373] TRACE
+-antigen-hook-antigen-bundle
+-antigen-hook-handler
+antigen-bundle
+antigen-bundle-parallel-execute
+antigen-apply-parallel-execute
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[WRN][1568578168.5803008080] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5803008080] Updated meta: target -antigen-load-env mode repeat type replace called 10
+[WRN][1568578168.5803632736] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5803632736] Processing hooks: -antigen-load-env-cached
+[WRN][1568578168.5804278851] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5804278851] Replace hook: -antigen-load-env-cached dir /home/canaan/.config/zsh/antigen/bundles/caiogondim/bullet-train-oh-my-zsh-theme btype theme url https://github.com/caiogondim/bullet-train-oh-my-zsh-theme loc bullet-train.zsh-theme name caiogondim/bullet-train-oh-my-zsh-theme make_local_clone true
+[WRN][1568578168.5805234909] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5805234909] Replaced hooked function.
+[LOG][1568578168.5805680752] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5805680752] Return from hook -antigen-load-env with 0
+[WRN][1568578168.5807249546] /home/canaan/.config/zsh/antigen.zsh:1469
+[WRN][1568578168.5807249546] Updated meta: target -antigen-load-source mode repeat type replace called 10
+[WRN][1568578168.5807797909] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5807797909] Processing hooks: -antigen-load-source-cached
+[WRN][1568578168.5808346272] /home/canaan/.config/zsh/antigen.zsh:1498
+[WRN][1568578168.5808346272] Replace hook: -antigen-load-source-cached /home/canaan/.config/zsh/antigen/bundles/caiogondim/bullet-train-oh-my-zsh-theme/bullet-train.zsh-theme
+[WRN][1568578168.5808975697] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.5808975697] Replaced hooked function.
+[LOG][1568578168.5809409618] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5809409618] Return from hook -antigen-load-source with 0
+[LOG][1568578168.5810246468] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.5810246468] Return from hook antigen-bundle with 0
+[WRN][1568578168.5810809135] /home/canaan/.config/zsh/antigen.zsh:1739
+[WRN][1568578168.5810809135] Parallel install done PARALLEL
+[WRN][1568578168.5812644958] /home/canaan/.config/zsh/antigen.zsh:1462
+[WRN][1568578168.5812644958] Ignoring hook due to mode once: antigen-apply-lock
+[WRN][1568578168.5813212395] /home/canaan/.config/zsh/antigen.zsh:1462
+[WRN][1568578168.5813212395] Ignoring hook due to mode once: antigen-apply-parallel
+[WRN][1568578168.5813736916] /home/canaan/.config/zsh/antigen.zsh:1462
+[WRN][1568578168.5813736916] Ignoring hook due to mode once: antigen-apply-defer
+[WRN][1568578168.5814249516] /home/canaan/.config/zsh/antigen.zsh:1462
+[WRN][1568578168.5814249516] Ignoring hook due to mode once: antigen-apply-cached
+[WRN][1568578168.5814666748] /home/canaan/.config/zsh/antigen.zsh:1484
+[WRN][1568578168.5814666748] Processing hooks: antigen-apply-lock antigen-apply-parallel antigen-apply-defer antigen-apply-cached
+[WRN][1568578168.5815184116] /home/canaan/.config/zsh/antigen.zsh:1505
+[WRN][1568578168.5815184116] -antigen-hook-antigen-apply 
+[LOG][1568578168.5815615654] /home/canaan/.config/zsh/antigen.zsh:1438
+[LOG][1568578168.5815615654] Called antigen-apply
+[TRA][1568578168.5815987587] /home/canaan/.config/zsh/antigen.zsh:1439
+[TRA][1568578168.5815987587] Gonna create compdump file @ apply COMPDUMP
+[TRA][1568578168.5815987587] TRACE
+-antigen-hook-antigen-apply
+-antigen-hook-handler
+antigen-apply
+antigen-apply-parallel-execute
+-antigen-hook-handler
+antigen-apply
+-antigen-hook-antigen
+-antigen-hook-handler
+antigen
+/home/canaan/.zshrc
+[LOG][1568578168.8348641396] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.8348641396] Return from hook antigen-apply with 0
+[WRN][1568578168.8350584507] /home/canaan/.config/zsh/antigen.zsh:1509
+[WRN][1568578168.8350584507] Replaced hooked function.
+[WRN][1568578168.8351254463] /home/canaan/.config/zsh/antigen.zsh:1513
+[WRN][1568578168.8351254463] Post hook: antigen-apply-lock
+[WRN][1568578168.8351886272] /home/canaan/.config/zsh/antigen.zsh:1676
+[WRN][1568578168.8351886272] Freeing antigen-lock file at /home/canaan/.config/zsh/antigen/.lock
+[WRN][1568578168.8364279270] /home/canaan/.config/zsh/antigen.zsh:1513
+[WRN][1568578168.8364279270] Post hook: antigen-apply-cached
+[LOG][1568578168.8364996910] /home/canaan/.config/zsh/antigen.zsh:1893
+[LOG][1568578168.8364996910] TRACE: /home/canaan/.config/zsh/antigen.zsh:1514 /home/canaan/.config/zsh/antigen.zsh:1441 /home/canaan/.config/zsh/antigen.zsh:1447 /home/canaan/.config/zsh/antigen.zsh:1506 /home/canaan/.config/zsh/antigen.zsh:1441 /home/canaan/.zshrc:49 zsh:0
+[LOG][1568578168.8368227482] /home/canaan/.config/zsh/antigen.zsh:1787
+[LOG][1568578168.8368227482] Gonna generate cache for /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/bzr.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/clipboard.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/compfix.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/completion.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/correction.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/diagnostics.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/directories.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/functions.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/git.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/grep.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/history.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/key-bindings.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/misc.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/nvm.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/prompt_info_functions.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/spectrum.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/termsupport.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/lib/theme-and-appearance.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/plugins/git /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/plugins/git/git.plugin.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/plugins/heroku /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/plugins/heroku/heroku.plugin.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/plugins/pip /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/plugins/pip/pip.plugin.zsh /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/plugins/lein /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/plugins/command-not-found /home/canaan/.config/zsh/antigen/bundles/robbyrussell/oh-my-zsh/plugins/command-not-found/command-not-found.plugin.zsh /home/canaan/.config/zsh/antigen/bundles/hlissner/zsh-autopair// /home/canaan/.config/zsh/antigen/bundles/hlissner/zsh-autopair///autopair.plugin.zsh /home/canaan/.config/zsh/antigen/bundles/zdharma/fast-syntax-highlighting// /home/canaan/.config/zsh/antigen/bundles/zdharma/fast-syntax-highlighting///fast-syntax-highlighting.plugin.zsh /home/canaan/.config/zsh/antigen/bundles/zsh-users/zsh-autosuggestions// /home/canaan/.config/zsh/antigen/bundles/zsh-users/zsh-autosuggestions///zsh-autosuggestions.plugin.zsh /home/canaan/.config/zsh/antigen/bundles/caiogondim/bullet-train-oh-my-zsh-theme/bullet-train.zsh-theme /home/canaan/.config/zsh/antigen/bundles/caiogondim/bullet-train-oh-my-zsh-theme/bullet-train.zsh-theme
+[LOG][1568578168.8455345631] /home/canaan/.config/zsh/antigen.zsh:1844
+[LOG][1568578168.8455345631] CHECK_FILES /home/canaan/.zshrc /home/canaan/.zshrc
+[LOG][1568578168.9034979343] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.9034979343] Return from hook antigen-apply with 0
+[LOG][1568578168.9036669731] /home/canaan/.config/zsh/antigen.zsh:1518
+[LOG][1568578168.9036669731] Return from hook antigen with 0
