@@ -2,8 +2,9 @@
 .vim/plugged
 .ssh.bak
 .ssh/known_hosts
-.oh-my-zsh
+oh-my-zsh
 tmp
 .vim/undo/*
 !.vim/undo/.gitkeep
 backup
+zsh/antigen
