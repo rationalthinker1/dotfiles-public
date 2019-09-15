@@ -57,7 +57,6 @@ Plug 'carlitux/deoplete-ternjs', { 'do': 'npm install -g tern' }
 Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
 Plug 'kristijanhusak/deoplete-phpactor'
 Plug 'shougo/neco-vim'
-Plug 'altercation/vim-colors-solarized'
 call plug#end()
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -141,6 +140,20 @@ set wildmode=longest:full,full
 
 " Ignore compiled files
 set wildignore=*.o,*~,*.pyc
+set wildignore+=*/tmp/*
+set wildignore+=*/target/*
+set wildignore+=*/build/*
+set wildignore+=*.so
+set wildignore+=*.o
+set wildignore+=*.class
+set wildignore+=*.swp
+set wildignore+=*.zip
+set wildignore+=*.pdf
+set wildignore+=*.pyc
+set wildignore+=*/node_modules/*
+set wildignore+=*/vendor/*
+set wildignore+=*/bower_components/*
+set wildignore+=*/dist/*
 
 " always show current position
 set ruler
@@ -452,18 +465,31 @@ noremap <leader>pp :setlocal paste!<cr>
 nnoremap <leader>title 63i"<esc><esc>o" =><space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`oi<space>
 vnoremap <leader>title ydd63i"<esc><esc>o" =><space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`opi<bs>
 
-" copy current line while in insert mode
-function! PasteLineBelow()
+" copy current line
+function! PasteLineBelow(mode)
 	let l:y = line('.')
 	let l:x = col('.')
 	execute "normal! yyp"
-	cal cursor(l:y+1, l:x+1)
-	call feedkeys('i')
+	if a:mode == 'i'
+		cal cursor(l:y+1, l:x+1)
+		call feedkeys(a:mode)
+	else
+		cal cursor(l:y+1, l:x)
+	endif
 endfunc
-inoremap <C-d> <esc>:call PasteLineBelow()<cr>
+inoremap <C-d> <esc>:call PasteLineBelow('i')<cr>
+nnoremap <C-d> <esc>:call PasteLineBelow('n')<cr>
 
 " clears content from the cursor to the end while in insert mode
 inoremap <C-c> <esc>lc$
+
+" runs macro based on selected lines
+function! ExecuteMacroOverVisualRange()
+	echo "@".getcmdline()
+	execute ":'<,'>normal @".nr2char(getchar())
+endfunction
+xnoremap @ :<C-u>call ExecuteMacroOverVisualRange()<CR>
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Helper functions
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -542,11 +568,6 @@ set pastetoggle=<F3>
 nnoremap <C-S-Up> :m -2<CR>
 nnoremap <C-S-Down> :m +1<CR>
 
-" insert and remove comments in visual and normal mode
-vnoremap <leader>ic :s/^/#/g<CR>:let @/ = ""<CR>
-noremap  <leader>ic :s/^/#/g<CR>:let @/ = ""<CR>
-vnoremap <leader>rc :s/^#//g<CR>:let @/ = ""<CR>
-noremap  <leader>rc :s/^#//g<CR>:let @/ = ""<CR>
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Theme
