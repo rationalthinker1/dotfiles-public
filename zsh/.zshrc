@@ -65,5 +65,9 @@ if [ -f "${LOCAL_CONFIG}"/zsh/local.zsh ]; then
     source "${LOCAL_CONFIG}"/zsh/local.zsh
 fi
 
+if [ -f "${HOME}"/.bash_local ]; then
+    source "${HOME}"/.bash_local
+fi
+
 # Load fzf
 [ -f "${LOCAL_CONFIG}"/fzf/.fzf.zsh ] && source "${LOCAL_CONFIG}"/fzf/.fzf.zsh

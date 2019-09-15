@@ -50,6 +50,8 @@ Plug 'bronson/vim-trailing-whitespace'
 Plug 'chr4/nginx.vim'
 Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
 Plug 'tpope/vim-surround'
+Plug 'thinca/vim-visualstar'
+Plug 'daylerees/colour-schemes'
 
 " Deplete wo
 Plug 'roxma/nvim-yarp' | Plug 'roxma/vim-hug-neovim-rpc' | Plug 'Shougo/deoplete.nvim'
@@ -58,7 +60,7 @@ Plug 'kristijanhusak/deoplete-phpactor'
 Plug 'carlitux/deoplete-ternjs', { 'do': 'npm install -g tern' }
 Plug 'deoplete-plugins/deoplete-zsh'
 Plug 'shougo/neco-vim'
-Plug 'thinca/vim-visualstar'
+Plug 'shougo/neco-syntax'
 call plug#end()
 
 
@@ -313,6 +315,7 @@ function! AutoPlaceMarkBasedOnText(text, code)
 	let l:new_position = search(a:text, 'nc')
 	call setpos(a:code, [0,l:new_position,1,0])
 	if l:old_position != l:new_position
+		let @p = search(a:text, 'nc')
 		PlugInstall
 	endif
 endfunction
