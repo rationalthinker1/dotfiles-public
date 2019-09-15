@@ -57,6 +57,7 @@ Plug 'carlitux/deoplete-ternjs', { 'do': 'npm install -g tern' }
 Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
 Plug 'kristijanhusak/deoplete-phpactor'
 Plug 'shougo/neco-vim'
+Plug 'tpope/vim-surround'
 call plug#end()
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -480,6 +481,21 @@ endfunc
 inoremap <C-d> <esc>:call PasteLineBelow('i')<cr>
 nnoremap <C-d> <esc>:call PasteLineBelow('n')<cr>
 
+" delete current line
+function! DeleteCurrentLine(mode)
+	let l:y = line('.')
+	let l:x = col('.')
+	execute "normal! dd"
+	if a:mode == 'i'
+		cal cursor(l:y, l:x+1)
+		call feedkeys(a:mode)
+	else
+		cal cursor(l:y, l:x)
+	endif
+endfunc
+inoremap <C-y> <esc>:call DeleteCurrentLine('i')<cr>
+nnoremap <C-y> <esc>:call DeleteCurrentLine('n')<cr>
+
 " clears content from the cursor to the end while in insert mode
 inoremap <C-c> <esc>lc$
 
@@ -621,6 +637,11 @@ let g:ctrlp_custom_ignore = {
 " This makes a lot of sense if you are working on a project that is in version
 " control. It also supports works with .svn, .hg, .bzr.
 let g:ctrlp_working_path_mode = 'r'
+
+let g:ctrlp_by_filename  = 0 " ctrlp - don't search by filename by default (use full path instead)
+let g:ctrlp_show_hidden  = 1 " ctrlp - search for hidden files
+let g:ctrlp_regexp       = 1 " ctrlp - use regexp matching
+let g:ctrlp_root_markers = ['package.json', '.git']
 
 " Use a leader instead of the actual named binding
 nnoremap <leader>p :CtrlP<cr>
