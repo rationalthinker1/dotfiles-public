@@ -51,7 +51,6 @@ Plug 'chr4/nginx.vim'
 Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
 Plug 'tpope/vim-surround'
 Plug 'thinca/vim-visualstar'
-Plug 'daylerees/colour-schemes'
 
 " Deplete wo
 Plug 'roxma/nvim-yarp' | Plug 'roxma/vim-hug-neovim-rpc' | Plug 'Shougo/deoplete.nvim'

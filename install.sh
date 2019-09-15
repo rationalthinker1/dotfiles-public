@@ -2,6 +2,7 @@
 ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURCE[0]}"`
 BASE_DIR=$(dirname ${ABSOLUTE_PATH})
 BACKUP_DIR="${BASE_DIR}/backup"
+export ZSH="${LOCAL_CONFIG}/oh-my-zsh"
 #echo $BASE_DIR
 #echo $ABSOLUTE_PATH
 function createSymlink() {
@@ -23,6 +24,11 @@ function backupFile() {
 	echo "Backed up ${filename} to ${BACKUP_DIR}"
 }
 
+# Installing Oh My Zsh
+if [[ ! -e "${ZSH}" ]] ; then
+	sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+fi
+
 mkdir -p "${BACKUP_DIR}"
 backupFile "${HOME}/.zshrc"
 backupFile "${HOME}/.vimrc"
@@ -43,6 +49,7 @@ createSymlink "${BASE_DIR}/tmux" "${HOME}/.config/tmux"
 createSymlink "${BASE_DIR}/oh-my-zsh" "${HOME}/.config/oh-my-zsh"
 createSymlink "${BASE_DIR}/fzf" "${HOME}/.config/fzf"
 createSymlink "${BASE_DIR}/.Xresources" "${HOME}/.Xresources"
+
 
 # Installing zsh
 #if [ $(dpkg-query -W -f='${Status}' zsh 2>/dev/null | grep -c "ok installed") -eq 0 ];
