@@ -91,6 +91,9 @@ alias myip="curl http://ipecho.net/plain; echo"
 # Searches up history commands
 alias hgrep="history | grep"
 
+# So that vim shortcuts can work
+alias vim="stty stop '' -ixoff ; vim"
+
 # Search current directory (SCD) in grep recursively
 function scd() {
   grep -ir "$@" ./
@@ -179,7 +182,7 @@ function unzipd() {
 	unzip "${filename}" -d "${directory}"
 }
 
-function install-font-folder() {:
+function install-font-folder() {
 	directory="${1}"
 	sudo mkdir -p /usr/share/fonts/{true,open}type/"${directory}"
 	find ./"${directory}" -type f -name "*.otf" | xargs -I{} sudo cp {} /usr/share/fonts/opentype/"${directory}"

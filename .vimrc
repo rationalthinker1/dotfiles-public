@@ -66,6 +66,7 @@ call plug#end()
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " =>Nerdcommenter Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" _ is /
 nnoremap <C-_> :call NERDComment(0,"toggle")<CR>
 vnoremap <C-_> :call NERDComment(0,"toggle")<CR>
 
@@ -172,8 +173,8 @@ set ruler
 set cmdheight=2
 
 " Use tabs to switch between brackets
-"nnoremap <tab> %
-"vnoremap <tab> %
+nnoremap <tab> %
+vnoremap <tab> %
 
 " Allow using alt keys in vim for mapping
 set winaltkeys=no
@@ -289,10 +290,6 @@ vnoremap <silent> # :call VisualSelection('b')<CR>
 nnoremap <expr> k (v:count == 0 ? 'gk' : 'k')
 nnoremap <expr> j (v:count == 0 ? 'gj' : 'j')
 
-" Map <Space> to / (search) and Ctrl-<Space> to ? (backwards search)
-nnoremap <space> /
-nnoremap <c-space> ?
-
 " Disable highlight when <leader><cr> is pressed
 noremap <silent> <leader><cr> :noh<cr>
 
@@ -348,12 +345,14 @@ nnoremap <S-2> :tabn<CR>
 nnoremap <S-4> :tabp<CR>
 nnoremap <S-3> :tabnew<CR>
 
-"function! Reindent_File()
-"execute "normal! gg=G"
-"endfunction
-
-"nnoremap [^L :call Reindent_File()<cr>
-"nnoremap ^[^L :call Reindent_File()<cr>
+function! ReindentFile()
+	let l:y = line('.')
+	let l:x = col('.')
+	execute "normal! gg=G"
+	cal cursor(l:y, l:x)
+endfunction
+map <Esc> <C-A-L>
+nnoremap <C-A-L> :call ReindentFile()<cr>
 
 " change current file to working directory
 nnoremap <leader>cd :cd %:p:h<CR>:pwd<CR>
