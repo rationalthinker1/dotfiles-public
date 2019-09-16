@@ -137,6 +137,12 @@ set showcmd
 " applies substitutions globally by default on lines. For example, instead of :%s/foo/bar/g you just type :%s/foo/bar/
 set gdefault
 
+" Setup undo history persistent
+set undofile                " Save undos after file closes
+set undodir=$HOME/.vim/undo " where to save undo histories
+set undolevels=1000         " How many undos
+set undoreload=10000        " number of lines to save for undo
+
 " load fzf for vim
 set rtp+=~/.fzf
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -206,11 +212,6 @@ nnoremap <leader>bq :bp <BAR> bd #<CR>
 " Show all open buffers and their status
 nnoremap <leader>bl :ls<CR>
 
-" Setup undo history persistent
-set undofile                " Save undos after file closes
-set undodir=$HOME/.vim/undo " where to save undo histories
-set undolevels=1000         " How many undos
-set undoreload=10000        " number of lines to save for undo
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -221,7 +222,6 @@ syntax enable
 set background=dark
 set termguicolors
 set termencoding=utf-8
-set guifont=Ubuntu\ Mono\ derivative\ Powerline:10
 set guifont=IBM\ Plex\ Mono\ Semi-Bold\ 10
 " Set extra options when running in GUI mode
 if has("gui_running")
@@ -346,10 +346,11 @@ nnoremap <S-4> :tabp<CR>
 nnoremap <S-3> :tabnew<CR>
 
 function! ReindentFile()
-	let l:y = line('.')
-	let l:x = col('.')
+	let l:win_view = winsaveview()
+    let l:old_query = getreg('/')
 	execute "normal! gg=G"
-	cal cursor(l:y, l:x)
+	call winrestview(l:win_view)
+    call setreg('/', l:old_query)
 endfunction
 map <Esc> <C-A-L>
 nnoremap <C-A-L> :call ReindentFile()<cr>
