@@ -347,10 +347,10 @@ nnoremap <S-3> :tabnew<CR>
 
 function! ReindentFile()
 	let l:win_view = winsaveview()
-    let l:old_query = getreg('/')
+	let l:old_query = getreg('/')
 	execute "normal! gg=G"
 	call winrestview(l:win_view)
-    call setreg('/', l:old_query)
+	call setreg('/', l:old_query)
 endfunction
 map <Esc> <C-A-L>
 nnoremap <C-A-L> :call ReindentFile()<cr>
@@ -361,9 +361,6 @@ nnoremap <leader>cd :cd %:p:h<CR>:pwd<CR>
 " Opens a new tab with the current buffer's path
 " Super useful when editing files in the same directory
 noremap <leader>te :tabedit <c-r>=expand("%:p:h")<cr>/
-
-" Switch CWD to the directory of the open buffer
-noremap <leader>cd :cd %:p:h<cr>:pwd<cr>
 
 " Specify the behavior when switching between buffers
 try
@@ -380,9 +377,6 @@ autocmd BufReadPost *
 " Remember info about open buffers on close
 set viminfo^=%
 
-" NOT WORKING. jumping list aliases
-nnoremap <C-A-q> <C-o>
-nnoremap <C-A-e> <C-i>
 
 """"""""""""""""""""""""""""""
 " =>Status line
@@ -526,6 +520,28 @@ function! CmdLine(str)
 	unmenu Foo
 endfunction
 
+function! VisualSelect()
+	if mode()=="v"
+		let [line_start, column_start] = getpos("v")[1:2]
+		let [line_end, column_end] = getpos(".")[1:2]
+	else
+		let [line_start, column_start] = getpos("'<")[1:2]
+		let [line_end, column_end] = getpos("'>")[1:2]
+	end
+	if (line2byte(line_start)+column_start) > (line2byte(line_end)+column_end)
+		let [line_start, column_start, line_end, column_end] =
+					\   [line_end, column_end, line_start, column_start]
+	end
+	let lines = getline(line_start, line_end)
+	if len(lines) == 0
+		return ''
+	endif
+	let lines[-1] = lines[-1][: column_end - 1]
+	let lines[0] = lines[0][column_start - 1:]
+	return join(lines, "\n")
+endfunction
+
+
 function! VisualSelection(direction) range
 	let l:saved_reg = @"
 	execute "normal! vgvy"
@@ -596,7 +612,10 @@ nnoremap <C-S-Down> :m +1<CR>
 vnoremap <C-S-Up> :m '<-2<CR>gv=gv
 vnoremap <C-S-Down> :m '>+1<CR>gv=gv
 
-
+"map <Esc> <C-A-q>
+"map <Esc>- <C-A-e>
+"nnoremap <C-A-q> <C-o>
+"nnoremap <C-A-e> <C-i>
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " =>Theme
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

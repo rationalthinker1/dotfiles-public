@@ -92,7 +92,7 @@ alias myip="curl http://ipecho.net/plain; echo"
 alias hgrep="history | grep"
 
 # So that vim shortcuts can work
-alias vim="stty stop '' -ixoff ; vim"
+#alias vim="stty stop '' -ixoff ; vim"
 
 # Search current directory (SCD) in grep recursively
 function scd() {

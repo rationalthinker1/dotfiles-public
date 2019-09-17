@@ -52,6 +52,8 @@ autoload -U +X compinit && compinit
 autoload -U +X bashcompinit && bashcompinit
 bashcompinit -i
 
+# https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
+stty start undef
 #=======================================================================================
 # Aliases and functions
 #=======================================================================================
