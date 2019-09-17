@@ -7,40 +7,84 @@ export ZSH="${LOCAL_CONFIG}/oh-my-zsh"
 #echo $ABSOLUTE_PATH
 
 function updateFiles() {
-	current_file  = "${1}"
-	dotfiles_file = "${2}"
+	dotfiles_file="${1}"
+	current_file="${2}"
 
-	current_file_sum  = $(md5sum "${current_file}" | awk '{ print $1 }')
-	dotfiles_file_sum = $(md5sum "${dotfiles_file}" | awk '{ print $1 }')
+	if [[ ! -f "${current_file}" ]]; then
+		if [[ "${DEBUG}" ]]; then
+			echo "FUNCTION updateFiles"
+			echo "file current_file: ${current_file} does not exist"
+			echo ""
+		fi
+		createSymlink "${dotfiles_file}" "${current_file}"
+		return 0
+	fi
 
-	if [[ "${dotfiles_file_sum}" != "${current_file}" ]]; then
+	# the /dev/null part is to remove error if the file doesn't exist
+	#current_file_sum=$(md5sum "${current_file}" 2>/dev/null || echo 0 | awk '{ print $1 }')
+	#dotfiles_file_sum=$(md5sum "${dotfiles_file}" 2>/dev/null || echo 0 | awk '{ print $1 }')
+
+	current_file_sum=$(md5sum "${current_file}" | awk '{ print $1 }')
+	dotfiles_file_sum=$(md5sum "${dotfiles_file}" | awk '{ print $1 }')
+	
+	if [[ "${DEBUG}" ]]; then
+		echo "FUNCTION updateFiles"
+		echo "current_file: ${current_file}"
+		echo "dotfiles_file: ${dotfiles_file}"
+		echo "current_file_sum: ${current_file_sum}"
+		echo "dotfiles_file_sum: ${dotfiles_file_sum}"
+		echo ""
+	fi
+
+	if [[ "${dotfiles_file_sum}" != "${current_file_sum}" ]]; then
+		echo "file ${dotfiles_file} is being setup"
 		backupFile "${current_file}"
 		createSymlink "${dotfiles_file}" "${current_file}"
+	else
+		echo "file ${current_file} does not need backup"
 	fi
 }
 
 function createSymlink() {
 	if [ ! -L $1 ]; then
-		ln -nfs $1 $2
+		if [[ "${DEBUG}" ]]; then
+			echo "FUNCTION createSymlink"
+			echo "argument 1: ${1}"
+			echo "argument 2: ${2}"
+			echo ""
+		fi
+		if [[ ! "${DEBUG}" ]]; then
+			ln -nfs $1 $2
+		fi
 		echo "Link created: $2"
 	fi
 }
 
 function backupFile() {
 	filename=$(basename "${1}")
+	if [[ "${DEBUG}" ]]; then
+		echo "FUNCTION backupFile"
+		echo "argument 1: ${1}"
+		echo "filename: ${filename}"
+		echo ""
+	fi
 	if [[ ! -f "${1}" && ! -d "${1}" ]]; then
-		echo "${1} does not exist" && return 1
+		echo "${1} does not exist" && return 0
 	fi
 	#echo "${filename}"
 	#echo "${1}"
 	#cp -r -H $1 "${BACKUP_DIR}/"
-	rsync -avzhL --quiet --ignore-existing "${1}" "${BACKUP_DIR}/"
+
+	if [[ ! "${DEBUG}" ]]; then
+		rsync -avzhL --quiet --ignore-existing "${1}" "${BACKUP_DIR}/"
+	fi
 	echo "Backed up ${filename} to ${BACKUP_DIR}"
 }
 
 # Installing Oh My Zsh
 if [[ ! -e "${ZSH}" ]] ; then
 	sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+	echo "oh-my-zsh does not exist"
 fi
 
 #backupFile "${HOME}/.zshrc"
@@ -65,14 +109,14 @@ fi
 
 mkdir -p "${BACKUP_DIR}"
 updateFiles "${BASE_DIR}/zsh/.zshrc" "${HOME}/.zshrc"
-updateFiles "${BASE_DIR}/.vimrc" "${HOME}/.vimrc"
-updateFiles "${BASE_DIR}/.vim" "${HOME}/.vim"
-updateFiles "${BASE_DIR}/zsh" "${HOME}/.config/zsh"
-updateFiles "${BASE_DIR}/ranger" "${HOME}/.config/ranger"
-updateFiles "${BASE_DIR}/tmux" "${HOME}/.config/tmux"
-updateFiles "${BASE_DIR}/oh-my-zsh" "${HOME}/.config/oh-my-zsh"
-updateFiles "${BASE_DIR}/fzf" "${HOME}/.config/fzf"
-updateFiles "${BASE_DIR}/.Xresources" "${HOME}/.Xresources"
+#updateFiles "${BASE_DIR}/.vimrc" "${HOME}/.vimrc"
+#updateFiles "${BASE_DIR}/.vim" "${HOME}/.vim"
+#updateFiles "${BASE_DIR}/zsh" "${HOME}/.config/zsh"
+#updateFiles "${BASE_DIR}/ranger" "${HOME}/.config/ranger"
+#updateFiles "${BASE_DIR}/tmux" "${HOME}/.config/tmux"
+#updateFiles "${BASE_DIR}/oh-my-zsh" "${HOME}/.config/oh-my-zsh"
+#updateFiles "${BASE_DIR}/fzf" "${HOME}/.config/fzf"
+#updateFiles "${BASE_DIR}/.Xresources" "${HOME}/.Xresources"
 
 
 # Installing zsh
