@@ -179,8 +179,8 @@ set ruler
 set cmdheight=2
 
 " Use tabs to switch between brackets
-nnoremap <tab> %
-vnoremap <tab> %
+"nnoremap <tab> %
+"vnoremap <tab> %
 
 " Allow using alt keys in vim for mapping
 set winaltkeys=no
@@ -475,16 +475,25 @@ vnoremap <leader>title ydd63i"<esc><esc>o" =><space><space><esc>moi<cr><esc>63i"
 function! PasteLineBelow(mode)
 	let l:y = line('.')
 	let l:x = col('.')
-	execute "normal! yyp"
 	if a:mode == 'i'
+		execute "normal! yyp"
 		cal cursor(l:y+1, l:x+1)
 		call feedkeys(a:mode)
-	else
+	elseif a:mode == 'n'
+		execute "normal! yyp"
 		cal cursor(l:y+1, l:x)
+	else
+		let l:lines = VisualSelect()
+		let [l:line_start, l:column_start] = getpos("v")[1:2]
+		let [l:line_end, l:column_end] = getpos(".")[1:2]
+		let l:size = len(split(l:lines, "\n"))
+		call append(l:line_end, split(l:lines, "\n"))
+		cal cursor(l:line_end+(l:size), l:x)
 	endif
 endfunc
 inoremap <C-d> <esc>:call PasteLineBelow('i')<cr>
 nnoremap <C-d> <esc>:call PasteLineBelow('n')<cr>
+vnoremap <C-d> <esc>:call PasteLineBelow('v')<cr>
 
 " delete current line
 function! DeleteCurrentLine(mode)
