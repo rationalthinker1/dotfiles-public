@@ -3,73 +3,107 @@ ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURC
 BASE_DIR=$(dirname ${ABSOLUTE_PATH})
 BACKUP_DIR="${BASE_DIR}/backup"
 export ZSH="${LOCAL_CONFIG}/oh-my-zsh"
-#echo $BASE_DIR
-#echo $ABSOLUTE_PATH
+#decho $BASE_DIR
+#decho $ABSOLUTE_PATH
+
+function decho() {
+	if [[ "${DEBUG}" ]]; then
+		echo "${1}"
+	fi
+}
 
 function updateFiles() {
 	dotfiles_file="${1}"
 	current_file="${2}"
 
-	if [[ ! -f "${current_file}" ]]; then
-		if [[ "${DEBUG}" ]]; then
-			echo "FUNCTION updateFiles"
-			echo "file current_file: ${current_file} does not exist"
-			echo ""
-		fi
+	decho "FUNCTION updateFiles"
+	decho "current_file: ${current_file}"
+	decho "dotfiles_file: ${dotfiles_file}"
+
+	# if the link is not symbolic link or if the file is a symbolic link and the target does not contain string "dotfiles"
+	if [[ ( ! -L "${current_file}" ) || ( -L "${current_file}" && (! $(readlink -f "${current_file}") =~ "dotfiles" ) ) ]]; then
+		echo "file ${dotfiles_file} is being setup"
+		backupFile "${current_file}"
 		createSymlink "${dotfiles_file}" "${current_file}"
 		return 0
 	fi
 
-	# the /dev/null part is to remove error if the file doesn't exist
-	#current_file_sum=$(md5sum "${current_file}" 2>/dev/null || echo 0 | awk '{ print $1 }')
-	#dotfiles_file_sum=$(md5sum "${dotfiles_file}" 2>/dev/null || echo 0 | awk '{ print $1 }')
+	#if [[ ! -f "${current_file}" && -d "${current_file}" ]]; then
+	## directory exists
+	#decho "FUNCTION updateFiles"
+	#decho "directory exists: ${current_file}"
+	#decho ""
+	#createSymlink "${dotfiles_file}" "${current_file}"
 
-	current_file_sum=$(md5sum "${current_file}" | awk '{ print $1 }')
-	dotfiles_file_sum=$(md5sum "${dotfiles_file}" | awk '{ print $1 }')
-	
-	if [[ "${DEBUG}" ]]; then
-		echo "FUNCTION updateFiles"
-		echo "current_file: ${current_file}"
-		echo "dotfiles_file: ${dotfiles_file}"
-		echo "current_file_sum: ${current_file_sum}"
-		echo "dotfiles_file_sum: ${dotfiles_file_sum}"
-		echo ""
-	fi
+		#return 0
+		#elif [[ -f "${current_file}" && ! -d "${current_file}" ]]; then
+		## file exists
+		## the /dev/null part is to remove error if the file doesn't exist
+		##current_file_sum=$(md5sum "${current_file}" 2>/dev/null || echo 0 | awk '{ print $1 }')
+		##dotfiles_file_sum=$(md5sum "${dotfiles_file}" 2>/dev/null || echo 0 | awk '{ print $1 }')
 
-	if [[ "${dotfiles_file_sum}" != "${current_file_sum}" ]]; then
-		echo "file ${dotfiles_file} is being setup"
-		backupFile "${current_file}"
-		createSymlink "${dotfiles_file}" "${current_file}"
-	else
-		echo "file ${current_file} does not need backup"
-	fi
-}
+		#current_file_sum=$(md5sum "${current_file}" | awk '{ print $1 }')
+		#dotfiles_file_sum=$(md5sum "${dotfiles_file}" | awk '{ print $1 }')
+
+		#decho "FUNCTION updateFiles"
+		#decho "current_file: ${current_file}"
+		#decho "dotfiles_file: ${dotfiles_file}"
+		#decho "current_file_sum: ${current_file_sum}"
+		#decho "dotfiles_file_sum: ${dotfiles_file_sum}"
+		#decho ""
+
+		#if [[ "${dotfiles_file_sum}" != "${current_file_sum}" ]]; then
+		#echo "file ${dotfiles_file} is being setup"
+		#backupFile "${current_file}"
+		#createSymlink "${dotfiles_file}" "${current_file}"
+		#else
+		#decho "file ${current_file} does not need to be updated"
+		#fi
+
+		#return 0
+		#elif [[ ! -f "${current_file}" ]]; then
+		## file does not exists
+		#decho "FUNCTION updateFiles"
+		#decho "file current_file: ${current_file} does not exist"
+		#decho ""
+		#createSymlink "${dotfiles_file}" "${current_file}"
+
+		#return 0
+		#elif [[ ! -d "${current_file}"  ]]; then
+		## directory does not exists
+		#decho "FUNCTION updateFiles"
+		#decho "directory current_file: ${current_file} does not exist"
+		#decho ""
+		#createSymlink "${dotfiles_file}" "${current_file}"
+
+		#return 0
+		#fi
+
+		decho "file ${current_file} does not need to be updated"
+		return 0
+	}
 
 function createSymlink() {
 	if [ ! -L $1 ]; then
-		if [[ "${DEBUG}" ]]; then
-			echo "FUNCTION createSymlink"
-			echo "argument 1: ${1}"
-			echo "argument 2: ${2}"
-			echo ""
-		fi
+		decho "FUNCTION createSymlink"
+		decho "argument 1: ${1}"
+		decho "argument 2: ${2}"
+		decho ""
 		if [[ ! "${DEBUG}" ]]; then
 			ln -nfs $1 $2
+			echo "Link created: $2"
 		fi
-		echo "Link created: $2"
 	fi
 }
 
 function backupFile() {
 	filename=$(basename "${1}")
-	if [[ "${DEBUG}" ]]; then
-		echo "FUNCTION backupFile"
-		echo "argument 1: ${1}"
-		echo "filename: ${filename}"
-		echo ""
-	fi
+	decho "FUNCTION backupFile"
+	decho "argument 1: ${1}"
+	decho "filename: ${filename}"
+	decho ""
 	if [[ ! -f "${1}" && ! -d "${1}" ]]; then
-		echo "${1} does not exist" && return 0
+		decho "${1} does not exist" && return 0
 	fi
 	#echo "${filename}"
 	#echo "${1}"
@@ -83,8 +117,8 @@ function backupFile() {
 
 # Installing Oh My Zsh
 if [[ ! -e "${ZSH}" ]] ; then
+	decho "oh-my-zsh does not exist"
 	sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
-	echo "oh-my-zsh does not exist"
 fi
 
 #backupFile "${HOME}/.zshrc"
@@ -109,15 +143,14 @@ fi
 
 mkdir -p "${BACKUP_DIR}"
 updateFiles "${BASE_DIR}/zsh/.zshrc" "${HOME}/.zshrc"
-#updateFiles "${BASE_DIR}/.vimrc" "${HOME}/.vimrc"
-#updateFiles "${BASE_DIR}/.vim" "${HOME}/.vim"
-#updateFiles "${BASE_DIR}/zsh" "${HOME}/.config/zsh"
-#updateFiles "${BASE_DIR}/ranger" "${HOME}/.config/ranger"
-#updateFiles "${BASE_DIR}/tmux" "${HOME}/.config/tmux"
-#updateFiles "${BASE_DIR}/oh-my-zsh" "${HOME}/.config/oh-my-zsh"
-#updateFiles "${BASE_DIR}/fzf" "${HOME}/.config/fzf"
-#updateFiles "${BASE_DIR}/.Xresources" "${HOME}/.Xresources"
-
+updateFiles "${BASE_DIR}/.vimrc" "${HOME}/.vimrc"
+updateFiles "${BASE_DIR}/.vim" "${HOME}/.vim"
+updateFiles "${BASE_DIR}/zsh" "${HOME}/.config/zsh"
+updateFiles "${BASE_DIR}/ranger" "${HOME}/.config/ranger"
+updateFiles "${BASE_DIR}/tmux" "${HOME}/.config/tmux"
+updateFiles "${BASE_DIR}/oh-my-zsh" "${HOME}/.config/oh-my-zsh"
+updateFiles "${BASE_DIR}/fzf" "${HOME}/.config/fzf"
+updateFiles "${BASE_DIR}/.Xresources" "${HOME}/.Xresources"
 
 # Installing zsh
 #if [ $(dpkg-query -W -f='${Status}' zsh 2>/dev/null | grep -c "ok installed") -eq 0 ];
