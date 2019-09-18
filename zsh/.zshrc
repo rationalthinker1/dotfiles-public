@@ -36,7 +36,8 @@ antigen bundle command-not-found
 antigen bundle hlissner/zsh-autopair
 antigen bundle zdharma/fast-syntax-highlighting
 antigen bundle zsh-users/zsh-autosuggestions
-#antigen bundle unixorn/autoupdate-antigen.zshplugin
+antigen bundle zsh-users/zsh-completions
+antigen bundle zsh-users/zsh-history-substring-search
 
 # Load the theme.
 BULLETTRAIN_TIME_12HR=true
