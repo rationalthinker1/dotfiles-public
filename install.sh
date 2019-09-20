@@ -56,6 +56,7 @@ function backupFile() {
 
 	if [[ ! "${DEBUG}" ]]; then
 		rsync -avzhL --quiet "${1}" "${BACKUP_DIR}/"
+		rm -rf "${1}"
 	fi
 	echo "Backed up ${filename} to ${BACKUP_DIR}"
 }
