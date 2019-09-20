@@ -10,4 +10,6 @@ fi
 
 # Key bindings
 # ------------
-source "${HOME}/.fzf/shell/key-bindings.zsh"
+if [[ -f  "${HOME}/.fzf/shell/key-bindings.zsh" ]]; then
+	source "${HOME}/.fzf/shell/key-bindings.zsh"
+fi
