@@ -60,6 +60,13 @@ function backupFile() {
 	echo "Backed up ${filename} to ${BACKUP_DIR}"
 }
 
+# Installing zsh
+if [[ ! $(zsh --version 2>/dev/null) ]]; then
+	sudo apt install --assume-yes --no-install-recommends zsh powerline fonts-powerline
+	sudo echo $(which zsh) | sudo tee -a /etc/shells
+	sudo chsh -s $(which zsh)
+fi
+
 # Installing Oh My Zsh
 if [[ ! -d "${ZSH}" ]] ; then
 	decho "oh-my-zsh does not exist"
