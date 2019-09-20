@@ -8,3 +8,4 @@ tmp
 !.vim/undo/.gitkeep
 backup
 zsh/antigen
+zsh/local.zsh
