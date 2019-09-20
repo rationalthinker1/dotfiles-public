@@ -84,3 +84,6 @@ updateFiles "${BASE_DIR}/fzf" "${HOME}/.config/fzf"
 updateFiles "${BASE_DIR}/.Xresources" "${HOME}/.Xresources"
 #updateFiles "${BASE_DIR}/oh-my-zsh" "${HOME}/.config/oh-my-zsh"
 
+if [[ ! -f "${HOME}/.ssh/rc" ]]; then
+	cp "${BASE_DIR}/.ssh/rc" "${HOME}/.ssh/rc"
+fi
