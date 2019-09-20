@@ -1,6 +1,7 @@
 #export TERM="xterm-256color"
 export LOCAL_CONFIG="/home/${USER}/.config"
 export ZSH="${LOCAL_CONFIG}/oh-my-zsh"
+export ZDOTDIR="${LOCAL_CONFIG}/oh-my-zsh/zcompdump"
 export ADOTDIR="${LOCAL_CONFIG}/zsh/antigen"
 export PATH="/opt/anaconda3/bin:${PATH}"
 #source "${HOME}"/.theme
