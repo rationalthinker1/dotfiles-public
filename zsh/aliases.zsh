@@ -21,6 +21,10 @@ if  [ -x "$(command -v exa)" ]; then
 	alias llt="exa --color=auto --long --header --all --sort oldest --group-directories-first"
 	# Show tree level 2
 	alias lt="exa --color=auto --long --header --all --tree --level=2 --group-directories-first"
+	# Show tree level 3
+	alias lt="exa --color=auto --long --header --all --tree --level=3 --group-directories-first"
+	# Show tree level 4
+	alias lt="exa --color=auto --long --header --all --tree --level=4 --group-directories-first"
 
 	## Show hidden files ##
 	alias l.='exa -d .* --color=auto'
