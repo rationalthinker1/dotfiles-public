@@ -12,6 +12,17 @@ export HISTSIZE=2000            # bash history will save N commands
 export HISTFILESIZE="${HISTSIZE}" # bash will remember N commands
 export HISTCONTROL=ignoreboth   # ingore duplicates and spaces
 export HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
+setopt HIST_IGNORE_SPACE
+setopt AUTO_CD
+setopt PUSHD_IGNORE_DUPS
+setopt SHARE_HISTORY
+setopt APPEND_HISTORY
+unsetopt MENU_COMPLETE   # DO NOT AUTOSELECT THE FIRST COMPLETION ENTRY
+unsetopt FLOWCONTROL
+setopt AUTO_MENU         # SHOW COMPLETION MENU ON SUCCESIVE TAB PRESs
+setopt COMPLETE_IN_WORD
+setopt ALWAYS_TO_END
+setopt HIST_REDUCE_BLANKS
 export VISUAL=vim
 
 # Load tmux
