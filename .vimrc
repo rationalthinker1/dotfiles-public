@@ -499,16 +499,22 @@ vnoremap <C-d> <esc>:call PasteLineBelow('v')<cr>
 function! DeleteCurrentLine(mode)
 	let l:y = line('.')
 	let l:x = col('.')
-	execute "normal! dd"
 	if a:mode == 'i'
+		execute "normal! dd"
 		cal cursor(l:y, l:x+1)
 		call feedkeys(a:mode)
-	else
+	elseif a:mode == 'n'
+		execute "normal! dd"
 		cal cursor(l:y, l:x)
+	else
+		let [line_start, column_start] = getpos("'<")[1:2]
+		let [line_end, column_end] = getpos("'>")[1:2]
+		execute line_start . ",". line_end . "d"
 	endif
-endfunc
+endfunction
 inoremap <C-y> <esc>:call DeleteCurrentLine('i')<cr>
 nnoremap <C-y> <esc>:call DeleteCurrentLine('n')<cr>
+vnoremap <C-y> <esc>:call DeleteCurrentLine('v')<cr>
 
 " clears content from the cursor to the end while in insert mode
 inoremap <C-c> <esc>lc$
