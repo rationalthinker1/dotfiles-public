@@ -24,11 +24,6 @@ setopt ALWAYS_TO_END
 setopt HIST_REDUCE_BLANKS
 export VISUAL=vim
 
-# Load tmux
-if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
-	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
-fi
-
 #=======================================================================================
 # Antigen
 #=======================================================================================
@@ -85,3 +80,9 @@ fi
 [ -f "${LOCAL_CONFIG}"/fzf/.fzf.zsh ] && source "${LOCAL_CONFIG}"/fzf/.fzf.zsh
 # load powerlevel10k settings
 [[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
+
+# Load tmux
+if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
+	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
+fi
+
