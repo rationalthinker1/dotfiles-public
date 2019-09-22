@@ -25,8 +25,8 @@ setopt HIST_REDUCE_BLANKS
 export VISUAL=vim
 
 # Load tmux
-if [[ ! $TERM =~ screen ]]; then
-    exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
+if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
+	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
 fi
 
 #=======================================================================================
