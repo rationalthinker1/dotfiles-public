@@ -84,7 +84,7 @@ updateFiles "${BASE_DIR}/ranger" "${HOME}/.config/ranger"
 updateFiles "${BASE_DIR}/tmux" "${HOME}/.config/tmux"
 updateFiles "${BASE_DIR}/fzf" "${HOME}/.config/fzf"
 updateFiles "${BASE_DIR}/.Xresources" "${HOME}/.Xresources"
-#updateFiles "${BASE_DIR}/oh-my-zsh" "${HOME}/.config/oh-my-zsh"
+updateFiles "${BASE_DIR}/rc.sh" "${HOME}/.ssh/rc"
 
 if [[ ! -f "${HOME}/.ssh/rc" ]]; then
 	cp "${BASE_DIR}/.ssh/rc" "${HOME}/.ssh/rc"
