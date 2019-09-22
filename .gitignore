@@ -9,3 +9,5 @@ tmp
 backup
 zsh/antigen
 zsh/local.zsh
+.zcompdump
+.zcompdump-*
