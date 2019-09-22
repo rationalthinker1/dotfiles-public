@@ -636,19 +636,17 @@ vnoremap <C-S-Down> :m '>+1<CR>gv=gv
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 syntax enable
 "set background=dark
-"let g:airline_theme='material'
 "colorscheme vim-material
-colorscheme gloom-contrast
-let g:material_style='palenight'
-
-"colorscheme cosmic-barf
+"colorscheme gloom-contrast
+"let g:material_style='palenight'
+colorscheme cosmic-barf
 "let g:colors_name = 'cosmic-barf'
+let g:UltiSnipsExpandTrigger="<C-Tab>"
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " =>Airline Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-let g:airline_theme = 'deus'
-let g:UltiSnipsExpandTrigger="<C-Tab>"
+let g:airline_theme = 'material'
 let g:airline_powerline_fonts = 1
 " Enable the list of buffers
 let g:airline#extensions#tabline#enabled = 1

@@ -1,7 +1,7 @@
 #export TERM="xterm-256color"
 export LOCAL_CONFIG="/home/${USER}/.config"
 export ZSH="${LOCAL_CONFIG}/oh-my-zsh"
-export ZDOTDIR="${LOCAL_CONFIG}/oh-my-zsh/zcompdump"
+export ZDOTDIR="${LOCAL_CONFIG}/zsh"
 export ADOTDIR="${LOCAL_CONFIG}/zsh/antigen"
 export PATH="/opt/anaconda3/bin:${PATH}"
 #source "${HOME}"/.theme
@@ -52,10 +52,8 @@ antigen bundle zsh-users/zsh-completions
 antigen bundle zsh-users/zsh-history-substring-search
 
 # Load the theme.
-BULLETTRAIN_TIME_12HR=true
-BULLETTRAIN_CONTEXT_DEFAULT_USER="${USER}"
-BULLETTRAIN_DIR_EXTENDED=0
-antigen theme https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train
+antigen theme romkatv/powerlevel10k
+#antigen theme https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train
 #antigen theme bhilburn/powerlevel9k powerlevel9k
 
 # Tell antigen that you're done.
@@ -87,3 +85,5 @@ fi
 
 # Load fzf
 [ -f "${LOCAL_CONFIG}"/fzf/.fzf.zsh ] && source "${LOCAL_CONFIG}"/fzf/.fzf.zsh
+# load powerlevel10k settings
+[[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
