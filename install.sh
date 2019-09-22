@@ -63,6 +63,7 @@ function backupFile() {
 
 # Installing zsh
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
+	decho "zsh does not exist"
 	sudo apt install --assume-yes --no-install-recommends zsh powerline fonts-powerline python3-pip
 	pip3 install --user pynvim
 	sudo echo $(which zsh) | sudo tee -a /etc/shells
@@ -86,6 +87,3 @@ updateFiles "${BASE_DIR}/fzf" "${HOME}/.config/fzf"
 updateFiles "${BASE_DIR}/.Xresources" "${HOME}/.Xresources"
 updateFiles "${BASE_DIR}/rc.sh" "${HOME}/.ssh/rc"
 
-if [[ ! -f "${HOME}/.ssh/rc" ]]; then
-	cp "${BASE_DIR}/.ssh/rc" "${HOME}/.ssh/rc"
-fi
