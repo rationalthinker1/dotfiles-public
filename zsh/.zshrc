@@ -34,9 +34,12 @@ antigen use oh-my-zsh
 
 # Bundles from the default repo (robbyrussell's oh-my-zsh).
 antigen bundle git
-antigen bundle heroku
-antigen bundle pip
-antigen bundle lein
+antigen bundle docker
+antigen bundle docker-compose
+antigen bundle zpm-zsh/ssh
+antigen bundle g-plane/zsh-yarn-autocompletions
+antigen bundle thetic/extract
+antigen bundle voronkovich/apache2.plugin.zsh
 antigen bundle command-not-found
 antigen bundle hlissner/zsh-autopair
 antigen bundle zdharma/fast-syntax-highlighting
