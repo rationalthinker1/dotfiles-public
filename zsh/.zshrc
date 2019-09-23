@@ -55,12 +55,6 @@ antigen theme romkatv/powerlevel10k
 # Tell antigen that you're done.
 antigen apply
 
-autoload -U +X compinit && compinit
-autoload -U +X bashcompinit && bashcompinit
-bashcompinit -i
-
-# https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
-stty start undef
 #=======================================================================================
 # Aliases and functions
 #=======================================================================================
@@ -88,4 +82,12 @@ fi
 if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
 	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
 fi
+
+# loading autocompletion
+autoload -U +X compinit && compinit
+autoload -U +X bashcompinit && bashcompinit
+bashcompinit -i
+
+# https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
+stty start undef
 
