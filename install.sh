@@ -87,3 +87,13 @@ updateFiles "${BASE_DIR}/fzf" "${HOME}/.config/fzf"
 updateFiles "${BASE_DIR}/.Xresources" "${HOME}/.Xresources"
 updateFiles "${BASE_DIR}/rc.sh" "${HOME}/.ssh/rc"
 
+# Installing tmux plugins
+if [[ ! -d "${LOCAL_CONFIG}/tmux/plugins/tmux-yank" ]]; then
+	git clone https://github.com/tmux-plugins/tmux-yank "${LOCAL_CONFIG}"/tmux/plugins/tmux-yank
+fi
+
+# Installing tmux plugins
+if [[ ! -d "${LOCAL_CONFIG}/tmux/plugins/tmux-better-mouse-mode" ]]; then
+	git clone https://github.com/tmux-plugins/tmux-better-mouse-mode "${LOCAL_CONFIG}"/tmux/plugins/tmux-better-mouse-mode
+fi
+
