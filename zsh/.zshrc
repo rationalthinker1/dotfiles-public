@@ -7,22 +7,41 @@ export ZSH="${ZDOTDIR}/oh-my-zsh"
 #=======================================================================================
 # Basic Settings
 #=======================================================================================
-export HISTSIZE=2000              # bash history will save N commands
-export HISTFILESIZE="${HISTSIZE}" # bash will remember N commands
-export HISTCONTROL=ignoreboth     # ingore duplicates and spaces
-export HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
-setopt HIST_IGNORE_SPACE
+HISTFILE="${ZDOTDIR}"/.zsh_history
+HISTSIZE=20000             # bash history will save N commands
+HISTFILESIZE="${HISTSIZE}" # bash will remember N commands
+HISTCONTROL=ignoreboth     # ingore duplicates and spaces
+HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
+setopt CORRECT                    # Try to correct command line spelling
 setopt AUTO_CD
 setopt PUSHD_IGNORE_DUPS
-setopt SHARE_HISTORY
-setopt APPEND_HISTORY
 unsetopt MENU_COMPLETE            # DO NOT AUTOSELECT THE FIRST COMPLETION ENTRY
 unsetopt FLOWCONTROL
 setopt AUTO_MENU                  # SHOW COMPLETION MENU ON SUCCESIVE TAB PRESs
 setopt COMPLETE_IN_WORD
 setopt ALWAYS_TO_END
 setopt HIST_REDUCE_BLANKS
+setopt INC_APPEND_HISTORY         # append history list to the history file (important for multiple parallel zsh sessions!)
+setopt SHARE_HISTORY              # import new commands from the history file also in other zsh-session
+setopt EXTENDED_HISTORY           # save each command's beginning timestamp and the duration to the history file
+setopt HIST_IGNORE_ALL_DUPS       # If a new command line being added to the history list duplicates an older one, the older command is removed from the list
+setopt HIST_IGNORE_SPACE          # remove command lines from the history list when the first character on the line is a space
 export VISUAL=vim
+
+# loading autocompletion
+autoload -U +X compinit && compinit
+autoload -U +X bashcompinit && bashcompinit
+autoload -U edit-command-line
+zle -N edit-command-line
+bindkey -M vicmd v edit-command-line
+bashcompinit -i
+
+# https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
+stty start undef
+
+# use vim style keys
+bindkey -v
+
 
 #=======================================================================================
 # Antigen
@@ -82,12 +101,4 @@ fi
 if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
 	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
 fi
-
-# loading autocompletion
-autoload -U +X compinit && compinit
-autoload -U +X bashcompinit && bashcompinit
-bashcompinit -i
-
-# https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
-stty start undef
 

@@ -18,7 +18,7 @@ if  [ -x "$(command -v exa)" ]; then
 	# Same as above, but ordered by size
 	alias lls="exa --color=auto --long --header --all --sort size --group-directories-first"
 	# Same as above, but ordered by date
-	alias llt="exa --color=auto --long --header --all --sort oldest --group-directories-first"
+	alias llt="exa --color=auto --long --header --all --reverse --sort oldest --group-directories-first"
 	# Show tree level 2
 	alias lt="exa --color=auto --long --header --all --tree --level=2 --group-directories-first"
 	# Show tree level 3
@@ -241,7 +241,6 @@ alias gre=git_reset
 #=======================================================================================
 # Vagrant Aliases and functions
 #=======================================================================================
-alias v='vagrant version && vagrant global-status'
 alias vst='vagrant status'
 alias vup='vagrant up'
 alias vdo='vagrant halt'
@@ -419,3 +418,15 @@ dbt() {
 
   docker build $ARGS
 }
+
+vrr() {
+	previous_command=$(fn -ln -1)
+	cmd=$(echo "$previous_command" | awk '{print $1}')
+	echo $previous_command
+	echo $cmd
+	if [[ $cmd == 'cat' || $cmd == 'bat' ]]; then
+		arguments=$(echo "$previous_command" | cut -f 2- -d ' ')
+		bash vim $arguments
+	fi
+}
+
