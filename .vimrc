@@ -22,7 +22,10 @@ Plug 'Yggdroot/indentLine'
 Plug 'junegunn/fzf.vim'
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
-Plug 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
+if ! has('nvim')
+	Plug 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
+endif
+
 Plug 'terryma/vim-multiple-cursors'
 Plug 'ctrlpvim/ctrlp.vim'
 Plug 'quramy/tsuquyomi'
@@ -51,6 +54,7 @@ Plug 'chr4/nginx.vim'
 Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
 Plug 'tpope/vim-surround'
 Plug 'thinca/vim-visualstar'
+Plug 'tpope/vim-repeat'
 "Plug 'neoclide/coc.nvim', {'branch': 'release'}
 "Plug 'Valloric/YouCompleteMe', { 'do': 'python3 ./install.py --clang-completer' }
 
@@ -301,13 +305,13 @@ noremap <silent> <leader><cr> :noh<cr>
 " Smart way to move between windows
 nnoremap <A-Right> <C-W>l
 nnoremap <A-Left> <C-W>h
-nnoremap <A-Up> <C-W>j
-nnoremap <A-Down> <C-W>k
+nnoremap <A-Up> <C-W>k
+nnoremap <A-Down> <C-W>j
 
 inoremap <A-Right> <C-W>l
 inoremap <A-Left> <C-W>h
-inoremap <A-Up> <C-W>j
-inoremap <A-Down> <C-W>k
+inoremap <A-Up> <C-W>k
+inoremap <A-Down> <C-W>j
 
 " Close the current buffer
 noremap <leader>bd :Bclose<cr>
@@ -785,3 +789,37 @@ xmap ga <Plug>(EasyAlign)
 
 " Start interactive EasyAlign for a motion/text object (e.g. gaip)
 nmap ga <Plug>(EasyAlign)
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" =>ALE
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:ale_lint_on_insert_leave = 0
+let g:ale_fixers = {
+\   '*': ['remove_trailing_lines', 'trim_whitespace'],
+\   'javascript': ['prettier'],
+\   'javascript.jsx': ['prettier'],
+\   'typescript': ['prettier'],
+\   'typescript.tsx': ['prettier'],
+\   'python': ['yapf'],
+\   'json': ['prettier'],
+\   'html': ['prettier'],
+\   'css': ['prettier', 'stylelint'],
+\   'scss': ['prettier', 'stylelint'],
+\}
+let g:ale_linters = {
+\   'javascript': ['eslint'],
+\   'javascript.jsx': ['eslint'],
+\   'typescript': ['eslint'],
+\   'typescript.tsx': ['eslint'],
+\   'python': ['flake8'],
+\   'json': ['jsonlint'],
+\   'html': ['htmlhint'],
+\   'css': ['stylelint'],
+\   'scss': ['stylelint'],
+\}
+let g:ale_fix_on_save = 1
+let g:ale_echo_msg_error_str = 'E'
+let g:ale_echo_msg_warning_str = 'W'
+let g:ale_echo_msg_format = '[%linter%] %s [%severity%]'
+let g:ale_open_list = 1
+let g:ale_list_window_size = 5

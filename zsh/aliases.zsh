@@ -5,32 +5,35 @@ alias dirbashrc="grep -nT '^#|' $HOME/.bashrc"
 alias bashrc="vim $HOME/.bashrc"
 alias rebash="source $HOME/.bashrc"
 
+# if bat exists, use it instead of cat
+if  [ -x "$(command -v bat)" ]; then
+	alias cat="bat"
+fi
+
 ## if exa exists, use it instead of ls
 if  [ -x "$(command -v exa)" ]; then
 	## Colorize the ls output ##
 	alias ls='exa --color=auto'
 
 	## Use a long listing format ##
-	# List all, with human readable filesizes
+	# List with human readable filesizes
 	alias l="exa --color=auto --long --header --group-directories-first"
 	# List all, with human readable filesizes
 	alias ll="exa --color=auto --long --header --all --group-directories-first"
 	# Same as above, but ordered by size
-	alias lls="exa --color=auto --long --header --all --sort size --group-directories-first"
+	alias lls="exa --color=auto --long --header --all --group-directories-first --sort size"
 	# Same as above, but ordered by date
-	alias llt="exa --color=auto --long --header --all --reverse --sort oldest --group-directories-first"
+	alias llt="exa --color=auto --long --header --all --group-directories-first --reverse --sort oldest"
 	# Show tree level 2
-	alias lt="exa --color=auto --long --header --all --tree --level=2 --group-directories-first"
+	alias lt="exa --color=auto --long --header --all --group-directories-first --tree --level=2"
 	# Show tree level 3
-	alias lt="exa --color=auto --long --header --all --tree --level=3 --group-directories-first"
+	alias lt3="exa --color=auto --long --header --all --group-directories-first --tree --level=3"
 	# Show tree level 4
-	alias lt="exa --color=auto --long --header --all --tree --level=4 --group-directories-first"
-
-	## Show hidden files ##
-	alias l.='exa -d .* --color=auto'
-
-	## Show only directories
-	alias ld='exa --color=auto -alD'
+	alias lt4="exa --color=auto --long --header --all --group-directories-first --tree --level=4"
+	# Show hidden files ##
+	alias l.="exa --color=auto --long --header --all --group-directories-first --list-dirs .*"
+	# Show only directories
+	alias ld="exa --color=auto --long --header --all --group-directories-first --only-dirs"
 else
 	## Colorize the ls output ##
 	alias ls='ls --color=auto'
@@ -429,4 +432,3 @@ vrr() {
 		bash vim $arguments
 	fi
 }
-
