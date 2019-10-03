@@ -32,15 +32,15 @@ function updateFiles() {
 }
 
 function createSymlink() {
-	if [ ! -L $1 ]; then
+	if [[ ! -L "${1}" ]]; then
 		decho "FUNCTION createSymlink"
 		decho "argument 1: ${1}"
 		decho "argument 2: ${2}"
 		decho ""
 		if [[ ! "${DEBUG}" ]]; then
-			ln -nfs $1 $2
+			ln -nfs "${1}" "${2}"
 		fi
-		echo "Link created: $2"
+		echo "Link created: ${2}"
 	fi
 }
 
@@ -101,4 +101,4 @@ fi
 
 # Installing vim plugins
 decho "Installing vim plugins"
-#vim -E -c PlugInstall -c qall!
+vim -E -c PlugInstall -c qall!
