@@ -19,6 +19,7 @@ Plug 'noahfrederick/vim-laravel'
 Plug 'jwalton512/vim-blade'
 Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
 Plug 'Yggdroot/indentLine'
+"Plug 'nathanaelkane/vim-indent-guides'
 Plug 'junegunn/fzf.vim'
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
@@ -35,7 +36,6 @@ Plug 'pangloss/vim-javascript'
 Plug 'airblade/vim-gitgutter'
 Plug 'scrooloose/nerdcommenter'
 Plug 'junegunn/vim-easy-align'
-Plug 'nathanaelkane/vim-indent-guides'
 Plug 'tpope/vim-eunuch'
 Plug 'hzchirs/vim-material'
 Plug 'daylerees/colour-schemes', { 'rtp': 'vim/' }
@@ -55,6 +55,12 @@ Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
 Plug 'tpope/vim-surround'
 Plug 'thinca/vim-visualstar'
 Plug 'tpope/vim-repeat'
+" Improve pasting code from the clipboard
+Plug 'ConradIrwin/vim-bracketed-paste'
+Plug 'editorconfig/editorconfig-vim'
+Plug 'farmergreg/vim-lastplace'
+Plug 'chip/vim-fat-finger'
+Plug 'mbbill/undotree'
 "Plug 'neoclide/coc.nvim', {'branch': 'release'}
 "Plug 'Valloric/YouCompleteMe', { 'do': 'python3 ./install.py --clang-completer' }
 
@@ -73,11 +79,18 @@ call plug#end()
 inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" =>editorconfig/editorconfig-vim
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:EditorConfig_exclude_patterns = ['fugitive://.\*', 'scp://.\*']
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " =>Nerdcommenter Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " _ is /
 nnoremap <C-_> :call NERDComment(0,"toggle")<CR>
 vnoremap <C-_> :call NERDComment(0,"toggle")<CR>
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " =>Deoplete Configurations
@@ -106,6 +119,9 @@ set autoread
 " like <leader>w saves the current file
 let mapleader = ","
 let g:mapleader = ","
+
+" shows where your cursor
+set cursorline
 
 " Fast saving
 nnoremap <leader>w :w!<cr>
@@ -653,7 +669,7 @@ syntax enable
 "colorscheme gloom-contrast
 "let g:material_style='palenight'
 colorscheme cosmic-barf
-"let g:colors_name = 'cosmic-barf'
+let g:colors_name = 'cosmic-barf'
 let g:UltiSnipsExpandTrigger="<C-Tab>"
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
