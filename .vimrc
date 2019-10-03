@@ -91,6 +91,10 @@ let g:deoplete#enable_at_startup = 1
 " Sets how many lines of history VIM has to remember
 set history=700
 
+" v$ doesn't select newline
+" https://vi.stackexchange.com/questions/12607/extend-visual-selection-til-the-last-character-on-the-line-excluding-the-new-li
+set selection=exclusive
+
 " Enable filetype plugins
 filetype plugin on
 filetype indent on
