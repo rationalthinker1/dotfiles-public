@@ -421,14 +421,3 @@ dbt() {
 
   docker build $ARGS
 }
-
-vrr() {
-	previous_command=$(fn -ln -1)
-	cmd=$(echo "$previous_command" | awk '{print $1}')
-	echo $previous_command
-	echo $cmd
-	if [[ $cmd == 'cat' || $cmd == 'bat' ]]; then
-		arguments=$(echo "$previous_command" | cut -f 2- -d ' ')
-		bash vim $arguments
-	fi
-}

@@ -1,5 +1,5 @@
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Vim-Plug Configurations
+"--Vim-Plug Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Automatically install vim-plug and run PlugInstall if vim-plug not found
 if empty(glob('~/.vim/autoload/plug.vim'))
@@ -55,12 +55,14 @@ Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
 Plug 'tpope/vim-surround'
 Plug 'thinca/vim-visualstar'
 Plug 'tpope/vim-repeat'
-" Improve pasting code from the clipboard
-Plug 'ConradIrwin/vim-bracketed-paste'
+Plug 'ConradIrwin/vim-bracketed-paste' " Improve pasting code from the clipboard
 Plug 'editorconfig/editorconfig-vim'
 Plug 'farmergreg/vim-lastplace'
 Plug 'chip/vim-fat-finger'
 Plug 'mbbill/undotree'
+Plug 'moll/vim-node', {'for': ['javascript', 'javascript.jsx', 'json']}
+Plug 'w0ng/vim-hybrid'
+Plug 'simonsmith/material.vim'
 "Plug 'neoclide/coc.nvim', {'branch': 'release'}
 "Plug 'Valloric/YouCompleteMe', { 'do': 'python3 ./install.py --clang-completer' }
 
@@ -72,34 +74,11 @@ Plug 'carlitux/deoplete-ternjs', { 'do': 'npm install -g tern' }
 Plug 'deoplete-plugins/deoplete-zsh'
 Plug 'shougo/neco-vim'
 Plug 'shougo/neco-syntax'
+
 call plug#end()
 
-" Use <cr> to confirm completion, `<C-g>u` means break undo chain at current position.
-" Coc only does snippet and additional edit on confirm.
-inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
-
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>editorconfig/editorconfig-vim
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-let g:EditorConfig_exclude_patterns = ['fugitive://.\*', 'scp://.\*']
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Nerdcommenter Configurations
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" _ is /
-nnoremap <C-_> :call NERDComment(0,"toggle")<CR>
-vnoremap <C-_> :call NERDComment(0,"toggle")<CR>
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Deoplete Configurations
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-let g:deoplete#enable_at_startup = 1
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>General
+"--General
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Sets how many lines of history VIM has to remember
 set history=700
@@ -122,6 +101,20 @@ let g:mapleader = ","
 
 " shows where your cursor
 set cursorline
+
+" escape insert mode via 'jj'
+inoremap jj <ESC>
+
+" Use <cr> to confirm completion, `<C-g>u` means break undo chain at current position.
+" Coc only does snippet and additional edit on confirm.
+inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
+
+" shortcut for :%s/.../.../g
+nnoremap S :%s//g<LEFT><LEFT>
+xnoremap S :s//g<LEFT><LEFT>
+
+" backup current file
+nnoremap <leader>bu :!cp % %.bak<CR><CR>:echomsg "Backed up" expand('%')<CR>
 
 " Fast saving
 nnoremap <leader>w :w!<cr>
@@ -168,14 +161,32 @@ set gdefault
 
 " Setup undo history persistent
 set undofile                " Save undos after file closes
-set undodir=$HOME/.vim/undo " where to save undo histories
 set undolevels=1000         " How many undos
 set undoreload=10000        " number of lines to save for undo
+
+set backup                        " enable backups
+set noswapfile                    " it's 2013, Vim.
+
+set undodir=$HOME/.vim/tmp/undo     " undo files
+set backupdir=$HOME/.vim/tmp/backup " backups
+set directory=$HOME/.vim/tmp/swap   " swap files
+
+" Make those folders automatically if they don't already exist.
+if !isdirectory(expand(&undodir))
+    call mkdir(expand(&undodir), "p")
+endif
+if !isdirectory(expand(&backupdir))
+    call mkdir(expand(&backupdir), "p")
+endif
+if !isdirectory(expand(&directory))
+    call mkdir(expand(&directory), "p")
+endif
+
 
 " load fzf for vim
 set rtp+=~/.fzf
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>VIM user interface
+"--VIM user interface
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Set 7 lines to the cursor - when moving vertically using j/k
 set scrolloff=7
@@ -215,7 +226,7 @@ set cmdheight=2
 set winaltkeys=no
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Buffer Settings
+"--Buffer Settings
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " This allows buffers to be hidden if you've modified a buffer.
 " This is almost a must if you wish to use buffers in this way.
@@ -244,7 +255,7 @@ nnoremap <leader>bl :ls<CR>
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Colors and Fonts
+"--Colors and Fonts
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Enable syntax highlighting
 syntax enable
@@ -276,7 +287,7 @@ set ffs=unix,dos,mac
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Files, backups and undo
+"--Files, backups and undo
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Turn backup off, since most stuff is in SVN, git et.c anyway...
 set nobackup
@@ -285,7 +296,7 @@ set noswapfile
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Text, tab and indent related
+"--Text, tab and indent related
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Use tabs instead of spaces
 set autoindent
@@ -305,7 +316,7 @@ set tw=500
 
 
 """"""""""""""""""""""""""""""
-" =>Visual mode related
+"--Visual mode related
 """"""""""""""""""""""""""""""
 " Visual mode pressing * or # searches for the current selection
 vnoremap <silent> * :call VisualSelection('f')<CR>
@@ -313,7 +324,7 @@ vnoremap <silent> # :call VisualSelection('b')<CR>
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Moving around, tabs, windows and buffers
+"--Moving around, tabs, windows and buffers
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Treat long lines as break lines (useful when moving around in them)
 nnoremap <expr> k (v:count == 0 ? 'gk' : 'k')
@@ -408,7 +419,7 @@ set viminfo^=%
 
 
 """"""""""""""""""""""""""""""
-" =>Status line
+"--Status line
 """"""""""""""""""""""""""""""
 " Always show the status line
 set laststatus=2
@@ -418,7 +429,7 @@ set statusline=\ %{HasPaste()}%F%m%r%h\ %w\ \ CWD:\ %r%{getcwd()}%h\ \ \ Line:\ 
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Editing mappings
+"--Editing mappings
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Remap VIM 0 to first non-blank character
 nnoremap 0 ^
@@ -436,7 +447,7 @@ autocmd BufWrite *.coffee :call DeleteTrailingWS()
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>vimgrep searching and cope displaying
+"--vimgrep searching and cope displaying
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " When you press gv you vimgrep after the selected text
 vnoremap <silent> gv :call VisualSelection('gv')<CR>
@@ -472,7 +483,7 @@ vnoremap / /\v
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Spell checking
+"--Spell checking
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Pressing ,ss will toggle and untoggle spell checking
 noremap <leader>ss :setlocal spell!<cr>
@@ -485,7 +496,7 @@ noremap <leader>s? z=
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Misc
+"--Misc
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Remove the Windows ^M - when the encodings gets messed up
 noremap <Leader>m mmHmt:%s/<C-V><cr>//ge<cr>'tzt'm
@@ -497,8 +508,8 @@ noremap <leader>q :e ~/buffer<cr>
 noremap <leader>pp :setlocal paste!<cr>
 
 " creates title banner
-nnoremap <leader>title 63i"<esc><esc>o" =><space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`oi<space>
-vnoremap <leader>title ydd63i"<esc><esc>o" =><space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`opi<bs>
+nnoremap <leader>title 63i"<esc><esc>o"--<space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`oi<space>
+vnoremap <leader>title ydd63i"<esc><esc>o"--<space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`opi<bs>
 
 " copy current line
 function! PasteLineBelow(mode)
@@ -546,7 +557,7 @@ nnoremap <C-y> <esc>:call DeleteCurrentLine('n')<cr>
 vnoremap <C-y> <esc>:call DeleteCurrentLine('v')<cr>
 
 " clears content from the cursor to the end while in insert mode
-inoremap <C-c> <esc>lc$
+"inoremap <C-c> <esc>lc$
 
 " runs macro based on selected lines
 function! ExecuteMacroOverVisualRange()
@@ -556,7 +567,7 @@ endfunction
 xnoremap @ :<C-u>call ExecuteMacroOverVisualRange()<CR>
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Helper functions
+"--Helper functions
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 function! CmdLine(str)
 	exe "menu Foo.Bar :" . a:str
@@ -660,20 +671,78 @@ vnoremap <C-S-Down> :m '>+1<CR>gv=gv
 "map <Esc>- <C-A-e>
 "nnoremap <C-A-q> <C-o>
 "nnoremap <C-A-e> <C-i>
+
+" }}}
+" Highlight Word {{{
+"
+" This mini-plugin provides a few mappings for highlighting words temporarily.
+"
+" Sometimes you're looking at a hairy piece of code and would like a certain
+" word or two to stand out temporarily.  You can search for it, but that only
+" gives you one color of highlighting.  Now you can use <leader>N where N is
+" a number from 1-6 to highlight the current word in a specific color.
+
+function! HiInterestingWord(n) " {{{
+    " Save our location.
+    normal! mz
+
+    " Yank the current word into the z register.
+    normal! "zyiw
+
+    " Calculate an arbitrary match ID.  Hopefully nothing else is using it.
+    let mid = 86750 + a:n
+
+    " Clear existing matches, but don't worry if they don't exist.
+    silent! call matchdelete(mid)
+
+    " Construct a literal pattern that has to match at boundaries.
+    let pat = '\V\<' . escape(@z, '\') . '\>'
+
+    " Actually match the words.
+    call matchadd("InterestingWord" . a:n, pat, 1, mid)
+
+    " Move back to our original location.
+    normal! `z
+endfunction " }}}
+
+" Mappings {{{
+
+nnoremap <silent> <leader>1 :call HiInterestingWord(1)<cr>
+nnoremap <silent> <leader>2 :call HiInterestingWord(2)<cr>
+nnoremap <silent> <leader>3 :call HiInterestingWord(3)<cr>
+nnoremap <silent> <leader>4 :call HiInterestingWord(4)<cr>
+nnoremap <silent> <leader>5 :call HiInterestingWord(5)<cr>
+nnoremap <silent> <leader>6 :call HiInterestingWord(6)<cr>
+
+" }}}
+" Default Highlights {{{
+
+hi def InterestingWord1 guifg=#000000 ctermfg=16 guibg=#ffa724 ctermbg=214
+hi def InterestingWord2 guifg=#000000 ctermfg=16 guibg=#aeee00 ctermbg=154
+hi def InterestingWord3 guifg=#000000 ctermfg=16 guibg=#8cffba ctermbg=121
+hi def InterestingWord4 guifg=#000000 ctermfg=16 guibg=#b88853 ctermbg=137
+hi def InterestingWord5 guifg=#000000 ctermfg=16 guibg=#ff9eb8 ctermbg=211
+hi def InterestingWord6 guifg=#000000 ctermfg=16 guibg=#ff2c4b ctermbg=195
+
+" }}}
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Theme
+"--Theme
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 syntax enable
 "set background=dark
 "colorscheme vim-material
 "colorscheme gloom-contrast
 "let g:material_style='palenight'
+"colorscheme hybrid
+"colorscheme material
 colorscheme cosmic-barf
+set background=dark
 let g:colors_name = 'cosmic-barf'
 let g:UltiSnipsExpandTrigger="<C-Tab>"
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Airline Configurations
+"--Airline Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:airline_theme = 'material'
 let g:airline_powerline_fonts = 1
@@ -684,7 +753,7 @@ let g:airline#extensions#tabline#fnamemod = ':t'
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>vim-multiple-cursors Configurations
+"--vim-multiple-cursors Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:multi_cursor_use_default_mapping = 0
 let g:multi_cursor_start_word_key      = '<A-j>'
@@ -698,7 +767,7 @@ let g:multi_cursor_quit_key            = '<Esc>'
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>CtrlP Configurations
+"--CtrlP Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Setup some default ignores
 let g:ctrlp_custom_ignore = {
@@ -726,7 +795,7 @@ nnoremap <leader>bs :CtrlPMRU<cr>
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>NERDTree Configurations
+"--NERDTree Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "noremap <C-n> :NERDTreeToggle<CR>
 autocmd StdinReadPre * let s:std_in=1
@@ -791,18 +860,18 @@ endfunction
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Yggdroot/indentLine
+"--Yggdroot/indentLine
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:indentLine_color_term = 239
 let g:indentLine_char = '┊'
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>Rainbow Parentheses
+"--Rainbow Parentheses
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:rainbow_active = 1
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>EasyAlign Configurations
+"--EasyAlign Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Start interactive EasyAlign in visual mode (e.g. vipga)
 xmap ga <Plug>(EasyAlign)
@@ -811,7 +880,7 @@ xmap ga <Plug>(EasyAlign)
 nmap ga <Plug>(EasyAlign)
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" =>ALE
+"--ALE
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:ale_lint_on_insert_leave = 0
 let g:ale_fixers = {
@@ -843,3 +912,22 @@ let g:ale_echo_msg_warning_str = 'W'
 let g:ale_echo_msg_format = '[%linter%] %s [%severity%]'
 let g:ale_open_list = 1
 let g:ale_list_window_size = 5
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--editorconfig/editorconfig-vim
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:EditorConfig_exclude_patterns = ['fugitive://.\*', 'scp://.\*']
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--Nerdcommenter Configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" _ is /
+nnoremap <C-_> :call NERDComment(0,"toggle")<CR>
+vnoremap <C-_> :call NERDComment(0,"toggle")<CR>
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--Deoplete Configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:deoplete#enable_at_startup = 1
