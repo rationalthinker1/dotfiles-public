@@ -26,21 +26,21 @@ setopt SHARE_HISTORY              # import new commands from the history file al
 setopt EXTENDED_HISTORY           # save each command's beginning timestamp and the duration to the history file
 setopt HIST_IGNORE_ALL_DUPS       # If a new command line being added to the history list duplicates an older one, the older command is removed from the list
 setopt HIST_IGNORE_SPACE          # remove command lines from the history list when the first character on the line is a space
-export VISUAL=vim
+
+# Vi mode
+bindkey -v
+autoload -U edit-command-line
+zle -N edit-command-line
+bindkey '^E' edit-command-line                   # Opens Vim to edit current command line
+bindkey -M vicmd v edit-command-line
 
 # loading autocompletion
 autoload -U +X compinit && compinit
 autoload -U +X bashcompinit && bashcompinit
-autoload -U edit-command-line
-zle -N edit-command-line
-bindkey -M vicmd v edit-command-line
 bashcompinit -i
 
 # https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
 stty start undef
-
-# use vim style keys
-bindkey -v
 
 
 #=======================================================================================
@@ -101,4 +101,3 @@ fi
 if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
 	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
 fi
-
