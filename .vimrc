@@ -117,7 +117,7 @@ xnoremap S :s//g<LEFT><LEFT>
 nnoremap <leader>bu :!cp % %.bak<CR><CR>:echomsg "Backed up" expand('%')<CR>
 
 " Fast saving
-nnoremap <leader>w :w!<cr>
+nnoremap <leader>w :set wrap!<cr>
 
 " Configure backspace so it acts as it should act
 set backspace=eol,start,indent
