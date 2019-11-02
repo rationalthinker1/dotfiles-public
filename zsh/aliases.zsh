@@ -100,6 +100,9 @@ alias myip="curl http://ipecho.net/plain; echo"
 # Searches up history commands
 alias hgrep="history | grep"
 
+# use fdfind
+alias fd=fdfind
+
 # So that vim shortcuts can work
 #alias vim="stty stop '' -ixoff ; vim"
 
