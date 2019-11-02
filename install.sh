@@ -64,7 +64,12 @@ function backupFile() {
 # Installing zsh
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
-	sudo apt install --assume-yes --no-install-recommends git vim bat tmux curl zsh powerline fonts-powerline python3-pip
+	sudo apt install --assume-yes --no-install-recommends guake git vim bat tmux curl zsh powerline fonts-powerline python3-pip
+
+	# Installing Rust for exa
+	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+	$HOME/.cargo/bin/cargo install exa
+
 	pip3 install --user pynvim
 	sudo echo $(which zsh) | sudo tee -a /etc/shells
 	sudo chsh -s $(which zsh)
