@@ -64,7 +64,7 @@ function backupFile() {
 # Installing zsh
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
-	sudo apt install --assume-yes --no-install-recommends zsh powerline fonts-powerline python3-pip
+	sudo apt install --assume-yes --no-install-recommends curl zsh powerline fonts-powerline python3-pip
 	pip3 install --user pynvim
 	sudo echo $(which zsh) | sudo tee -a /etc/shells
 	sudo chsh -s $(which zsh)
