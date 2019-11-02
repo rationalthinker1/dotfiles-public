@@ -64,7 +64,7 @@ function backupFile() {
 # Installing zsh
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
-	sudo apt install --assume-yes --no-install-recommends guake git vim bat tmux curl zsh powerline fonts-powerline python3-pip
+	sudo apt install --assume-yes fd-find fzf ripgrep guake git vim bat tmux curl zsh powerline fonts-powerline python3-pip
 
 	# Installing Rust for exa
 	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
@@ -73,6 +73,10 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	pip3 install --user pynvim
 	sudo echo $(which zsh) | sudo tee -a /etc/shells
 	sudo chsh -s $(which zsh)
+
+	# Installing node
+	curl -sL https://deb.nodesource.com/setup_13.x | sudo -E bash -
+	sudo apt-get install nodejs npm
 fi
 
 # Installing Oh My Zsh
