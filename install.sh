@@ -41,8 +41,8 @@ function createSymlink() {
 			ln -nfs "${1}" "${2}"
 		fi
 		echo "Link created: ${2}"
-	fi
-}
+		fi
+	}
 
 function backupFile() {
 	filename=$(basename "${1}")
@@ -66,17 +66,32 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
 	sudo apt install --assume-yes fd-find fzf ripgrep guake git vim bat tmux curl zsh powerline fonts-powerline python3-pip
 
-	# Installing Rust for exa
-	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-	$HOME/.cargo/bin/cargo install exa
-
 	pip3 install --user pynvim
 	sudo echo $(which zsh) | sudo tee -a /etc/shells
 	sudo chsh -s $(which zsh)
+fi
 
-	# Installing node
+# Installing Rust for exa
+if [[ ! $(exa --help 2>/dev/null) ]]; then
+	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+	$HOME/.cargo/bin/cargo install exa --force
+fi
+
+# Installing fzf
+if [[ ! -d "${LOCAL_CONFIG}/fzf" ]]; then
+	git clone --depth 1 https://github.com/junegunn/fzf.git "${LOCAL_CONFIG}/"fzf
+	"${LOCAL_CONFIG}/"fzf/install --xdg --no-bash --no-fish --64 --key-bindings --completion --no-update-rc
+fi
+
+# Installing node
+if [[ ! $(node --version 2>/dev/null) ]]; then
 	curl -sL https://deb.nodesource.com/setup_13.x | sudo -E bash -
-	sudo apt-get install nodejs npm
+	sudo apt-get install nodejs
+
+	# Installing yarn
+	curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+	echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+	sudo apt-get update && sudo apt-get install yarn
 fi
 
 # Installing Oh My Zsh
