@@ -41,8 +41,8 @@ function createSymlink() {
 			ln -nfs "${1}" "${2}"
 		fi
 		echo "Link created: ${2}"
-		fi
-	}
+	fi
+}
 
 function backupFile() {
 	filename=$(basename "${1}")
@@ -64,7 +64,7 @@ function backupFile() {
 # Installing zsh
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
-	sudo apt install --assume-yes fd-find fzf ripgrep guake git vim bat tmux curl zsh powerline fonts-powerline python3-pip
+	sudo apt install --assume-yes fd-find ripgrep guake git vim bat tmux curl zsh powerline fonts-powerline python3-pip python-pip
 
 	pip3 install --user pynvim
 	sudo echo $(which zsh) | sudo tee -a /etc/shells
@@ -98,6 +98,18 @@ fi
 if [[ ! -d "${ZSH}" ]] ; then
 	decho "oh-my-zsh does not exist"
 	sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+fi
+
+# Installing go-lang
+if [[ ! $(go verion 2>/dev/null) ]]; then
+	go_file="go1.13.4.linux-amd64.tar.gz"
+	cd /tmp
+	wget -q https://dl.google.com/go/"${go_file}"
+	sudo tar -C /usr/local/ -vzxf /tmp/"${go_file}" > /dev/null
+	echo "export PATH=\$PATH:/usr/local/go/bin:\$HOME/.go-projects/bin" >> ~/.zprofile
+	echo "export GOROOT=/usr/local/go" >> ~/.zprofile
+	echo "export GOPATH=\$HOME/.go-projects" >> ~/.zprofile
+	rm -rf /tmp/"${go_file}"
 fi
 
 mkdir -p "${BACKUP_DIR}"
