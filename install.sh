@@ -64,7 +64,7 @@ function backupFile() {
 # Installing zsh
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
-	sudo apt install --assume-yes fd-find ripgrep guake git vim bat tmux curl zsh powerline fonts-powerline python3-pip python-pip
+	sudo apt install --ignore-missing --assume-yes fd-find ripgrep guake git vim-gnome bat tmux curl zsh powerline fonts-powerline python3-pip python-pip
 
 	pip3 install --user pynvim
 	sudo echo $(which zsh) | sudo tee -a /etc/shells
@@ -100,6 +100,16 @@ if [[ ! -d "${ZSH}" ]] ; then
 	sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
 fi
 
+# Installing bat
+if [[ ! $(bat --version 2>/dev/null) ]]; then
+	decho "bat does not exist"
+	link=$(curl -s https://api.github.com/repos/sharkdp/bat/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep "deb" | head -n 1 |  cut -d '"' -f 4)
+	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
+	wget -q $link -P /tmp/
+	sudo dpkg -i /tmp/$download_filename
+
+fi
+
 # Installing go-lang
 if [[ ! $(go verion 2>/dev/null) ]]; then
 	go_file="go1.13.4.linux-amd64.tar.gz"
@@ -119,7 +129,7 @@ updateFiles "${BASE_DIR}/.vim" "${HOME}/.vim"
 updateFiles "${BASE_DIR}/zsh" "${HOME}/.config/zsh"
 updateFiles "${BASE_DIR}/ranger" "${HOME}/.config/ranger"
 updateFiles "${BASE_DIR}/tmux" "${HOME}/.config/tmux"
-updateFiles "${BASE_DIR}/fzf" "${HOME}/.config/fzf"
+updateFiles "${BASE_DIR}/fzf/fzf.zsh" "${HOME}/.config/fzf/fzf.zsh"
 updateFiles "${BASE_DIR}/.Xresources" "${HOME}/.Xresources"
 updateFiles "${BASE_DIR}/rc.sh" "${HOME}/.ssh/rc"
 
