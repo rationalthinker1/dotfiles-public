@@ -73,18 +73,21 @@ fi
 
 # Installing Rust for exa
 if [[ ! $(exa --help 2>/dev/null) ]]; then
+	decho "exa does not exist"
 	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 	$HOME/.cargo/bin/cargo install exa --force
 fi
 
 # Installing fzf
 if [[ ! -d "${LOCAL_CONFIG}/fzf" ]]; then
+	decho "fzf does not exist"
 	git clone --depth 1 https://github.com/junegunn/fzf.git "${LOCAL_CONFIG}/"fzf
 	"${LOCAL_CONFIG}/"fzf/install --xdg --no-bash --no-fish --64 --key-bindings --completion --no-update-rc
 fi
 
 # Installing node
 if [[ ! $(node --version 2>/dev/null) ]]; then
+	decho "node does not exist"
 	curl -sL https://deb.nodesource.com/setup_13.x | sudo -E bash -
 	sudo apt-get install nodejs
 
@@ -111,16 +114,17 @@ if [[ ! $(bat --version 2>/dev/null) ]]; then
 fi
 
 # Installing go-lang
-if [[ ! $(go verion 2>/dev/null) ]]; then
-	go_file="go1.13.4.linux-amd64.tar.gz"
-	cd /tmp
-	wget -q https://dl.google.com/go/"${go_file}"
-	sudo tar -C /usr/local/ -vzxf /tmp/"${go_file}" > /dev/null
-	echo "export PATH=\$PATH:/usr/local/go/bin:\$HOME/.go-projects/bin" >> ~/.zprofile
-	echo "export GOROOT=/usr/local/go" >> ~/.zprofile
-	echo "export GOPATH=\$HOME/.go-projects" >> ~/.zprofile
-	rm -rf /tmp/"${go_file}"
-fi
+#if [[ ! $(go verion 2>/dev/null) ]]; then
+	#decho "go-lang does not exist"
+	#go_file="go1.13.4.linux-amd64.tar.gz"
+	#cd /tmp
+	#wget -nc https://dl.google.com/go/"${go_file}"
+	#sudo tar -C /usr/local/ -vzxf /tmp/"${go_file}" > /dev/null
+	#echo "export PATH=\$PATH:/usr/local/go/bin:\$HOME/.go-projects/bin" >> ~/.zprofile
+	#echo "export GOROOT=/usr/local/go" >> ~/.zprofile
+	#echo "export GOPATH=\$HOME/.go-projects" >> ~/.zprofile
+	#rm -rf /tmp/"${go_file}"
+#fi
 
 mkdir -p "${BACKUP_DIR}"
 updateFiles "${BASE_DIR}/zsh/.zshrc" "${HOME}/.zshrc"
