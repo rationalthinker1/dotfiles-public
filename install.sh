@@ -67,7 +67,7 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	echo "upgrading all packages"
 	sudo apt-get -y update > /dev/null
 	sudo apt-get -y upgrade > /dev/null
-	for package in fd-find ripgrep guake git vim-gnome bat tmux curl zsh powerline fonts-powerline python3-pip python-pip jq csvtool; do
+	for package in fd-find ripgrep guake git vim-gnome bat tmux curl zsh powerline fonts-powerline python3-pip python-pip jq csvtool xclip; do
 		echo "installing ${package}"
 		sudo apt-get install --assume-yes --ignore-missing $package -qq > /dev/null
 	done
@@ -115,6 +115,26 @@ if [[ ! -d "${ZSH}" ]] ; then
 	sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
 fi
 
+# Installing fd
+if [[ ! $(fd --version 2>/dev/null) ]]; then
+	decho "fd does not exist"
+	echo "installing fd"
+	link=$(curl -s https://api.github.com/repos/sharkdp/fd/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep "deb" | head -n 1 |  cut -d '"' -f 4)
+	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
+	wget -q $link -P /tmp/
+	sudo dpkg -i /tmp/$download_filename
+fi
+
+# Installing ripgrep
+if [[ ! $(ripgrep --version 2>/dev/null) ]]; then
+	decho "ripgrep does not exist"
+	echo "installing ripgrep"
+	link=$(curl -s https://api.github.com/repos/BurntSushi/ripgrep/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep "deb" | head -n 1 |  cut -d '"' -f 4)
+	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
+	wget -q $link -P /tmp/
+	sudo dpkg -i /tmp/$download_filename
+fi
+
 # Installing bat
 if [[ ! $(bat --version 2>/dev/null) ]]; then
 	decho "bat does not exist"
@@ -124,7 +144,6 @@ if [[ ! $(bat --version 2>/dev/null) ]]; then
 	wget -q $link -P /tmp/
 	sudo dpkg -i /tmp/$download_filename
 fi
-
 # Installing go-lang
 #if [[ ! $(go verion 2>/dev/null) ]]; then
 	#decho "go-lang does not exist"
