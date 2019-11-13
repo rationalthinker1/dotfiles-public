@@ -78,6 +78,7 @@ fi
 # Installing Rust for exa
 if [[ ! $(exa --help 2>/dev/null) ]]; then
 	decho "exa does not exist"
+	echo "installing rust and exa"
 	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 	$HOME/.cargo/bin/cargo install exa --force
 fi
@@ -85,6 +86,7 @@ fi
 # Installing fzf
 if [[ ! -d "${LOCAL_CONFIG}/fzf" ]]; then
 	decho "fzf does not exist"
+	echo "installing fzf"
 	git clone --depth 1 https://github.com/junegunn/fzf.git "${LOCAL_CONFIG}/"fzf
 	"${LOCAL_CONFIG}/"fzf/install --xdg --no-bash --no-fish --64 --key-bindings --completion --no-update-rc
 fi
@@ -92,29 +94,32 @@ fi
 # Installing node
 if [[ ! $(node --version 2>/dev/null) ]]; then
 	decho "node does not exist"
+	echo "installing node"
 	curl -sL https://deb.nodesource.com/setup_13.x | sudo -E bash -
 	sudo apt-get install nodejs
 
 	# Installing yarn
+	echo "installing yarn"
 	curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
 	echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-	sudo apt-get update && sudo apt-get install yarn
+	sudo apt-get update -y && sudo apt-get install -y yarn
 fi
 
 # Installing Oh My Zsh
 if [[ ! -d "${ZSH}" ]] ; then
 	decho "oh-my-zsh does not exist"
+	echo "installing oh-my-zsh"
 	sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
 fi
 
 # Installing bat
 if [[ ! $(bat --version 2>/dev/null) ]]; then
 	decho "bat does not exist"
+	echo "installing bat"
 	link=$(curl -s https://api.github.com/repos/sharkdp/bat/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep "deb" | head -n 1 |  cut -d '"' -f 4)
 	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
 	wget -q $link -P /tmp/
 	sudo dpkg -i /tmp/$download_filename
-
 fi
 
 # Installing go-lang
