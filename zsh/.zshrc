@@ -1,5 +1,5 @@
 #export TERM="xterm-256color"
-export LOCAL_CONFIG="/home/${USER}/.config"
+export LOCAL_CONFIG="${HOME}/.config"
 export ZDOTDIR="${LOCAL_CONFIG}/zsh"
 export ADOTDIR="${ZDOTDIR}/antigen"
 export ZSH="${ZDOTDIR}/oh-my-zsh"
@@ -73,6 +73,20 @@ antigen theme romkatv/powerlevel10k
 
 # Tell antigen that you're done.
 antigen apply
+
+
+#=======================================================================================
+# Setting up home/end keys for keyboard
+# https://unix.stackexchange.com/questions/20298/home-key-not-working-in-terminal
+#=======================================================================================
+bindkey '\e[1~'   beginning-of-line  # Linux console
+bindkey '\e[H'    beginning-of-line  # xterm
+bindkey '\eOH'    beginning-of-line  # gnome-terminal
+bindkey '\e[2~'   overwrite-mode     # Linux console, xterm, gnome-terminal
+bindkey '\e[3~'   delete-char        # Linux console, xterm, gnome-terminal
+bindkey '\e[4~'   end-of-line        # Linux console
+bindkey '\e[F'    end-of-line        # xterm
+bindkey '\eOF'    end-of-line        # gnome-terminal
 
 #=======================================================================================
 # Aliases and functions

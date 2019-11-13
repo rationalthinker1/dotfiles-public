@@ -64,7 +64,11 @@ function backupFile() {
 # Installing zsh
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
-	sudo apt install --ignore-missing --assume-yes fd-find ripgrep guake git vim-gnome bat tmux curl zsh powerline fonts-powerline python3-pip python-pip
+	sudo apt-get -y update && sudo apt-get -y upgrade
+	for package in fd-find ripgrep guake git vim-gnome bat tmux curl zsh powerline fonts-powerline python3-pip python-pip jq csvtool; do
+		echo "installing ${package}"
+		sudo apt-get install --assume-yes --ignore-missing $package -qq > /dev/null
+	done
 
 	pip3 install --user pynvim
 	sudo echo $(which zsh) | sudo tee -a /etc/shells
