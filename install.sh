@@ -61,6 +61,15 @@ function backupFile() {
 	echo "Backed up ${filename} to ${BACKUP_DIR}"
 }
 
+
+if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
+    source "${LOCAL_CONFIG}"/zsh/.zprofile
+fi
+
+if [ -f "${HOME}"/.zprofile ]; then
+    source "${HOME}"/.zprofile
+fi
+
 # Installing zsh
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
