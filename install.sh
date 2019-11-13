@@ -107,14 +107,6 @@ if [[ ! $(node --version 2>/dev/null) ]]; then
 	echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
 	sudo apt-get update -y && sudo apt-get install -y yarn
 fi
-
-# Installing Oh My Zsh
-if [[ ! -d "${ZSH}" ]] ; then
-	decho "oh-my-zsh does not exist"
-	echo "installing oh-my-zsh"
-	sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
-fi
-
 # Installing fd
 if [[ ! $(fd --version 2>/dev/null) ]]; then
 	decho "fd does not exist"
@@ -126,7 +118,7 @@ if [[ ! $(fd --version 2>/dev/null) ]]; then
 fi
 
 # Installing ripgrep
-if [[ ! $(ripgrep --version 2>/dev/null) ]]; then
+if [[ ! $(rg --version 2>/dev/null) ]]; then
 	decho "ripgrep does not exist"
 	echo "installing ripgrep"
 	link=$(curl -s https://api.github.com/repos/BurntSushi/ripgrep/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep "deb" | head -n 1 |  cut -d '"' -f 4)
@@ -183,3 +175,10 @@ fi
 # Installing vim plugins
 decho "Installing vim plugins"
 vim -E -c PlugInstall -c qall!
+
+# Installing Oh My Zsh
+if [[ ! -d "${ZSH}" ]] ; then
+	decho "oh-my-zsh does not exist"
+	echo "installing oh-my-zsh"
+	sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+fi
