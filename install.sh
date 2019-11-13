@@ -64,7 +64,9 @@ function backupFile() {
 # Installing zsh
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
-	sudo apt-get -y update && sudo apt-get -y upgrade
+	echo "upgrading all packages"
+	sudo apt-get -y update > /dev/null
+	sudo apt-get -y upgrade > /dev/null
 	for package in fd-find ripgrep guake git vim-gnome bat tmux curl zsh powerline fonts-powerline python3-pip python-pip jq csvtool; do
 		echo "installing ${package}"
 		sudo apt-get install --assume-yes --ignore-missing $package -qq > /dev/null
@@ -80,6 +82,7 @@ if [[ ! $(exa --help 2>/dev/null) ]]; then
 	decho "exa does not exist"
 	echo "installing rust and exa"
 	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+	echo "export PATH=$HOME/.cargo/bin:$PATH" >> ~/.zprofile
 	$HOME/.cargo/bin/cargo install exa --force
 fi
 
