@@ -3,7 +3,7 @@ ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURC
 BASE_DIR=$(dirname ${ABSOLUTE_PATH})
 BACKUP_DIR="${BASE_DIR}/backup"
 LOCAL_CONFIG="${HOME}/.config"
-export ZSH="${LOCAL_CONFIG}/oh-my-zsh"
+export ZSH="${LOCAL_CONFIG}/zsh"
 
 function decho() {
 	if [[ "${DEBUG}" ]]; then
