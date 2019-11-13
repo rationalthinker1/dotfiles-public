@@ -1,4 +1,14 @@
-#export TERM="xterm-256color"
+#=======================================================================================
+# Loading up zprofiles
+#=======================================================================================
+if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
+    source "${LOCAL_CONFIG}"/zsh/.zprofile
+fi
+
+if [ -f "${HOME}"/.zprofile ]; then
+    source "${HOME}"/.zprofile
+fi
+
 export LOCAL_CONFIG="${HOME}/.config"
 export ZDOTDIR="${LOCAL_CONFIG}/zsh"
 export ADOTDIR="${ZDOTDIR}/antigen"
