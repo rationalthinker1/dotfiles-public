@@ -76,7 +76,7 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	echo "upgrading all packages"
 	sudo apt-get -y update > /dev/null
 	sudo apt-get -y upgrade > /dev/null
-	for package in fd-find ripgrep guake git vim-gnome bat tmux curl zsh powerline fonts-powerline python3-pip python-pip jq csvtool xclip gnome-tweaks chrome-gnome-shell htop; do
+	for package in fd-find ripgrep guake git vim-gnome bat tmux curl zsh powerline fonts-powerline python3-pip python-pip jq csvtool xclip gnome-tweaks chrome-gnome-shell htop p7zip-full; do
 		echo "installing ${package}"
 		sudo apt-get install --assume-yes --ignore-missing $package -qq > /dev/null
 	done
@@ -115,7 +115,11 @@ if [[ ! $(node --version 2>/dev/null) ]]; then
 	curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
 	echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
 	sudo apt-get update -y && sudo apt-get install -y yarn
+	echo "export PATH=$(yarn global bin):$PATH" >> ~/.zprofile
+	source ~/.zprofile
+	yarn global add gtop
 fi
+
 # Installing fd
 if [[ ! $(fd --version 2>/dev/null) ]]; then
 	decho "fd does not exist"
@@ -145,6 +149,7 @@ if [[ ! $(bat --version 2>/dev/null) ]]; then
 	wget -q $link -P /tmp/
 	sudo dpkg -i /tmp/$download_filename
 fi
+
 # Installing go-lang
 #if [[ ! $(go verion 2>/dev/null) ]]; then
 	#decho "go-lang does not exist"
