@@ -256,11 +256,9 @@ alias vkill='vagrant destroy'
 #=======================================================================================
 # Laravel Aliases and functions
 #=======================================================================================
-alias pa="docker-compose exec --user "$(id -u):$(id -g)" php php artisan"
-#alias pa="php artisan"
-#alias par="php artisan routes"
-#alias pam="php artisan migrate"
-alias pam="docker-compose exec --user "$(id -u):$(id -g)" php php artisan migrate"
+alias pa="docker-compose exec --user "$(id -u):$(id -g)" php php -dxdebug.remote_enable=1 -dxdebug.remote_autostart=on -dxdebug.idekey=PHPSTORM -dxdebug.remote_mode=req -dxdebug.remote_port=9000 -dxdebug.remote_host=127.0.0.1 artisan"
+alias pam="docker-compose exec --user "$(id -u):$(id -g)" php php -dxdebug.remote_enable=1 -dxdebug.remote_autostart=on -dxdebug.idekey=PHPSTORM -dxdebug.remote_mode=req -dxdebug.remote_port=9000 -dxdebug.remote_host=127.0.0.1 artisan migrate"
+alias par="docker-compose exec --user "$(id -u):$(id -g)" php php -dxdebug.remote_enable=1 -dxdebug.remote_autostart=on -dxdebug.idekey=PHPSTORM -dxdebug.remote_mode=req -dxdebug.remote_port=9000 -dxdebug.remote_host=127.0.0.1 artisan routes"
 
 alias pam:r="php artisan migrate:refresh"
 alias pam:roll="php artisan migrate:rollback"
