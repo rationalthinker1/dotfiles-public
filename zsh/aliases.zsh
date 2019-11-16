@@ -256,11 +256,11 @@ alias vkill='vagrant destroy'
 #=======================================================================================
 # Laravel Aliases and functions
 #=======================================================================================
-alias pa="docker-compose exec php php artisan"
+alias pa="docker-compose exec --user "$(id -u):$(id -g)" php php artisan"
 #alias pa="php artisan"
 #alias par="php artisan routes"
 #alias pam="php artisan migrate"
-alias pam="docker-compose exec php php artisan migrate"
+alias pam="docker-compose exec --user "$(id -u):$(id -g)" php php artisan migrate"
 
 alias pam:r="php artisan migrate:refresh"
 alias pam:roll="php artisan migrate:rollback"
@@ -359,7 +359,7 @@ dceb() {
     SCRIPT="$2"
   fi
 
-  dc exec "$1" "$SCRIPT"
+  dc exec --user "$(id -u):$(id -g)" "$1" "$SCRIPT"
 }
 
 # Get latest container ID
@@ -405,7 +405,7 @@ dexbash() {
     return 1
   fi
 
-  docker exec -it "$1" /bin/bash
+  docker exec -it --user "$(id -u):$(id -g)" "$1" /bin/bash
 }
 
 
@@ -422,5 +422,6 @@ dbt() {
     ARGS="$ARGS -t $@"
   fi
 
-  docker build $ARGS
+ss  docker build $ARGS,
+
 }
