@@ -198,12 +198,20 @@ function unzipd() {
 	unzip "${filename}" -d "${directory}"
 }
 
+function install-font-subdirectories() {
+	directory="${1}"
+	for subdirectory in $(find $directory -maxdepth 1 -mindepth 1 -type d); do
+		install-font-folder "${subdirectory}"
+	done
+}
+
 function install-font-folder() {
 	directory="${1}"
-	sudo mkdir -p /usr/share/fonts/{true,open}type/"${directory}"
-	find ./"${directory}" -type f -name "*.otf" | xargs -I{} sudo cp {} /usr/share/fonts/opentype/"${directory}"
-	find ./"${directory}" -type f -name "*.ttf" | xargs -I{} sudo cp {} /usr/share/fonts/truetype/"${directory}"
-	fc-cache -f -v | grep "${directory}"
+	last_folder=$(basename $directory)
+	sudo mkdir -p /usr/share/fonts/{true,open}type/"${last_folder}"
+	find "${directory}" -type f -name "*.otf" | xargs -I{} sudo cp {} /usr/share/fonts/opentype/"${last_folder}"
+	find "${directory}" -type f -name "*.ttf" | xargs -I{} sudo cp {} /usr/share/fonts/truetype/"${last_folder}"
+	fc-cache -f -v | grep "${last_folder}"
 }
 
 function install-font-zip() {

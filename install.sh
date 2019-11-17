@@ -76,7 +76,7 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	echo "upgrading all packages"
 	sudo apt-get -y update > /dev/null
 	sudo apt-get -y upgrade > /dev/null
-	for package in fd-find ripgrep guake git vim-gnome bat tmux curl zsh powerline fonts-powerline python3-venv python3-pip python-pip jq csvtool xclip gnome-tweaks chrome-gnome-shell htop p7zip-full; do
+	for package in fd-find ripgrep guake git vim-gnome bat tmux curl zsh powerline fonts-powerline python3-venv python3-pip python-pip jq csvtool xclip gnome-tweaks chrome-gnome-shell htop p7zip-full rename unzip; do
 		echo "installing ${package}"
 		sudo apt-get install --assume-yes --ignore-missing $package -qq > /dev/null
 	done
@@ -162,6 +162,16 @@ fi
 	#echo "export GOPATH=\$HOME/.go-projects" >> ~/.zprofile
 	#rm -rf /tmp/"${go_file}"
 #fi
+
+if [[ ! -f "${BASE_DIR}/fonts/.installed" ]]; then
+	cd "${BASE_DIR}"/fonts
+	mkdir installations
+	unzip "*.zip" -d installations
+	install-font-subdirectories "${BASE_DIR}/fonts/installations"
+	rm -rf "${BASE_DIR}/fonts/installations"
+	touch "${BASE_DIR}/fonts/.installed"
+fi
+
 
 mkdir -p "${BACKUP_DIR}"
 updateFiles "${BASE_DIR}/zsh/.zshrc" "${HOME}/.zshrc"
