@@ -1,9 +1,13 @@
 #!/bin/bash
 
-## Bashrc Related ##
-alias dirbashrc="grep -nT '^#|' $HOME/.bashrc"
-alias bashrc="vim $HOME/.bashrc"
-alias rebash="source $HOME/.bashrc"
+## zshrc Related ##
+alias dirzshrc="grep -nT '^#|' $HOME/.zshrc"
+alias zshrc="vim $HOME/.zshrc"
+alias rebash="source $HOME/.zshrc"
+
+# common directories
+alias dot="cd ~/.dotfiles"
+alias con="cd ~/.config"
 
 # if bat exists, use it instead of cat
 if  [ -x "$(command -v bat)" ]; then
@@ -79,7 +83,7 @@ alias pls='sudo !!'
 alias sudoi='sudo "PATH=$PATH"'
 
 # Quickly edit this script and load it
-alias vpr='vim $HOME/.bashrc && source $HOME/.bashrc'
+alias vpr='vim $HOME/.zshrc && source $HOME/.zshrc'
 
 # sshfs with proper default settings
 alias sshfs='sshfs -o allow_other,uid=1000,gid=1000'
@@ -420,6 +424,6 @@ dbt() {
     ARGS="$ARGS -t $@"
   fi
 
-ss  docker build $ARGS,
+  docker build $ARGS,
 
 }
