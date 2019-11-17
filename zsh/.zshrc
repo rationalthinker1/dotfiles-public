@@ -17,11 +17,20 @@ export ZSH="${ZDOTDIR}/oh-my-zsh"
 #=======================================================================================
 # Basic Settings
 #=======================================================================================
-HISTFILE="${ZDOTDIR}"/.zsh_history
+# History in cache directory:
 HISTSIZE=20000             # bash history will save N commands
+HISTFILE="${ZDOTDIR}"/.zsh_history
 HISTFILESIZE="${HISTSIZE}" # bash will remember N commands
 HISTCONTROL=ignoreboth     # ingore duplicates and spaces
 HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
+
+# Basic auto/tab complete:
+autoload -U compinit
+zstyle ':completion:*' menu select
+zmodload zsh/complist
+compinit
+_comp_options+=(globdots)		# Include hidden files.
+
 setopt CORRECT                    # Try to correct command line spelling
 setopt AUTO_CD
 setopt PUSHD_IGNORE_DUPS
@@ -41,13 +50,7 @@ setopt HIST_IGNORE_SPACE          # remove command lines from the history list w
 bindkey -v
 autoload -U edit-command-line
 zle -N edit-command-line
-bindkey '^E' edit-command-line                   # Opens Vim to edit current command line
-bindkey -M vicmd v edit-command-line
-
-# loading autocompletion
-autoload -U +X compinit && compinit
-autoload -U +X bashcompinit && bashcompinit
-bashcompinit -i
+bindkey '^e' edit-command-line                   # Opens Vim to edit current command line
 
 # https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
 stty start undef
@@ -116,6 +119,11 @@ if [ -f "${HOME}"/.bash_local ]; then
     source "${HOME}"/.bash_local
 fi
 
+# load node version manager
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
 # Load fzf
 [ -f "${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf.zsh ] && source "${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf.zsh
 # load powerlevel10k settings
@@ -126,6 +134,3 @@ if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] &&
 	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
 fi
 
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
