@@ -170,6 +170,7 @@ if [[ ! -f "${BASE_DIR}/fonts/.installed" ]]; then
 	install-font-subdirectories "${BASE_DIR}/fonts/installations"
 	rm -rf "${BASE_DIR}/fonts/installations"
 	touch "${BASE_DIR}/fonts/.installed"
+	cd -
 fi
 
 
