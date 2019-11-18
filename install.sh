@@ -167,6 +167,7 @@ if [[ ! -f "${BASE_DIR}/fonts/.installed" ]]; then
 	cd "${BASE_DIR}"/fonts
 	mkdir installations
 	unzip "*.zip" -d installations
+	source "${BASE_DIR}/zsh/aliases.zsh"
 	install-font-subdirectories "${BASE_DIR}/fonts/installations"
 	rm -rf "${BASE_DIR}/fonts/installations"
 	touch "${BASE_DIR}/fonts/.installed"
