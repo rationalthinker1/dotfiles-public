@@ -107,6 +107,8 @@ alias hgrep="history | grep"
 # use fdfind
 alias fd=fdfind
 
+alias ref="cat ~/.config/zsh/reference.zsh"
+
 # So that vim shortcuts can work
 #alias vim="stty stop '' -ixoff ; vim"
 
@@ -201,7 +203,7 @@ function unzipd() {
 function install-font-subdirectories() {
 	directory="${1}"
 	for subdirectory in $(find $directory -maxdepth 1 -mindepth 1 -type d); do
-		install-font-folder "${subdirectory}"
+		install-font-folder "${directory}/${subdirectory}"
 	done
 }
 
@@ -418,7 +420,6 @@ dexbash() {
   docker exec -it --user "$(id -u):$(id -g)" "$1" /bin/bash
 }
 
-
 # Runs Docker build and tag it with the given name.
 dbt() {
   if [ $# -lt 1 ]; then
@@ -432,6 +433,5 @@ dbt() {
     ARGS="$ARGS -t $@"
   fi
 
-  docker build $ARGS,
-
+  docker build $ARGS
 }
