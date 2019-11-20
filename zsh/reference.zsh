@@ -1,4 +1,4 @@
-# Shred a file securely
+# Shred a file securely rewritten 5 times (-n5)
 shred -zvu -n5 "${file}"
 
 # Shred a directory securely

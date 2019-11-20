@@ -150,6 +150,16 @@ if [[ ! $(bat --version 2>/dev/null) ]]; then
 	sudo dpkg -i /tmp/$download_filename
 fi
 
+# Installing up
+if [[ ! $(which up 2>/dev/null) ]]; then
+	decho "up does not exist"
+	echo "Installing up"
+	link=$(curl -s https://api.github.com/repos/akavel/up/releases/latest | grep -P "browser_download_url" | head -n 1 |  cut -d '"' -f 4)
+	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
+	sudo wget -q $link -P /usr/local/bin/
+	sudo chmod +x /usr/local/bin/up
+fi
+
 # Installing go-lang
 #if [[ ! $(go verion 2>/dev/null) ]]; then
 	#decho "go-lang does not exist"
