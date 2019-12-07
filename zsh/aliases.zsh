@@ -280,7 +280,7 @@ alias pam:rs="php artisan migrate:refresh --seed"
 alias pda="php artisan dumpautoload"
 alias cu="composer update"
 alias ci="composer install"
-alias cda="composer dump-autoload -o"
+alias cda="docker-compose exec --user "$(id -u):$(id -g)" php composer dump-autoload -o"
 alias pacc="php artisan clear-compiled"
 
 #=======================================================================================
