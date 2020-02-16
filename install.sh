@@ -76,7 +76,7 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	echo "upgrading all packages"
 	sudo apt-get -y update > /dev/null
 	sudo apt-get -y upgrade > /dev/null
-	for package in fd-find ripgrep guake git vim-gtk3 bat tmux curl zsh powerline fonts-powerline python3-venv python3-pip python-pip jq csvtool xclip gnome-tweaks chrome-gnome-shell htop p7zip-full rename unzip wipe; do
+	for package in fd-find ripgrep guake git vim-gtk3 bat tmux curl zsh powerline fonts-powerline python3-venv python3-pip python-pip jq csvtool xclip gnome-tweaks chrome-gnome-shell htop p7zip-full rename unzip wipe net-tools; do
 		echo "installing ${package}"
 		sudo apt-get install --assume-yes --ignore-missing $package -qq > /dev/null
 	done
