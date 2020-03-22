@@ -375,6 +375,10 @@ augroup END
 " Close all the buffers
 noremap <leader>ba :1,1000 bd!<cr>
 
+" delete lines without copying it (use x to cut)
+nnoremap d "_d
+vnoremap d "_d
+
 " Useful mappings for managing tabs
 noremap <leader>tn :tabnew<cr>
 noremap <leader>to :tabonly<cr>
