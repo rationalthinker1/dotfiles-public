@@ -80,6 +80,8 @@ call plug#end()
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--General
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let $BASH_ENV = "~/.dotfiles/zsh/aliases.zsh"
+
 " Sets how many lines of history VIM has to remember
 set history=700
 

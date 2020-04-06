@@ -109,6 +109,14 @@ alias fd=fdfind
 
 alias ref="cat ~/.config/zsh/reference.zsh"
 
+# look at the size of the sub-directories level 1
+alias ds="du -chd 1 | sort -h"
+
+function fs() {
+	LIMIT=${1:-10}
+	du -lah | grep -v -e '^.*K[[:space:]]' | sort -r -n | head "-n${LIMIT}"
+}
+
 # So that vim shortcuts can work
 #alias vim="stty stop '' -ixoff ; vim"
 
