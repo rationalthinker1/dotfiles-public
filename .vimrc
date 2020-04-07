@@ -82,6 +82,9 @@ call plug#end()
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let $BASH_ENV = "~/.dotfiles/zsh/aliases.zsh"
 
+" https://vim.fandom.com/wiki/Set_working_directory_to_the_current_file
+autocmd BufEnter * silent! lcd %:p:h
+
 " Sets how many lines of history VIM has to remember
 set history=700
 
