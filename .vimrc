@@ -27,7 +27,7 @@ if ! has('nvim')
 	Plug 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
 endif
 
-Plug 'terryma/vim-multiple-cursors'
+"Plug 'terryma/vim-multiple-cursors'
 Plug 'ctrlpvim/ctrlp.vim'
 Plug 'quramy/tsuquyomi'
 Plug 'leafgarland/typescript-vim'
@@ -42,8 +42,8 @@ Plug 'daylerees/colour-schemes', { 'rtp': 'vim/' }
 Plug 'ekalinin/Dockerfile.vim'
 Plug 'stephpy/vim-yaml'
 Plug 'luochen1990/rainbow'
-Plug 'tmux-plugins/vim-tmux-focus-events'
-Plug 'tmux-plugins/vim-tmux'
+"Plug 'tmux-plugins/vim-tmux-focus-events'
+"Plug 'tmux-plugins/vim-tmux'
 Plug 'sheerun/vim-polyglot'
 Plug 'mileszs/ack.vim'
 "Plug 'neoclide/coc.nvim', {'branch': 'release'}
@@ -61,7 +61,7 @@ Plug 'farmergreg/vim-lastplace'
 Plug 'chip/vim-fat-finger'
 Plug 'mbbill/undotree'
 Plug 'moll/vim-node', {'for': ['javascript', 'javascript.jsx', 'json']}
-Plug 'w0ng/vim-hybrid'
+Plug 'micke/vim-hybrid'
 Plug 'simonsmith/material.vim'
 "Plug 'neoclide/coc.nvim', {'branch': 'release'}
 "Plug 'Valloric/YouCompleteMe', { 'do': 'python3 ./install.py --clang-completer' }
@@ -178,13 +178,13 @@ set directory=$HOME/.vim/tmp/swap   " swap files
 
 " Make those folders automatically if they don't already exist.
 if !isdirectory(expand(&undodir))
-    call mkdir(expand(&undodir), "p")
+	call mkdir(expand(&undodir), "p")
 endif
 if !isdirectory(expand(&backupdir))
-    call mkdir(expand(&backupdir), "p")
+	call mkdir(expand(&backupdir), "p")
 endif
 if !isdirectory(expand(&directory))
-    call mkdir(expand(&directory), "p")
+	call mkdir(expand(&directory), "p")
 endif
 
 
@@ -230,6 +230,11 @@ set cmdheight=2
 " Allow using alt keys in vim for mapping
 set winaltkeys=no
 
+" Go back and forth to cursor position
+map <Esc> <C-A-q>
+nnoremap <C-A-q> <C-O>
+map <Esc> <C-A-w>
+nnoremap <C-A-w> <C-I>
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Buffer Settings
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -694,26 +699,26 @@ vnoremap <C-S-Down> :m '>+1<CR>gv=gv
 " a number from 1-6 to highlight the current word in a specific color.
 
 function! HiInterestingWord(n) " {{{
-    " Save our location.
-    normal! mz
+	" Save our location.
+	normal! mz
 
-    " Yank the current word into the z register.
-    normal! "zyiw
+	" Yank the current word into the z register.
+	normal! "zyiw
 
-    " Calculate an arbitrary match ID.  Hopefully nothing else is using it.
-    let mid = 86750 + a:n
+	" Calculate an arbitrary match ID.  Hopefully nothing else is using it.
+	let mid = 86750 + a:n
 
-    " Clear existing matches, but don't worry if they don't exist.
-    silent! call matchdelete(mid)
+	" Clear existing matches, but don't worry if they don't exist.
+	silent! call matchdelete(mid)
 
-    " Construct a literal pattern that has to match at boundaries.
-    let pat = '\V\<' . escape(@z, '\') . '\>'
+	" Construct a literal pattern that has to match at boundaries.
+	let pat = '\V\<' . escape(@z, '\') . '\>'
 
-    " Actually match the words.
-    call matchadd("InterestingWord" . a:n, pat, 1, mid)
+	" Actually match the words.
+	call matchadd("InterestingWord" . a:n, pat, 1, mid)
 
-    " Move back to our original location.
-    normal! `z
+	" Move back to our original location.
+	normal! `z
 endfunction " }}}
 
 " Mappings {{{
@@ -895,28 +900,28 @@ nmap ga <Plug>(EasyAlign)
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:ale_lint_on_insert_leave = 0
 let g:ale_fixers = {
-\   '*': ['remove_trailing_lines', 'trim_whitespace'],
-\   'javascript': ['prettier'],
-\   'javascript.jsx': ['prettier'],
-\   'typescript': ['prettier'],
-\   'typescript.tsx': ['prettier'],
-\   'python': ['yapf'],
-\   'json': ['prettier'],
-\   'html': ['prettier'],
-\   'css': ['prettier', 'stylelint'],
-\   'scss': ['prettier', 'stylelint'],
-\}
+			\   '*': ['remove_trailing_lines', 'trim_whitespace'],
+			\   'javascript': ['prettier'],
+			\   'javascript.jsx': ['prettier'],
+			\   'typescript': ['prettier'],
+			\   'typescript.tsx': ['prettier'],
+			\   'python': ['yapf'],
+			\   'json': ['prettier'],
+			\   'html': ['prettier'],
+			\   'css': ['prettier', 'stylelint'],
+			\   'scss': ['prettier', 'stylelint'],
+			\}
 let g:ale_linters = {
-\   'javascript': ['eslint'],
-\   'javascript.jsx': ['eslint'],
-\   'typescript': ['eslint'],
-\   'typescript.tsx': ['eslint'],
-\   'python': ['flake8'],
-\   'json': ['jsonlint'],
-\   'html': ['htmlhint'],
-\   'css': ['stylelint'],
-\   'scss': ['stylelint'],
-\}
+			\   'javascript': ['eslint'],
+			\   'javascript.jsx': ['eslint'],
+			\   'typescript': ['eslint'],
+			\   'typescript.tsx': ['eslint'],
+			\   'python': ['flake8'],
+			\   'json': ['jsonlint'],
+			\   'html': ['htmlhint'],
+			\   'css': ['stylelint'],
+			\   'scss': ['stylelint'],
+			\}
 let g:ale_fix_on_save = 1
 let g:ale_echo_msg_error_str = 'E'
 let g:ale_echo_msg_warning_str = 'W'

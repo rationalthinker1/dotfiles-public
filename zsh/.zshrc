@@ -1,6 +1,11 @@
 #=======================================================================================
 # Loading up zprofiles
 #=======================================================================================
+export LOCAL_CONFIG="${HOME}/.config"
+export ZDOTDIR="${LOCAL_CONFIG}/zsh"
+export ADOTDIR="${ZDOTDIR}/antigen"
+export ZSH="${ZDOTDIR}/oh-my-zsh"
+
 if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
     source "${LOCAL_CONFIG}"/zsh/.zprofile
 fi
@@ -8,11 +13,6 @@ fi
 if [ -f "${HOME}"/.zprofile ]; then
     source "${HOME}"/.zprofile
 fi
-
-export LOCAL_CONFIG="${HOME}/.config"
-export ZDOTDIR="${LOCAL_CONFIG}/zsh"
-export ADOTDIR="${ZDOTDIR}/antigen"
-export ZSH="${ZDOTDIR}/oh-my-zsh"
 
 #=======================================================================================
 # Basic Settings
@@ -133,4 +133,3 @@ export NVM_DIR="$HOME/.nvm"
 if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
 	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
 fi
-
