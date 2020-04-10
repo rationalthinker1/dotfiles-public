@@ -9,6 +9,7 @@ if empty(glob('~/.vim/autoload/plug.vim'))
 endif
 
 call plug#begin('~/.vim/plugged')
+Plug 'mg979/vim-visual-multi', {'branch': 'master'}
 Plug 'vim-scripts/httplog'
 Plug 'vim-scripts/apachelogs.vim'
 Plug 'vim-scripts/apachestyle'
