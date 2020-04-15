@@ -21,6 +21,7 @@ Plug 'jwalton512/vim-blade'
 Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
 Plug 'Yggdroot/indentLine'
 "Plug 'nathanaelkane/vim-indent-guides'
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
@@ -81,6 +82,7 @@ call plug#end()
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--General
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Set zsh aliases
 let $BASH_ENV = "~/.dotfiles/zsh/aliases.zsh"
 
 " https://vim.fandom.com/wiki/Set_working_directory_to_the_current_file
@@ -396,6 +398,12 @@ noremap <leader>to :tabonly<cr>
 noremap <leader>tc :tabclose<cr>
 noremap <leader>tm :tabmove
 
+nnoremap ; :Buffers<CR>
+nnoremap f :Files<CR>
+nnoremap T :Tags<CR>
+nnoremap t :BTags<CR>
+nnoremap s :Rg<CR>
+
 nnoremap <S-2> :tabn<CR>
 nnoremap <S-4> :tabp<CR>
 nnoremap <S-3> :tabnew<CR>
@@ -684,6 +692,8 @@ nnoremap <C-S-Down> :m +1<CR>
 vnoremap <C-S-Up> :m '<-2<CR>gv=gv
 vnoremap <C-S-Down> :m '>+1<CR>gv=gv
 
+nnoremap <leader>- :new<cr>
+nnoremap <leader><bar> :vnew<cr>
 "map <Esc> <C-A-q>
 "map <Esc>- <C-A-e>
 "nnoremap <C-A-q> <C-o>
@@ -756,7 +766,7 @@ syntax enable
 colorscheme cosmic-barf
 set background=dark
 let g:colors_name = 'cosmic-barf'
-let g:UltiSnipsExpandTrigger="<C-Tab>"
+let g:UltiSnipsExpandTrigger="<tab>"
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Airline Configurations
