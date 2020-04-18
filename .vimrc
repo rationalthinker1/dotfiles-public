@@ -66,7 +66,7 @@ Plug 'moll/vim-node', {'for': ['javascript', 'javascript.jsx', 'json']}
 Plug 'micke/vim-hybrid'
 Plug 'simonsmith/material.vim'
 "Plug 'neoclide/coc.nvim', {'branch': 'release'}
-"Plug 'Valloric/YouCompleteMe', { 'do': 'python3 ./install.py --clang-completer' }
+Plug 'Valloric/YouCompleteMe', { 'do': 'python3 ./install.py --js-completer' }
 
 " Deplete wo
 Plug 'roxma/nvim-yarp' | Plug 'roxma/vim-hug-neovim-rpc' | Plug 'Shougo/deoplete.nvim'
