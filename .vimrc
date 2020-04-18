@@ -66,7 +66,7 @@ Plug 'moll/vim-node', {'for': ['javascript', 'javascript.jsx', 'json']}
 Plug 'micke/vim-hybrid'
 Plug 'simonsmith/material.vim'
 "Plug 'neoclide/coc.nvim', {'branch': 'release'}
-Plug 'Valloric/YouCompleteMe', { 'do': 'python3 ./install.py --js-completer' }
+"Plug 'Valloric/YouCompleteMe', { 'do': 'python3 ./install.py --js-completer' }
 
 " Deplete wo
 Plug 'roxma/nvim-yarp' | Plug 'roxma/vim-hug-neovim-rpc' | Plug 'Shougo/deoplete.nvim'
@@ -273,7 +273,7 @@ nnoremap <leader>bl :ls<CR>
 " Enable syntax highlighting
 syntax enable
 set background=dark
-set termguicolors
+"set termguicolors
 set termencoding=utf-8
 set guifont=IBM\ Plex\ Mono\ Semi-Bold\ 10
 " Set extra options when running in GUI mode
