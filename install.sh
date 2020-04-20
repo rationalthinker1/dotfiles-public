@@ -104,6 +104,7 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	net-tools \
 	exuberant-ctags \
 	bd \
+	fzf \
 	; do
 		echo "installing ${package}"
 		sudo apt-get install --assume-yes --ignore-missing "${package}" -qq > /dev/null

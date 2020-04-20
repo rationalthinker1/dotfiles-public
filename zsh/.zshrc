@@ -64,10 +64,18 @@ export TERM="xterm-256color"
 # Load the oh-my-zsh's library.
 antigen use oh-my-zsh
 
+# Load the theme.
+antigen theme romkatv/powerlevel10k
+#antigen theme https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train
+#antigen theme bhilburn/powerlevel9k powerlevel9k
+
 # Bundles from the default repo (robbyrussell's oh-my-zsh).
 antigen bundle git
-antigen bundle docker
-antigen bundle docker-compose
+antigen bundle fzf
+antigen bundle jump
+antigen bundle agkozak/zsh-z
+antigen bundle command-not-found
+antigen bundle autojump
 antigen bundle zpm-zsh/ssh
 antigen bundle g-plane/zsh-yarn-autocompletions
 antigen bundle thetic/extract
@@ -78,11 +86,9 @@ antigen bundle zdharma/fast-syntax-highlighting
 antigen bundle zsh-users/zsh-autosuggestions
 antigen bundle zsh-users/zsh-completions
 antigen bundle zsh-users/zsh-history-substring-search
-
-# Load the theme.
-antigen theme romkatv/powerlevel10k
-#antigen theme https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train
-#antigen theme bhilburn/powerlevel9k powerlevel9k
+antigen bundle greymd/docker-zsh-completion
+#antigen bundle rupa/z
+#antigen bundle changyuheng/fz
 
 # Tell antigen that you're done.
 antigen apply
@@ -133,3 +139,14 @@ export NVM_DIR="$HOME/.nvm"
 if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
 	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
 fi
+
+### Bashhub.com Installation
+if [ -f ~/.bashhub/bashhub.zsh ]; then
+    source ~/.bashhub/bashhub.zsh
+fi
+
+### Enhancd Installation
+if [ -f "${LOCAL_CONFIG}/enhancd/init.sh" ]; then
+    source "${LOCAL_CONFIG}"/enhancd/init.sh
+fi
+
