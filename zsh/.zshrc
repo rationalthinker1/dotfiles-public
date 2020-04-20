@@ -5,6 +5,7 @@ export LOCAL_CONFIG="${HOME}/.config"
 export ZDOTDIR="${LOCAL_CONFIG}/zsh"
 export ADOTDIR="${ZDOTDIR}/antigen"
 export ZSH="${ZDOTDIR}/oh-my-zsh"
+export ENHANCD_DIR="${LOCAL_CONFIG}/enhancd"
 
 if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
     source "${LOCAL_CONFIG}"/zsh/.zprofile

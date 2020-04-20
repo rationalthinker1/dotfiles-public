@@ -137,6 +137,9 @@ function wcsv() {
 # cd to parent directory matching substring
 alias bd=". bd -si"
 
+# takes whatever you have cat previously and vims it
+alias v!='fc -e "sed -i -e \"s/cat /vim /\""'
+
 # Extract archives files
 function extract() {
     if [ -f "$1" ] ; then
