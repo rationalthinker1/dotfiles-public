@@ -23,19 +23,18 @@ Plug 'Yggdroot/indentLine'
 "Plug 'nathanaelkane/vim-indent-guides'
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
-Plug 'vim-airline/vim-airline'
-Plug 'vim-airline/vim-airline-themes'
-if ! has('nvim')
-	Plug 'Lokaltog/powerline', {'rtp': 'powerline/bindings/vim/'}
-endif
+Plug 'dracula/vim', { 'as': 'dracula' }
+Plug 'majutsushi/tagbar'
+nnoremap <F8> :TagbarToggle<CR>
 
+Plug 'ludovicchabant/vim-gutentags'
 "Plug 'terryma/vim-multiple-cursors'
 Plug 'ctrlpvim/ctrlp.vim'
 Plug 'quramy/tsuquyomi'
 Plug 'leafgarland/typescript-vim'
 Plug 'peitalin/vim-jsx-typescript'
 Plug 'pangloss/vim-javascript'
-Plug 'airblade/vim-gitgutter'
+"Plug 'airblade/vim-gitgutter'
 Plug 'scrooloose/nerdcommenter'
 Plug 'junegunn/vim-easy-align'
 Plug 'tpope/vim-eunuch'
@@ -50,7 +49,7 @@ Plug 'sheerun/vim-polyglot'
 Plug 'mileszs/ack.vim'
 "Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'evturn/cosmic-barf'
-Plug 'dense-analysis/ale'
+"Plug 'dense-analysis/ale'
 Plug 'bronson/vim-trailing-whitespace'
 Plug 'chr4/nginx.vim'
 Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
@@ -65,18 +64,11 @@ Plug 'mbbill/undotree'
 Plug 'moll/vim-node', {'for': ['javascript', 'javascript.jsx', 'json']}
 Plug 'micke/vim-hybrid'
 Plug 'simonsmith/material.vim'
-"Plug 'neoclide/coc.nvim', {'branch': 'release'}
-"Plug 'Valloric/YouCompleteMe', { 'do': 'python3 ./install.py --js-completer' }
-
-" Deplete wo
-Plug 'roxma/nvim-yarp' | Plug 'roxma/vim-hug-neovim-rpc' | Plug 'Shougo/deoplete.nvim'
-Plug 'tbodt/deoplete-tabnine', { 'do': './install.sh' }
-Plug 'kristijanhusak/deoplete-phpactor'
-Plug 'carlitux/deoplete-ternjs', { 'do': 'npm install -g tern' }
-Plug 'deoplete-plugins/deoplete-zsh'
-Plug 'shougo/neco-vim'
-Plug 'shougo/neco-syntax'
-
+Plug 'mhinz/vim-startify'
+Plug 'psliwka/vim-smoothie' " smooth scroll
+Plug 'crusoexia/vim-dracula'
+source ~/.vim/custom-coc.vim
+source ~/.vim/custom-lightline.vim
 call plug#end()
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -238,6 +230,8 @@ map <Esc> <C-A-q>
 nnoremap <C-A-q> <C-O>
 map <Esc> <C-A-w>
 nnoremap <C-A-w> <C-I>
+
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Buffer Settings
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -272,8 +266,23 @@ nnoremap <leader>bl :ls<CR>
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Enable syntax highlighting
 syntax enable
+syntax on
 set background=dark
-"set termguicolors
+set termguicolors
+
+color dracula
+" Dracula:
+fun! s:Dra()
+    colorscheme dracula
+    set background=dark
+    syntax on
+endfunction
+command Dra call s:Dra()
+
+highlight Pmenu guibg=white guifg=black gui=bold
+highlight Comment gui=bold
+highlight Normal gui=none
+
 set termencoding=utf-8
 set guifont=IBM\ Plex\ Mono\ Semi-Bold\ 10
 " Set extra options when running in GUI mode
@@ -408,6 +417,9 @@ nnoremap <S-2> :tabn<CR>
 nnoremap <S-4> :tabp<CR>
 nnoremap <S-3> :tabnew<CR>
 
+" Adds semicolon at the end of the line
+inoremap <C-S-L> <C-o>A;
+
 function! ReindentFile()
 	let l:win_view = winsaveview()
 	let l:old_query = getreg('/')
@@ -458,8 +470,6 @@ set statusline=\ %{HasPaste()}%F%m%r%h\ %w\ \ CWD:\ %r%{getcwd()}%h\ \ \ Line:\ 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Remap VIM 0 to first non-blank character
 nnoremap 0 ^
-
-
 
 " Delete trailing white space on save, useful for Python and CoffeeScript ;)
 func! DeleteTrailingWS()
@@ -694,78 +704,7 @@ vnoremap <C-S-Down> :m '>+1<CR>gv=gv
 
 nnoremap <leader>- :new<cr>
 nnoremap <leader><bar> :vnew<cr>
-"map <Esc> <C-A-q>
-"map <Esc>- <C-A-e>
-"nnoremap <C-A-q> <C-o>
-"nnoremap <C-A-e> <C-i>
 
-" }}}
-" Highlight Word {{{
-"
-" This mini-plugin provides a few mappings for highlighting words temporarily.
-"
-" Sometimes you're looking at a hairy piece of code and would like a certain
-" word or two to stand out temporarily.  You can search for it, but that only
-" gives you one color of highlighting.  Now you can use <leader>N where N is
-" a number from 1-6 to highlight the current word in a specific color.
-
-function! HiInterestingWord(n) " {{{
-	" Save our location.
-	normal! mz
-
-	" Yank the current word into the z register.
-	normal! "zyiw
-
-	" Calculate an arbitrary match ID.  Hopefully nothing else is using it.
-	let mid = 86750 + a:n
-
-	" Clear existing matches, but don't worry if they don't exist.
-	silent! call matchdelete(mid)
-
-	" Construct a literal pattern that has to match at boundaries.
-	let pat = '\V\<' . escape(@z, '\') . '\>'
-
-	" Actually match the words.
-	call matchadd("InterestingWord" . a:n, pat, 1, mid)
-
-	" Move back to our original location.
-	normal! `z
-endfunction " }}}
-
-" Mappings {{{
-
-nnoremap <silent> <leader>1 :call HiInterestingWord(1)<cr>
-nnoremap <silent> <leader>2 :call HiInterestingWord(2)<cr>
-nnoremap <silent> <leader>3 :call HiInterestingWord(3)<cr>
-nnoremap <silent> <leader>4 :call HiInterestingWord(4)<cr>
-nnoremap <silent> <leader>5 :call HiInterestingWord(5)<cr>
-nnoremap <silent> <leader>6 :call HiInterestingWord(6)<cr>
-
-" }}}
-" Default Highlights {{{
-
-hi def InterestingWord1 guifg=#000000 ctermfg=16 guibg=#ffa724 ctermbg=214
-hi def InterestingWord2 guifg=#000000 ctermfg=16 guibg=#aeee00 ctermbg=154
-hi def InterestingWord3 guifg=#000000 ctermfg=16 guibg=#8cffba ctermbg=121
-hi def InterestingWord4 guifg=#000000 ctermfg=16 guibg=#b88853 ctermbg=137
-hi def InterestingWord5 guifg=#000000 ctermfg=16 guibg=#ff9eb8 ctermbg=211
-hi def InterestingWord6 guifg=#000000 ctermfg=16 guibg=#ff2c4b ctermbg=195
-
-" }}}
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"--Theme
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-syntax enable
-"set background=dark
-"colorscheme vim-material
-"colorscheme gloom-contrast
-"let g:material_style='palenight'
-"colorscheme hybrid
-"colorscheme material
-colorscheme cosmic-barf
-set background=dark
-let g:colors_name = 'cosmic-barf'
 let g:UltiSnipsExpandTrigger="<tab>"
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -958,3 +897,5 @@ vnoremap <C-_> :call NERDComment(0,"toggle")<CR>
 "--Deoplete Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:deoplete#enable_at_startup = 1
+
+
