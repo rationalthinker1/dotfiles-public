@@ -133,6 +133,10 @@ function wcsv() {
 	#echo "wget $1 -qO - | head -${LIMIT}"
 }
 
+# https://github.com/vigneshwaranr/bd
+# cd to parent directory matching substring
+alias bd=". bd -si"
+
 # Extract archives files
 function extract() {
     if [ -f "$1" ] ; then

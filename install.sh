@@ -103,6 +103,7 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	wipe \
 	net-tools \
 	exuberant-ctags \
+	bd \
 	; do
 		echo "installing ${package}"
 		sudo apt-get install --assume-yes --ignore-missing "${package}" -qq > /dev/null
