@@ -15,3 +15,5 @@ zsh/.zsh_history
 .vim/.viminfo
 fonts/.installed
 zsh/.zshrc.zwc
+.vim/pack/kite
+tags
