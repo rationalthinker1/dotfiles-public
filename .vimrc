@@ -99,11 +99,17 @@ set autoread
 let mapleader = ","
 let g:mapleader = ","
 
+" https://www.reddit.com/r/vim/comments/1vdrxg/space_is_a_big_key_what_do_you_map_it_to/
+map <space> <leader>
+
 " shows where your cursor
 set cursorline
 
 " escape insert mode via 'jj'
 inoremap jj <ESC>
+
+" escape insert mode via 'Ctrl+Space'
+map <C-Space> <Esc>
 
 " Use <cr> to confirm completion, `<C-g>u` means break undo chain at current position.
 " Coc only does snippet and additional edit on confirm.
