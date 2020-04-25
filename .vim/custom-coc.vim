@@ -63,6 +63,8 @@ omap ig <Plug>(coc-git-chunk-inner)
 xmap ig <Plug>(coc-git-chunk-inner)
 omap ag <Plug>(coc-git-chunk-outer)
 xmap ag <Plug>(coc-git-chunk-outer)
+" Revert to last commit
+nnoremap <leader>uc :CocCommand git.chunkUndo<cr>
 
 " GoTo code navigation.
 nmap <silent> gd <Plug>(coc-definition)

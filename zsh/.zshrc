@@ -1,6 +1,7 @@
 #=======================================================================================
 # Loading up zprofiles
 #=======================================================================================
+export TERMINAL="gnome-terminal"
 export LOCAL_CONFIG="${HOME}/.config"
 export ZDOTDIR="${LOCAL_CONFIG}/zsh"
 export ADOTDIR="${ZDOTDIR}/antigen"
@@ -56,6 +57,9 @@ bindkey '^e' edit-command-line                   # Opens Vim to edit current com
 # https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
 stty start undef
 
+eval `dircolors /home/nookta/.dir_colors/dircolors`
+
+ENHANCD_DISABLE_DOT=1
 
 #=======================================================================================
 # Antigen

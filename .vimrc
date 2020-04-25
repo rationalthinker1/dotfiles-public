@@ -23,13 +23,24 @@ Plug 'Yggdroot/indentLine'
 "Plug 'nathanaelkane/vim-indent-guides'
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
+function! s:find_files()
+    let git_dir = system('git rev-parse --show-toplevel 2> /dev/null')[:-2]
+    if git_dir != ''
+        execute 'Files' git_dir
+    else
+        execute 'Files'
+    endif
+endfunction
+command! ProjectFiles execute s:find_files()
+nnoremap f :ProjectFiles<CR>
+
 Plug 'dracula/vim', { 'as': 'dracula' }
 Plug 'majutsushi/tagbar'
 nnoremap <F8> :TagbarToggle<CR>
 
 Plug 'ludovicchabant/vim-gutentags'
 "Plug 'terryma/vim-multiple-cursors'
-Plug 'ctrlpvim/ctrlp.vim'
+"Plug 'ctrlpvim/ctrlp.vim'
 Plug 'quramy/tsuquyomi'
 Plug 'leafgarland/typescript-vim'
 Plug 'peitalin/vim-jsx-typescript'
@@ -315,7 +326,7 @@ set ffs=unix,dos,mac
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"--Files, backups and undo
+"--FiFiles<CR>Files<CR>les, backups and undo
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Turn backup off, since most stuff is in SVN, git et.c anyway...
 set nobackup
@@ -393,9 +404,9 @@ endfunction
 " Automatically reload vimrc when it's saved
 augroup vimrc
 	autocmd!
-	autocmd BufWritePost .vimrc :echom "Reloading .vimrc"
-	autocmd BufWritePost .vimrc :sleep 500m
-	autocmd BufWritePost .vimrc :source $MYVIMRC
+	autocmd BufWritePost *.vim :echom "Reloading .vimrc"
+	autocmd BufWritePost *.vim :sleep 500m
+	autocmd BufWritePost *.vim :source $MYVIMRC
 	autocmd BufReadPost  .vimrc :call SavePositionOfTextOnRegister('^call plug#end()')
 	autocmd BufWritePost .vimrc :call AutoPlaceMarkBasedOnText('^call plug#end()', "'p")
 augroup END
@@ -414,7 +425,7 @@ noremap <leader>tc :tabclose<cr>
 noremap <leader>tm :tabmove
 
 nnoremap ; :Buffers<CR>
-nnoremap f :Files<CR>
+"nnoremap f :Files<CR>
 nnoremap T :Tags<CR>
 nnoremap t :BTags<CR>
 nnoremap s :Rg<CR>
