@@ -9,60 +9,50 @@ if empty(glob('~/.vim/autoload/plug.vim'))
 endif
 
 call plug#begin('~/.vim/plugged')
-Plug 'mg979/vim-visual-multi', {'branch': 'master'}
+"Plug 'shawncplus/phpcomplete.vim'
+"Plug 'noahfrederick/vim-laravel'
+"Plug 'jwalton512/vim-blade'
+"Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
+"Plug 'nathanaelkane/vim-indent-guides'
+"Plug 'terryma/vim-multiple-cursors'
+"Plug 'ctrlpvim/ctrlp.vim'
+"Plug 'quramy/tsuquyomi' " coc-typescript
+"Plug 'leafgarland/typescript-vim'
+"Plug 'peitalin/vim-jsx-typescript'
+"Plug 'pangloss/vim-javascript'
+"Plug 'airblade/vim-gitgutter'
+"Plug 'tmux-plugins/vim-tmux-focus-events'
+"Plug 'tmux-plugins/vim-tmux'
+"Plug 'dense-analysis/ale'
+"Plug 'mbbill/undotree'
+"Plug 'moll/vim-node', {'for': ['javascript', 'javascript.jsx', 'json']}
+
+"=== Syntax Highlighting
+Plug 'chr4/nginx.vim'
 Plug 'vim-scripts/httplog'
 Plug 'vim-scripts/apachelogs.vim'
 Plug 'vim-scripts/apachestyle'
-Plug 'stanangeloff/php.vim'
-Plug 'shawncplus/phpcomplete.vim'
-Plug 'scrooloose/nerdtree'
-Plug 'noahfrederick/vim-laravel'
-Plug 'jwalton512/vim-blade'
-Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
-Plug 'Yggdroot/indentLine'
-"Plug 'nathanaelkane/vim-indent-guides'
-Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
-Plug 'junegunn/fzf.vim'
-function! s:find_files()
-    let git_dir = system('git rev-parse --show-toplevel 2> /dev/null')[:-2]
-    if git_dir != ''
-        execute 'Files' git_dir
-    else
-        execute 'Files'
-    endif
-endfunction
-command! ProjectFiles execute s:find_files()
-nnoremap f :ProjectFiles<CR>
-
-Plug 'dracula/vim', { 'as': 'dracula' }
-Plug 'majutsushi/tagbar'
-nnoremap <F8> :TagbarToggle<CR>
-
-Plug 'ludovicchabant/vim-gutentags'
-"Plug 'terryma/vim-multiple-cursors'
-"Plug 'ctrlpvim/ctrlp.vim'
-Plug 'quramy/tsuquyomi'
-Plug 'leafgarland/typescript-vim'
-Plug 'peitalin/vim-jsx-typescript'
-Plug 'pangloss/vim-javascript'
-"Plug 'airblade/vim-gitgutter'
-Plug 'scrooloose/nerdcommenter'
-Plug 'junegunn/vim-easy-align'
-Plug 'tpope/vim-eunuch'
-Plug 'hzchirs/vim-material'
-Plug 'daylerees/colour-schemes', { 'rtp': 'vim/' }
 Plug 'ekalinin/Dockerfile.vim'
+Plug 'stanangeloff/php.vim'
 Plug 'stephpy/vim-yaml'
+Plug 'cakebaker/scss-syntax.vim'
+
+" A bunch of useful language related snippets (ultisnips is the engine).
+Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
+let g:UltiSnipsJumpBackwardTrigger="<s-tab>"
+let g:UltiSnipsJumpForwardTrigger="<tab>"
+
+Plug 'alvan/vim-closetag' " autocomplete html tags
+Plug 'tpope/vim-abolish' " foo_bar => fooBar  :%Subvert/facilit{y,ies}/building{,s}/g
+Plug 'mg979/vim-visual-multi', {'branch': 'master'} " Ctrl+N to select multi-line edits
+Plug 'scrooloose/nerdcommenter' " Ability to comment out lines from many files
+Plug 'Yggdroot/indentLine' " Displays thin vertical lines at each indentation level
+Plug 'junegunn/vim-easy-align'
+Plug 'tpope/vim-eunuch' " Adds methods like :Rename :Delete :Move :Chmod :Mkdir :SudoWrite
 Plug 'luochen1990/rainbow'
-"Plug 'tmux-plugins/vim-tmux-focus-events'
-"Plug 'tmux-plugins/vim-tmux'
 Plug 'sheerun/vim-polyglot'
 Plug 'mileszs/ack.vim'
-"Plug 'neoclide/coc.nvim', {'branch': 'release'}
-Plug 'evturn/cosmic-barf'
-"Plug 'dense-analysis/ale'
 Plug 'bronson/vim-trailing-whitespace'
-Plug 'chr4/nginx.vim'
 Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
 Plug 'tpope/vim-surround'
 Plug 'thinca/vim-visualstar'
@@ -71,16 +61,29 @@ Plug 'ConradIrwin/vim-bracketed-paste' " Improve pasting code from the clipboard
 Plug 'editorconfig/editorconfig-vim'
 Plug 'farmergreg/vim-lastplace'
 Plug 'chip/vim-fat-finger'
-Plug 'mbbill/undotree'
-Plug 'moll/vim-node', {'for': ['javascript', 'javascript.jsx', 'json']}
-Plug 'micke/vim-hybrid'
-Plug 'simonsmith/material.vim'
 Plug 'mhinz/vim-startify'
 Plug 'psliwka/vim-smoothie' " smooth scroll
-Plug 'crusoexia/vim-dracula'
+Plug 'easymotion/vim-easymotion' " press <leader><leader>w and type one of the highlighted characters
+Plug 'majutsushi/tagbar' " Adds a bar to see all functions variable of the file
+nnoremap <F8> :TagbarToggle<CR>
+
+
+"=== Themes
+Plug 'micke/vim-hybrid'
+Plug 'hzchirs/vim-material'
+Plug 'daylerees/colour-schemes', { 'rtp': 'vim/' }
+Plug 'simonsmith/material.vim'
+Plug 'dracula/vim', { 'as': 'dracula' }
+Plug 'evturn/cosmic-barf'
+
+"=== Custom configurations
 source ~/.vim/custom-coc.vim
 source ~/.vim/custom-lightline.vim
+source ~/.vim/custom-fzf.vim
+source ~/.vim/custom-gutentags.vim
+source ~/.vim/custom-nerdtree.vim
 call plug#end()
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--General
@@ -290,9 +293,9 @@ set termguicolors
 color dracula
 " Dracula:
 fun! s:Dra()
-    colorscheme dracula
-    set background=dark
-    syntax on
+	colorscheme dracula
+	set background=dark
+	syntax on
 endfunction
 command Dra call s:Dra()
 
@@ -404,9 +407,9 @@ endfunction
 " Automatically reload vimrc when it's saved
 augroup vimrc
 	autocmd!
-	autocmd BufWritePost *.vim :echom "Reloading .vimrc"
-	autocmd BufWritePost *.vim :sleep 500m
-	autocmd BufWritePost *.vim :source $MYVIMRC
+	autocmd BufWritePost *.vim,.vimrc :echom "Reloading .vimrc"
+	autocmd BufWritePost *.vim,.vimrc :sleep 500m
+	autocmd BufWritePost *.vim,.vimrc :source $MYVIMRC
 	autocmd BufReadPost  .vimrc :call SavePositionOfTextOnRegister('^call plug#end()')
 	autocmd BufWritePost .vimrc :call AutoPlaceMarkBasedOnText('^call plug#end()', "'p")
 augroup END
@@ -563,15 +566,33 @@ noremap <leader>pp :setlocal paste!<cr>
 nnoremap <leader>title 63i"<esc><esc>o"--<space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`oi<space>
 vnoremap <leader>title ydd63i"<esc><esc>o"--<space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`opi<bs>
 
+function! ReplaceTextUntil(char)
+	let l:line = getline('.')
+	let l:y = line('.')
+	let l:x = col('.')
+	let l:index = stridx(l:line, a:char, l:x)
+	let l:portion = strpart(l:line, l:x, l:index - l:x)
+	let l:bar = substitute(l:line, l:portion, "", "")
+	call setline(l:y, l:bar)
+	call cursor(l:y, l:x + 1)
+	call feedkeys('i')
+endfunc
+nnoremap w' :call ReplaceTextUntil("'")<cr>
+nnoremap w" :call ReplaceTextUntil('"')<cr>
+nnoremap w; :call ReplaceTextUntil(';')<cr>
+nnoremap w. :call ReplaceTextUntil('.')<cr>
+nnoremap w> :call ReplaceTextUntil('<')<cr>
+nnoremap w) :call ReplaceTextUntil(')')<cr>
+
 " copy current line
 function! PasteLineBelow(mode)
 	let l:y = line('.')
 	let l:x = col('.')
-	if a:mode == 'i'
+	if a:mode ==? 'i'
 		execute "normal! yyp"
-		cal cursor(l:y+1, l:x+1)
+		call cursor(l:y+1, l:x+1)
 		call feedkeys(a:mode)
-	elseif a:mode == 'n'
+	elseif a:mode ==? 'n'
 		execute "normal! yyp"
 		cal cursor(l:y+1, l:x)
 	else
@@ -852,6 +873,8 @@ let g:indentLine_char = '┊'
 "--Rainbow Parentheses
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:rainbow_active = 1
+let g:rainbow_conf = { 'operators': '_,\|=\|+\|\*\|-\|\.\|;\||\|&\|?\|:\|<\|>\|%\|/[^/]_' }
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--EasyAlign Configurations
