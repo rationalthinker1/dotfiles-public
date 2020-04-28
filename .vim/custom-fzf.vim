@@ -11,6 +11,10 @@ function! s:find_files()
 endfunction
 command! ProjectFiles execute s:find_files()
 nnoremap f :ProjectFiles<CR>
+nnoremap ; :Buffers<CR>
+nnoremap T :Tags<CR>
+nnoremap t :BTags<CR>
+nnoremap s :Rg<CR>
 
 let g:fzf_history_dir = '~/.config/fzf/fzf-history'
 

@@ -8,6 +8,10 @@ export ADOTDIR="${ZDOTDIR}/antigen"
 export ZSH="${ZDOTDIR}/oh-my-zsh"
 export ENHANCD_DIR="${LOCAL_CONFIG}/enhancd"
 
+# Custom setting for commands
+export ENHANCD_DISABLE_DOT=1
+export FZF_DEFAULT_COMMAND="rg --files --no-ignore --hidden --follow -g '!{.git,node_modules,vendor,oh-my-zsh,antigen}'"
+
 if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
     source "${LOCAL_CONFIG}"/zsh/.zprofile
 fi
@@ -58,8 +62,6 @@ bindkey '^e' edit-command-line                   # Opens Vim to edit current com
 stty start undef
 
 eval `dircolors /home/nookta/.dir_colors/dircolors`
-
-ENHANCD_DISABLE_DOT=1
 
 #=======================================================================================
 # Antigen

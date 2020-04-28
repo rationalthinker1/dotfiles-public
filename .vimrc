@@ -38,6 +38,7 @@ Plug 'stanangeloff/php.vim'
 Plug 'stephpy/vim-yaml'
 Plug 'cakebaker/scss-syntax.vim'
 
+Plug 'tpope/vim-fugitive' " :Git commit :Git diff :Git log :Git difftool :Gedit HEAD~3:%
 Plug 'alvan/vim-closetag' " autocomplete html tags
 Plug 'tpope/vim-abolish' " foo_bar => fooBar  :%Subvert/facilit{y,ies}/building{,s}/g
 Plug 'mg979/vim-visual-multi', {'branch': 'master'} " Ctrl+N to select multi-line edits
@@ -427,15 +428,13 @@ noremap <leader>to :tabonly<cr>
 noremap <leader>tc :tabclose<cr>
 noremap <leader>tm :tabmove
 
-nnoremap ; :Buffers<CR>
-"nnoremap f :Files<CR>
-nnoremap T :Tags<CR>
-nnoremap t :BTags<CR>
-nnoremap s :Rg<CR>
-
-nnoremap <S-2> :tabn<CR>
-nnoremap <S-4> :tabp<CR>
-nnoremap <S-3> :tabnew<CR>
+" Needed to fix up pasting (highlighted and paste right after cursor)
+" https://unix.stackexchange.com/questions/5056/cursor-position-after-pasting-in-vi-vim
+noremap p gP
+noremap P gP
+noremap gp p
+noremap gP P
+noremap y ygv<Esc>
 
 " Adds semicolon at the end of the line
 inoremap <C-S-L> <C-o>A;
