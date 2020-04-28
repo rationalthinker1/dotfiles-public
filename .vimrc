@@ -67,7 +67,7 @@ Plug 'daylerees/colour-schemes', { 'rtp': 'vim/' }
 Plug 'simonsmith/material.vim'
 Plug 'dracula/vim', { 'as': 'dracula' }
 Plug 'evturn/cosmic-barf'
-
+Plug 'zirrostig/vim-schlepp'
 "=== Custom configurations
 source ~/.vim/custom-coc.vim " Autocomplete for many languages
 source ~/.vim/custom-lightline.vim " Shows little bar at the bottom
@@ -113,8 +113,8 @@ map <space> <leader>
 " shows where your cursor
 set cursorline
 
-" escape insert mode via 'jj'
-inoremap jj <ESC>
+" escape insert mode via 'dd'
+inoremap dd <ESC>
 "inoremap <Shift> <ESC>v
 " escape insert mode via 'Ctrl+Space'
 map <C-Space> <Esc>
@@ -625,7 +625,7 @@ endfunc
 inoremap <C-d> <esc>:call PasteLineBelow('i')<cr>
 nnoremap <C-d> <esc>:call PasteLineBelow('n')<cr>
 vnoremap <C-d> <esc>:call PasteLineBelow('v')<cr>
-
+inoremap <C-d> <esc>:call PasteLineBelow('i')<cr>
 " delete current line
 function! DeleteCurrentLine(mode)
 	let l:y = line('.')
@@ -766,8 +766,12 @@ set pastetoggle=<F3>
 " Move current line or visual block up/down
 nnoremap <C-S-Up> :m -2<CR>
 nnoremap <C-S-Down> :m +1<CR>
-vnoremap <C-S-Up> :m '<-2<CR>gv=gv
-vnoremap <C-S-Down> :m '>+1<CR>gv=gv
+"vnoremap <C-S-Up> :m '<-2<CR>gv=gv
+"vnoremap <C-S-Down> :m '>+1<CR>gv=gv
+vmap <C-S-Up>    <Plug>SchleppUp
+vmap <C-S-Down>  <Plug>SchleppDown
+"vmap <C-left>  <Plug>SchleppLeft
+"vmap <C-right> <Plug>SchleppRight
 
 nnoremap <leader>- :new<cr>
 nnoremap <leader><bar> :vnew<cr>
@@ -828,71 +832,6 @@ nnoremap <leader>bs :CtrlPMRU<cr>
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"--NERDTree Configurations
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"noremap <C-n> :NERDTreeToggle<CR>
-autocmd StdinReadPre * let s:std_in=1
-autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
-nnoremap <silent> <expr> <C-b> g:NERDTree.IsOpen() ? "\:NERDTreeClose<CR>" : bufexists(expand('%')) ? "\:NERDTreeFind<CR>" : "\:NERDTree<CR>"
-let NERDTreeShowHidden = 1
-let NERDTreeMinimalUI = 1
-let NERDTreeDirArrows = 1
-let g:nerd_preview_enabled = 1
-let g:preview_last_buffer = 0
-
-function! NerdTreePreview()
-	" Only on nerdtree window
-	if (&ft ==# 'nerdtree')
-		" Get filename
-		let l:filename = substitute(getline("."), "^\\s\\+\\|\\s\\+$","","g")
-
-		" Preview if it is not a folder
-		let l:lastchar = strpart(l:filename, strlen(l:filename) - 1, 1)
-		if (l:lastchar != "/" && strpart(l:filename, 0 ,2) != "..")
-
-			let l:store_buffer_to_close = 1
-			if (bufnr(l:filename) > 0)
-				" Don't close if the buffer is already open
-				let l:store_buffer_to_close = 0
-			endif
-
-			" Do preview
-			execute "normal go"
-
-			" Close previews buffer
-			if (g:preview_last_buffer > 0)
-				execute "bwipeout " . g:preview_last_buffer
-				let g:preview_last_buffer = 0
-			endif
-
-			" Set last buffer to close it later
-			if (l:store_buffer_to_close)
-				let g:preview_last_buffer = bufnr(l:filename)
-			endif
-		endif
-	elseif (g:preview_last_buffer > 0)
-		" Close last previewed buffer
-		let g:preview_last_buffer = 0
-	endif
-endfunction
-
-function! NerdPreviewToggle()
-	if (g:nerd_preview_enabled)
-		let g:nerd_preview_enabled = 0
-		augroup nerdpreview
-			autocmd!
-		augroup END
-	else
-		let g:nerd_preview_enabled = 1
-		augroup nerdpreview
-			autocmd!
-			autocmd CursorMoved * nested call NerdTreePreview()
-		augroup END
-	endif
-endfunction
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Yggdroot/indentLine
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 let g:indentLine_color_term = 239
@@ -949,22 +888,9 @@ let g:ale_open_list = 1
 let g:ale_list_window_size = 5
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"--editorconfig/editorconfig-vim
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-let g:EditorConfig_exclude_patterns = ['fugitive://.\*', 'scp://.\*']
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Nerdcommenter Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " _ is /
 nnoremap <C-_> :call NERDComment(0,"toggle")<CR>
 vnoremap <C-_> :call NERDComment(0,"toggle")<CR>
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"--Deoplete Configurations
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-let g:deoplete#enable_at_startup = 1
-
 
