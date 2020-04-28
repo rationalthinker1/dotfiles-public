@@ -39,6 +39,7 @@ Plug 'ekalinin/Dockerfile.vim'
 Plug 'stanangeloff/php.vim'
 Plug 'stephpy/vim-yaml'
 Plug 'cakebaker/scss-syntax.vim'
+Plug 'tmux-plugins/vim-tmux'
 
 Plug 'tpope/vim-fugitive' " :Git commit :Git diff :Git log :Git difftool :Gedit HEAD~3:%
 Plug 'alvan/vim-closetag' " autocomplete html tags
@@ -46,7 +47,7 @@ Plug 'tpope/vim-abolish' " foo_bar => fooBar  :%Subvert/facilit{y,ies}/building{
 Plug 'mg979/vim-visual-multi', {'branch': 'master'} " Ctrl+N to select multi-line edits and press c to change, i to add and d to delete
 Plug 'scrooloose/nerdcommenter' " Ability to comment out lines from many files
 Plug 'Yggdroot/indentLine' " Displays thin vertical lines at each indentation level
-Plug 'junegunn/vim-easy-align'
+Plug 'junegunn/vim-easy-align' " Highlight area, press ga{=,:, } to align by it
 Plug 'tpope/vim-eunuch' " Adds methods like :Rename :Delete :Move :Chmod :Mkdir :SudoWrite
 Plug 'luochen1990/rainbow'
 Plug 'sheerun/vim-polyglot'
@@ -60,6 +61,7 @@ Plug 'chip/vim-fat-finger' " Automatically corrects common misspellings and typo
 Plug 'mhinz/vim-startify'
 Plug 'psliwka/vim-smoothie' " Smooth scroll
 Plug 'easymotion/vim-easymotion' " Press <leader><leader>w and type one of the highlighted characters
+Plug 'tmux-plugins/vim-tmux-focus-events' " Focus is gain when switching back and forth with tmux screens
 
 "=== Themes
 Plug 'micke/vim-hybrid'
@@ -114,6 +116,20 @@ map <space> <leader>
 
 " shows where your cursor
 set cursorline
+
+" Ctrl+S to save
+" If the current buffer has never been saved, it will have no name,
+" call the file browser to save it, otherwise just save it.
+command -nargs=0 -bar Update if &modified
+                           \|    if empty(bufname('%'))
+                           \|        browse confirm write
+                           \|    else
+                           \|        confirm write
+                           \|    endif
+                           \|endif
+nnoremap <silent> <C-S> :<C-u>Update<CR>
+inoremap <c-s> <c-o>:Update<CR>
+vmap <C-s> <esc>:w<CR>gv
 
 " escape insert mode via 'aa'
 inoremap aa <ESC>
@@ -279,7 +295,6 @@ nnoremap <leader>bq :bp <BAR> bd #<CR>
 
 " Show all open buffers and their status
 nnoremap <leader>bl :ls<CR>
-
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

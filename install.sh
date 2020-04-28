@@ -105,6 +105,8 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	exuberant-ctags \
 	bd \
 	fzf \
+	xsel \
+	xclip \
 	; do
 		echo "installing ${package}"
 		sudo apt-get install --assume-yes --ignore-missing "${package}" -qq > /dev/null
@@ -225,16 +227,10 @@ updateFiles "${BASE_DIR}/fzf/fzf.zsh" "${HOME}/.config/fzf/fzf.zsh"
 updateFiles "${BASE_DIR}/.Xresources" "${HOME}/.Xresources"
 updateFiles "${BASE_DIR}/rc.sh" "${HOME}/.ssh/rc"
 
-# Installing tmux plugins
-if [[ ! -d "${LOCAL_CONFIG}/tmux/plugins/tmux-yank" ]]; then
-	decho "Installing tmux-yank plugin"
-	git clone https://github.com/tmux-plugins/tmux-yank "${LOCAL_CONFIG}"/tmux/plugins/tmux-yank
-fi
-
-# Installing tmux plugins
-if [[ ! -d "${LOCAL_CONFIG}/tmux/plugins/tmux-better-mouse-mode" ]]; then
-	decho "Install tmux-better-mouse-mode plugin"
-	git clone https://github.com/tmux-plugins/tmux-better-mouse-mode "${LOCAL_CONFIG}"/tmux/plugins/tmux-better-mouse-mode
+# Installing tmux plugin manager
+if [[ ! -d "${LOCAL_CONFIG}/tmux/plugins/tpm" ]]; then
+	decho "Installing tmux plugin manager"
+	git clone https://github.com/tmux-plugins/tpm "${LOCAL_CONFIG}"/tmux/plugins/tpm
 fi
 
 # Installing vim plugins

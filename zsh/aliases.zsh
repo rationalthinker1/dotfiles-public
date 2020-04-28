@@ -112,6 +112,10 @@ alias ref="cat ~/.config/zsh/reference.zsh"
 # look at the size of the sub-directories level 1
 alias ds="du -chd 1 | sort -h"
 
+# Ctrl+S doesn't cause terminal to freeze
+# https://vim.fandom.com/wiki/Map_Ctrl-S_to_save_current_or_new_files
+alias vim="stty stop '' -ixoff ; vim"
+
 function fs() {
 	LIMIT=${1:-10}
 	du -lah | grep -v -e '^.*K[[:space:]]' | sort -r -n | head "-n${LIMIT}"
