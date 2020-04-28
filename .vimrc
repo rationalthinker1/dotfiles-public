@@ -27,6 +27,7 @@ call plug#begin('~/.vim/plugged')
 "Plug 'mbbill/undotree'
 "Plug 'moll/vim-node', {'for': ['javascript', 'javascript.jsx', 'json']}
 "Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
+"Plug 'editorconfig/editorconfig-vim'
 
 "=== Syntax Highlighting
 Plug 'chr4/nginx.vim'
@@ -54,7 +55,6 @@ Plug 'tpope/vim-surround'
 Plug 'thinca/vim-visualstar'
 Plug 'tpope/vim-repeat' " repeat using . for non-ing . for non-native commands too
 Plug 'ConradIrwin/vim-bracketed-paste' " enables transparent pasting into vim. (i.e. no more :set paste!)
-" Plug 'editorconfig/editorconfig-vim'
 Plug 'farmergreg/vim-lastplace' "  reopen files at your last edit position
 Plug 'chip/vim-fat-finger' " Automatically corrects common misspellings and typos as you type
 Plug 'mhinz/vim-startify'
@@ -69,6 +69,7 @@ Plug 'simonsmith/material.vim'
 Plug 'dracula/vim', { 'as': 'dracula' }
 Plug 'evturn/cosmic-barf'
 Plug 'zirrostig/vim-schlepp'
+
 "=== Custom configurations
 source ~/.vim/custom-coc.vim " Autocomplete for many languages
 source ~/.vim/custom-lightline.vim " Shows little bar at the bottom
@@ -119,7 +120,6 @@ inoremap dd <ESC>
 "inoremap <Shift> <ESC>v
 " escape insert mode via 'Ctrl+Space'
 map <C-Space> <Esc>
-
 
 " keep in visual mode after identing by shift+> in vim
 " https://superuser.com/questions/310417/how-to-keep-in-visual-mode-after-identing-by-shift-in-vim
@@ -290,15 +290,7 @@ syntax enable
 syntax on
 set background=dark
 set termguicolors
-
 color dracula
-" Dracula:
-fun! s:Dra()
-	colorscheme dracula
-	set background=dark
-	syntax on
-endfunction
-command Dra call s:Dra()
 
 highlight Pmenu guibg=white guifg=black gui=bold
 highlight Comment gui=bold
@@ -330,7 +322,7 @@ set ffs=unix,dos,mac
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"--FiFiles<CR>Files<CR>les, backups and undo
+"--Files, backups and undo
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Turn backup off, since most stuff is in SVN, git et.c anyway...
 set nobackup
