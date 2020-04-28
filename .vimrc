@@ -604,7 +604,9 @@ function! PasteLineBelow(mode)
 			let l:portion = strpart(l:line, l:column_start - 1, l:size)
 			let l:bar = substitute(l:line, l:portion, l:portion . l:portion, "")
 			call setline(l:line_start, l:bar)
-			call cursor(l:line_end, l:column_end + (l:size * 2) + 1)
+			call cursor(l:line_end, l:column_end + 1)
+			execute "normal! " . (l:size) . "v"
+			"call cursor(l:line_end, l:column_end + (l:size * 2) + 1)
 			"echom "l:column_start: " . l:column_start
 			"echom "l:column_end: " . l:column_end
 			"echom "l:line_start: " . l:line_start
