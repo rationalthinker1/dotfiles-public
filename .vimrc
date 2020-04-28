@@ -26,6 +26,7 @@ call plug#begin('~/.vim/plugged')
 "Plug 'dense-analysis/ale'
 "Plug 'mbbill/undotree'
 "Plug 'moll/vim-node', {'for': ['javascript', 'javascript.jsx', 'json']}
+"Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
 
 "=== Syntax Highlighting
 Plug 'chr4/nginx.vim'
@@ -36,11 +37,6 @@ Plug 'ekalinin/Dockerfile.vim'
 Plug 'stanangeloff/php.vim'
 Plug 'stephpy/vim-yaml'
 Plug 'cakebaker/scss-syntax.vim'
-
-" A bunch of useful language related snippets (ultisnips is the engine).
-Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
-let g:UltiSnipsJumpBackwardTrigger="<s-tab>"
-let g:UltiSnipsJumpForwardTrigger="<tab>"
 
 Plug 'alvan/vim-closetag' " autocomplete html tags
 Plug 'tpope/vim-abolish' " foo_bar => fooBar  :%Subvert/facilit{y,ies}/building{,s}/g
@@ -53,20 +49,16 @@ Plug 'luochen1990/rainbow'
 Plug 'sheerun/vim-polyglot'
 Plug 'mileszs/ack.vim'
 Plug 'bronson/vim-trailing-whitespace'
-Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
 Plug 'tpope/vim-surround'
 Plug 'thinca/vim-visualstar'
-Plug 'tpope/vim-repeat'
-Plug 'ConradIrwin/vim-bracketed-paste' " Improve pasting code from the clipboard
-Plug 'editorconfig/editorconfig-vim'
-Plug 'farmergreg/vim-lastplace'
-Plug 'chip/vim-fat-finger'
+Plug 'tpope/vim-repeat' " repeat using . for non-ing . for non-native commands too
+Plug 'ConradIrwin/vim-bracketed-paste' " enables transparent pasting into vim. (i.e. no more :set paste!)
+" Plug 'editorconfig/editorconfig-vim'
+Plug 'farmergreg/vim-lastplace' "  reopen files at your last edit position
+Plug 'chip/vim-fat-finger' " Automatically corrects common misspellings and typos as you type
 Plug 'mhinz/vim-startify'
-Plug 'psliwka/vim-smoothie' " smooth scroll
-Plug 'easymotion/vim-easymotion' " press <leader><leader>w and type one of the highlighted characters
-Plug 'majutsushi/tagbar' " Adds a bar to see all functions variable of the file
-nnoremap <F8> :TagbarToggle<CR>
-
+Plug 'psliwka/vim-smoothie' " Smooth scroll
+Plug 'easymotion/vim-easymotion' " Press <leader><leader>w and type one of the highlighted characters
 
 "=== Themes
 Plug 'micke/vim-hybrid'
@@ -77,11 +69,13 @@ Plug 'dracula/vim', { 'as': 'dracula' }
 Plug 'evturn/cosmic-barf'
 
 "=== Custom configurations
-source ~/.vim/custom-coc.vim
-source ~/.vim/custom-lightline.vim
-source ~/.vim/custom-fzf.vim
-source ~/.vim/custom-gutentags.vim
-source ~/.vim/custom-nerdtree.vim
+source ~/.vim/custom-coc.vim " Autocomplete for many languages
+source ~/.vim/custom-lightline.vim " Shows little bar at the bottom
+source ~/.vim/custom-fzf.vim " Fast search by pressing f
+source ~/.vim/custom-gutentags.vim " Creates tag automatically
+source ~/.vim/custom-nerdtree.vim " Show files and folders in current directory by pressing Ctrl+b
+source ~/.vim/custom-tagbar.vim " Tagbar to show methods/variable by pressing F9
+source ~/.vim/custom-snippets.vim " A bunch of useful language related snippets (ultisnips is the engine).
 call plug#end()
 
 
@@ -121,9 +115,15 @@ set cursorline
 
 " escape insert mode via 'jj'
 inoremap jj <ESC>
-
+"inoremap <Shift> <ESC>v
 " escape insert mode via 'Ctrl+Space'
 map <C-Space> <Esc>
+
+
+" keep in visual mode after identing by shift+> in vim
+" https://superuser.com/questions/310417/how-to-keep-in-visual-mode-after-identing-by-shift-in-vim
+vnoremap < <gv
+vnoremap > >gv
 
 " Use <cr> to confirm completion, `<C-g>u` means break undo chain at current position.
 " Coc only does snippet and additional edit on confirm.
@@ -599,9 +599,10 @@ function! PasteLineBelow(mode)
 		let [ l:line_start, l:column_start, l:line_end, l:column_end ] = GetVisualSelectionLine()
 		let l:lines = VisualSelect()
 		if( l:line_end == l:line_start)
+			let l:line = getline('.')
 			let l:size = (l:column_end - l:column_start) + 1
-			let l:portion = strpart(getline('.'), l:column_start - 1, l:size)
-			let l:bar = substitute(getline('.'), l:portion, l:portion . l:portion, "")
+			let l:portion = strpart(l:line, l:column_start - 1, l:size)
+			let l:bar = substitute(l:line, l:portion, l:portion . l:portion, "")
 			call setline(l:line_start, l:bar)
 			call cursor(l:line_end, l:column_end + (l:size * 2) + 1)
 			"echom "l:column_start: " . l:column_start

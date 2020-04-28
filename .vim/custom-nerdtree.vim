@@ -11,4 +11,5 @@ autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isT
 let NERDTreeMinimalUI=1
 let NERDTreeShowHidden=1
 let NERDTreeMouseMode=2
+let NERDTreeRespectWildIgnore=1
 let NERDTreeIgnore=['.DS_Store', '.git', 'node_modules', '\.sublime-project', '\.sublime-workspace']
