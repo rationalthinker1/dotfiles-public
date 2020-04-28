@@ -28,6 +28,7 @@ call plug#begin('~/.vim/plugged')
 "Plug 'moll/vim-node', {'for': ['javascript', 'javascript.jsx', 'json']}
 "Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
 "Plug 'editorconfig/editorconfig-vim'
+"Plug 'mileszs/ack.vim'
 
 "=== Syntax Highlighting
 Plug 'chr4/nginx.vim'
@@ -42,16 +43,15 @@ Plug 'cakebaker/scss-syntax.vim'
 Plug 'tpope/vim-fugitive' " :Git commit :Git diff :Git log :Git difftool :Gedit HEAD~3:%
 Plug 'alvan/vim-closetag' " autocomplete html tags
 Plug 'tpope/vim-abolish' " foo_bar => fooBar  :%Subvert/facilit{y,ies}/building{,s}/g
-Plug 'mg979/vim-visual-multi', {'branch': 'master'} " Ctrl+N to select multi-line edits
+Plug 'mg979/vim-visual-multi', {'branch': 'master'} " Ctrl+N to select multi-line edits and press c to change, i to add and d to delete
 Plug 'scrooloose/nerdcommenter' " Ability to comment out lines from many files
 Plug 'Yggdroot/indentLine' " Displays thin vertical lines at each indentation level
 Plug 'junegunn/vim-easy-align'
 Plug 'tpope/vim-eunuch' " Adds methods like :Rename :Delete :Move :Chmod :Mkdir :SudoWrite
 Plug 'luochen1990/rainbow'
 Plug 'sheerun/vim-polyglot'
-Plug 'mileszs/ack.vim'
 Plug 'bronson/vim-trailing-whitespace'
-Plug 'tpope/vim-surround'
+Plug 'tpope/vim-surround' " cs)} -> change surrounding from ) to }; ds( -> delete surrounding (; ysiw} -> yank surrounding inside word }
 Plug 'thinca/vim-visualstar'
 Plug 'tpope/vim-repeat' " repeat using . for non-ing . for non-native commands too
 Plug 'ConradIrwin/vim-bracketed-paste' " enables transparent pasting into vim. (i.e. no more :set paste!)
@@ -115,8 +115,8 @@ map <space> <leader>
 " shows where your cursor
 set cursorline
 
-" escape insert mode via 'dd'
-inoremap dd <ESC>
+" escape insert mode via 'aa'
+inoremap aa <ESC>
 "inoremap <Shift> <ESC>v
 " escape insert mode via 'Ctrl+Space'
 map <C-Space> <Esc>
@@ -767,8 +767,6 @@ vmap <C-S-Down>  <Plug>SchleppDown
 nnoremap <leader>- :new<cr>
 nnoremap <leader><bar> :vnew<cr>
 
-let g:UltiSnipsExpandTrigger="<tab>"
-
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Airline Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -778,48 +776,6 @@ let g:airline_powerline_fonts = 1
 let g:airline#extensions#tabline#enabled = 1
 " Show just the filename
 let g:airline#extensions#tabline#fnamemod = ':t'
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"--vim-multiple-cursors Configurations
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-let g:multi_cursor_use_default_mapping = 0
-let g:multi_cursor_start_word_key      = '<A-j>'
-let g:multi_cursor_select_all_word_key = '<S-A-j>'
-let g:multi_cursor_start_key           = 'g<A-j>'
-let g:multi_cursor_select_all_key      = 'g<S-A-j>'
-let g:multi_cursor_next_key            = '<A-j>'
-let g:multi_cursor_prev_key            = '<C-p>'
-let g:multi_cursor_skip_key            = '<C-x>'
-let g:multi_cursor_quit_key            = '<Esc>'
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"--CtrlP Configurations
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Setup some default ignores
-let g:ctrlp_custom_ignore = {
-			\ 'dir':  '\v[\/](\.(git|hg|svn)|\_site)$',
-			\ 'file': '\v\.(exe|so|dll|class|png|jpg|jpeg)$',
-			\}
-
-" Use the nearest .git directory as the cwd
-" This makes a lot of sense if you are working on a project that is in version
-" control. It also supports works with .svn, .hg, .bzr.
-let g:ctrlp_working_path_mode = 'r'
-
-let g:ctrlp_by_filename  = 0 " ctrlp - don't search by filename by default (use full path instead)
-let g:ctrlp_show_hidden  = 1 " ctrlp - search for hidden files
-let g:ctrlp_regexp       = 1 " ctrlp - use regexp matching
-let g:ctrlp_root_markers = ['package.json', '.git']
-
-" Use a leader instead of the actual named binding
-nnoremap <leader>p :CtrlP<cr>
-
-" Easy bindings for its various modes
-nnoremap <leader>bb :CtrlPBuffer<cr>
-nnoremap <leader>bm :CtrlPMixed<cr>
-nnoremap <leader>bs :CtrlPMRU<cr>
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
