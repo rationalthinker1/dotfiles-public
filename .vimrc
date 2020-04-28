@@ -594,14 +594,29 @@ function! PasteLineBelow(mode)
 		call feedkeys(a:mode)
 	elseif a:mode ==? 'n'
 		execute "normal! yyp"
-		cal cursor(l:y+1, l:x)
+		call cursor(l:y+1, l:x)
 	else
+		let [ l:line_start, l:column_start, l:line_end, l:column_end ] = GetVisualSelectionLine()
 		let l:lines = VisualSelect()
-		let [l:line_start, l:column_start] = getpos("v")[1:2]
-		let [l:line_end, l:column_end] = getpos(".")[1:2]
-		let l:size = len(split(l:lines, "\n"))
-		call append(l:line_end, split(l:lines, "\n"))
-		cal cursor(l:line_end+(l:size), l:x)
+		if( l:line_end == l:line_start)
+			let l:size = (l:column_end - l:column_start) + 1
+			let l:portion = strpart(getline('.'), l:column_start - 1, l:size)
+			let l:bar = substitute(getline('.'), l:portion, l:portion . l:portion, "")
+			call setline(l:line_start, l:bar)
+			call cursor(l:line_end, l:column_end + (l:size * 2) + 1)
+			"echom "l:column_start: " . l:column_start
+			"echom "l:column_end: " . l:column_end
+			"echom "l:line_start: " . l:line_start
+			"echom "l:line_end: " . l:line_end
+			"echom "l:portion: " . l:portion
+			"echom "l:size: " . l:size
+			"echom "l:bar: " . l:bar
+		else
+			"echom l:lines
+			let l:size = len(split(l:lines, "\n"))
+			call append(l:line_end, split(l:lines, "\n"))
+			call cursor(l:line_end+(l:size), l:x)
+		endif
 	endif
 endfunc
 inoremap <C-d> <esc>:call PasteLineBelow('i')<cr>
@@ -648,7 +663,7 @@ function! CmdLine(str)
 	unmenu Foo
 endfunction
 
-function! VisualSelect()
+function! GetVisualSelectionLine()
 	if mode()=="v"
 		let [line_start, column_start] = getpos("v")[1:2]
 		let [line_end, column_end] = getpos(".")[1:2]
@@ -660,6 +675,17 @@ function! VisualSelect()
 		let [line_start, column_start, line_end, column_end] =
 					\   [line_end, column_end, line_start, column_start]
 	end
+	" 'selection' is a rarely-used option for overriding whether the last
+	" character is included in the selection. Bizarrely, it always affects the
+	" last character even when selecting from the end backwards.
+	if &selection !=# 'inclusive'
+		let column_end -= 1
+	endif
+	return [line_start, column_start, line_end, column_end]
+endfunction
+
+function! VisualSelect()
+	let [ line_start, column_start, line_end, column_end ] = GetVisualSelectionLine()
 	let lines = getline(line_start, line_end)
 	if len(lines) == 0
 		return ''
