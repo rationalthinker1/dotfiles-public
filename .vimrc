@@ -61,7 +61,7 @@ source ~/.vim/custom-lightline.vim " Shows little bar at the bottom
 source ~/.vim/custom-fzf.vim       " Fast search by pressing f
 source ~/.vim/custom-gutentags.vim " Creates tag automatically
 source ~/.vim/custom-nerdtree.vim  " Show files and folders in current directory by pressing Ctrl+b
-source ~/.vim/custom-tagbar.vim    " Tagbar to show methods/variable by pressing F9
+source ~/.vim/custom-tagbar.vim    " Tagbar to show methods/variable by pressing F8
 source ~/.vim/custom-snippets.vim  " A bunch of useful language related snippets (ultisnips is the engine).
 call plug#end()
 

@@ -110,17 +110,24 @@ alias fd=fdfind
 alias ref="cat ~/.config/zsh/reference.zsh"
 
 # look at the size of the sub-directories level 1
-alias ds="du -chd 1 | sort -h"
+# Uncommented and created function below
+#alias ds="du -chd 1 | sort -h"
 
 # Ctrl+S doesn't cause terminal to freeze
 # https://vim.fandom.com/wiki/Map_Ctrl-S_to_save_current_or_new_files
 alias vim="stty stop '' -ixoff ; vim"
 
+# get top biggest files
 function fs() {
-	LIMIT=${1:-10}
+	LIMIT=${1:-50}
 	du -lah | grep -v -e '^.*K[[:space:]]' | sort -r -n | head "-n${LIMIT}"
 }
 
+# get top biggest directories
+function ds() {
+	LIMIT=${1:-51}
+	du -h --max-depth=1 | sort -r -h | head "-n$((${LIMIT}+1))"
+}
 # So that vim shortcuts can work
 #alias vim="stty stop '' -ixoff ; vim"
 
