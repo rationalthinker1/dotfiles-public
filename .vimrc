@@ -52,6 +52,7 @@ Plug 'simonsmith/material.vim'
 Plug 'dracula/vim', { 'as': 'dracula' }
 Plug 'evturn/cosmic-barf'
 Plug 'zirrostig/vim-schlepp'
+Plug 'joshdick/onedark.vim'
 
 "=== Custom configurations
 source ~/.vim/custom-coc.vim       " Autocomplete for many languages
@@ -68,7 +69,7 @@ call plug#end()
 "--General
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Set zsh aliases
-set shell=zsh\ -i
+set shell=/bin/zsh\ -l
 let $BASH_ENV = "~/.dotfiles/zsh/aliases.zsh"
 
 " https://vim.fandom.com/wiki/Set_working_directory_to_the_current_file
@@ -288,7 +289,7 @@ syntax enable
 syntax on
 set background=dark
 set termguicolors
-color dracula
+color onedark
 
 highlight Pmenu guibg=white guifg=black gui=bold
 highlight Comment gui=bold

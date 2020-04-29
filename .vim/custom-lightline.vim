@@ -2,7 +2,7 @@ Plug 'itchyny/lightline.vim'
 Plug 'mengelbrecht/lightline-bufferline'
 
 let g:lightline = {
-        \ 'colorscheme': 'dracula',
+        \ 'colorscheme': 'onedark',
         \ }
 
 let g:lightline.tabline          = {'left': [['buffers']], 'right': [['close']]}
