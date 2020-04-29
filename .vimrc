@@ -39,7 +39,9 @@ Plug 'chip/vim-fat-finger'                " Automatically corrects common misspe
 Plug 'mhinz/vim-startify'                 " vim start menu showing last open files on vim
 Plug 'psliwka/vim-smoothie'               " Smooth scroll
 Plug 'easymotion/vim-easymotion'          " Press <leader><leader>w and type one of the highlighted characters
+Plug 'kshenoy/vim-signature'              " Shows bookmarks visually on the left
 Plug 'tmux-plugins/vim-tmux-focus-events' " Focus is gain when switching back and forth with tmux screens
+Plug 'christoomey/vim-tmux-navigator'
 
 "=== Themes
 Plug 'micke/vim-hybrid'
@@ -473,17 +475,9 @@ set statusline=\ %{HasPaste()}%F%m%r%h\ %w\ \ CWD:\ %r%{getcwd()}%h\ \ \ Line:\ 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Editing mappings
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Remap VIM 0 to first non-blank character
-nnoremap 0 ^
-
-" Delete trailing white space on save, useful for Python and CoffeeScript ;)
-func! DeleteTrailingWS()
-	exe "normal mz"
-	%s/\s\+$//ge
-	exe "normal `z"
-endfunc
-autocmd BufWrite *.py :call DeleteTrailingWS()
-autocmd BufWrite *.coffee :call DeleteTrailingWS()
+" Remap VIM 1 to first non-blank character and 2 to the last non-blank character
+nnoremap 1 ^
+nnoremap 2 $
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -513,9 +507,8 @@ vnoremap <silent> <leader>r :call VisualSelection('replace')<CR>
 "   <leader>p
 
 noremap <leader>cc :botright cope<cr>
+" Makes a copy of the current buffer and pastes it in a new tab
 noremap <leader>co ggVGy:tabnew<cr>:set syntax=qf<cr>pgg
-noremap <leader>n :cn<cr>
-noremap <leader>p :cp<cr>
 
 " when searching, you can use Perl's regex rather than using vim's own regex system
 nnoremap / /\v
@@ -752,6 +745,8 @@ set pastetoggle=<F3>
 " Move current line or visual block up/down
 nnoremap <C-S-Up> :m -2<CR>
 nnoremap <C-S-Down> :m +1<CR>
+inoremap <C-S-Up> :m -2<CR>
+inoremap <C-S-Down> :m +1<CR>
 "vnoremap <C-S-Up> :m '<-2<CR>gv=gv
 "vnoremap <C-S-Down> :m '>+1<CR>gv=gv
 vmap <C-S-Up>    <Plug>SchleppUp
