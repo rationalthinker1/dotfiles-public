@@ -9,27 +9,6 @@ if empty(glob('~/.vim/autoload/plug.vim'))
 endif
 
 call plug#begin('~/.vim/plugged')
-"Plug 'shawncplus/phpcomplete.vim'
-"Plug 'noahfrederick/vim-laravel'
-"Plug 'jwalton512/vim-blade'
-"Plug 'SirVer/ultisnips' | Plug 'honza/vim-snippets'
-"Plug 'nathanaelkane/vim-indent-guides'
-"Plug 'terryma/vim-multiple-cursors'
-"Plug 'ctrlpvim/ctrlp.vim'
-"Plug 'quramy/tsuquyomi' " coc-typescript
-"Plug 'leafgarland/typescript-vim'
-"Plug 'peitalin/vim-jsx-typescript'
-"Plug 'pangloss/vim-javascript'
-"Plug 'airblade/vim-gitgutter'
-"Plug 'tmux-plugins/vim-tmux-focus-events'
-"Plug 'tmux-plugins/vim-tmux'
-"Plug 'dense-analysis/ale'
-"Plug 'mbbill/undotree'
-"Plug 'moll/vim-node', {'for': ['javascript', 'javascript.jsx', 'json']}
-"Plug 'phpactor/phpactor' ,  {'do': 'composer install', 'for': 'php'}
-"Plug 'editorconfig/editorconfig-vim'
-"Plug 'mileszs/ack.vim'
-
 "=== Syntax Highlighting
 Plug 'chr4/nginx.vim'
 Plug 'vim-scripts/httplog'
@@ -41,26 +20,25 @@ Plug 'stephpy/vim-yaml'
 Plug 'cakebaker/scss-syntax.vim'
 Plug 'tmux-plugins/vim-tmux'
 
-Plug 'tpope/vim-fugitive' " :Git commit :Git diff :Git log :Git difftool :Gedit HEAD~3:%
-Plug 'alvan/vim-closetag' " autocomplete html tags
-Plug 'tpope/vim-abolish' " foo_bar => fooBar  :%Subvert/facilit{y,ies}/building{,s}/g
 Plug 'mg979/vim-visual-multi', {'branch': 'master'} " Ctrl+N to select multi-line edits and press c to change, i to add and d to delete
-Plug 'scrooloose/nerdcommenter' " Ability to comment out lines from many files
-Plug 'Yggdroot/indentLine' " Displays thin vertical lines at each indentation level
-Plug 'junegunn/vim-easy-align' " Highlight area, press ga{=,:, } to align by it
-Plug 'tpope/vim-eunuch' " Adds methods like :Rename :Delete :Move :Chmod :Mkdir :SudoWrite
-Plug 'luochen1990/rainbow'
-Plug 'sheerun/vim-polyglot'
-Plug 'bronson/vim-trailing-whitespace'
-Plug 'tpope/vim-surround' " cs)} -> change surrounding from ) to }; ds( -> delete surrounding (; ysiw} -> yank surrounding inside word }
-Plug 'thinca/vim-visualstar'
-Plug 'tpope/vim-repeat' " repeat using . for non-ing . for non-native commands too
-Plug 'ConradIrwin/vim-bracketed-paste' " enables transparent pasting into vim. (i.e. no more :set paste!)
-Plug 'farmergreg/vim-lastplace' "  reopen files at your last edit position
-Plug 'chip/vim-fat-finger' " Automatically corrects common misspellings and typos as you type
-Plug 'mhinz/vim-startify'
-Plug 'psliwka/vim-smoothie' " Smooth scroll
-Plug 'easymotion/vim-easymotion' " Press <leader><leader>w and type one of the highlighted characters
+Plug 'tpope/vim-fugitive'                 " :Git commit :Git diff :Git log :Git difftool :Gedit HEAD~3:%
+Plug 'alvan/vim-closetag'                 " autocomplete html tags
+Plug 'tpope/vim-abolish'                  " foo_bar => fooBar 'crm' 'crc' 'crs' 'cr-'; :%Subvert/facilit{y,ies}/building{,s}/g
+Plug 'scrooloose/nerdcommenter'           " Ability to comment out lines from many files
+Plug 'Yggdroot/indentLine'                " Displays thin vertical lines at each indentation level
+Plug 'junegunn/vim-easy-align'            " Highlight area, press ga{=,:, } to align by it
+Plug 'tpope/vim-eunuch'                   " Adds methods like :Rename :Delete :Move :Chmod :Mkdir :SudoWrite
+Plug 'luochen1990/rainbow'                " Rainbow Parentheses
+Plug 'sheerun/vim-polyglot'               " Language packs for Vim
+Plug 'bronson/vim-trailing-whitespace'    " Adds command :FixWhitespace
+Plug 'tpope/vim-surround'                 " cs)} -> change surrounding from ) to }; ds( -> delete surrounding (; ysiw} -> yank surrounding inside word }
+Plug 'tpope/vim-repeat'                   " repeat using . for non-ing . for non-native commands too
+Plug 'ConradIrwin/vim-bracketed-paste'    " enables transparent pasting into vim. (i.e. no more :set paste!)
+Plug 'farmergreg/vim-lastplace'           " reopen files at your last edit position
+Plug 'chip/vim-fat-finger'                " Automatically corrects common misspellings and typos as you type
+Plug 'mhinz/vim-startify'                 " vim start menu showing last open files on vim
+Plug 'psliwka/vim-smoothie'               " Smooth scroll
+Plug 'easymotion/vim-easymotion'          " Press <leader><leader>w and type one of the highlighted characters
 Plug 'tmux-plugins/vim-tmux-focus-events' " Focus is gain when switching back and forth with tmux screens
 
 "=== Themes
@@ -73,13 +51,13 @@ Plug 'evturn/cosmic-barf'
 Plug 'zirrostig/vim-schlepp'
 
 "=== Custom configurations
-source ~/.vim/custom-coc.vim " Autocomplete for many languages
+source ~/.vim/custom-coc.vim       " Autocomplete for many languages
 source ~/.vim/custom-lightline.vim " Shows little bar at the bottom
-source ~/.vim/custom-fzf.vim " Fast search by pressing f
+source ~/.vim/custom-fzf.vim       " Fast search by pressing f
 source ~/.vim/custom-gutentags.vim " Creates tag automatically
-source ~/.vim/custom-nerdtree.vim " Show files and folders in current directory by pressing Ctrl+b
-source ~/.vim/custom-tagbar.vim " Tagbar to show methods/variable by pressing F9
-source ~/.vim/custom-snippets.vim " A bunch of useful language related snippets (ultisnips is the engine).
+source ~/.vim/custom-nerdtree.vim  " Show files and folders in current directory by pressing Ctrl+b
+source ~/.vim/custom-tagbar.vim    " Tagbar to show methods/variable by pressing F9
+source ~/.vim/custom-snippets.vim  " A bunch of useful language related snippets (ultisnips is the engine).
 call plug#end()
 
 
@@ -117,6 +95,7 @@ map <space> <leader>
 " shows where your cursor
 set cursorline
 
+" https://vim.fandom.com/wiki/Map_Ctrl-S_to_save_current_or_new_files
 " Ctrl+S to save
 " If the current buffer has never been saved, it will have no name,
 " call the file browser to save it, otherwise just save it.
@@ -128,7 +107,7 @@ command -nargs=0 -bar Update if &modified
                            \|    endif
                            \|endif
 nnoremap <silent> <C-S> :<C-u>Update<CR>
-inoremap <c-s> <c-o>:Update<CR>
+inoremap <c-s> <Esc>:Update<CR>
 vmap <C-s> <esc>:w<CR>gv
 
 " escape insert mode via 'aa'
@@ -426,8 +405,8 @@ augroup END
 noremap <leader>ba :1,1000 bd!<cr>
 
 " delete lines without copying it (use x to cut)
-nnoremap d "_d
-vnoremap d "_d
+nnoremap d "_dd
+vnoremap d "_dd
 
 " Useful mappings for managing tabs
 noremap <leader>tn :tabnew<cr>
@@ -532,7 +511,7 @@ vnoremap <silent> <leader>r :call VisualSelection('replace')<CR>
 "
 " To go to the previous search results do:
 "   <leader>p
-"
+
 noremap <leader>cc :botright cope<cr>
 noremap <leader>co ggVGy:tabnew<cr>:set syntax=qf<cr>pgg
 noremap <leader>n :cn<cr>
@@ -662,6 +641,7 @@ function! ExecuteMacroOverVisualRange()
 	execute ":'<,'>normal @".nr2char(getchar())
 endfunction
 xnoremap @ :<C-u>call ExecuteMacroOverVisualRange()<CR>
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Helper functions
