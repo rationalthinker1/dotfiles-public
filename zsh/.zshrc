@@ -61,7 +61,6 @@ bindkey '^e' edit-command-line                   # Opens Vim to edit current com
 # https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
 stty start undef
 
-eval `dircolors /home/nookta/.dir_colors/dircolors`
 
 #=======================================================================================
 # Antigen
