@@ -42,6 +42,7 @@ Plug 'easymotion/vim-easymotion'          " Press <leader><leader>w and type one
 Plug 'kshenoy/vim-signature'              " Shows bookmarks visually on the left
 Plug 'tmux-plugins/vim-tmux-focus-events' " Focus is gain when switching back and forth with tmux screens
 Plug 'christoomey/vim-tmux-navigator'     " Using same keys to move between tmux and vim panes
+Plug 'rhysd/clever-f.vim'                 " Extends f, F, t and T mappings. Key f is available to repeat after you type f{char} or F{char}
 
 "=== Themes
 Plug 'micke/vim-hybrid'
