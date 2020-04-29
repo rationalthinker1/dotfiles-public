@@ -41,7 +41,7 @@ Plug 'psliwka/vim-smoothie'               " Smooth scroll
 Plug 'easymotion/vim-easymotion'          " Press <leader><leader>w and type one of the highlighted characters
 Plug 'kshenoy/vim-signature'              " Shows bookmarks visually on the left
 Plug 'tmux-plugins/vim-tmux-focus-events' " Focus is gain when switching back and forth with tmux screens
-Plug 'christoomey/vim-tmux-navigator'
+Plug 'christoomey/vim-tmux-navigator'     " Using same keys to move between tmux and vim panes
 
 "=== Themes
 Plug 'micke/vim-hybrid'
@@ -67,6 +67,7 @@ call plug#end()
 "--General
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Set zsh aliases
+set shell=zsh\ -i
 let $BASH_ENV = "~/.dotfiles/zsh/aliases.zsh"
 
 " https://vim.fandom.com/wiki/Set_working_directory_to_the_current_file
@@ -407,8 +408,8 @@ augroup END
 noremap <leader>ba :1,1000 bd!<cr>
 
 " delete lines without copying it (use x to cut)
-nnoremap d "_dd
-vnoremap d "_dd
+nnoremap d "_d
+vnoremap d "_d
 
 " Useful mappings for managing tabs
 noremap <leader>tn :tabnew<cr>
