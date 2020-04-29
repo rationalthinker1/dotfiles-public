@@ -53,6 +53,7 @@ Plug 'dracula/vim', { 'as': 'dracula' }
 Plug 'evturn/cosmic-barf'
 Plug 'zirrostig/vim-schlepp'
 Plug 'joshdick/onedark.vim'
+Plug 'ayu-theme/ayu-vim'
 
 "=== Custom configurations
 source ~/.vim/custom-coc.vim       " Autocomplete for many languages
@@ -289,7 +290,9 @@ syntax enable
 syntax on
 set background=dark
 set termguicolors
-color onedark
+let ayucolor="mirage"
+colorscheme ayu
+"color onedark
 
 highlight Pmenu guibg=white guifg=black gui=bold
 highlight Comment gui=bold
@@ -761,21 +764,15 @@ nnoremap <leader>- :new<cr>
 nnoremap <leader><bar> :vnew<cr>
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"--Airline Configurations
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-let g:airline_theme = 'material'
-let g:airline_powerline_fonts = 1
-" Enable the list of buffers
-let g:airline#extensions#tabline#enabled = 1
-" Show just the filename
-let g:airline#extensions#tabline#fnamemod = ':t'
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Yggdroot/indentLine
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-let g:indentLine_color_term = 239
-let g:indentLine_char = '┊'
+" IndentLine {{
+let g:indentLine_char = ''
+let g:indentLine_first_char = ''
+let g:indentLine_showFirstIndentLevel = 1
+let g:indentLine_setColors = 0
+" }}
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Rainbow Parentheses
@@ -793,39 +790,6 @@ xmap ga <Plug>(EasyAlign)
 " Start interactive EasyAlign for a motion/text object (e.g. gaip)
 nmap ga <Plug>(EasyAlign)
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"--ALE
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-let g:ale_lint_on_insert_leave = 0
-let g:ale_fixers = {
-			\   '*': ['remove_trailing_lines', 'trim_whitespace'],
-			\   'javascript': ['prettier'],
-			\   'javascript.jsx': ['prettier'],
-			\   'typescript': ['prettier'],
-			\   'typescript.tsx': ['prettier'],
-			\   'python': ['yapf'],
-			\   'json': ['prettier'],
-			\   'html': ['prettier'],
-			\   'css': ['prettier', 'stylelint'],
-			\   'scss': ['prettier', 'stylelint'],
-			\}
-let g:ale_linters = {
-			\   'javascript': ['eslint'],
-			\   'javascript.jsx': ['eslint'],
-			\   'typescript': ['eslint'],
-			\   'typescript.tsx': ['eslint'],
-			\   'python': ['flake8'],
-			\   'json': ['jsonlint'],
-			\   'html': ['htmlhint'],
-			\   'css': ['stylelint'],
-			\   'scss': ['stylelint'],
-			\}
-let g:ale_fix_on_save = 1
-let g:ale_echo_msg_error_str = 'E'
-let g:ale_echo_msg_warning_str = 'W'
-let g:ale_echo_msg_format = '[%linter%] %s [%severity%]'
-let g:ale_open_list = 1
-let g:ale_list_window_size = 5
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Nerdcommenter Configurations
