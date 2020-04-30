@@ -11,6 +11,7 @@ export ENHANCD_DIR="${LOCAL_CONFIG}/enhancd"
 # Custom setting for commands
 export ENHANCD_DISABLE_DOT=1
 export FZF_DEFAULT_COMMAND="rg --files --no-ignore --hidden --follow -g '!{.git,node_modules,vendor,oh-my-zsh,antigen}'"
+export FZF_CTRL_T_COMMAND="rg --files --no-ignore --hidden --follow -g '!{.git,node_modules,vendor,oh-my-zsh,antigen}'"
 
 if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
     source "${LOCAL_CONFIG}"/zsh/.zprofile
@@ -53,6 +54,7 @@ setopt HIST_IGNORE_ALL_DUPS       # If a new command line being added to the his
 setopt HIST_IGNORE_SPACE          # remove command lines from the history list when the first character on the line is a space
 
 # Vi mode
+set -o vi
 bindkey -v
 autoload -U edit-command-line
 zle -N edit-command-line
@@ -93,6 +95,7 @@ antigen bundle zsh-users/zsh-autosuggestions
 antigen bundle zsh-users/zsh-completions
 antigen bundle zsh-users/zsh-history-substring-search
 antigen bundle greymd/docker-zsh-completion
+antigen bundle softmoth/zsh-vim-mode
 #antigen bundle rupa/z
 #antigen bundle changyuheng/fz
 

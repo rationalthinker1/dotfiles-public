@@ -19,6 +19,8 @@ Plug 'stanangeloff/php.vim'
 Plug 'stephpy/vim-yaml'
 Plug 'cakebaker/scss-syntax.vim'
 Plug 'tmux-plugins/vim-tmux'
+Plug 'burnettk/vim-angular'
+"Plug 'sheerun/vim-polyglot'               " Language packs for Vim
 
 Plug 'mg979/vim-visual-multi', {'branch': 'master'} " Ctrl+N to select multi-line edits and press c to change, i to add and d to delete
 Plug 'tpope/vim-fugitive'                 " :Git commit :Git diff :Git log :Git difftool :Gedit HEAD~3:%
@@ -29,7 +31,6 @@ Plug 'Yggdroot/indentLine'                " Displays thin vertical lines at each
 Plug 'junegunn/vim-easy-align'            " Highlight area, press ga{=,:, } to align by it
 Plug 'tpope/vim-eunuch'                   " Adds methods like :Rename :Delete :Move :Chmod :Mkdir :SudoWrite
 Plug 'luochen1990/rainbow'                " Rainbow Parentheses
-Plug 'sheerun/vim-polyglot'               " Language packs for Vim
 Plug 'bronson/vim-trailing-whitespace'    " Adds command :FixWhitespace
 Plug 'tpope/vim-surround'                 " cs)} -> change surrounding from ) to }; ds( -> delete surrounding (; ysiw} -> yank surrounding inside word }
 Plug 'tpope/vim-repeat'                   " repeat using . for non-ing . for non-native commands too
@@ -42,7 +43,8 @@ Plug 'easymotion/vim-easymotion'          " Press <leader><leader>w and type one
 Plug 'kshenoy/vim-signature'              " Shows bookmarks visually on the left
 Plug 'tmux-plugins/vim-tmux-focus-events' " Focus is gain when switching back and forth with tmux screens
 Plug 'christoomey/vim-tmux-navigator'     " Using same keys to move between tmux and vim panes
-Plug 'rhysd/clever-f.vim'                 " Extends f, F, t and T mappings. Key f is available to repeat after you type f{char} or F{char}
+Plug 'airblade/vim-rooter'                " Loads up root directory of the project automatically
+"Plug 'rhysd/clever-f.vim'                " Extends f, F, t and T mappings. Key f is available to repeat after you type f{char} or F{char}
 
 "=== Themes
 Plug 'micke/vim-hybrid'
@@ -424,8 +426,8 @@ noremap <leader>tm :tabmove
 
 " Needed to fix up pasting (highlighted and paste right after cursor)
 " https://unix.stackexchange.com/questions/5056/cursor-position-after-pasting-in-vi-vim
-noremap p gP
-noremap P gP
+noremap p gp
+noremap P o<esc>gp
 noremap gp p
 noremap gP P
 noremap y ygv<Esc>
