@@ -78,14 +78,14 @@ set shell=/bin/zsh\ -l
 let $BASH_ENV = "~/.dotfiles/zsh/aliases.zsh"
 
 " https://vim.fandom.com/wiki/Set_working_directory_to_the_current_file
-autocmd BufEnter * silent! lcd %:p:h
+"autocmd BufEnter * silent! lcd %:p:h
 
 " Sets how many lines of history VIM has to remember
 set history=700
 
 " v$ doesn't select newline
 " https://vi.stackexchange.com/questions/12607/extend-visual-selection-til-the-last-character-on-the-line-excluding-the-new-li
-set selection=exclusive
+set selection=inclusive
 
 " Enable filetype plugins
 filetype plugin on
@@ -116,8 +116,8 @@ command -nargs=0 -bar Update if &modified
                            \|        confirm write
                            \|    endif
                            \|endif
-nnoremap <silent> <C-S> :<C-u>Update<CR>
-inoremap <c-s> <Esc>:Update<CR>
+nnoremap <silent> <C-s> :<C-u>Update<CR>
+inoremap <C-s> <Esc>:Update<CR>
 vmap <C-s> <esc>:w<CR>gv
 
 " escape insert mode via 'aa'
@@ -142,7 +142,7 @@ xnoremap S :s//g<LEFT><LEFT>
 " backup current file
 nnoremap <leader>bu :!cp % %.bak<CR><CR>:echomsg "Backed up" expand('%')<CR>
 
-" Fast saving
+" toggle wrap on current file
 nnoremap <leader>w :set wrap!<cr>
 
 " Configure backspace so it acts as it should act
@@ -276,7 +276,7 @@ nnoremap <A-PageDown> :bnext<CR>
 nnoremap <A-PageUp> :bprevious<CR>
 
 " Close buffer like closing Chrome's tab
-nnoremap <C-w> :bd<CR>
+nnoremap <C-w> :bprevious<cr>:bd #<cr>
 
 " Close the current buffer and move to the previous one
 " This replicates the idea of closing a tab
@@ -325,15 +325,6 @@ set encoding=utf8
 
 " Use Unix as the standard file type
 set ffs=unix,dos,mac
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"--Files, backups and undo
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Turn backup off, since most stuff is in SVN, git et.c anyway...
-set nobackup
-set nowb
-set noswapfile
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -478,53 +469,12 @@ set viminfo^=%
 set viminfo+=n~/.vim/.viminfo
 
 
-""""""""""""""""""""""""""""""
-"--Status line
-""""""""""""""""""""""""""""""
-" Always show the status line
-set laststatus=2
-
-" Format the status line
-set statusline=\ %{HasPaste()}%F%m%r%h\ %w\ \ CWD:\ %r%{getcwd()}%h\ \ \ Line:\ %l
-
-
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Editing mappings
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Remap VIM 1 to first non-blank character and 2 to the last non-blank character
 nnoremap 1 ^
 nnoremap 2 $
-
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"--vimgrep searching and cope displaying
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" When you press gv you vimgrep after the selected text
-vnoremap <silent> gv :call VisualSelection('gv')<CR>
-
-" Open vimgrep and put the cursor in the right position
-noremap <leader>g :vimgrep // **/*.<left><left><left><left><left><left><left>
-
-" Vimgreps in the current file
-noremap <leader><space> :vimgrep // <C-R>%<C-A><right><right><right><right><right><right><right><right><right>
-
-" When you press <leader>r you can search and replace the selected text
-vnoremap <silent> <leader>r :call VisualSelection('replace')<CR>
-
-" Do :help cope if you are unsure what cope is. It's super useful!
-"
-" When you search with vimgrep, display your results in cope by doing:
-"   <leader>cc
-"
-" To go to the next search result do:
-"   <leader>n
-"
-" To go to the previous search results do:
-"   <leader>p
-
-noremap <leader>cc :botright cope<cr>
-" Makes a copy of the current buffer and pastes it in a new tab
-noremap <leader>co ggVGy:tabnew<cr>:set syntax=qf<cr>pgg
 
 " when searching, you can use Perl's regex rather than using vim's own regex system
 nnoremap / /\v
@@ -547,15 +497,6 @@ noremap <leader>s? z=
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Misc
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Remove the Windows ^M - when the encodings gets messed up
-noremap <Leader>m mmHmt:%s/<C-V><cr>//ge<cr>'tzt'm
-
-" Quickly open a buffer for scripbble
-noremap <leader>q :e ~/buffer<cr>
-
-" Toggle paste mode on and off
-noremap <leader>pp :setlocal paste!<cr>
-
 " creates title banner
 nnoremap <leader>title 63i"<esc><esc>o"--<space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`oi<space>
 vnoremap <leader>title ydd63i"<esc><esc>o"--<space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`opi<bs>
@@ -655,12 +596,6 @@ xnoremap @ :<C-u>call ExecuteMacroOverVisualRange()<CR>
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Helper functions
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-function! CmdLine(str)
-	exe "menu Foo.Bar :" . a:str
-	emenu Foo.Bar
-	unmenu Foo
-endfunction
-
 function! GetVisualSelectionLine()
 	if mode()=="v"
 		let [line_start, column_start] = getpos("v")[1:2]
@@ -713,36 +648,6 @@ function! VisualSelection(direction) range
 
 	let @/ = l:pattern
 	let @" = l:saved_reg
-endfunction
-
-
-" Returns true if paste mode is enabled
-function! HasPaste()
-	if &paste
-		return 'PASTE MODE  '
-	en
-	return ''
-endfunction
-
-" Don't close window, when deleting a buffer
-command! Bclose call <SID>BufcloseCloseIt()
-function! <SID>BufcloseCloseIt()
-	let l:currentBufNum = bufnr("%")
-	let l:alternateBufNum = bufnr("#")
-
-	if buflisted(l:alternateBufNum)
-		buffer #
-	else
-		bnext
-	endif
-
-	if bufnr("%") == l:currentBufNum
-		new
-	endif
-
-	if buflisted(l:currentBufNum)
-		execute("bdelete! ".l:currentBufNum)
-	endif
 endfunction
 
 "  Raza's custom commands
