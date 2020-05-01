@@ -382,8 +382,8 @@ function! AutoPlaceMarkBasedOnText(text, code)
 
 	let l:old_count = @c
 	let l:new_count = GetCount("^Plug '")
-	if l:new_count > l:old_count
 	let @c = l:new_count
+	if l:new_count > l:old_count
 		PlugInstall
 		q
 		wincmd w
