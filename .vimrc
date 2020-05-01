@@ -418,6 +418,10 @@ noremap <leader>ba :1,1000 bd!<cr>
 nnoremap d "_d
 vnoremap d "_d
 
+" change lines without copying it (use x to cut)
+nnoremap c "_c
+vnoremap c "_c
+
 " Useful mappings for managing tabs
 noremap <leader>tn :tabnew<cr>
 noremap <leader>to :tabonly<cr>
