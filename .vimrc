@@ -45,11 +45,11 @@ Plug 'kshenoy/vim-signature'              " Shows bookmarks visually on the left
 Plug 'tmux-plugins/vim-tmux-focus-events' " Focus is gain when switching back and forth with tmux screens
 Plug 'christoomey/vim-tmux-navigator'     " Using same keys to move between tmux and vim panes
 Plug 'airblade/vim-rooter'                " Loads up root directory of the project automatically
-Plug 'thinca/vim-visualstar'			  " Search up whatever is highlighted and replace with %s//{field}/g  
+Plug 'thinca/vim-visualstar'			  " Search up whatever is highlighted and replace with %s//{field}/g
 
 "=== Themes
 Plug 'micke/vim-hybrid'
-Plug 'hzchirs/vim-material' 
+Plug 'hzchirs/vim-material'
 Plug 'daylerees/colour-schemes', { 'rtp': 'vim/' }
 Plug 'simonsmith/material.vim'
 Plug 'dracula/vim', { 'as': 'dracula' }
@@ -356,14 +356,6 @@ set lbr
 set tw=500
 
 
-""""""""""""""""""""""""""""""
-"--Visual mode related
-""""""""""""""""""""""""""""""
-" Visual mode pressing * or # searches for the current selection
-"vnoremap <silent> * :call VisualSelection('f')<CR>
-"vnoremap <silent> # :call VisualSelection('b')<CR>
-
-
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Moving around, tabs, windows and buffers
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -388,19 +380,29 @@ inoremap <A-Down> <C-W>j
 " Close the current buffer
 noremap <leader>bd :Bclose<cr>
 
-function! SavePositionOfTextOnRegister(text)
-	let @p = search(a:text, 'nc')
+function! SaveCountOfTextOnRegister(text)
+	let @c = GetCount(a:text)
 endfunction
 
 " auto place mark on file based on text
 function! AutoPlaceMarkBasedOnText(text, code)
-	let l:old_position = @p
 	let l:new_position = search(a:text, 'nc')
 	call setpos(a:code, [0,l:new_position,1,0])
-	if l:old_position != l:new_position
-		let @p = search(a:text, 'nc')
+
+	let l:old_count = @c
+	let l:new_count = GetCount("^Plug '")
+	if l:new_count > l:old_count
+	let @c = l:new_count
 		PlugInstall
+		q
+		wincmd w
 	endif
+endfunction
+
+function! GetCount(pattern)
+  let l:cnt = 0
+  silent execute '%s/' . a:pattern . '/\=execute(''let l:cnt += 1'')/gn'
+  return l:cnt
 endfunction
 
 " Automatically reload vimrc when it's saved
@@ -409,7 +411,7 @@ augroup vimrc
 	autocmd BufWritePost *.vim,.vimrc :echom "Reloading .vimrc"
 	autocmd BufWritePost *.vim,.vimrc :sleep 500m
 	autocmd BufWritePost *.vim,.vimrc :source $MYVIMRC
-	autocmd BufReadPost  .vimrc :call SavePositionOfTextOnRegister('^call plug#end()')
+	autocmd BufReadPost  .vimrc :call SaveCountOfTextOnRegister("^Plug '")
 	autocmd BufWritePost .vimrc :call AutoPlaceMarkBasedOnText('^call plug#end()', "'p")
 augroup END
 
