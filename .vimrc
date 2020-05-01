@@ -9,6 +9,8 @@ if empty(glob('~/.vim/autoload/plug.vim'))
 endif
 
 call plug#begin('~/.vim/plugged')
+"Plug 'sheerun/vim-polyglot'               " Language packs for Vim
+"Plug 'rhysd/clever-f.vim'                " Extends f, F, t and T mappings. Key f is available to repeat after you type f{char} or F{char}
 "=== Syntax Highlighting
 Plug 'chr4/nginx.vim'
 Plug 'vim-scripts/httplog'
@@ -20,7 +22,6 @@ Plug 'stephpy/vim-yaml'
 Plug 'cakebaker/scss-syntax.vim'
 Plug 'tmux-plugins/vim-tmux'
 Plug 'burnettk/vim-angular'
-"Plug 'sheerun/vim-polyglot'               " Language packs for Vim
 
 Plug 'mg979/vim-visual-multi', {'branch': 'master'} " Ctrl+N to select multi-line edits and press c to change, i to add and d to delete
 Plug 'tpope/vim-fugitive'                 " :Git commit :Git diff :Git log :Git difftool :Gedit HEAD~3:%
@@ -44,11 +45,11 @@ Plug 'kshenoy/vim-signature'              " Shows bookmarks visually on the left
 Plug 'tmux-plugins/vim-tmux-focus-events' " Focus is gain when switching back and forth with tmux screens
 Plug 'christoomey/vim-tmux-navigator'     " Using same keys to move between tmux and vim panes
 Plug 'airblade/vim-rooter'                " Loads up root directory of the project automatically
-"Plug 'rhysd/clever-f.vim'                " Extends f, F, t and T mappings. Key f is available to repeat after you type f{char} or F{char}
+Plug 'thinca/vim-visualstar'			  " Search up whatever is highlighted and replace with %s//{field}/g  
 
 "=== Themes
 Plug 'micke/vim-hybrid'
-Plug 'hzchirs/vim-material'
+Plug 'hzchirs/vim-material' 
 Plug 'daylerees/colour-schemes', { 'rtp': 'vim/' }
 Plug 'simonsmith/material.vim'
 Plug 'dracula/vim', { 'as': 'dracula' }
@@ -65,6 +66,7 @@ source ~/.vim/custom-gutentags.vim " Creates tag automatically
 source ~/.vim/custom-nerdtree.vim  " Show files and folders in current directory by pressing Ctrl+b
 source ~/.vim/custom-tagbar.vim    " Tagbar to show methods/variable by pressing F8
 source ~/.vim/custom-snippets.vim  " A bunch of useful language related snippets (ultisnips is the engine).
+source ~/.vim/custom-switches.vim  " A bunch of useful language related snippets (ultisnips is the engine).
 call plug#end()
 
 
@@ -358,8 +360,8 @@ set tw=500
 "--Visual mode related
 """"""""""""""""""""""""""""""
 " Visual mode pressing * or # searches for the current selection
-vnoremap <silent> * :call VisualSelection('f')<CR>
-vnoremap <silent> # :call VisualSelection('b')<CR>
+"vnoremap <silent> * :call VisualSelection('f')<CR>
+"vnoremap <silent> # :call VisualSelection('b')<CR>
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
