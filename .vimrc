@@ -445,6 +445,21 @@ noremap P o<esc>gp
 noremap gp p
 noremap gP P
 
+ "shift+arrow selection
+"nmap <S-Up> v<Up>
+"nmap <S-Down> v<Down>
+"nmap <S-Left> v<Left>
+"nmap <S-Right> v<Right>
+"vmap <S-Up> <Up>
+"vmap <S-Down> <Down>
+"vmap <S-Left> <Left>
+"vmap <S-Right> <Right>
+"imap <S-Up> <Esc>v<Up>
+"imap <S-Down> <Esc><Right>v<Down>
+"imap <S-Left> <Esc>v<Left>
+"imap <S-Right> <Esc><Right>v<Right>
+set keymodel=startsel
+
 " Yank current word with just y
 nnoremap y viwy<Esc>
 " Replace current word
