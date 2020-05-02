@@ -10,10 +10,9 @@
 "CTRL-A is Select all
 "CTRL-Tab is Next window
 "CTRL-F4 is Close window
-set keymodel=startsel
-source $VIMRUNTIME/mswin.vim
+"source $VIMRUNTIME/mswin.vim
+source ~/.vim/custom-mswin.vim
 behave mswin
-
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Vim-Plug Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -121,21 +120,6 @@ map <space> <leader>
 " shows where your cursor
 set cursorline
 
-" https://vim.fandom.com/wiki/Map_Ctrl-S_to_save_current_or_new_files
-" Ctrl+S to save
-" If the current buffer has never been saved, it will have no name,
-" call the file browser to save it, otherwise just save it.
-command -nargs=0 -bar Update if &modified
-			\|    if empty(bufname('%'))
-				\|        browse confirm write
-				\|    else
-					\|        confirm write
-					\|    endif
-					\|endif
-nnoremap <silent> <C-s> :<C-u>Update<CR>
-inoremap <C-s> <Esc>:Update<CR>
-vmap <C-s> <esc>:w<CR>gv
-
 " escape insert mode via 'aa'
 inoremap aa <ESC>
 "inoremap <Shift> <ESC>v
@@ -161,8 +145,6 @@ nnoremap <leader>bu :!cp % %.bak<CR><CR>:echomsg "Backed up" expand('%')<CR>
 " toggle wrap on current file
 nnoremap <leader>w :set wrap!<cr>
 
-" Configure backspace so it acts as it should act
-set backspace=eol,start,indent
 set whichwrap+=<,>,h,l
 
 " Ignore case when searching
