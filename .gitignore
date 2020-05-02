@@ -17,3 +17,5 @@ fonts/.installed
 zsh/.zshrc.zwc
 .vim/pack/kite
 tags
+.vim/spell/
+init.vim.bak

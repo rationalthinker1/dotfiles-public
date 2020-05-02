@@ -418,7 +418,7 @@ augroup vimrc
 	autocmd BufWritePost *.vim,.vimrc :sleep 500m
 	autocmd BufWritePost *.vim,.vimrc :source $MYVIMRC
 	autocmd BufReadPost  .vimrc :call SaveCountOfTextOnRegister("^Plug '")
-	autocmd BufWritePost .vimrc :call AutoPlaceMarkBasedOnText('^call plug#end()', "'p")
+	autocmd BufWritePost .vimrc :call AutoPlaceMarkBasedOnText('^call plug#end()', "'P")
 augroup END
 
 " Close all the buffers
@@ -444,7 +444,11 @@ noremap p gp
 noremap P o<esc>gp
 noremap gp p
 noremap gP P
-noremap y ygv<Esc>
+
+" Yank current word with just y
+nnoremap y viwy<Esc>
+" Replace current word
+nnoremap x viwxi
 
 " Adds semicolon at the end of the line
 inoremap <C-S-L> <C-o>A;
