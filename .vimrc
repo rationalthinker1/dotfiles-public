@@ -1,3 +1,19 @@
+"backspace and cursor keys wrap to previous/next line
+"CTRL-X and SHIFT-Del are Cut
+"CTRL-C and CTRL-Insert are Copy
+"CTRL-V and SHIFT-Insert are Paste
+"Use CTRL-Q to do what CTRL-V used to do
+"Use CTRL-S for saving, also in Insert mode
+"CTRL-Z is Undo; not in cmdline though
+"CTRL-Y is Redo (although not repeat); not in cmdline though
+"Alt-Space is System menu
+"CTRL-A is Select all
+"CTRL-Tab is Next window
+"CTRL-F4 is Close window
+set keymodel=startsel
+source $VIMRUNTIME/mswin.vim
+behave mswin
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Vim-Plug Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -9,7 +25,7 @@ if empty(glob('~/.vim/autoload/plug.vim'))
 endif
 
 call plug#begin('~/.vim/plugged')
-"Plug 'sheerun/vim-polyglot'               " Language packs for Vim
+"Plug 'sheerun/vim-polyglot'              " Language packs for Vim
 "Plug 'rhysd/clever-f.vim'                " Extends f, F, t and T mappings. Key f is available to repeat after you type f{char} or F{char}
 "=== Syntax Highlighting
 Plug 'chr4/nginx.vim'
@@ -124,7 +140,7 @@ vmap <C-s> <esc>:w<CR>gv
 inoremap aa <ESC>
 "inoremap <Shift> <ESC>v
 " escape insert mode via 'Ctrl+Space'
-map <C-Space> <Esc>
+imap <C-Space> <Esc>
 
 " keep in visual mode after identing by shift+> in vim
 " https://superuser.com/questions/310417/how-to-keep-in-visual-mode-after-identing-by-shift-in-vim
@@ -248,9 +264,6 @@ set cmdheight=2
 "nnoremap <tab> %
 "vnoremap <tab> %
 
-" Allow using alt keys in vim for mapping
-set winaltkeys=no
-
 " Go back and forth to cursor position
 map <Esc> <C-A-q>
 nnoremap <C-A-q> <C-O>
@@ -328,6 +341,9 @@ if has("gui_running")
 	set guitablabel=%M\ %t
 	" Show popup menu if right click.
 	set mousemodel=popup
+
+	" Allow using alt keys in vim for mapping for GUI only
+	set winaltkeys=no
 
 	" Don't focus the window when the mouse pointer is moved.
 	set nomousefocus
@@ -444,21 +460,6 @@ noremap p gp
 noremap P o<esc>gp
 noremap gp p
 noremap gP P
-
- "shift+arrow selection
-"nmap <S-Up> v<Up>
-"nmap <S-Down> v<Down>
-"nmap <S-Left> v<Left>
-"nmap <S-Right> v<Right>
-"vmap <S-Up> <Up>
-"vmap <S-Down> <Down>
-"vmap <S-Left> <Left>
-"vmap <S-Right> <Right>
-"imap <S-Up> <Esc>v<Up>
-"imap <S-Down> <Esc><Right>v<Down>
-"imap <S-Left> <Esc>v<Left>
-"imap <S-Right> <Esc><Right>v<Right>
-set keymodel=startsel
 
 " Yank current word with just y
 nnoremap y viwy<Esc>

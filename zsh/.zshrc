@@ -10,8 +10,8 @@ export ENHANCD_DIR="${LOCAL_CONFIG}/enhancd"
 
 # Custom setting for commands
 export ENHANCD_DISABLE_DOT=1
-export FZF_DEFAULT_COMMAND="rg --files --no-ignore --hidden --follow -g '!{.git,node_modules,vendor,oh-my-zsh,antigen}'"
-export FZF_CTRL_T_COMMAND="rg --files --no-ignore --hidden --follow -g '!{.git,node_modules,vendor,oh-my-zsh,antigen}'"
+export FZF_DEFAULT_COMMAND="rg --files --smart-case --no-ignore --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen}'"
+export FZF_CTRL_T_COMMAND="rg --files --smart-case --no-ignore --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen}'"
 
 if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
     source "${LOCAL_CONFIG}"/zsh/.zprofile
@@ -81,9 +81,9 @@ antigen theme romkatv/powerlevel10k
 antigen bundle git
 antigen bundle fzf
 antigen bundle jump
-antigen bundle agkozak/zsh-z
+#antigen bundle agkozak/zsh-z
 antigen bundle command-not-found
-antigen bundle autojump
+#antigen bundle autojump
 antigen bundle zpm-zsh/ssh
 antigen bundle g-plane/zsh-yarn-autocompletions
 antigen bundle thetic/extract
@@ -95,7 +95,7 @@ antigen bundle zsh-users/zsh-autosuggestions
 antigen bundle zsh-users/zsh-completions
 antigen bundle zsh-users/zsh-history-substring-search
 antigen bundle greymd/docker-zsh-completion
-antigen bundle softmoth/zsh-vim-mode
+#antigen bundle softmoth/zsh-vim-mode
 #antigen bundle rupa/z
 #antigen bundle changyuheng/fz
 
