@@ -110,12 +110,12 @@ set cursorline
 " If the current buffer has never been saved, it will have no name,
 " call the file browser to save it, otherwise just save it.
 command -nargs=0 -bar Update if &modified
-                           \|    if empty(bufname('%'))
-                           \|        browse confirm write
-                           \|    else
-                           \|        confirm write
-                           \|    endif
-                           \|endif
+			\|    if empty(bufname('%'))
+				\|        browse confirm write
+				\|    else
+					\|        confirm write
+					\|    endif
+					\|endif
 nnoremap <silent> <C-s> :<C-u>Update<CR>
 inoremap <C-s> <Esc>:Update<CR>
 vmap <C-s> <esc>:w<CR>gv
@@ -276,11 +276,26 @@ nnoremap <A-PageDown> :bnext<CR>
 nnoremap <A-PageUp> :bprevious<CR>
 
 " Close buffer like closing Chrome's tab
-nnoremap <C-w> :bprevious<cr>:bd #<cr>
-
-" Close the current buffer and move to the previous one
-" This replicates the idea of closing a tab
-nnoremap <leader>bq :bp <BAR> bd #<CR>
+function! CloseBuffer() abort
+	if &buftype ==? 'quickfix'
+		lclose
+		return 1
+	endif
+	let l:nerdtreeOpen = g:NERDTree.IsOpen()
+	let l:windowCount = winnr('$')
+	let l:command = 'bdelete'
+	let l:totalBuffers = len(getbufinfo({ 'buflisted': 1 }))
+	let l:isNerdtreeLast = l:nerdtreeOpen && l:windowCount ==? 2
+	let l:noSplits = !l:nerdtreeOpen && l:windowCount ==? 1
+	if l:totalBuffers > 1 && (l:isNerdtreeLast || l:noSplits)
+		let l:command = 'bprevious | bdelete #'
+	endif
+	if l:totalBuffers == 1 && (l:isNerdtreeLast || l:noSplits)
+		let l:command = 'quit'
+	endif
+	silent execute l:command
+endfunction
+nnoremap <C-w> :call CloseBuffer()<cr>
 
 " Show all open buffers and their status
 nnoremap <leader>bl :ls<CR>
@@ -391,9 +406,9 @@ function! AutoPlaceMarkBasedOnText(text, code)
 endfunction
 
 function! GetCount(pattern)
-  let l:cnt = 0
-  silent execute '%s/' . a:pattern . '/\=execute(''let l:cnt += 1'')/gn'
-  return l:cnt
+	let l:cnt = 0
+	silent execute '%s/' . a:pattern . '/\=execute(''let l:cnt += 1'')/gn'
+	return l:cnt
 endfunction
 
 " Automatically reload vimrc when it's saved

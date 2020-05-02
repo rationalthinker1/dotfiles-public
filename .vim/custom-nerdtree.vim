@@ -10,13 +10,6 @@ let NERDTreeDirArrows = 1
 let g:nerd_preview_enabled = 1
 let g:preview_last_buffer = 0
 nnoremap <silent> <expr> <C-b> g:NERDTree.IsOpen() ? "\:NERDTreeClose<CR>" : bufexists(expand('%')) ? "\:NERDTreeFind<CR>" : "\:NERDTree<CR>"
-" nerdtree - open when vim open
-"          - switch to opened window
-"          - close if last remaining window
-"          - minimal UI
-"          - show hidden files
-"          - single click to open dir, double to open file
-
 
 " https://github.com/YArane/dotfiles/blob/aac6b3efc617ec4716646af95b02a823d2cb0d0f/.vim/nerdtree.vim
 " returns true iff NERDTRee open / active
@@ -39,7 +32,6 @@ function! s:syncTreeIf()
 	endif
 endfunction
 
-
 augroup NerdTree
 	autocmd!
 	"autocmd VimEnter * :wincmd p
@@ -51,7 +43,6 @@ augroup NerdTree
 	autocmd BufEnter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
 
 augroup END
-
 
 
 function! NerdTreePreview()
