@@ -11,8 +11,8 @@ export ENHANCD_DIR="${LOCAL_CONFIG}/enhancd"
 export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 # Custom setting for commands
 export ENHANCD_DISABLE_DOT=1
-export FZF_DEFAULT_COMMAND="rg --files --smart-case --no-ignore --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen}'"
-export FZF_CTRL_T_COMMAND="rg --files --smart-case --no-ignore --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen}'"
+export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen}'"
+export FZF_CTRL_T_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen}'"
 
 if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
     source "${LOCAL_CONFIG}"/zsh/.zprofile

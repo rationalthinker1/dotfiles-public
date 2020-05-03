@@ -57,7 +57,7 @@ vmap <S-Insert>		<C-V>
 " Use CTRL-Q to do what CTRL-Z used to do
 noremap <C-Q>		<C-Z>
 " Use CTRL-R to do what CTRL-V used to do
-noremap <C-R>		<C-V>
+inoremap <C-H>		<C-V>
 
 " https://vim.fandom.com/wiki/Map_Ctrl-S_to_save_current_or_new_files
 " Use CTRL-S for saving, also in Insert mode (<C-O> doesn't work well when

@@ -72,6 +72,7 @@ Plug 'evturn/cosmic-barf'
 Plug 'zirrostig/vim-schlepp'
 Plug 'joshdick/onedark.vim'
 Plug 'ayu-theme/ayu-vim'
+Plug 'ryanoasis/vim-devicons'
 
 "=== Custom configurations
 source ~/.vim/custom-coc.vim       " Autocomplete for many languages
@@ -88,6 +89,7 @@ call plug#end()
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--General
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+set encoding=UTF-8
 " Set zsh aliases
 set shell=/bin/zsh\ -l
 let $BASH_ENV = "~/.dotfiles/zsh/aliases.zsh"
@@ -136,8 +138,8 @@ vnoremap > >gv
 inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
 
 " shortcut for :%s/.../.../g
-nnoremap S :%s//g<LEFT><LEFT>
-xnoremap S :s//g<LEFT><LEFT>
+nnoremap s :%s//g<LEFT><LEFT>
+xnoremap s :s//g<LEFT><LEFT>
 
 " backup current file
 nnoremap <leader>bu :!cp % %.bak<CR><CR>:echomsg "Backed up" expand('%')<CR>
@@ -300,8 +302,11 @@ nnoremap <leader>bl :ls<CR>
 "--Colors and Fonts
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Enable syntax highlighting
-syntax enable
 syntax on
+syntax enable
+if exists("g:loaded_webdevicons")
+	call webdevicons#refresh()
+endif
 set background=dark
 set termguicolors
 let ayucolor="mirage"
@@ -313,9 +318,9 @@ highlight Comment gui=bold
 highlight Normal gui=none
 
 set termencoding=utf-8
-set guifont=IBM\ Plex\ Mono\ Semi-Bold\ 10
 " Set extra options when running in GUI mode
 if has("gui_running")
+	set guifont=IBM\ Plex\ Mono\ Semi-Bold\ 10
 	set guioptions=abegmrLtT
 	"set guioptions-=T
 	set guioptions+=e
