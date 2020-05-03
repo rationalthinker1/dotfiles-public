@@ -730,3 +730,30 @@ nmap ga <Plug>(EasyAlign)
 nnoremap <C-_> :call NERDComment(0,"toggle")<CR>
 vnoremap <C-_> :call NERDComment(0,"toggle")<CR>
 
+" Lets you see nth revision ago of the current file
+function! PreviewRevision(n)
+	let @d = a:n
+	let l:commit = system('git log ' .  expand('%') . ' | grep "commit" | cut -d" " -f2 | sed -n ' . a:n . 'p')
+	execute "normal! :Gvdiffsplit " . l:commit . " <bar> :NERDTreeClose"
+endfunction
+
+"function! IncrementPreviewRevision()
+	"let l:count = @d
+	"if l:count ==? ''
+		"l:count = 0
+	"else
+		"l:count = l:count + 1
+	"endif
+	"call PreviewRevision(l:count)
+"endfunction
+"nnoremap  <leader>r :call CloseBuffer() <bar> call IncrementPreviewRevision()<CR>
+
+"augroup fugitive
+"autocmd! FileType fugitive inoremap <buffer> <C-Enter> <Esc>ZZ
+"autocmd! FileType gitcommit inoremap <buffer> <C-Enter> <Esc>ZZ
+"augroup END
+"augroup fugitive
+	"autocmd!
+	"autocmd FileType fugitive nnoremap <silent> <buffer> <leader><PageDown> :call PreviewRevision(3)<CR>
+"augroup END
+
