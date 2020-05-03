@@ -304,9 +304,6 @@ nnoremap <leader>bl :ls<CR>
 " Enable syntax highlighting
 syntax on
 syntax enable
-if exists("g:loaded_webdevicons")
-	call webdevicons#refresh()
-endif
 set background=dark
 set termguicolors
 let ayucolor="mirage"
@@ -678,12 +675,12 @@ set nowrap                " don't wrap lines
 set shiftround            " use multiple of shiftwidth when indenting with '<' and '>'
 set copyindent            " copy the previous indentation on autoindenting
 set number                " always show line numbers
-set autowrite             " Save on buffer switch
+" set autowrite           " Save on buffer switch
 set clipboard=unnamedplus " register to global clipboard
-set notimeout
-set mouse=a
-set splitright
-set pastetoggle=<F3>
+set notimeout             " don't timeout vim mappings
+set mouse=a               " enable mouse use in terminal
+set splitright            " splitting a window will put the new window right
+set pastetoggle=<F3>      " before pasting, press F3 to get into paste mode, not needed now
 
 " Move current line or visual block up/down
 nnoremap <C-S-Up> :m -2<CR>
@@ -732,8 +729,8 @@ nmap ga <Plug>(EasyAlign)
 "--Nerdcommenter Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " _ is /
-nnoremap <C-_> :call NERDComment(0,"toggle")<CR>
-vnoremap <C-_> :call NERDComment(0,"toggle")<CR>
+map <C-_> <Plug>NERDCommenterToggle
+map <C-_> <Plug>NERDCommenterToggle
 
 " Lets you see nth revision ago of the current file
 function! PreviewRevision(n)
