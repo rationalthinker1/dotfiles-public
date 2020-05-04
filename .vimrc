@@ -191,8 +191,7 @@ set undolevels=1000         " How many undos
 set undoreload=10000        " number of lines to save for undo
 
 set backup                        " enable backups
-set noswapfile                    " it's 2013, Vim.
-
+set swapfile
 set undodir=$HOME/.vim/tmp/undo     " undo files
 set backupdir=$HOME/.vim/tmp/backup " backups
 set directory=$HOME/.vim/tmp/swap   " swap files
