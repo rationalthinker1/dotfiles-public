@@ -25,7 +25,6 @@ endif
 
 call plug#begin('~/.vim/plugged')
 "Plug 'sheerun/vim-polyglot'              " Language packs for Vim
-"Plug 'rhysd/clever-f.vim'                " Extends f, F, t and T mappings. Key f is available to repeat after you type f{char} or F{char}
 "=== Syntax Highlighting
 Plug 'chr4/nginx.vim'
 Plug 'vim-scripts/httplog'
@@ -63,7 +62,6 @@ Plug 'airblade/vim-rooter'                " Loads up root directory of the proje
 Plug 'thinca/vim-visualstar'              " Search up whatever is highlighted and replace with %s//{field}/g
 Plug 'simeji/winresizer'                  " Ctrl-E and you can resize current vim windows using 'h', 'j', 'k', 'l' keys
 Plug 'PeterRincker/vim-argumentative'     " Shifting arguments with <, and >,
-"Plug 'wellle/targets.vim'                 " 'ci,' => change inside ','
 
 Plug 'justinmk/vim-sneak'
 map f <Plug>Sneak_s
@@ -693,7 +691,7 @@ set nowrap                " don't wrap lines
 set shiftround            " use multiple of shiftwidth when indenting with '<' and '>'
 set copyindent            " copy the previous indentation on autoindenting
 set number                " always show line numbers
-" set autowrite           " Save on buffer switch
+set autowrite           " Save on buffer switch
 set clipboard=unnamedplus " register to global clipboard
 set notimeout             " don't timeout vim mappings
 set mouse=a               " enable mouse use in terminal
