@@ -38,7 +38,7 @@ Plug 'cakebaker/scss-syntax.vim'
 Plug 'tmux-plugins/vim-tmux'
 Plug 'burnettk/vim-angular'
 
-Plug 'mg979/vim-visual-multi', {'branch': 'master'} " Ctrl+N to select multi-line edits and press c to change, i to add and d to delete
+Plug 'mg979/vim-visual-multi'             " Ctrl+N to select multi-line edits and press c to change, i to add and d to delete
 Plug 'tpope/vim-fugitive'                 " :Git commit :Git diff :Git log :Git difftool :Gedit HEAD~3:%
 Plug 'alvan/vim-closetag'                 " autocomplete html tags
 Plug 'tpope/vim-abolish'                  " foo_bar => fooBar 'crm' 'crc' 'crs' 'cr-'; :%Subvert/facilit{y,ies}/building{,s}/g
@@ -60,7 +60,16 @@ Plug 'kshenoy/vim-signature'              " Shows bookmarks visually on the left
 Plug 'tmux-plugins/vim-tmux-focus-events' " Focus is gain when switching back and forth with tmux screens
 Plug 'christoomey/vim-tmux-navigator'     " Using same keys to move between tmux and vim panes
 Plug 'airblade/vim-rooter'                " Loads up root directory of the project automatically
-Plug 'thinca/vim-visualstar'			  " Search up whatever is highlighted and replace with %s//{field}/g
+Plug 'thinca/vim-visualstar'              " Search up whatever is highlighted and replace with %s//{field}/g
+Plug 'simeji/winresizer'                  " Ctrl-E and you can resize current vim windows using 'h', 'j', 'k', 'l' keys
+Plug 'PeterRincker/vim-argumentative'     " Shifting arguments with <, and >,
+"Plug 'wellle/targets.vim'                 " 'ci,' => change inside ','
+
+Plug 'justinmk/vim-sneak'
+map f <Plug>Sneak_s
+vmap f <Plug>Sneak_f
+map t <Plug>Sneak_t
+map T <Plug>Sneak_T
 
 "=== Themes
 Plug 'micke/vim-hybrid'
@@ -95,7 +104,11 @@ set shell=/bin/zsh\ -l
 let $BASH_ENV = "~/.dotfiles/zsh/aliases.zsh"
 
 " https://vim.fandom.com/wiki/Set_working_directory_to_the_current_file
-"autocmd BufEnter * silent! lcd %:p:h
+autocmd BufEnter * silent! lcd %:p:h
+
+" https://stackoverflow.com/questions/3676388/cursor-positioning-when-entering-insert-mode
+" end of line $ goes to after the last character, not before
+set virtualedit=onemore
 
 " Sets how many lines of history VIM has to remember
 set history=700
@@ -138,8 +151,8 @@ vnoremap > >gv
 inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
 
 " shortcut for :%s/.../.../g
-nnoremap s :%s//g<LEFT><LEFT>
-xnoremap s :s//g<LEFT><LEFT>
+nnoremap s :%s///g<LEFT><LEFT><LEFT>
+xnoremap s :s///g<LEFT><LEFT><LEFT>
 
 " backup current file
 nnoremap <leader>bu :!cp % %.bak<CR><CR>:echomsg "Backed up" expand('%')<CR>
@@ -189,7 +202,6 @@ set gdefault
 set undofile                " Save undos after file closes
 set undolevels=1000         " How many undos
 set undoreload=10000        " number of lines to save for undo
-
 set backup                        " enable backups
 set swapfile
 set undodir=$HOME/.vim/tmp/undo     " undo files
@@ -244,8 +256,8 @@ set ruler
 set cmdheight=2
 
 " Use tabs to switch between brackets
-"nnoremap <tab> %
-"vnoremap <tab> %
+nnoremap <tab> %
+vnoremap <tab> %
 
 " Go back and forth to cursor position
 map <Esc> <C-A-q>
@@ -389,19 +401,25 @@ function! SaveCountOfTextOnRegister(text)
 	let @c = GetCount(a:text)
 endfunction
 
-" auto place mark on file based on text
-function! AutoPlaceMarkBasedOnText(text, code)
-	let l:new_position = search(a:text, 'nc')
-	call setpos(a:code, [0,l:new_position,1,0])
+" see if new plugins were added
+function! InstallPlugins(text, code)
+	call AutoPlaceMarkBasedOnText(a:text, a:code)
 
 	let l:old_count = @c
 	let l:new_count = GetCount("^Plug '")
 	let @c = l:new_count
 	if l:new_count > l:old_count
 		PlugInstall
-		q
-		wincmd w
+		"sleep 500m
+		"q
+		"wincmd w
 	endif
+endfunction
+
+" auto place mark on file based on text
+function! AutoPlaceMarkBasedOnText(text, code)
+	let l:new_position = search(a:text, 'nc')
+	call setpos(a:code, [0,l:new_position,1,0])
 endfunction
 
 function! GetCount(pattern)
@@ -417,7 +435,8 @@ augroup vimrc
 	autocmd BufWritePost *.vim,.vimrc :sleep 500m
 	autocmd BufWritePost *.vim,.vimrc :source $MYVIMRC
 	autocmd BufReadPost  .vimrc :call SaveCountOfTextOnRegister("^Plug '")
-	autocmd BufWritePost .vimrc :call AutoPlaceMarkBasedOnText('^call plug#end()', "'P")
+	autocmd BufWritePost .vimrc :call InstallPlugins('^call plug#end()', "'P")
+	autocmd BufWritePost .vimrc :call AutoPlaceMarkBasedOnText('^augroup vimrc', "'a")
 augroup END
 
 " Close all the buffers
@@ -737,24 +756,4 @@ function! PreviewRevision(n)
 	let l:commit = system('git log ' .  expand('%') . ' | grep "commit" | cut -d" " -f2 | sed -n ' . a:n . 'p')
 	execute "normal! :Gvdiffsplit " . l:commit . " <bar> :NERDTreeClose"
 endfunction
-
-"function! IncrementPreviewRevision()
-	"let l:count = @d
-	"if l:count ==? ''
-		"l:count = 0
-	"else
-		"l:count = l:count + 1
-	"endif
-	"call PreviewRevision(l:count)
-"endfunction
-"nnoremap  <leader>r :call CloseBuffer() <bar> call IncrementPreviewRevision()<CR>
-
-"augroup fugitive
-"autocmd! FileType fugitive inoremap <buffer> <C-Enter> <Esc>ZZ
-"autocmd! FileType gitcommit inoremap <buffer> <C-Enter> <Esc>ZZ
-"augroup END
-"augroup fugitive
-	"autocmd!
-	"autocmd FileType fugitive nnoremap <silent> <buffer> <leader><PageDown> :call PreviewRevision(3)<CR>
-"augroup END
 

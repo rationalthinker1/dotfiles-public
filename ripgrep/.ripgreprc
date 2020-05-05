@@ -4,17 +4,41 @@
 
 # Add my 'web' type.
 --type-add
-web:*.{html,css,js}*
+web:*.{html,css,scss,js,ts,tsx,jsx,vue}*
 
 # Using glob patterns to include/exclude files or folders
---glob
-!{.git,node_modules,vendor,oh-my-zsh,antigen,.vim/plugged,.npm,.cache,*.bak}
+--glob=!.git/*
+--glob=!node_module/*
+--glob=!vendor/*
+--glob=!build/*
+--glob=!bundle/*
+--glob=!oh-my-zsh/*
+--glob=!antigen/*
+--glob=!.npm/*
+--glob=!.cache/*
+--glob=!*.bak
+--glob=!*.zip
+--glob=!*.min.js
+--glob=!*.min.css
+--glob=!*.min.map
+--glob=!.tags
+--glob=!{package-lock.json}
+--glob=!*.{lock,svg,jpg,png,pdf,gif}
 
 # Set the colors.
---colors=line:none
+--colors=line:fg:yellow
 --colors=line:style:bold
+--colors=path:fg:0x66,0x99,0xFF
+--colors=path:style:bold
+--colors=match:fg:black
+--colors=match:bg:blue
+--colors=match:style:nobold
 
-# Because who cares about case!?
+# Only be case sensitive when pattern has capital
 --smart-case
 
+# Show hidden files
 --hidden
+
+# Match whole words
+--word-regexp
