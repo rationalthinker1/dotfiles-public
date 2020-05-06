@@ -7,15 +7,15 @@
 web:*.{html,css,scss,js,ts,tsx,jsx,vue}*
 
 # Using glob patterns to include/exclude files or folders
---glob=!.git/*
---glob=!node_module/*
---glob=!vendor/*
---glob=!build/*
---glob=!bundle/*
---glob=!oh-my-zsh/*
---glob=!antigen/*
---glob=!.npm/*
---glob=!.cache/*
+--glob=!.git
+--glob=!node_module
+--glob=!vendor
+--glob=!build
+--glob=!bundle
+--glob=!oh-my-zsh
+--glob=!antigen
+--glob=!.npm
+--glob=!.cache
 --glob=!*.bak
 --glob=!*.zip
 --glob=!*.min.js

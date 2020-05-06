@@ -105,7 +105,7 @@ alias myip="curl http://ipecho.net/plain; echo"
 alias hgrep="history | grep"
 
 # use fdfind
-#alias fd=fdfind
+alias fd=fdfind
 
 FD_EXCLUDE_PATTERN="{"
 FD_EXCLUDE_PATTERN+=.cargo,
