@@ -442,7 +442,12 @@ noremap <leader>ba :1,1000 bd!<cr>
 
 " delete lines without copying it (use x to cut)
 nnoremap d "_d
-vnoremap d "_d
+nnoremap D "_D
+xnoremap d "_d
+xnoremap D "_D
+nnoremap <Esc>[3~ "_x
+xnoremap <Esc>[3~ "_x
+
 
 " change lines without copying it (use x to cut)
 nnoremap c "_c

@@ -105,7 +105,31 @@ alias myip="curl http://ipecho.net/plain; echo"
 alias hgrep="history | grep"
 
 # use fdfind
-alias fd=fdfind
+#alias fd=fdfind
+
+FD_EXCLUDE_PATTERN="{"
+FD_EXCLUDE_PATTERN+=.cargo,
+FD_EXCLUDE_PATTERN+=node_modules,
+FD_EXCLUDE_PATTERN+=.git,
+FD_EXCLUDE_PATTERN+=.cache,
+FD_EXCLUDE_PATTERN+=cache,
+FD_EXCLUDE_PATTERN+=vendor,
+FD_EXCLUDE_PATTERN+=tmp,
+FD_EXCLUDE_PATTERN+=.npm,
+FD_EXCLUDE_PATTERN+=*.bak,
+FD_EXCLUDE_PATTERN+=bundles,
+FD_EXCLUDE_PATTERN+=build,
+FD_EXCLUDE_PATTERN+="}"
+
+# usage fdf --extension jpg "tag"
+function fdf() {
+	echo fd --hidden --ignore-case --follow --type f --exclude "$FD_EXCLUDE_PATTERN" $@
+	fd --hidden --ignore-case --follow --type f --exclude "$FD_EXCLUDE_PATTERN" $@
+}
+function fdd() {
+	echo fd --hidden --ignore-case --follow --type d --exclude "$FD_EXCLUDE_PATTERN" $@
+	fd --hidden --ignore-case --follow --type d --exclude "$FD_EXCLUDE_PATTERN" $@
+}
 
 alias ref="cat ~/.config/zsh/reference.zsh"
 
