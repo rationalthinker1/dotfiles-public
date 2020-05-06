@@ -198,10 +198,10 @@ set gdefault
 
 " Setup undo history persistent
 set undofile                " Save undos after file closes
-set undolevels=1000         " How many undos
-set undoreload=10000        " number of lines to save for undo
-set backup                        " enable backups
-set swapfile
+set undolevels=1000                 " How many undos
+set undoreload=10000                " number of lines to save for undo
+set backup                          " enable backups
+set noswapfile                      " No creating .swap files
 set undodir=$HOME/.vim/tmp/undo     " undo files
 set backupdir=$HOME/.vim/tmp/backup " backups
 set directory=$HOME/.vim/tmp/swap   " swap files
