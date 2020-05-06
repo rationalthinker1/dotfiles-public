@@ -24,6 +24,7 @@ if empty(glob('~/.vim/autoload/plug.vim'))
 endif
 
 call plug#begin('~/.vim/plugged')
+"Plug 'sheerun/vim-polyglot'              " Language packs for Vim
 "=== Syntax Highlighting
 Plug 'chr4/nginx.vim'
 Plug 'vim-scripts/httplog'
@@ -58,23 +59,50 @@ Plug 'kshenoy/vim-signature'              " Shows bookmarks visually on the left
 Plug 'tmux-plugins/vim-tmux-focus-events' " Focus is gain when switching back and forth with tmux screens
 Plug 'christoomey/vim-tmux-navigator'     " Using same keys to move between tmux and vim panes
 Plug 'airblade/vim-rooter'                " Loads up root directory of the project automatically
+Plug 'thinca/vim-visualstar'              " Search up whatever is highlighted and replace with %s//{field}/g
 Plug 'simeji/winresizer'                  " Ctrl-E and you can resize current vim windows using 'h', 'j', 'k', 'l' keys
 Plug 'PeterRincker/vim-argumentative'     " Shifting arguments with <, and >,
 
+Plug 'haya14busa/incsearch.vim'           " provides incremental highlighting for ALL patterns matches unlike default 'incsearch'.
+let g:incsearch#magic = '\v'
+map /  <Plug>(incsearch-forward)
+map ?  <Plug>(incsearch-backward)
+map g/ <Plug>(incsearch-stay)
+
+set hlsearch
+let g:incsearch#auto_nohlsearch = 1
+map n  <Plug>(incsearch-nohl-n)
+map N  <Plug>(incsearch-nohl-N)
+map *  <Plug>(incsearch-nohl-*)
+map #  <Plug>(incsearch-nohl-#)
+map g* <Plug>(incsearch-nohl-g*)
+map g# <Plug>(incsearch-nohl-g#)
+
+Plug 'haya14busa/vim-asterisk' " hover over word, press z*, cgn to replace word, and continue pressing . to replace others
+map *   <Plug>(incsearch-nohl)<Plug>(asterisk-*)
+map g*  <Plug>(incsearch-nohl)<Plug>(asterisk-g*)
+map #   <Plug>(incsearch-nohl)<Plug>(asterisk-#)
+map g#  <Plug>(incsearch-nohl)<Plug>(asterisk-g#)
+
+map z*  <Plug>(incsearch-nohl0)<Plug>(asterisk-z*)
+map gz* <Plug>(incsearch-nohl0)<Plug>(asterisk-gz*)
+map z#  <Plug>(incsearch-nohl0)<Plug>(asterisk-z#)
+map gz# <Plug>(incsearch-nohl0)<Plug>(asterisk-gz#)
+
+
 "=== Custom configurations
-source ~/.vim/themes.vim       " themes
-source ~/.vim/coc.vim          " Autocomplete for many languages
-source ~/.vim/lightline.vim    " Shows little bar at the bottom
-source ~/.vim/fzf.vim          " Fast search by pressing f
-source ~/.vim/gutentags.vim    " Creates tag automatically
-source ~/.vim/nerdtree.vim     " Show files and folders in current directory by pressing Ctrl+b
-source ~/.vim/tagbar.vim       " Tagbar to show methods/variable by pressing F8
-source ~/.vim/snippets.vim     " useful snippets (ultisnips is the engine).
-source ~/.vim/switches.vim     " useful switches like true => false with Ctrl+A
-source ~/.vim/vim-sneak.vim    " search with s{char}{char} and press ; or , go to backward or forward
-source ~/.vim/insearch.vim     " provides incremental highlighting for all patterns matches unlike default 'incsearch'
-source ~/.vim/vim-asterisk.vim " press z* when over a word and press cgn to replace the word and press '.' to change other instances of that word
+source ~/.vim/coc.vim       " autocomplete for many languages
+source ~/.vim/lightline.vim " shows little bar at the bottom
+source ~/.vim/fzf.vim       " fast search by pressing F, H, B, R
+source ~/.vim/gutentags.vim " creates tag automatically
+source ~/.vim/nerdtree.vim  " show files and folders in current directory by pressing Ctrl+b
+source ~/.vim/tagbar.vim    " tagbar to show methods/variable by pressing F8
+source ~/.vim/snippets.vim  " language related snippets (ultisnips is the engine).
+source ~/.vim/switches.vim  " a collection of useful switches. ex true => false with Ctrl-A
+source ~/.vim/themes.vim    " themes
+source ~/.vim/vim-sneak.vim    " themes
 call plug#end()
+
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--General
@@ -361,9 +389,6 @@ set tw=500
 nnoremap <expr> k (v:count == 0 ? 'gk' : 'k')
 nnoremap <expr> j (v:count == 0 ? 'gj' : 'j')
 
-" Disable highlight when <leader><cr> is pressed
-noremap <silent> <leader><cr> :noh<cr>
-
 " Smart way to move between windows
 nnoremap <A-Right> <C-W>l
 nnoremap <A-Left> <C-W>h
@@ -379,45 +404,45 @@ inoremap <A-Down> <C-W>j
 noremap <leader>bd :Bclose<cr>
 
 function! SaveCountOfTextOnRegister(text)
-	let @c = GetCount(a:text)
+let @c = GetCount(a:text)
 endfunction
 
 " see if new plugins were added
 function! InstallPlugins(text, code)
-	call AutoPlaceMarkBasedOnText(a:text, a:code)
+call AutoPlaceMarkBasedOnText(a:text, a:code)
 
-	let l:old_count = @c
-	let l:new_count = GetCount("^Plug '")
-	let @c = l:new_count
-	if l:new_count > l:old_count
-		PlugInstall
-		"sleep 500m
-		"q
-		"wincmd w
-	endif
+let l:old_count = @c
+let l:new_count = GetCount("^Plug '")
+let @c = l:new_count
+if l:new_count > l:old_count
+	PlugInstall
+	"sleep 500m
+	"q
+	"wincmd w
+endif
 endfunction
 
 " auto place mark on file based on text
 function! AutoPlaceMarkBasedOnText(text, code)
-	let l:new_position = search(a:text, 'nc')
-	call setpos(a:code, [0,l:new_position,1,0])
+let l:new_position = search(a:text, 'nc')
+call setpos(a:code, [0,l:new_position,1,0])
 endfunction
 
 function! GetCount(pattern)
-	let l:cnt = 0
-	silent execute '%s/' . a:pattern . '/\=execute(''let l:cnt += 1'')/gn'
-	return l:cnt
+let l:cnt = 0
+silent execute '%s/' . a:pattern . '/\=execute(''let l:cnt += 1'')/gn'
+return l:cnt
 endfunction
 
 " Automatically reload vimrc when it's saved
 augroup vimrc
-	autocmd!
-	autocmd BufWritePost *.vim,.vimrc :echom "Reloading .vimrc"
-	autocmd BufWritePost *.vim,.vimrc :sleep 500m
-	autocmd BufWritePost *.vim,.vimrc :source $MYVIMRC
-	autocmd BufReadPost  .vimrc :call SaveCountOfTextOnRegister("^Plug '")
-	autocmd BufWritePost .vimrc :call InstallPlugins('^call plug#end()', "'P")
-	autocmd BufWritePost .vimrc :call AutoPlaceMarkBasedOnText('^augroup vimrc', "'a")
+autocmd!
+autocmd BufWritePost *.vim,.vimrc :echom "Reloading .vimrc"
+autocmd BufWritePost *.vim,.vimrc :sleep 500m
+autocmd BufWritePost *.vim,.vimrc :source $MYVIMRC
+autocmd BufReadPost  .vimrc :call SaveCountOfTextOnRegister("^Plug '")
+autocmd BufWritePost .vimrc :call InstallPlugins('^call plug#end()', "'P")
+autocmd BufWritePost .vimrc :call AutoPlaceMarkBasedOnText('^augroup vimrc', "'a")
 augroup END
 
 " Close all the buffers
@@ -458,11 +483,11 @@ nnoremap x viwxi
 inoremap <C-S-L> <C-o>A;
 
 function! ReindentFile()
-	let l:win_view = winsaveview()
-	let l:old_query = getreg('/')
-	execute "normal! gg=G"
-	call winrestview(l:win_view)
-	call setreg('/', l:old_query)
+let l:win_view = winsaveview()
+let l:old_query = getreg('/')
+execute "normal! gg=G"
+call winrestview(l:win_view)
+call setreg('/', l:old_query)
 endfunction
 map <Esc> <C-A-L>
 nnoremap <C-A-L> :call ReindentFile()<cr>
@@ -476,16 +501,16 @@ noremap <leader>te :tabedit <c-r>=expand("%:p:h")<cr>/
 
 " Specify the behavior when switching between buffers
 try
-	set switchbuf=useopen,usetab,newtab
-	set stal=2
+set switchbuf=useopen,usetab,newtab
+set stal=2
 catch
 endtry
 
 " Return to last edit position when opening files (You want this!)
 autocmd BufReadPost *
-			\ if line("'\"") > 0 && line("'\"") <= line("$") |
-			\   exe "normal! g`\"" |
-			\ endif
+		\ if line("'\"") > 0 && line("'\"") <= line("$") |
+		\   exe "normal! g`\"" |
+		\ endif
 
 " Remember info about open buffers on close
 set viminfo^=%
@@ -500,9 +525,10 @@ nnoremap 1 ^
 nnoremap 2 $
 
 " when searching, you can use Perl's regex rather than using vim's own regex system
-nnoremap / /\v
-vnoremap / /\v
-
+"nnoremap / /\v
+"vnoremap / /\v
+" Disable highlight when <leader><cr> is pressed
+noremap <silent> <leader><cr> :noh<cr>
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Spell checking
