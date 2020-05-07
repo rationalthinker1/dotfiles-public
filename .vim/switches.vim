@@ -6,6 +6,7 @@ nnoremap <c-x> :call switch#Switch({'reverse': 1})<cr>
 let g:switch_custom_definitions =
 			\ [
 			\ ['true', 'false'],
+			\ ['dark', 'light'],
 			\ ['yes', 'no'],
 			\ ['on', 'off'],
 			\ ['left', 'right'],

@@ -76,9 +76,31 @@ source ~/.vim/insearch.vim     " provides incremental highlighting for all patte
 source ~/.vim/vim-asterisk.vim " press z* when over a word and press cgn to replace the word and press '.' to change other instances of that word
 call plug#end()
 
+set termguicolors
+let ayucolor="mirage"
+set background=dark
+color onedark
+color one
+highlight Comment cterm=italic
+let g:one_allow_italics = 1 " I love italic for comments
+set background=dark
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--General
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Uploads cursors based on mode
+augroup cursor
+	autocmd!
+	autocmd VimEnter,InsertLeave * silent execute '!echo -ne "\e[2 q"' | redraw!
+	autocmd VimLeave * silent execute '!echo -ne "\e[6 q"' | redraw!
+	autocmd InsertEnter,InsertChange *
+				\ if v:insertmode == 'i' |
+				\   silent execute '!echo -ne "\e[6 q"' | redraw! |
+				\ elseif v:insertmode == 'r' |
+				\   silent execute '!echo -ne "\e[4 q"' | redraw! |
+				\ endif
+augroup END
+
 set encoding=UTF-8
 " Set zsh aliases
 set shell=/bin/zsh\ -l
@@ -296,11 +318,6 @@ nnoremap <leader>bl :ls<CR>
 " Enable syntax highlighting
 syntax on
 syntax enable
-set background=dark
-set termguicolors
-let ayucolor="mirage"
-colorscheme ayu
-"color onedark
 
 highlight Pmenu guibg=white guifg=black gui=bold
 highlight Comment gui=bold

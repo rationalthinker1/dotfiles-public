@@ -9,4 +9,7 @@ Plug 'zirrostig/vim-schlepp'
 Plug 'joshdick/onedark.vim'
 Plug 'ayu-theme/ayu-vim'
 Plug 'ryanoasis/vim-devicons'
+Plug 'rakr/vim-one'
+Plug 'effkay/argonaut.vim'
+"Plug 'flazz/vim-colorschemes'
 

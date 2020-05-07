@@ -41,4 +41,4 @@ web:*.{html,css,scss,js,ts,tsx,jsx,vue}*
 --hidden
 
 # Match whole words
---word-regexp
+#--word-regexp
