@@ -8,7 +8,8 @@ web:*.{html,css,scss,js,ts,tsx,jsx,vue}*
 
 # Using glob patterns to include/exclude files or folders
 --glob=!.git
---glob=!node_module
+--glob=!node_modules
+--glob=!bower_components
 --glob=!vendor
 --glob=!build
 --glob=!bundle

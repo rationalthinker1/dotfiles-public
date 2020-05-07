@@ -55,7 +55,7 @@ setopt HIST_IGNORE_ALL_DUPS       # If a new command line being added to the his
 setopt HIST_IGNORE_SPACE          # remove command lines from the history list when the first character on the line is a space
 
 # Vi mode
-set -o vi
+#set -o vi
 bindkey -v
 autoload -U edit-command-line
 zle -N edit-command-line

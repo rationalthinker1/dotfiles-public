@@ -134,7 +134,7 @@ background_opacity: 1.0
 
 key_bindings:
   - { key: V,         mods: Control,       action: Paste            }
-  - { key: C,         mods: Control,       action: Copy             }
+  - { key: C,         mods: Control|Shift, action: Copy             }
   - { key: Q,         mods: Command,       action: Quit             }
   - { key: L,         mods: Command,       action: ClearHistory     }
   - { key: T,         mods: Control|Shift, action: SpawnNewInstance }
