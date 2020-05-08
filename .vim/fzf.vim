@@ -1,6 +1,11 @@
 Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'junegunn/fzf.vim'
 
+let g:fzf_action = {
+  \ 'ctrl-t': 'tab split',
+  \ 'ctrl-x': 'split',
+  \ 'ctrl-r': 'vsplit' }
+
 " Great place to custom fzf functions
 " https://github.com/mars90226/dotvim/blob/f8e1c7aeefd0f50ccb36d95b8fd0f80c54cb7f7a/autoload/vimrc/fzf.vim
 

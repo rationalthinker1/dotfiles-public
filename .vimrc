@@ -59,6 +59,7 @@ Plug 'christoomey/vim-tmux-navigator'     " Using same keys to move between tmux
 Plug 'airblade/vim-rooter'                " Loads up root directory of the project automatically
 Plug 'simeji/winresizer'                  " Ctrl-E and you can resize current vim windows using 'h', 'j', 'k', 'l' keys
 Plug 'PeterRincker/vim-argumentative'     " Shifting arguments with <, and >,
+Plug 'blueyed/vim-diminactive'            " Dims inactive windows
 
 "=== Custom configurations
 source ~/.vim/themes.vim       " themes
