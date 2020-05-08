@@ -19,3 +19,4 @@ zsh/.zshrc.zwc
 tags
 .vim/spell/
 init.vim.bak
+zsh/.zcompdump*

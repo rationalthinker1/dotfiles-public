@@ -52,7 +52,6 @@ Plug 'ConradIrwin/vim-bracketed-paste'    " enables transparent pasting into vim
 Plug 'farmergreg/vim-lastplace'           " reopen files at your last edit position
 Plug 'chip/vim-fat-finger'                " Automatically corrects common misspellings and typos as you type
 Plug 'mhinz/vim-startify'                 " vim start menu showing last open files on vim
-Plug 'psliwka/vim-smoothie'               " Smooth scroll
 Plug 'easymotion/vim-easymotion'          " Press <leader><leader>w and type one of the highlighted characters
 Plug 'kshenoy/vim-signature'              " Shows bookmarks visually on the left
 Plug 'tmux-plugins/vim-tmux-focus-events' " Focus is gain when switching back and forth with tmux screens
@@ -74,6 +73,7 @@ source ~/.vim/switches.vim     " useful switches like true => false with Ctrl+A
 source ~/.vim/vim-sneak.vim    " search with s{char}{char} and press ; or , go to backward or forward
 source ~/.vim/insearch.vim     " provides incremental highlighting for all patterns matches unlike default 'incsearch'
 source ~/.vim/vim-asterisk.vim " press z* when over a word and press cgn to replace the word and press '.' to change other instances of that word
+source ~/.vim/vim-smoothie.vim " smooth scrolling
 call plug#end()
 
 set termguicolors
@@ -83,6 +83,7 @@ color onedark
 color one
 highlight Comment cterm=italic
 let g:one_allow_italics = 1 " I love italic for comments
+let g:onedark_terminal_italics = 1
 set background=dark
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -259,8 +260,8 @@ set ruler
 set cmdheight=2
 
 " Use tabs to switch between brackets
-nnoremap <tab> %
-vnoremap <tab> %
+"nnoremap <tab> %
+"vnoremap <tab> %
 
 " Go back and forth to cursor position
 map <Esc> <C-A-q>
@@ -704,16 +705,16 @@ set splitright            " splitting a window will put the new window right
 set pastetoggle=<F3>      " before pasting, press F3 to get into paste mode, not needed now
 
 " Move current line or visual block up/down
-nnoremap <C-S-Up> :m -2<CR>
-nnoremap <C-S-Down> :m +1<CR>
-inoremap <C-S-Up> :m -2<CR>
-inoremap <C-S-Down> :m +1<CR>
-"vnoremap <C-S-Up> :m '<-2<CR>gv=gv
-"vnoremap <C-S-Down> :m '>+1<CR>gv=gv
-vmap <C-S-Up>    <Plug>SchleppUp
-vmap <C-S-Down>  <Plug>SchleppDown
-"vmap <C-left>  <Plug>SchleppLeft
-"vmap <C-right> <Plug>SchleppRight
+nnoremap <C-S-Up> <ESC>:m -2<CR>
+nnoremap <C-S-Down> <ESC>:m +1<CR>
+inoremap <C-S-Up> <ESC>:m -2<CR>
+inoremap <C-S-Down> <ESC>:m +1<CR>
+vmap <C-S-Up>    <Plug>SchleppIndentUp
+vmap <C-S-Down>  <Plug>SchleppIndentDown
+vmap <C-S-Left>  <Plug>SchleppLeft
+vmap <C-S-Left>  <Plug>SchleppLeft
+vmap <C-S-Right> <Plug>SchleppRight
+"vmap <C-d> <Plug>SchleppDup
 
 nnoremap <leader>- :new<cr>
 nnoremap <leader><bar> :vnew<cr>
