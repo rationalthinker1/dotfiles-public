@@ -60,6 +60,7 @@ Plug 'airblade/vim-rooter'                " Loads up root directory of the proje
 Plug 'simeji/winresizer'                  " Ctrl-E and you can resize current vim windows using 'h', 'j', 'k', 'l' keys
 Plug 'PeterRincker/vim-argumentative'     " Shifting arguments with <, and >,
 Plug 'blueyed/vim-diminactive'            " Dims inactive windows
+Plug 'andymass/vim-matchup'               " Press % to navigate between if endif, while done
 
 "=== Custom configurations
 source ~/.vim/themes.vim       " themes
