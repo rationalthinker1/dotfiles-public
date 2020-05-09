@@ -30,6 +30,9 @@ function! s:syncTreeIf()
 		NERDTreeFind
 		exec s:curwnum . "wincmd w"
 	endif
+	if (winnr("$") > 2 && s:isNERDTreeOpen() && filereadable(expand('%:p')) && &modifiable && !&diff &&  bufname() != t:NERDTreeBufName)
+		NERDTreeToggle
+	endif
 endfunction
 
 augroup NerdTree

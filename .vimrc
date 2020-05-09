@@ -92,17 +92,18 @@ set background=dark
 "--General
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Uploads cursors based on mode
-augroup cursor
-	autocmd!
-	autocmd VimEnter,InsertLeave * silent execute '!echo -ne "\e[2 q"' | redraw!
-	autocmd VimLeave * silent execute '!echo -ne "\e[6 q"' | redraw!
-	autocmd InsertEnter,InsertChange *
-				\ if v:insertmode == 'i' |
-				\   silent execute '!echo -ne "\e[6 q"' | redraw! |
-				\ elseif v:insertmode == 'r' |
-				\   silent execute '!echo -ne "\e[4 q"' | redraw! |
-				\ endif
-augroup END
+"augroup cursor
+	"autocmd!
+	"autocmd VimEnter,InsertLeave * silent execute '!echo -ne "\e[2 q"' | redraw!
+	""autocmd VimLeave * silent execute '!echo -ne "\e[6 q"' | redraw!
+	"autocmd VimLeave * let &t_me="\<Esc>[6;CursorShape=1\x7"
+	"autocmd InsertEnter,InsertChange *
+				"\ if v:insertmode == 'i' |
+				"\   silent execute '!echo -ne "\e[6 q"' | redraw! |
+				"\ elseif v:insertmode == 'r' |
+				"\   silent execute '!echo -ne "\e[4 q"' | redraw! |
+				"\ endif
+"augroup END
 
 set encoding=UTF-8
 " Set zsh aliases
@@ -303,11 +304,27 @@ function! CloseBuffer() abort
 	let l:noSplits = !l:nerdtreeOpen && l:windowCount ==? 1
 	if l:totalBuffers > 1 && (l:isNerdtreeLast || l:noSplits)
 		let l:command = 'bprevious | bdelete #'
+		"for i in range(1, bufnr("$"))
+			"if buflisted(i) && getbufvar(i, "&diff")
+				"if l:count == a:num
+					"exe "buffer " . i
+					"return
+				"endif
+			"endif
+		"endfor
 	endif
 	if l:totalBuffers == 1 && (l:isNerdtreeLast || l:noSplits)
 		let l:command = 'quit'
 	endif
+	if l:totalBuffers > 1 && !l:nerdtreeOpen && l:windowCount > 1
+		let bDiff = filter(range(1, bufnr('$')), 'buflisted(v:val) && getbufvar(v:val, "&diff") && getbufvar(v:val, "&modifiable")')
+		if len(bDiff) == 1
+			let l:command = l:command . ' | NERDTreeToggle | wincmd w'
+		endif
+		echom bDiff
+	endif
 	silent execute l:command
+
 endfunction
 nnoremap <C-w> :call CloseBuffer()<cr>
 
@@ -385,15 +402,10 @@ nnoremap <expr> j (v:count == 0 ? 'gj' : 'j')
 noremap <silent> <leader><cr> :noh<cr>
 
 " Smart way to move between windows
-nnoremap <A-Right> <C-W>l
-nnoremap <A-Left> <C-W>h
-nnoremap <A-Up> <C-W>k
-nnoremap <A-Down> <C-W>j
-
-inoremap <A-Right> <C-W>l
-inoremap <A-Left> <C-W>h
-inoremap <A-Up> <C-W>k
-inoremap <A-Down> <C-W>j
+map <A-Right> <C-W>l
+map <A-Left> <C-W>h
+map <A-Up> <C-W>k
+map <A-Down> <C-W>j
 
 " Close the current buffer
 noremap <leader>bd :Bclose<cr>
@@ -410,7 +422,7 @@ function! InstallPlugins(text, code)
 	let l:new_count = GetCount("^Plug '")
 	let @c = l:new_count
 	if l:new_count > l:old_count
-		PlugInstall
+		"PlugInstall
 		"sleep 500m
 		"q
 		"wincmd w
@@ -756,10 +768,21 @@ nmap ga <Plug>(EasyAlign)
 map <C-_> <Plug>NERDCommenterToggle
 map <C-_> <Plug>NERDCommenterToggle
 
+" Sets Gitdiff algorithm
+set diffopt+=algorithm:patience
 " Lets you see nth revision ago of the current file
 function! PreviewRevision(n)
 	let @d = a:n
 	let l:commit = system('git log ' .  expand('%') . ' | grep "commit" | cut -d" " -f2 | sed -n ' . a:n . 'p')
 	execute "normal! :Gvdiffsplit " . l:commit . " <bar> :NERDTreeClose"
 endfunction
-
+"autocmd Syntax git setlocal nonumber
+"autocmd Syntax git call Fugitive_settings()
+"function! Fugitive_settings()
+       ""vertical resize 30
+       "echom "asdsd"
+       "set nowrap
+       "set winfixwidth
+       "NERDTreeClose
+       "set nonumber
+"endfunction
