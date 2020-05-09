@@ -9,3 +9,6 @@ wipe -rfi "${folder}"/*
 
 # Searches for text found in apt sources files
 grep -R --include="*.list" "${name}" /etc/apt
+
+# Show ports in use
+sudo lsof -i -P -n | grep LISTEN
