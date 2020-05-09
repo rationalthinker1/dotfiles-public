@@ -320,8 +320,8 @@ function! CloseBuffer() abort
 		let bDiff = filter(range(1, bufnr('$')), 'buflisted(v:val) && getbufvar(v:val, "&diff") && getbufvar(v:val, "&modifiable")')
 		if len(bDiff) == 1
 			let l:command = l:command . ' | NERDTreeToggle | wincmd w'
+			execute "normal! <C-o>"
 		endif
-		echom bDiff
 	endif
 	silent execute l:command
 
@@ -774,15 +774,16 @@ set diffopt+=algorithm:patience
 function! PreviewRevision(n)
 	let @d = a:n
 	let l:commit = system('git log ' .  expand('%') . ' | grep "commit" | cut -d" " -f2 | sed -n ' . a:n . 'p')
-	execute "normal! :Gvdiffsplit " . l:commit . " <bar> :NERDTreeClose"
+	execute "normal! :Gvdiffsplit " . l:commit
+	NERDTreeToggle
 endfunction
 "autocmd Syntax git setlocal nonumber
-"autocmd Syntax git call Fugitive_settings()
-"function! Fugitive_settings()
-       ""vertical resize 30
-       "echom "asdsd"
-       "set nowrap
-       "set winfixwidth
-       "NERDTreeClose
-       "set nonumber
-"endfunction
+autocmd Syntax fugitive <buffer> call <SID>fugitive_settings()
+function! s:fugitive_settings()
+	   "vertical resize 30
+	   echom "asdsd"
+	   set nowrap
+	   set winfixwidth
+	   NERDTreeClose
+	   set nonumber
+endfunction
