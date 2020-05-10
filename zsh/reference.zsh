@@ -12,3 +12,6 @@ grep -R --include="*.list" "${name}" /etc/apt
 
 # Show ports in use
 sudo lsof -i -P -n | grep LISTEN
+
+# Show router IP address
+route -n
