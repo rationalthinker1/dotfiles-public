@@ -131,6 +131,15 @@ function fdd() {
 	fd --hidden --ignore-case --follow --type d --exclude "$FD_EXCLUDE_PATTERN" $@
 }
 
+# pages rg output automatically
+function rg() {
+    if [ -t 1 ]; then
+        command rg -p "$@" | less -RFX
+    else
+        command rg "$@"
+    fi
+}
+
 alias ref="cat ~/.config/zsh/reference.zsh"
 
 # look at the size of the sub-directories level 1
