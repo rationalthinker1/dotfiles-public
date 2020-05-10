@@ -76,8 +76,7 @@ zle -N edit-command-line
 bindkey '^e' edit-command-line                   # Opens Vim to edit current command line
 
 # https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
-# added stty part in alias vim in aliases.zsh
-#stty start undef
+stty start undef
 
 
 #=======================================================================================

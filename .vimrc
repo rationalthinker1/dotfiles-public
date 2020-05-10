@@ -88,6 +88,7 @@ let g:one_allow_italics = 1 " I love italic for comments
 let g:onedark_terminal_italics = 1
 set background=dark
 
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--General
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -138,6 +139,19 @@ let g:mapleader = ","
 
 " https://www.reddit.com/r/vim/comments/1vdrxg/space_is_a_big_key_what_do_you_map_it_to/
 map <space> <leader>
+
+" always keep the cursorline in the middle of the screen except at buffer start and end
+set scrolloff=999
+
+" renders the changes onces when the macro completes rather than the default behaviour of simultaneously executing macros and rendering changes
+set lazyredraw
+set ttyfast
+
+" Because I always forget to type /g and I don't think I've ever had the need to search and replace only one instance on a line.
+set gdefault
+
+" adds - as a word character in html and css files, since those are often used in attributes and classes
+au FileType html,css setlocal isk+=45
 
 " shows where your cursor
 set cursorline
@@ -268,9 +282,9 @@ set cmdheight=2
 
 " Go back and forth to cursor position
 map <Esc> <C-A-q>
-nnoremap <C-A-q> <C-O>
+map <C-A-q> <C-O>
 map <Esc> <C-A-w>
-nnoremap <C-A-w> <C-I>
+map <C-A-w> <C-I>
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -532,8 +546,8 @@ nnoremap 1 ^
 nnoremap 2 $
 
 " when searching, you can use Perl's regex rather than using vim's own regex system
-nnoremap / /\v
-vnoremap / /\v
+"nnoremap / /\v
+"vnoremap / /\v
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
