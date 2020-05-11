@@ -11,8 +11,8 @@
 "CTRL-Tab is Next window
 "CTRL-F4 is Close window
 "source $VIMRUNTIME/mswin.vim
-source ~/.vim/custom-mswin.vim
-behave mswin
+"source ~/.vim/custom-mswin.vim
+"behave mswin
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Vim-Plug Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -139,8 +139,48 @@ autocmd BufEnter * silent! lcd %:p:h
 " https://stackoverflow.com/questions/3676388/cursor-positioning-when-entering-insert-mode
 " end of line $ goes to after the last character, not before
 "set virtualedit=onemore
-vnoremap > iw
-vnoremap < iwob
+"vnoremap > iw
+"vnoremap < '>iwob
+
+" using Shift-End in visual mode to select end of line except newline
+" use sed -n l and type in <End> to get these characters
+vmap <Esc>[1;2F $h
+nmap <Esc>[1;2F v$h
+vmap <Esc>[1;2H ^
+nmap <Esc>[1;2H v^
+
+"nmap <Esc>[1;2B :echo 'Hello'<cr>V<Down>
+" Change to visual mode with shift key
+" https://stackoverflow.com/questions/9721732/mapping-shift-arrows-to-selecting-characters-lines
+nmap <S-Up> v<Up>
+nmap <S-Down> v<Down>
+nmap <S-Left> v<Left>
+nmap <S-Right> v<Right>
+vmap <S-Up> <Up>
+vmap <S-Down> <Down>
+vmap <S-Left> <Left>
+vmap <S-Right> <Right>
+imap <S-Up> <Esc>v<Up>
+imap <S-Down> <Esc>v<Down>
+imap <S-Left> <Esc>v<Left>
+imap <S-Right> <Esc>v<Right>
+
+" https://vim.fandom.com/wiki/Map_Ctrl-S_to_save_current_or_new_files
+" Use CTRL-S for saving, also in Insert mode (<C-O> doesn't work well when
+" using completions).
+" Ctrl+S to save
+" If the current buffer has never been saved, it will have no name,
+" call the file browser to save it, otherwise just save it.
+command -nargs=0 -bar Update if &modified
+			\|    if empty(bufname('%'))
+				\|        browse confirm write
+				\|    else
+					\|        confirm write
+					\|    endif
+					\|endif
+nnoremap <silent> <C-s> :<C-u>Update<CR>
+inoremap <C-s> <Esc>:Update<CR>
+vmap <C-s> <esc>:w<CR>gv
 
 " Sets how many lines of history VIM has to remember
 set history=700

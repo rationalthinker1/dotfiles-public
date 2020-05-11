@@ -1,9 +1,8 @@
 Plug 'itchyny/lightline.vim'
 Plug 'mengelbrecht/lightline-bufferline'
 
-
 let g:lightline = {
-			\ 'colorscheme': 'seoul256',
+			\ 'colorscheme': 'onedark',
 			\ 'active': {
 			\   'left': [ [ 'mode', 'paste' ],
 			\             [ 'fugitive', 'gitgutter', 'filename' ] ],
@@ -19,7 +18,6 @@ let g:lightline = {
 			\   'syntastic': 'SyntasticStatuslineFlag',
 			\   'filename': 'LightLineFilename'
 			\ },
-			\ 'separator': { 'left': '▓▒░', 'right': '░▒▓' },
 			\ 'subseparator': { 'left': '>', 'right': '' }
 			\ }
 function! LightLineModified()
