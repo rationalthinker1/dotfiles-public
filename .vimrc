@@ -62,26 +62,22 @@ Plug 'PeterRincker/vim-argumentative'     " Shifting arguments with <, and >,
 Plug 'blueyed/vim-diminactive'            " Dims inactive windows
 Plug 'andymass/vim-matchup'               " Press % to navigate between if endif, while done
 Plug 'qstrahl/vim-dentures'               " in visual mode, press ai to select indented section
-Plug 'kana/vim-smartword'
-map w  <Plug>(smartword-w)
-map b  <Plug>(smartword-b)
-map e  <Plug>(smartword-e)
-map ge  <Plug>(smartword-ge)
 
 "=== Custom configurations
-source ~/.vim/themes.vim       " themes
-source ~/.vim/coc.vim          " Autocomplete for many languages
-source ~/.vim/lightline.vim    " Shows little bar at the bottom
-source ~/.vim/fzf.vim          " Fast search by pressing f
-source ~/.vim/gutentags.vim    " Creates tag automatically
-source ~/.vim/nerdtree.vim     " Show files and folders in current directory by pressing Ctrl+b
-source ~/.vim/tagbar.vim       " Tagbar to show methods/variable by pressing F8
-source ~/.vim/snippets.vim     " useful snippets (ultisnips is the engine).
-source ~/.vim/switches.vim     " useful switches like true => false with Ctrl+A
-source ~/.vim/vim-sneak.vim    " search with s{char}{char} and press ; or , go to backward or forward
-source ~/.vim/insearch.vim     " provides incremental highlighting for all patterns matches unlike default 'incsearch'
-source ~/.vim/vim-asterisk.vim " press z* when over a word and press cgn to replace the word and press '.' to change other instances of that word
-source ~/.vim/vim-smoothie.vim " smooth scrolling
+source ~/.vim/themes.vim        " themes
+source ~/.vim/coc.vim           " Autocomplete for many languages
+source ~/.vim/lightline.vim     " Shows little bar at the bottom
+source ~/.vim/fzf.vim           " Fast search by pressing f
+source ~/.vim/gutentags.vim     " Creates tag automatically
+source ~/.vim/nerdtree.vim      " Show files and folders in current directory by pressing Ctrl+b
+source ~/.vim/tagbar.vim        " Tagbar to show methods/variable by pressing F8
+source ~/.vim/snippets.vim      " useful snippets (ultisnips is the engine).
+source ~/.vim/switches.vim      " useful switches like true => false with Ctrl+A
+source ~/.vim/vim-sneak.vim     " search with s{char}{char} and press ; or , go to backward or forward
+source ~/.vim/insearch.vim      " provides incremental highlighting for all patterns matches unlike default 'incsearch'
+source ~/.vim/vim-asterisk.vim  " press z* when over a word and press cgn to replace the word and press '.' to change other instances of that word
+source ~/.vim/vim-smoothie.vim  " smooth scrolling
+source ~/.vim/vim-smartword.vim " drop-in replacement for word (w) searching
 call plug#end()
 
 set termguicolors
@@ -811,3 +807,8 @@ function! s:fugitive_settings()
 	   NERDTreeClose
 	   set nonumber
 endfunction
+augroup fugitiveSettings
+    autocmd!
+    autocmd FileType gitcommit setlocal nolist
+    autocmd BufReadPost fugitive://* setlocal bufhidden=delete
+  augroup END
