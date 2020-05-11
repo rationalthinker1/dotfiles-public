@@ -62,6 +62,11 @@ Plug 'PeterRincker/vim-argumentative'     " Shifting arguments with <, and >,
 Plug 'blueyed/vim-diminactive'            " Dims inactive windows
 Plug 'andymass/vim-matchup'               " Press % to navigate between if endif, while done
 Plug 'qstrahl/vim-dentures'               " in visual mode, press ai to select indented section
+Plug 'kana/vim-smartword'
+map w  <Plug>(smartword-w)
+map b  <Plug>(smartword-b)
+map e  <Plug>(smartword-e)
+map ge  <Plug>(smartword-ge)
 
 "=== Custom configurations
 source ~/.vim/themes.vim       " themes
@@ -125,7 +130,9 @@ autocmd BufEnter * silent! lcd %:p:h
 
 " https://stackoverflow.com/questions/3676388/cursor-positioning-when-entering-insert-mode
 " end of line $ goes to after the last character, not before
-set virtualedit=onemore
+"set virtualedit=onemore
+vnoremap > iw
+vnoremap < iwob
 
 " Sets how many lines of history VIM has to remember
 set history=700
@@ -173,8 +180,8 @@ imap <C-Space> <Esc>
 
 " keep in visual mode after identing by shift+> in vim
 " https://superuser.com/questions/310417/how-to-keep-in-visual-mode-after-identing-by-shift-in-vim
-vnoremap < <gv
-vnoremap > >gv
+vnoremap , <gv
+vnoremap . >gv
 
 " Use <cr> to confirm completion, `<C-g>u` means break undo chain at current position.
 " Coc only does snippet and additional edit on confirm.
@@ -190,7 +197,7 @@ nnoremap <leader>bu :!cp % %.bak<CR><CR>:echomsg "Backed up" expand('%')<CR>
 " toggle wrap on current file
 nnoremap <leader>w :set wrap!<cr>
 
-set whichwrap+=<,>,h,l
+set whichwrap+=<,>,h,l,[,]
 
 " Ignore case when searching
 set ignorecase
@@ -486,6 +493,8 @@ xnoremap D "_D
 nnoremap <Esc>[3~ "_x
 xnoremap <Esc>[3~ "_x
 
+" Use <Tab> to navigate
+nmap <Tab> %
 
 " change lines without copying it (use x to cut)
 nnoremap c "_c
@@ -598,7 +607,7 @@ nnoremap w> :call ReplaceTextUntil('<')<cr>
 nnoremap w) :call ReplaceTextUntil(')')<cr>
 
 " copy current line
-function! PasteLineBelow(mode)
+function! PasteText(mode)
 	let l:y = line('.')
 	let l:x = col('.')
 	if a:mode ==? 'i'
@@ -612,21 +621,12 @@ function! PasteLineBelow(mode)
 		let [ l:line_start, l:column_start, l:line_end, l:column_end ] = GetVisualSelectionLine()
 		let l:lines = VisualSelect()
 		if( l:line_end == l:line_start)
-			let l:line = getline('.')
-			let l:size = (l:column_end - l:column_start) + 1
-			let l:portion = strpart(l:line, l:column_start - 1, l:size)
-			let l:bar = substitute(l:line, l:portion, l:portion . l:portion, "")
-			call setline(l:line_start, l:bar)
-			call cursor(l:line_end, l:column_end + 1)
-			execute "normal! " . (l:size) . "v"
-			"call cursor(l:line_end, l:column_end + (l:size * 2) + 1)
-			"echom "l:column_start: " . l:column_start
-			"echom "l:column_end: " . l:column_end
-			"echom "l:line_start: " . l:line_start
-			"echom "l:line_end: " . l:line_end
-			"echom "l:portion: " . l:portion
-			"echom "l:size: " . l:size
-			"echom "l:bar: " . l:bar
+			let existing_register_value = @a
+			execute 'normal! gvy`>p'
+			call setpos("'<", getpos("'["))
+			call setpos("'>", getpos("']"))
+			execute	"normal! gv"
+			let @a = existing_register_value
 		else
 			"echom l:lines
 			let l:size = len(split(l:lines, "\n"))
@@ -635,10 +635,11 @@ function! PasteLineBelow(mode)
 		endif
 	endif
 endfunc
-inoremap <C-d> <esc>:call PasteLineBelow('i')<cr>
-nnoremap <C-d> <esc>:call PasteLineBelow('n')<cr>
-vnoremap <C-d> <esc>:call PasteLineBelow('v')<cr>
-inoremap <C-d> <esc>:call PasteLineBelow('i')<cr>
+inoremap <C-d> <esc>:call PasteText('i')<cr>
+nnoremap <C-d> <esc>:call PasteText('n')<cr>
+vnoremap <C-d> <esc>:call PasteText('v')<cr>
+inoremap <C-d> <esc>:call PasteText('i')<cr>
+
 " delete current line
 function! DeleteCurrentLine(mode)
 	let l:y = line('.')

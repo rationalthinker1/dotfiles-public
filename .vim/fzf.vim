@@ -24,6 +24,7 @@ nnoremap S :Find<CR>
 nnoremap H :History<CR>
 nnoremap B :Buffers<CR>
 nnoremap T :BTags<CR>
+nnoremap M :Marks<CR>
 
 " Ctrl+V to paste in terminal
 tnoremap <expr> <C-v> '<C-\><C-N>pi'
