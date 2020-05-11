@@ -111,11 +111,23 @@ set background=dark
 " maps caplock to esc
 augroup caplock
 	autocmd!
-	au VimEnter * silent! !xmodmap -e 'clear Lock' -e 'keycode 0x42 = Escape'
-	au VimLeave * silent! !xmodmap -e 'clear Lock' -e 'keycode 0x42 = Caps_Lock'
+	autocmd VimEnter * silent! !xmodmap -e 'clear Lock' -e 'keycode 0x42 = Escape'
+	autocmd VimLeave * silent! !xmodmap -e 'clear Lock' -e 'keycode 0x42 = Caps_Lock'
 augroup END
 
 set encoding=UTF-8
+
+"" no one is really happy until you have this shortcuts
+cnoreabbrev W! w!
+cnoreabbrev Q! q!
+cnoreabbrev Qall! qall!
+cnoreabbrev Wq wq
+cnoreabbrev Wa wa
+cnoreabbrev wQ wq
+cnoreabbrev WQ wq
+cnoreabbrev W w
+cnoreabbrev Q q
+cnoreabbrev Qall qall
 
 " Set zsh aliases
 set shell=/bin/zsh\ -l
@@ -168,8 +180,6 @@ au FileType html,css setlocal isk+=45
 " shows where your cursor
 set cursorline
 
-" escape insert mode via 'aa'
-inoremap aa <ESC>
 "inoremap <Shift> <ESC>v
 " escape insert mode via 'Ctrl+Space'
 imap <C-Space> <Esc>
@@ -512,7 +522,7 @@ noremap gP P
 " Yank current word with just y
 nnoremap y viwy<Esc>
 " Replace current word
-nnoremap x viwxi
+nnoremap x viwc
 
 " Adds semicolon at the end of the line
 inoremap <C-S-L> <C-o>A;
@@ -801,7 +811,6 @@ endfunction
 autocmd Syntax fugitive <buffer> call <SID>fugitive_settings()
 function! s:fugitive_settings()
 	   "vertical resize 30
-	   echom "asdsd"
 	   set nowrap
 	   set winfixwidth
 	   NERDTreeClose
@@ -811,4 +820,5 @@ augroup fugitiveSettings
     autocmd!
     autocmd FileType gitcommit setlocal nolist
     autocmd BufReadPost fugitive://* setlocal bufhidden=delete
+    autocmd BufReadPost fugitive://* call s:fugitive_settings()
   augroup END
