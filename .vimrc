@@ -61,6 +61,7 @@ Plug 'simeji/winresizer'                  " Ctrl-E and you can resize current vi
 Plug 'PeterRincker/vim-argumentative'     " Shifting arguments with <, and >,
 Plug 'blueyed/vim-diminactive'            " Dims inactive windows
 Plug 'andymass/vim-matchup'               " Press % to navigate between if endif, while done
+Plug 'qstrahl/vim-dentures'               " in visual mode, press ai to select indented section
 
 "=== Custom configurations
 source ~/.vim/themes.vim       " themes
@@ -106,7 +107,15 @@ set background=dark
 				"\ endif
 "augroup END
 
+" maps caplock to esc
+augroup caplock
+	autocmd!
+	au VimEnter * silent! !xmodmap -e 'clear Lock' -e 'keycode 0x42 = Escape'
+	au VimLeave * silent! !xmodmap -e 'clear Lock' -e 'keycode 0x42 = Caps_Lock'
+augroup END
+
 set encoding=UTF-8
+
 " Set zsh aliases
 set shell=/bin/zsh\ -l
 let $BASH_ENV = "~/.dotfiles/zsh/aliases.zsh"
@@ -134,11 +143,11 @@ set autoread
 
 " With a map leader it's possible to do extra key combinations
 " like <leader>w saves the current file
-let mapleader = ","
-let g:mapleader = ","
+let mapleader = "<space>"
+let g:mapleader = "<space>"
 
 " https://www.reddit.com/r/vim/comments/1vdrxg/space_is_a_big_key_what_do_you_map_it_to/
-map <space> <leader>
+"map <space> <leader>
 
 " always keep the cursorline in the middle of the screen except at buffer start and end
 set scrolloff=999

@@ -25,9 +25,12 @@ nnoremap H :History<CR>
 nnoremap B :Buffers<CR>
 nnoremap T :BTags<CR>
 
+" Ctrl+V to paste in terminal
+tnoremap <expr> <C-v> '<C-\><C-N>pi'
+
 let g:fzf_history_dir = '~/.config/fzf/fzf-history'
 
-let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
+"let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6 } }
 " --column: Show column number
 " --line-number: Show line number
 " --no-heading: Do not show file headings in results
