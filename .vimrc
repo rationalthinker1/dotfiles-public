@@ -63,6 +63,7 @@ Plug 'PeterRincker/vim-argumentative'     " Shifting arguments with <, and >,
 Plug 'blueyed/vim-diminactive'            " Dims inactive windows
 Plug 'andymass/vim-matchup'               " Press % to navigate between if endif, while done
 Plug 'qstrahl/vim-dentures'               " in visual mode, press ai to select indented section
+Plug 'ap/vim-buftabline'				  " Shows buffer tab at the top
 
 "=== Custom configurations
 source ~/.vim/themes.vim        " themes

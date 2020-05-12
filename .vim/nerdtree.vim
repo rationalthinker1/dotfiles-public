@@ -28,11 +28,12 @@ function! s:syncTree()
 endfunction
 
 function! s:syncTreeIf()
-	if (winnr("$") > 1 && s:isNERDTreeOpen() && filereadable(expand('%:p')) && &modifiable && !&diff &&  bufname() != t:NERDTreeBufName)
+	let l:windowCount = winnr("$")
+	if (l:windowCount > 1 && s:isNERDTreeOpen() && filereadable(expand('%:p')) && &modifiable && !&diff &&  bufname() != t:NERDTreeBufName)
 		call s:syncTree()
-	endif
-	if (winnr("$") > 2 && s:isNERDTreeOpen() && filereadable(expand('%:p')) && &modifiable && !&diff &&  bufname() != t:NERDTreeBufName)
-		NERDTreeToggle
+		if l:windowCount > 2
+			NERDTreeToggle
+		endif
 	endif
 endfunction
 
