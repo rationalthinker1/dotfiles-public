@@ -2,7 +2,7 @@ Plug 'itchyny/lightline.vim'
 Plug 'mengelbrecht/lightline-bufferline'
 
 let g:lightline = {
-			\ 'colorscheme': 'onedark',
+			\ 'colorscheme': 'ayu_dark',
 			\ 'active': {
 			\   'left': [ [ 'mode', 'paste' ],
 			\             [ 'fugitive', 'gitgutter', 'filename' ] ],

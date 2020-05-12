@@ -35,7 +35,6 @@ Plug 'stephpy/vim-yaml'
 Plug 'cakebaker/scss-syntax.vim'
 Plug 'tmux-plugins/vim-tmux'
 Plug 'burnettk/vim-angular'
-"Plug 'lvht/phpcd.vim', { 'for': 'php', 'do': 'composer install' }
 
 Plug 'mg979/vim-visual-multi'             " Ctrl+N to select multi-line edits and press c to change, i to add and d to delete
 Plug 'tpope/vim-fugitive'                 " :Git commit :Git diff :Git log :Git difftool :Gedit HEAD~3:%
@@ -75,7 +74,8 @@ source ~/.vim/nerdtree.vim      " Show files and folders in current directory by
 source ~/.vim/tagbar.vim        " Tagbar to show methods/variable by pressing F8
 source ~/.vim/snippets.vim      " useful snippets (ultisnips is the engine).
 source ~/.vim/switches.vim      " useful switches like true => false with Ctrl+A
-source ~/.vim/vim-sneak.vim     " search with s{char}{char} and press ; or , go to backward or forward
+source ~/.vim/clever-f.vim      " useful switches like true => false with Ctrl+A
+"source ~/.vim/vim-sneak.vim     " search with s{char}{char} and press ; or , go to backward or forward
 source ~/.vim/insearch.vim      " provides incremental highlighting for all patterns matches unlike default 'incsearch'
 source ~/.vim/vim-asterisk.vim  " press z* when over a word and press cgn to replace the word and press '.' to change other instances of that word
 source ~/.vim/vim-smoothie.vim  " smooth scrolling
@@ -86,7 +86,7 @@ set termguicolors
 let ayucolor="mirage"
 set background=dark
 color onedark
-color one
+color ayu
 highlight Comment cterm=italic
 let g:one_allow_italics = 1 " I love italic for comments
 let g:onedark_terminal_italics = 1
@@ -791,6 +791,7 @@ set clipboard=unnamedplus " register to global clipboard
 set notimeout             " don't timeout vim mappings
 set mouse=a               " enable mouse use in terminal
 set splitright            " splitting a window will put the new window right
+set splitbelow            " splitting a window will put the new window below
 set pastetoggle=<F3>      " before pasting, press F3 to get into paste mode, not needed now
 
 " Move current line or visual block up/down
