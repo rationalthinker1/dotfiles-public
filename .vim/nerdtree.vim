@@ -19,16 +19,17 @@ endfunction
 
 " calls NERDTreeFind iff NERDTree is active, current window contains a modifiable file, and we're not in vimdiff
 function! s:syncTree()
-	let s:curwnum = winnr()
-	NERDTreeFind
-	exec s:curwnum . "wincmd l"
+	let l:width = winwidth('%')
+	if l:width > 120
+		let s:curwnum = winnr()
+		NERDTreeFind
+		exec s:curwnum . "wincmd l"
+	endif
 endfunction
 
 function! s:syncTreeIf()
 	if (winnr("$") > 1 && s:isNERDTreeOpen() && filereadable(expand('%:p')) && &modifiable && !&diff &&  bufname() != t:NERDTreeBufName)
-		let s:curwnum = winnr()
-		NERDTreeFind
-		exec s:curwnum . "wincmd w"
+		call s:syncTree()
 	endif
 	if (winnr("$") > 2 && s:isNERDTreeOpen() && filereadable(expand('%:p')) && &modifiable && !&diff &&  bufname() != t:NERDTreeBufName)
 		NERDTreeToggle

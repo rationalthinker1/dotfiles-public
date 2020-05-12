@@ -15,3 +15,20 @@ sudo lsof -i -P -n | grep LISTEN
 
 # Show router IP address
 route -n
+
+# Rsync for synchronization
+rync \
+	--verbose \
+	--recursive `# recursively get files/directories` \
+	--archive `# preserves permission,owner,time` \
+	--acls `# preserves acl` \
+	--executability `# preserve executability` \
+	--partial `# save partial file. do not rewrite if transfer occurs again` \
+	--progress `# show progress during transfer` \
+	--compress `# compress during transfer` \
+	--ignore-existing `# ignore existing files` \ 
+	--human-readable `# human-readable format` \
+	--xattrs `# preserves extended attributes` \
+	--copy-links `# copy symbolic links to actual files` \
+	source
+	destination

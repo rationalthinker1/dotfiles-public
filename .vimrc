@@ -35,6 +35,7 @@ Plug 'stephpy/vim-yaml'
 Plug 'cakebaker/scss-syntax.vim'
 Plug 'tmux-plugins/vim-tmux'
 Plug 'burnettk/vim-angular'
+"Plug 'lvht/phpcd.vim', { 'for': 'php', 'do': 'composer install' }
 
 Plug 'mg979/vim-visual-multi'             " Ctrl+N to select multi-line edits and press c to change, i to add and d to delete
 Plug 'tpope/vim-fugitive'                 " :Git commit :Git diff :Git log :Git difftool :Gedit HEAD~3:%
@@ -94,6 +95,11 @@ set background=dark
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--General
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" With a map leader it's possible to do extra key combinations
+" like <leader>w saves the current file
+let mapleader = ","
+let g:mapleader = ","
+
 " Uploads cursors based on mode
 "augroup cursor
 	"autocmd!
@@ -182,6 +188,9 @@ nnoremap <silent> <C-s> :<C-u>Update<CR>
 inoremap <C-s> <Esc>:Update<CR>
 vmap <C-s> <esc>:w<CR>gv
 
+" Pasting like windows
+map p		"+gP
+
 " Sets how many lines of history VIM has to remember
 set history=700
 
@@ -195,11 +204,6 @@ filetype indent on
 
 " Set to auto read when a file is changed from the outside
 set autoread
-
-" With a map leader it's possible to do extra key combinations
-" like <leader>w saves the current file
-let mapleader = "<space>"
-let g:mapleader = "<space>"
 
 " https://www.reddit.com/r/vim/comments/1vdrxg/space_is_a_big_key_what_do_you_map_it_to/
 "map <space> <leader>
@@ -845,7 +849,7 @@ function! PreviewRevision(n)
 	let @d = a:n
 	let l:commit = system('git log ' .  expand('%') . ' | grep "commit" | cut -d" " -f2 | sed -n ' . a:n . 'p')
 	execute "normal! :Gvdiffsplit " . l:commit
-	NERDTreeToggle
+	"NERDTreeClose
 endfunction
 "autocmd Syntax git setlocal nonumber
 autocmd Syntax fugitive <buffer> call <SID>fugitive_settings()
