@@ -143,35 +143,6 @@ let $BASH_ENV = "~/.dotfiles/zsh/aliases.zsh"
 " https://vim.fandom.com/wiki/Set_working_directory_to_the_current_file
 autocmd BufEnter * silent! lcd %:p:h
 
-" https://stackoverflow.com/questions/3676388/cursor-positioning-when-entering-insert-mode
-" end of line $ goes to after the last character, not before
-"set virtualedit=onemore
-"vnoremap > iw
-"vnoremap < '>iwob
-
-" using Shift-End in visual mode to select end of line except newline
-" use sed -n l and type in <End> to get these characters
-vmap <Esc>[1;2F $h
-nmap <Esc>[1;2F v$h
-vmap <Esc>[1;2H ^
-nmap <Esc>[1;2H v^
-
-"nmap <Esc>[1;2B :echo 'Hello'<cr>V<Down>
-" Change to visual mode with shift key
-" https://stackoverflow.com/questions/9721732/mapping-shift-arrows-to-selecting-characters-lines
-nmap <S-Up> v<Up>
-nmap <S-Down> v<Down>
-nmap <S-Left> v<Left>
-nmap <S-Right> v<Right>
-vmap <S-Up> <Up>
-vmap <S-Down> <Down>
-vmap <S-Left> <Left>
-vmap <S-Right> <Right>
-imap <S-Up> <Esc>v<Up>
-imap <S-Down> <Esc>v<Down>
-imap <S-Left> <Esc>v<Left>
-imap <S-Right> <Esc>v<Right>
-
 " https://vim.fandom.com/wiki/Map_Ctrl-S_to_save_current_or_new_files
 " Use CTRL-S for saving, also in Insert mode (<C-O> doesn't work well when
 " using completions).
@@ -197,7 +168,53 @@ set history=700
 
 " v$ doesn't select newline
 " https://vi.stackexchange.com/questions/12607/extend-visual-selection-til-the-last-character-on-the-line-excluding-the-new-li
-set selection=inclusive
+set selection=exclusive
+set virtualedit+=onemore
+noremap $ g$
+" Remap VIM 1 to first non-blank character and 2 to the last non-blank character
+nnoremap 1 ^
+nnoremap 2 g$
+" mapping for <End>
+map <Esc>[4~ g$
+
+" https://stackoverflow.com/questions/3676388/cursor-positioning-when-entering-insert-mode
+" end of line $ goes to after the last character, not before
+"set virtualedit=onemore
+"vnoremap > iw
+"vnoremap < '>iwob
+
+" using Shift-End in visual mode to select end of line except newline
+" use sed -n l and type in <End> to get these characters
+" use sed -n l and type in <End> to get these characters
+"vmap <Esc>[1;2F $h
+"nmap <Esc>[1;2F v$h
+"vmap <Esc>[1;2H ^
+"nmap <Esc>[1;2H v^
+
+"nmap <Esc>[1;2B :echo 'Hello'<cr>V<Down>
+" Change to visual mode with shift key
+" https://stackoverflow.com/questions/9721732/mapping-shift-arrows-to-selecting-characters-lines
+nmap <S-Up> v<Up>
+nmap <S-Down> v<Down>
+nmap <S-Left> v<Left>
+nmap <S-Right> v<Right>
+vmap <S-Up> <Up>
+vmap <S-Down> <Down>
+vmap <S-Left> <Left>
+vmap <S-Right> <Right>
+imap <S-Up> <Esc>v<Up>
+imap <S-Down> <Esc>v<Down>
+imap <S-Left> <Esc>v<Left>
+imap <S-Right> <Esc>v<Right>
+nmap <S-End> v$
+vmap <S-End> $
+nmap <S-Home> v^
+vmap <S-Home> ^
+"nmap <Esc>[1;2F v$
+"vmap <Esc>[1;2F $
+ "<S-Home>
+"nmap <Esc>[1;2H v^
+"vmap <Esc>[1;2H ^
 
 " Enable filetype plugins
 filetype plugin on
@@ -610,10 +627,6 @@ set viminfo+=n~/.vim/.viminfo
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Editing mappings
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Remap VIM 1 to first non-blank character and 2 to the last non-blank character
-nnoremap 1 ^
-nnoremap 2 $
-
 " when searching, you can use Perl's regex rather than using vim's own regex system
 "nnoremap / /\v
 "vnoremap / /\v
