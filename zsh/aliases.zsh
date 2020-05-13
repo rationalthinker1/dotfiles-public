@@ -392,13 +392,15 @@ dc() {
   if [ -e "docker-compose.yml" ]; then
     docker-compose "$@"
   elif [ -e "./docker/docker-compose.yml" ]; then
-    docker-compose -f "./docker/docker-compose.yml" --project-directory ../ "$@"
+    docker-compose -f "./docker/docker-compose.yml" --project-directory ./ "$@"
   fi
 }
 
 # Runs the docker-compose detached
 dcu() {
-  if [ -e "docker.sh" ]; then
+  if [[ -a "docker/docker.sh" ]]; then
+    ./docker/docker.sh "$@"
+  elif [ -e "docker.sh" ]; then
     ./docker.sh "$@"
   else
     dc up -d
