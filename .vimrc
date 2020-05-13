@@ -265,7 +265,8 @@ nnoremap <leader>bu :!cp % %.bak<CR><CR>:echomsg "Backed up" expand('%')<CR>
 " toggle wrap on current file
 nnoremap <leader>w :set wrap!<cr>
 
-set whichwrap+=<,>,h,l,[,]
+" Allows arrow keys to move the cursor left/right to move to the previous/next line
+set whichwrap+=<,>,[,]
 
 " Ignore case when searching
 set ignorecase
