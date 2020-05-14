@@ -160,26 +160,45 @@ nnoremap <silent> <C-s> :<C-u>Update<CR>
 inoremap <C-s> <Esc>:Update<CR>
 vmap <C-s> <esc>:w<CR>gv
 
-" Pasting like windows
-map p		"+gP
-
 " Sets how many lines of history VIM has to remember
 set history=700
 
 " v$ doesn't select newline
 " https://vi.stackexchange.com/questions/12607/extend-visual-selection-til-the-last-character-on-the-line-excluding-the-new-li
 set selection=exclusive
+set backspace=indent,eol,start
+" https://stackoverflow.com/questions/3676388/cursor-positioning-when-entering-insert-mode
+" end of line $ goes to after the last character, not before
 set virtualedit+=onemore
 noremap $ g$
 " Remap VIM 1 to first non-blank character and 2 to the last non-blank character
-nnoremap 1 ^
-nnoremap 2 g$
+nmap 1 ^
+nmap 2 $
 " mapping for <End>
-map <Esc>[4~ g$
+nmap <Esc>[4~ $
 
-" https://stackoverflow.com/questions/3676388/cursor-positioning-when-entering-insert-mode
-" end of line $ goes to after the last character, not before
-"set virtualedit=onemore
+" delete lines without copying it (use x to cut)
+nnoremap d "_d
+nnoremap D "_D
+xnoremap d "_d
+xnoremap D "_D
+" <Delete> key
+nnoremap <Esc>[3~ "_x
+xnoremap <Esc>[3~ "_x
+
+" change lines without copying it (use x to cut)
+nnoremap c "_c
+vnoremap c "_c
+
+" Pasting like windows
+"map p		"+gP
+" Needed to fix up pasting (highlighted and paste right after cursor)
+" https://unix.stackexchange.com/questions/5056/cursor-position-after-pasting-in-vi-vim
+nnoremap p P<Right>
+nmap P o<esc>gp
+noremap gp p
+noremap gP P
+
 "vnoremap > iw
 "vnoremap < '>iwob
 
@@ -554,33 +573,14 @@ augroup END
 " Close all the buffers
 noremap <leader>ba :1,1000 bd!<cr>
 
-" delete lines without copying it (use x to cut)
-nnoremap d "_d
-nnoremap D "_D
-xnoremap d "_d
-xnoremap D "_D
-nnoremap <Esc>[3~ "_x
-xnoremap <Esc>[3~ "_x
-
 " Use <Tab> to navigate
 nmap <Tab> %
-
-" change lines without copying it (use x to cut)
-nnoremap c "_c
-vnoremap c "_c
 
 " Useful mappings for managing tabs
 noremap <leader>tn :tabnew<cr>
 noremap <leader>to :tabonly<cr>
 noremap <leader>tc :tabclose<cr>
 noremap <leader>tm :tabmove
-
-" Needed to fix up pasting (highlighted and paste right after cursor)
-" https://unix.stackexchange.com/questions/5056/cursor-position-after-pasting-in-vi-vim
-noremap p gp
-noremap P o<esc>gp
-noremap gp p
-noremap gP P
 
 " Yank current word with just y
 nnoremap y viwy<Esc>
