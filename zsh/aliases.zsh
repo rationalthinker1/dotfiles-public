@@ -329,9 +329,9 @@ alias vkill='vagrant destroy'
 #=======================================================================================
 # Laravel Aliases and functions
 #=======================================================================================
-alias pa="docker-compose exec --user "$(id -u):$(id -g)" php php -dxdebug.remote_enable=1 -dxdebug.remote_autostart=on -dxdebug.idekey=PHPSTORM -dxdebug.remote_mode=req -dxdebug.remote_port=9000 -dxdebug.remote_host=127.0.0.1 artisan"
-alias pam="docker-compose exec --user "$(id -u):$(id -g)" php php -dxdebug.remote_enable=1 -dxdebug.remote_autostart=on -dxdebug.idekey=PHPSTORM -dxdebug.remote_mode=req -dxdebug.remote_port=9000 -dxdebug.remote_host=127.0.0.1 artisan migrate"
-alias par="docker-compose exec --user "$(id -u):$(id -g)" php php -dxdebug.remote_enable=1 -dxdebug.remote_autostart=on -dxdebug.idekey=PHPSTORM -dxdebug.remote_mode=req -dxdebug.remote_port=9000 -dxdebug.remote_host=127.0.0.1 artisan routes"
+alias pa="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec --user "$(id -u):$(id -g)" php php -dxdebug.remote_enable=1 -dxdebug.remote_autostart=on -dxdebug.idekey=PHPSTORM -dxdebug.remote_mode=req -dxdebug.remote_port=9000 -dxdebug.remote_host=127.0.0.1 artisan"
+alias pam="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec --user "$(id -u):$(id -g)" php php -dxdebug.remote_enable=1 -dxdebug.remote_autostart=on -dxdebug.idekey=PHPSTORM -dxdebug.remote_mode=req -dxdebug.remote_port=9000 -dxdebug.remote_host=127.0.0.1 artisan migrate"
+alias par="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec --user "$(id -u):$(id -g)" php php -dxdebug.remote_enable=1 -dxdebug.remote_autostart=on -dxdebug.idekey=PHPSTORM -dxdebug.remote_mode=req -dxdebug.remote_port=9000 -dxdebug.remote_host=127.0.0.1 artisan routes"
 
 alias pam:r="php artisan migrate:refresh"
 alias pam:roll="php artisan migrate:rollback"
@@ -339,7 +339,7 @@ alias pam:rs="php artisan migrate:refresh --seed"
 alias pda="php artisan dumpautoload"
 alias cu="composer update"
 alias ci="composer install"
-alias cda="docker-compose exec --user "$(id -u):$(id -g)" php composer dump-autoload -o"
+alias cda="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec --user "$(id -u):$(id -g)" php composer dump-autoload -o"
 alias pacc="php artisan clear-compiled"
 
 #=======================================================================================
@@ -435,7 +435,7 @@ dceb() {
   dc exec --user "$(id -u):$(id -g)" "$1" "$SCRIPT"
 }
 
-alias dce="docker-compose exec --user \"$(id -u):$(id -g)\""
+alias dce="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec --user \"$(id -u):$(id -g)\""
 
 # Get latest container ID
 alias dl="docker ps -l -q"

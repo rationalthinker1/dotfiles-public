@@ -13,7 +13,6 @@ let g:coc_global_extensions = [
 			\ 'coc-yank',
 			\ 'coc-prettier',
 			\ 'coc-phpls',
-			"\ 'coc-tabnine',
 			\ 'coc-tailwindcss',
 			\ 'coc-git',
 			\ 'coc-highlight'

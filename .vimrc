@@ -676,22 +676,41 @@ function! PasteText(mode)
 	let l:y = line('.')
 	let l:x = col('.')
 	if a:mode ==? 'i'
-		execute "normal! yyp"
+		let old_reg = getreg("c")               " Save the current content of register 'c'
+		let old_reg_type = getregtype("c")      " Save the type of the register as well
+
+		" Copies current line to register c and then paste line from register c
+		execute 'normal! "cY"cp'
+
+		call setreg("c", old_reg, old_reg_type) " Restore register 'c'
 		call cursor(l:y+1, l:x+1)
 		call feedkeys(a:mode)
 	elseif a:mode ==? 'n'
-		execute "normal! yyp"
+		let old_reg = getreg("c")               " Save the current content of register 'c'
+		let old_reg_type = getregtype("c")      " Save the type of the register as well
+
+		execute 'normal! "cY"cp'
+
+		call setreg("c", old_reg, old_reg_type) " Restore register 'c'
+
 		call cursor(l:y+1, l:x)
 	else
 		let [ l:line_start, l:column_start, l:line_end, l:column_end ] = GetVisualSelectionLine()
 		let l:lines = VisualSelect()
 		if( l:line_end == l:line_start)
-			let existing_register_value = @a
-			execute 'normal! gvy`>p'
+			let old_reg = getreg("c")               " Save the current content of register 'c'
+			let old_reg_type = getregtype("c")      " Save the type of the register as well
+
+			" gv -> select previously highlighted portion
+			" "cy -> copy highlighted portion to register c
+			" '> -> to go end of the highlighted portion
+			" "cP -> paste from register c
+			execute 'normal! gv"cy`>"cP'
 			call setpos("'<", getpos("'["))
 			call setpos("'>", getpos("']"))
-			execute	"normal! gv"
-			let @a = existing_register_value
+			execute	"normal! gvl"
+
+			call setreg("c", old_reg, old_reg_type) " Restore register 'c'
 		else
 			"echom l:lines
 			let l:size = len(split(l:lines, "\n"))
