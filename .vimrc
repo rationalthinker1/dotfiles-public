@@ -35,6 +35,10 @@ Plug 'stephpy/vim-yaml'
 Plug 'cakebaker/scss-syntax.vim'
 Plug 'tmux-plugins/vim-tmux'
 Plug 'burnettk/vim-angular'
+" javascript
+Plug 'pangloss/vim-javascript'
+Plug 'mxw/vim-jsx'
+Plug 'skywind3000/asyncrun.vim'
 
 Plug 'mg979/vim-visual-multi'             " Ctrl+N to select multi-line edits and press c to change, i to add and d to delete
 Plug 'tpope/vim-fugitive'                 " :Git commit :Git diff :Git log :Git difftool :Gedit HEAD~3:%
@@ -227,8 +231,10 @@ imap <S-Left> <Esc>v<Left>
 imap <S-Right> <Esc>v<Right>
 nmap <S-End> v$
 vmap <S-End> $
+imap <S-End> <Esc>lv$
 nmap <S-Home> v^
 vmap <S-Home> ^
+imap <S-Home> <Esc>v^
 "nmap <Esc>[1;2F v$
 "vmap <Esc>[1;2F $
  "<S-Home>
