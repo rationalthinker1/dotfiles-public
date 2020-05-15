@@ -9,7 +9,7 @@ let NERDTreeDirArrows = 1
 let g:nerd_preview_enabled = 1
 let g:preview_last_buffer = 0
 
-nnoremap <silent> <C-b> call s:NERDCommenterToggle()
+nnoremap <C-b> :call <SID>NERDTreeToggle()<CR>
 
 function! s:NERDTreeToggle()
 	if g:NERDTree.IsOpen()
@@ -18,6 +18,7 @@ function! s:NERDTreeToggle()
 		NERDTreeFind
 	else
 		NERDTree
+	endif
 endfunction
 
 augroup NERDTree
@@ -28,7 +29,6 @@ augroup NERDTree
 	autocmd BufEnter * call s:syncTreeIf()
 	" Automatically close vim if only NERDTree left
 	autocmd BufEnter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
-
 augroup END
 
 " calls NERDTreeFind iff NERDTree is active, current window contains a modifiable file, and we're not in vimdiff

@@ -39,7 +39,7 @@ Plug 'burnettk/vim-angular'
 Plug 'pangloss/vim-javascript'
 Plug 'mxw/vim-jsx'
 
-Plug 'mg979/vim-visual-multi'             " Ctrl+N to select multi-line edits and press c to change, i to add and d to delete
+"Plug 'mg979/vim-visual-multi'             " Ctrl+N to select multi-line edits and press c to change, i to add and d to delete
 Plug 'tpope/vim-fugitive'                 " :Git commit :Git diff :Git log :Git difftool :Gedit HEAD~3:%
 Plug 'alvan/vim-closetag'                 " autocomplete html tags
 Plug 'tpope/vim-abolish'                  " foo_bar => fooBar 'crm' 'crc' 'crs' 'cr-'; :%Subvert/facilit{y,ies}/building{,s}/g
@@ -104,19 +104,16 @@ set background=dark
 let mapleader = ","
 let g:mapleader = ","
 
-" Uploads cursors based on mode
-"augroup cursor
-	"autocmd!
-	"autocmd VimEnter,InsertLeave * silent execute '!echo -ne "\e[2 q"' | redraw!
-	""autocmd VimLeave * silent execute '!echo -ne "\e[6 q"' | redraw!
-	"autocmd VimLeave * let &t_me="\<Esc>[6;CursorShape=1\x7"
-	"autocmd InsertEnter,InsertChange *
-				"\ if v:insertmode == 'i' |
-				"\   silent execute '!echo -ne "\e[6 q"' | redraw! |
-				"\ elseif v:insertmode == 'r' |
-				"\   silent execute '!echo -ne "\e[4 q"' | redraw! |
-				"\ endif
-"augroup END
+augroup common
+    autocmd!
+    " Clear jump list
+    autocmd VimEnter * clearjumps
+    " Locate cursor to the last position
+    autocmd BufReadPost *
+                \ if line("'\"") > 1 && line("'\"") <= line("$") && &filetype !~# 'commit' |
+                \     execute "normal! g`\"" |
+                \ endif
+augroup END
 
 " maps caplock to esc
 augroup caplock
@@ -204,6 +201,16 @@ noremap gP P
 
 " will highlight current word
 nnoremap ww viw
+" replace current word
+inoremap <C-x> <Esc>viwc
+" Yank current word with just y
+nnoremap y viwy<Esc>
+" Replace current word
+nnoremap x viwc
+
+nnoremap <C-Up> 5k
+nnoremap <C-Down> 5j
+
 "vnoremap > iw
 "vnoremap < '>iwob
 
@@ -588,11 +595,6 @@ noremap <leader>tn :tabnew<cr>
 noremap <leader>to :tabonly<cr>
 noremap <leader>tc :tabclose<cr>
 noremap <leader>tm :tabmove
-
-" Yank current word with just y
-nnoremap y viwy<Esc>
-" Replace current word
-nnoremap x viwc
 
 " Adds semicolon at the end of the line
 inoremap <C-S-L> <C-o>A;
