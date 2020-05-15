@@ -656,15 +656,6 @@ vnoremap <leader>title ydd63i"<esc><esc>o"--<space><space><esc>moi<cr><esc>63i"<
 function! ReplaceTextUntil(char)
 	execute "normal vt" . a:char . "d"
 	call feedkeys('i')
-	"let l:line = getline('.')
-	"let l:y = line('.')
-	"let l:x = col('.')
-	"let l:index = stridx(l:line, a:char, l:x)
-	"let l:portion = strpart(l:line, l:x, l:index - l:x)
-	"let l:bar = substitute(l:line, l:portion, "", "")
-	"call setline(l:y, l:bar)
-	"call cursor(l:y, l:x + 1)
-	"call feedkeys('i')
 endfunc
 nnoremap w' :call ReplaceTextUntil("'")<cr>
 nnoremap w" :call ReplaceTextUntil('"')<cr>
@@ -821,7 +812,7 @@ set nowrap                " don't wrap lines
 set shiftround            " use multiple of shiftwidth when indenting with '<' and '>'
 set copyindent            " copy the previous indentation on autoindenting
 set number                " always show line numbers
-set autowrite           " Save on buffer switch
+set autowrite             " Save on buffer switch
 set clipboard=unnamedplus " register to global clipboard
 set notimeout             " don't timeout vim mappings
 set mouse=a               " enable mouse use in terminal
