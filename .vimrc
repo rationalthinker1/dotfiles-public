@@ -38,7 +38,6 @@ Plug 'burnettk/vim-angular'
 " javascript
 Plug 'pangloss/vim-javascript'
 Plug 'mxw/vim-jsx'
-Plug 'skywind3000/asyncrun.vim'
 
 Plug 'mg979/vim-visual-multi'             " Ctrl+N to select multi-line edits and press c to change, i to add and d to delete
 Plug 'tpope/vim-fugitive'                 " :Git commit :Git diff :Git log :Git difftool :Gedit HEAD~3:%
@@ -66,7 +65,8 @@ Plug 'PeterRincker/vim-argumentative'     " Shifting arguments with <, and >,
 Plug 'blueyed/vim-diminactive'            " Dims inactive windows
 Plug 'andymass/vim-matchup'               " Press % to navigate between if endif, while done
 Plug 'qstrahl/vim-dentures'               " in visual mode, press ai to select indented section
-Plug 'ap/vim-buftabline'				  " Shows buffer tab at the top
+Plug 'ap/vim-buftabline'                  " Shows buffer tab at the top
+Plug 'skywind3000/asyncrun.vim'           " Runs commands asynchronously
 
 "=== Custom configurations
 source ~/.vim/themes.vim        " themes
@@ -78,7 +78,7 @@ source ~/.vim/nerdtree.vim      " Show files and folders in current directory by
 source ~/.vim/tagbar.vim        " Tagbar to show methods/variable by pressing F8
 source ~/.vim/snippets.vim      " useful snippets (ultisnips is the engine).
 source ~/.vim/switches.vim      " useful switches like true => false with Ctrl+A
-source ~/.vim/clever-f.vim      " useful switches like true => false with Ctrl+A
+source ~/.vim/clever-f.vim      " drop in replacement for f but go to next search result with f rather than ;
 "source ~/.vim/vim-sneak.vim     " search with s{char}{char} and press ; or , go to backward or forward
 source ~/.vim/insearch.vim      " provides incremental highlighting for all patterns matches unlike default 'incsearch'
 source ~/.vim/vim-asterisk.vim  " press z* when over a word and press cgn to replace the word and press '.' to change other instances of that word
@@ -95,7 +95,6 @@ highlight Comment cterm=italic
 let g:one_allow_italics = 1 " I love italic for comments
 let g:onedark_terminal_italics = 1
 set background=dark
-
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--General
@@ -203,6 +202,8 @@ nmap P o<esc>gp
 noremap gp p
 noremap gP P
 
+" will highlight current word
+nnoremap ww viw
 "vnoremap > iw
 "vnoremap < '>iwob
 
