@@ -422,8 +422,14 @@ nnoremap <A-PageDown> :bnext<CR>
 " Move to the previous buffer
 nnoremap <A-PageUp> :bprevious<CR>
 
+autocmd FileType nerdtree noremap <buffer> <A-PageDown> <ESC>:wincmd w <bar> bnext<CR>
+autocmd FileType nerdtree noremap <buffer> <A-PageUp> <ESC>:wincmd w <bar> bprevious<CR>
+
 " Close buffer like closing Chrome's tab
 function! CloseBuffer() abort
+	if &filetype ==? 'nerdtree'
+		wincmd w
+	endif
 	if &buftype ==? 'quickfix'
 		lclose
 		return 1
