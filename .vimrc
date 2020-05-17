@@ -32,7 +32,7 @@ Plug 'vim-scripts/apachestyle'
 Plug 'ekalinin/Dockerfile.vim'
 Plug 'stanangeloff/php.vim'
 Plug 'stephpy/vim-yaml'
-Plug 'cakebaker/scss-syntax.vim'
+"Plug 'cakebaker/scss-syntax.vim'
 Plug 'tmux-plugins/vim-tmux'
 Plug 'burnettk/vim-angular'
 " javascript
@@ -105,14 +105,14 @@ let mapleader = ","
 let g:mapleader = ","
 
 augroup common
-    autocmd!
-    " Clear jump list
-    autocmd VimEnter * clearjumps
-    " Locate cursor to the last position
-    autocmd BufReadPost *
-                \ if line("'\"") > 1 && line("'\"") <= line("$") && &filetype !~# 'commit' |
-                \     execute "normal! g`\"" |
-                \ endif
+	autocmd!
+	" Clear jump list
+	autocmd VimEnter * clearjumps
+	" Locate cursor to the last position
+	autocmd BufReadPost *
+				\ if line("'\"") > 1 && line("'\"") <= line("$") && &filetype !~# 'commit' |
+				\     execute "normal! g`\"" |
+				\ endif
 augroup END
 
 " maps caplock to esc
@@ -141,7 +141,7 @@ set shell=/bin/zsh\ -l
 let $BASH_ENV = "~/.dotfiles/zsh/aliases.zsh"
 
 " https://vim.fandom.com/wiki/Set_working_directory_to_the_current_file
-autocmd BufEnter * silent! lcd %:p:h
+"autocmd BufEnter * silent! lcd %:p:h
 
 " https://vim.fandom.com/wiki/Map_Ctrl-S_to_save_current_or_new_files
 " Use CTRL-S for saving, also in Insert mode (<C-O> doesn't work well when
@@ -245,7 +245,7 @@ vmap <S-Home> ^
 imap <S-Home> <Esc>v^
 "nmap <Esc>[1;2F v$
 "vmap <Esc>[1;2F $
- "<S-Home>
+"<S-Home>
 "nmap <Esc>[1;2H v^
 "vmap <Esc>[1;2H ^
 
@@ -435,7 +435,7 @@ function! CloseBuffer() abort
 	let l:isNerdtreeLast = l:nerdtreeOpen && l:windowCount ==? 2
 	let l:noSplits = !l:nerdtreeOpen && l:windowCount ==? 1
 	if l:totalBuffers > 1 && (l:isNerdtreeLast || l:noSplits)
-		let l:command = 'bprevious | bdelete #'
+		let l:command = 'bprevious | bdelete # | NERDTree | wincmd w | NERDTreeFind | wincmd w'
 		"for i in range(1, bufnr("$"))
 			"if buflisted(i) && getbufvar(i, "&diff")
 				"if l:count == a:num
@@ -891,15 +891,15 @@ endfunction
 "autocmd Syntax git setlocal nonumber
 autocmd Syntax fugitive <buffer> call <SID>fugitive_settings()
 function! s:fugitive_settings()
-	   "vertical resize 30
-	   set nowrap
-	   set winfixwidth
-	   NERDTreeClose
-	   set nonumber
+	"vertical resize 30
+	set nowrap
+	set winfixwidth
+	NERDTreeClose
+	set nonumber
 endfunction
 augroup fugitiveSettings
-    autocmd!
-    autocmd FileType gitcommit setlocal nolist
-    autocmd BufReadPost fugitive://* setlocal bufhidden=delete
-    autocmd BufReadPost fugitive://* call s:fugitive_settings()
-  augroup END
+	autocmd!
+	autocmd FileType gitcommit setlocal nolist
+	autocmd BufReadPost fugitive://* setlocal bufhidden=delete
+	autocmd BufReadPost fugitive://* call s:fugitive_settings()
+augroup END

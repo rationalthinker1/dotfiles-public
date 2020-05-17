@@ -19,6 +19,7 @@ function! s:find_files()
 endfunction
 command! ProjectFiles execute s:find_files()
 nnoremap F :ProjectFiles<CR>
+nnoremap <C-S-n> :ProjectFiles<CR>
 nnoremap R :Registers<CR>
 nnoremap S :Find<CR>
 nnoremap H :History<CR>
