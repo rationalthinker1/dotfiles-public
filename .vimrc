@@ -36,8 +36,10 @@ Plug 'stephpy/vim-yaml'
 Plug 'tmux-plugins/vim-tmux'
 Plug 'burnettk/vim-angular'
 " javascript
-Plug 'pangloss/vim-javascript'
-Plug 'mxw/vim-jsx'
+"Plug 'pangloss/vim-javascript'
+"Plug 'mxw/vim-jsx'
+Plug 'yuezk/vim-js'
+Plug 'chemzqm/vim-jsx-improve'
 
 "Plug 'mg979/vim-visual-multi'             " Ctrl+N to select multi-line edits and press c to change, i to add and d to delete
 Plug 'tpope/vim-fugitive'                 " :Git commit :Git diff :Git log :Git difftool :Gedit HEAD~3:%
@@ -191,11 +193,12 @@ nnoremap c "_c
 vnoremap c "_c
 
 " Pasting like windows
+" Automatically indent pasted lines
 "map p		"+gP
 " Needed to fix up pasting (highlighted and paste right after cursor)
 " https://unix.stackexchange.com/questions/5056/cursor-position-after-pasting-in-vi-vim
-nnoremap p P<Right>
-nmap P o<esc>gp
+nnoremap p P=`]<Right>
+nmap P o<esc>gp=`]
 noremap gp p
 noremap gP P
 
