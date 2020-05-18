@@ -68,7 +68,8 @@ Plug 'blueyed/vim-diminactive'            " Dims inactive windows
 Plug 'andymass/vim-matchup'               " Press % to navigate between if endif, while done
 Plug 'qstrahl/vim-dentures'               " in visual mode, press ai to select indented section
 Plug 'ap/vim-buftabline'                  " Shows buffer tab at the top
-Plug 'skywind3000/asyncrun.vim'           " Runs commands asynchronously
+"Plug 'skywind3000/asyncrun.vim'          " Runs commands asynchronously
+Plug 'cohama/lexima.vim'                  " autoclose { in functions, if statements
 
 "=== Custom configurations
 source ~/.vim/themes.vim        " themes
@@ -434,7 +435,7 @@ function! CloseBuffer() abort
 		wincmd w
 	endif
 	if &buftype ==? 'quickfix'
-		lclose
+		cclose
 		return 1
 	endif
 	let l:nerdtreeOpen = g:NERDTree.IsOpen()
@@ -599,6 +600,10 @@ noremap <leader>ba :1,1000 bd!<cr>
 " Use <Tab> to navigate
 nmap <Tab> %
 
+" https://stackoverflow.com/questions/21321357/how-can-i-cause-the-quickfix-window-to-close-after-i-select-an-item-in-it
+" close quickfix after selecting a file
+autocmd FileType qf nnoremap <buffer> <CR> <CR>:cclose<CR>
+
 " Useful mappings for managing tabs
 noremap <leader>tn :tabnew<cr>
 noremap <leader>to :tabonly<cr>
@@ -627,8 +632,8 @@ noremap <leader>te :tabedit <c-r>=expand("%:p:h")<cr>/
 
 " Specify the behavior when switching between buffers
 try
-	set switchbuf=useopen,usetab,newtab
-	set stal=2
+	set switchbuf=useopen,vsplit
+	set showtabline=2
 catch
 endtry
 
