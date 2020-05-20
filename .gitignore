@@ -20,3 +20,4 @@ tags
 .vim/spell/
 init.vim.bak
 zsh/.zcompdump*
+*.bak
