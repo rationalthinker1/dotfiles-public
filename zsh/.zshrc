@@ -10,11 +10,11 @@ export ADOTDIR="${ZDOTDIR}/antigen"
 export ZSH="${ZDOTDIR}/oh-my-zsh"
 export ENHANCD_DIR="${LOCAL_CONFIG}/enhancd"
 
-export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 # Custom setting for commands
+export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 export ENHANCD_DISABLE_DOT=1
-export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen}'"
-export FZF_CTRL_T_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen}'"
+export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,snap/*,*.lock}'"
+export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 
 if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
     source "${LOCAL_CONFIG}"/zsh/.zprofile
@@ -42,16 +42,13 @@ HISTCONTROL=ignoreboth     # ingore duplicates and spaces
 HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
 
 # Basic auto/tab complete:
-autoload -U compinit
-for dump in "${ZDOTDIR}"/.zcompdump(N.mh+24); do
-  compinit
-done
+autoload -Uz compinit
+#for dump in "${ZDOTDIR}"/.zcompdump(N.mh+24); do
+  #compinit
+#done
 
-compinit -C
-zstyle ':completion:*' menu select
-zmodload zsh/complist
+#_comp_options+=(globdots)		# Include hidden files.
 compinit
-_comp_options+=(globdots)		# Include hidden files.
 
 setopt CORRECT                    # Try to correct command line spelling
 setopt AUTO_CD
@@ -179,13 +176,25 @@ npm() {
 
 # Load tmux
 if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
-	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
+	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf new-session -s $$
 fi
+#_trap_exit() { tmux kill-session -t $$; }
+TRAPEXIT _trap_exit
+
+# Executed whenever the current working directory is changed.
+#function my_special_chpwd_function() {
+    #echo "Hello World"
+#}
+#chpwd_functions=(${chpwd_functions[@]} "my_special_chpwd_function")
+
+#function zshexit() {
+    #echo "Hello World!"
+#}
 
 ### Bashhub.com Installation
-if [ -f ~/.bashhub/bashhub.zsh ]; then
-    source ~/.bashhub/bashhub.zsh
-fi
+#if [ -f ~/.bashhub/bashhub.zsh ]; then
+    #source ~/.bashhub/bashhub.zsh
+#fi
 
 ### Enhancd Installation
 if [ -f "${LOCAL_CONFIG}/enhancd/init.sh" ]; then

@@ -99,6 +99,10 @@ let g:one_allow_italics = 1 " I love italic for comments
 let g:onedark_terminal_italics = 1
 set background=dark
 
+" Fixed tearing in kitty
+" https://sw.kovidgoyal.net/kitty/faq.html#using-a-color-theme-with-a-background-color-does-not-work-well-in-vim
+let &t_ut=''
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--General
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -121,8 +125,8 @@ augroup END
 " maps caplock to esc
 augroup caplock
 	autocmd!
-	autocmd VimEnter * silent! !xmodmap -e 'clear Lock' -e 'keycode 0x42 = Escape'
-	autocmd VimLeave * silent! !xmodmap -e 'clear Lock' -e 'keycode 0x42 = Caps_Lock'
+	autocmd VimEnter * silent! !xmodmap -e 'clear Lock' -e 'keycode 0x42 = Escape' 1>/dev/null 2>&1 &
+	autocmd VimLeave * silent! !xmodmap -e 'clear Lock' -e 'keycode 0x42 = Caps_Lock' 1>/dev/null 2>&1 &
 augroup END
 
 set encoding=UTF-8
