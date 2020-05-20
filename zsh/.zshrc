@@ -1,35 +1,31 @@
 #zmodload zsh/zprof # top of your .zshrc file
 
 #=======================================================================================
-# Loading up zprofiles
+# Loading up variables
 #=======================================================================================
-export TERMINAL="gnome-terminal"
 export LOCAL_CONFIG="${HOME}/.config"
 export ZDOTDIR="${LOCAL_CONFIG}/zsh"
 export ADOTDIR="${ZDOTDIR}/antigen"
 export ZSH="${ZDOTDIR}/oh-my-zsh"
 export ENHANCD_DIR="${LOCAL_CONFIG}/enhancd"
+export NVM_DIR="${LOCAL_CONFIG}/.nvm"
+export ZPLUG_HOME="${ZDOTDIR}"/.zplug
 
-# Custom setting for commands
-export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
-export ENHANCD_DISABLE_DOT=1
-export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,snap/*,*.lock}'"
-export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
+if [ -f "${LOCAL_CONFIG}"/zsh/local.zsh ]; then
+	source "${LOCAL_CONFIG}"/zsh/local.zsh
+fi
 
 if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
-    source "${LOCAL_CONFIG}"/zsh/.zprofile
+	source "${LOCAL_CONFIG}"/zsh/.zprofile
 fi
 
 if [ -f "${HOME}"/.zprofile ]; then
-    source "${HOME}"/.zprofile
+	source "${HOME}"/.zprofile
 fi
 
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.config/zsh/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block, everything else may go below.
-#if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-	#source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-#fi
+if [ -f "${HOME}"/.bash_local ]; then
+	source "${HOME}"/.bash_local
+fi
 
 #=======================================================================================
 # Basic Settings
@@ -44,7 +40,7 @@ HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
 # Basic auto/tab complete:
 autoload -Uz compinit
 #for dump in "${ZDOTDIR}"/.zcompdump(N.mh+24); do
-  #compinit
+#compinit
 #done
 
 #_comp_options+=(globdots)		# Include hidden files.
@@ -65,55 +61,41 @@ setopt EXTENDED_HISTORY           # save each command's beginning timestamp and 
 setopt HIST_IGNORE_ALL_DUPS       # If a new command line being added to the history list duplicates an older one, the older command is removed from the list
 setopt HIST_IGNORE_SPACE          # remove command lines from the history list when the first character on the line is a space
 
-# Vi mode
-#set -o vi
-bindkey -v
-autoload -U edit-command-line
-zle -N edit-command-line
-bindkey '^e' edit-command-line                   # Opens Vim to edit current command line
-
-# https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
-stty start undef
-
-
 #=======================================================================================
 # Antigen
 #=======================================================================================
-source "${ZDOTDIR}/antigen.zsh"
-export TERM="xterm-256color"
-# Load the oh-my-zsh's library.
-antigen use oh-my-zsh
+source "${ZPLUG_HOME}/init.zsh"
 
-# Load the theme.
-antigen theme romkatv/powerlevel10k
-#antigen theme https://github.com/caiogondim/bullet-train-oh-my-zsh-theme bullet-train
-#antigen theme bhilburn/powerlevel9k powerlevel9k
+zplug "zsh-users/zsh-history-substring-search"
+zplug "plugins/git",   from:oh-my-zsh
+zplug "plugins/fzf",   from:oh-my-zsh
+zplug "plugins/extract",   from:oh-my-zsh
+zplug "plugins/command-not-found",   from:oh-my-zsh
+zplug "zdharma/fast-syntax-highlighting", defer:2
+zplug "zsh-users/zsh-autosuggestions"
+zplug "zsh-users/zsh-completions"
+zplug "zsh-users/zsh-history-substring-search"
+zplug "hlissner/zsh-autopair"
+zplug "b4b4r07/enhancd", at:v1
 
-# Bundles from the default repo (robbyrussell's oh-my-zsh).
-antigen bundle git
-antigen bundle fzf
-antigen bundle jump
-#antigen bundle agkozak/zsh-z
-antigen bundle command-not-found
-#antigen bundle autojump
-antigen bundle zpm-zsh/ssh
-antigen bundle g-plane/zsh-yarn-autocompletions
-antigen bundle thetic/extract
-antigen bundle voronkovich/apache2.plugin.zsh
-antigen bundle command-not-found
-antigen bundle hlissner/zsh-autopair
-antigen bundle zdharma/fast-syntax-highlighting
-antigen bundle zsh-users/zsh-autosuggestions
-antigen bundle zsh-users/zsh-completions
-antigen bundle zsh-users/zsh-history-substring-search
-antigen bundle greymd/docker-zsh-completion
-#antigen bundle softmoth/zsh-vim-mode
-#antigen bundle rupa/z
-#antigen bundle changyuheng/fz
+zplug "romkatv/powerlevel10k", as:theme, depth:1
 
-# Tell antigen that you're done.
-antigen apply
+# Install plugins if there are plugins that have not been installed
+if ! zplug check --verbose; then
+    printf "Install? [y/N]: "
+    if read -q; then
+        echo; zplug install
+    fi
+fi
+zplug load
 
+[[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.config/zsh/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block, everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+	source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
 
 #=======================================================================================
 # Setting up home/end keys for keyboard
@@ -128,77 +110,51 @@ bindkey '\e[4~'   end-of-line        # Linux console
 bindkey '\e[F'    end-of-line        # xterm
 bindkey '\eOF'    end-of-line        # gnome-terminal
 
+
 #=======================================================================================
-# Aliases and functions
+# Basic Settings
 #=======================================================================================
-if [ -f "${LOCAL_CONFIG}"/zsh/aliases.zsh ]; then
-    source "${LOCAL_CONFIG}"/zsh/aliases.zsh
+# https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
+stty start undef
+
+
+#=======================================================================================
+# Load plugins functions
+#=======================================================================================
+# Defer initialization of nvm until nvm, node or a node-dependent command is
+# run. Ensure this block is only run once if .bashrc gets sourced multiple times
+# by checking whether __init_nvm is a function.
+if [ -s "$HOME/.nvm/nvm.sh" ] && [ ! "$(type -w __init_nvm | awk '{print $2}')" = function ]; then
+  [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
+  declare -a __node_commands=('nvm' 'node' 'npm' 'yarn' 'gulp' 'grunt' 'webpack')
+  function __init_nvm() {
+    for i in "${__node_commands[@]}"; do unalias $i; done
+    . "$NVM_DIR"/nvm.sh
+    unset __node_commands
+    unset -f __init_nvm
+  }
+  for i in "${__node_commands[@]}"; do alias $i='__init_nvm && '$i; done
 fi
-
-#=======================================================================================
-# Local Aliases and functions
-#=======================================================================================
-if [ -f "${LOCAL_CONFIG}"/zsh/local.zsh ]; then
-    source "${LOCAL_CONFIG}"/zsh/local.zsh
-fi
-
-if [ -f "${HOME}"/.bash_local ]; then
-    source "${HOME}"/.bash_local
-fi
-
-# load node version manager
-export NVM_DIR="$HOME/.nvm"
-nvm() {
-    unset -f nvm
-    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm
-	[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-    nvm "$@"
-}
-
-node() {
-    unset -f node
-    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm
-	[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-    node "$@"
-}
-
-npm() {
-    unset -f npm
-    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm
-	[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-    npm "$@"
-}
 
 # Load fzf
+export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,snap/*,*.lock}'"
+export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 [ -f "${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf.zsh ] && source "${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf.zsh
-# load powerlevel10k settings
-[[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
 
-# Load tmux
-if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
-	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf new-session -s $$
-fi
-_trap_exit() { tmux kill-session -t $$; }
-#trap _trap_exit EXIT
-
-# Executed whenever the current working directory is changed.
-#function my_special_chpwd_function() {
-    #echo "Hello World"
-#}
-#chpwd_functions=(${chpwd_functions[@]} "my_special_chpwd_function")
-
-function zshexit() {
-	_trap_exit
-}
-
-### Bashhub.com Installation
-#if [ -f ~/.bashhub/bashhub.zsh ]; then
-    #source ~/.bashhub/bashhub.zsh
-#fi
-
-### Enhancd Installation
+export ENHANCD_DISABLE_DOT=1
+# Enhancd Installation
 if [ -f "${LOCAL_CONFIG}/enhancd/init.sh" ]; then
-    source "${LOCAL_CONFIG}"/enhancd/init.sh
+	source "${LOCAL_CONFIG}"/enhancd/init.sh
 fi
 
-#zprof # bottom of .zshrc
+export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
+
+
+#=======================================================================================
+# Source aliases and functions
+#=======================================================================================
+# Load AFTER sourcing other files because some export path may not be defined
+if [ -f "${LOCAL_CONFIG}"/zsh/aliases.zsh ]; then
+	source "${LOCAL_CONFIG}"/zsh/aliases.zsh
+fi
+
