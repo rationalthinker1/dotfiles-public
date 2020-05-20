@@ -178,7 +178,7 @@ npm() {
 if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
 	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf new-session -s $$
 fi
-#_trap_exit() { tmux kill-session -t $$; }
+_trap_exit() { tmux kill-session -t $$; }
 TRAPEXIT _trap_exit
 
 # Executed whenever the current working directory is changed.
