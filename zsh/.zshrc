@@ -179,7 +179,7 @@ if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] &&
 	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf new-session -s $$
 fi
 _trap_exit() { tmux kill-session -t $$; }
-TRAPEXIT _trap_exit
+#trap _trap_exit EXIT
 
 # Executed whenever the current working directory is changed.
 #function my_special_chpwd_function() {
@@ -187,9 +187,9 @@ TRAPEXIT _trap_exit
 #}
 #chpwd_functions=(${chpwd_functions[@]} "my_special_chpwd_function")
 
-#function zshexit() {
-    #echo "Hello World!"
-#}
+function zshexit() {
+	_trap_exit
+}
 
 ### Bashhub.com Installation
 #if [ -f ~/.bashhub/bashhub.zsh ]; then
