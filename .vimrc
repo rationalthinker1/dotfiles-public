@@ -90,6 +90,12 @@ source ~/.vim/vim-smoothie.vim  " smooth scrolling
 source ~/.vim/vim-smartword.vim " drop-in replacement for word (w) searching
 call plug#end()
 
+" https://vi.stackexchange.com/questions/10708/no-syntax-highlighting-in-tmux
+" getting colouring in tmux
+if &term =~# '256color' && ( &term =~# '^screen'  || &term =~# '^tmux' )
+	let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"
+	let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
+endif
 set termguicolors
 let ayucolor="mirage"
 set background=dark
