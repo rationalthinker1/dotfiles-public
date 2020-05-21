@@ -1,4 +1,13 @@
 #zmodload zsh/zprof # top of your .zshrc file
+# https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
+stty start undef
+
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.config/zsh/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block, everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+	source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
 
 #=======================================================================================
 # Loading up variables
@@ -41,6 +50,24 @@ HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
 autoload -Uz compinit
 compinit
 
+# reference: http://zsh.sourceforge.net/Doc/Release/Options.html
+setopt CORRECT                    # Try to correct command line spelling
+setopt AUTO_CD
+setopt PUSHD_IGNORE_DUPS
+unsetopt MENU_COMPLETE            # DO NOT AUTOSELECT THE FIRST COMPLETION ENTRY
+unsetopt FLOWCONTROL
+setopt AUTO_MENU                  # SHOW COMPLETION MENU ON SUCCESIVE TAB PRESs
+setopt COMPLETE_IN_WORD
+setopt ALWAYS_TO_END
+setopt HIST_REDUCE_BLANKS
+setopt INC_APPEND_HISTORY         # append history list to the history file (important for multiple parallel zsh sessions!)
+setopt SHARE_HISTORY              # import new commands from the history file also in other zsh-session
+setopt EXTENDED_HISTORY           # save each command's beginning timestamp and the duration to the history file
+setopt HIST_IGNORE_ALL_DUPS       # If a new command line being added to the history list duplicates an older one, the older command is removed from the list
+setopt HIST_IGNORE_SPACE          # remove command lines from the history list when the first character on the line is a space
+setopt EXTENDED_GLOB
+
+
 #=======================================================================================
 # Styling
 #=======================================================================================
@@ -59,30 +86,8 @@ zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}  # 補完時の色
 zstyle ':completion:*' matcher-list '' 'm:{[:lower:]}={[:upper:]}' '+m:{[:upper:]}={[:lower:]}'
 
 
-# reference: http://zsh.sourceforge.net/Doc/Release/Options.html
-setopt CORRECT                    # Try to correct command line spelling
-setopt AUTO_CD
-setopt PUSHD_IGNORE_DUPS
-unsetopt MENU_COMPLETE            # DO NOT AUTOSELECT THE FIRST COMPLETION ENTRY
-unsetopt FLOWCONTROL
-setopt AUTO_MENU                  # SHOW COMPLETION MENU ON SUCCESIVE TAB PRESs
-setopt COMPLETE_IN_WORD
-setopt ALWAYS_TO_END
-setopt HIST_REDUCE_BLANKS
-setopt INC_APPEND_HISTORY         # append history list to the history file (important for multiple parallel zsh sessions!)
-setopt SHARE_HISTORY              # import new commands from the history file also in other zsh-session
-setopt EXTENDED_HISTORY           # save each command's beginning timestamp and the duration to the history file
-setopt HIST_IGNORE_ALL_DUPS       # If a new command line being added to the history list duplicates an older one, the older command is removed from the list
-setopt HIST_IGNORE_SPACE          # remove command lines from the history list when the first character on the line is a space
-setopt EXTENDED_GLOB
- #Load tmux
-#if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
-	#exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
-#fi
-
-
 #=======================================================================================
-# Antigen
+# Zplug
 #=======================================================================================
 source "${ZPLUG_HOME}/init.zsh"
 zplug "zplug/zplug", hook-build: "zplug --self-manage"
@@ -128,13 +133,6 @@ bindkey '\eOF'    end-of-line        # gnome-terminal
 
 
 #=======================================================================================
-# Basic Settings
-#=======================================================================================
-# https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
-stty start undef
-
-
-#=======================================================================================
 # Load plugins functions
 #=======================================================================================
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,snap/*,*.lock}'"
@@ -143,14 +141,10 @@ export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 
 [[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.config/zsh/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block, everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-	source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
 
 kitty + complete setup zsh | source /dev/stdin
+
+
 #=======================================================================================
 # Source aliases and functions
 #=======================================================================================
