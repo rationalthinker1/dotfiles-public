@@ -21,3 +21,4 @@ tags
 init.vim.bak
 zsh/.zcompdump*
 *.bak
+zsh/.zplug
