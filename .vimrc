@@ -71,6 +71,7 @@ Plug 'ap/vim-buftabline'                  " Shows buffer tab at the top
 "Plug 'skywind3000/asyncrun.vim'          " Runs commands asynchronously
 Plug 'cohama/lexima.vim'                  " autoclose { in functions, if statements
 let g:lexima_enable_basic_rules = 0
+Plug 'knubie/vim-kitty-navigator'
 
 "=== Custom configurations
 source ~/.vim/themes.vim        " themes
@@ -557,10 +558,10 @@ nnoremap <expr> j (v:count == 0 ? 'gj' : 'j')
 noremap <silent> <leader><cr> :noh<cr>
 
 " Smart way to move between windows
-map <A-Right> <C-W>l
-map <A-Left> <C-W>h
-map <A-Up> <C-W>k
-map <A-Down> <C-W>j
+"map <A-Right> <C-W>l
+"map <A-Left> <C-W>h
+"map <A-Up> <C-W>k
+"map <A-Down> <C-W>j
 
 " Close the current buffer
 noremap <leader>bd :Bclose<cr>
@@ -879,6 +880,15 @@ xmap ga <Plug>(EasyAlign)
 " Start interactive EasyAlign for a motion/text object (e.g. gaip)
 nmap ga <Plug>(EasyAlign)
 
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--KittyVim Configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:kitty_navigator_no_mappings = 0
+map <A-Left> :KittyNavigateLeft<cr>
+map <A-Down> :KittyNavigateDown<cr>
+map <A-Up> :KittyNavigateUp<cr>
+map <A-Right> :KittyNavigateRight<cr>
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Nerdcommenter Configurations
