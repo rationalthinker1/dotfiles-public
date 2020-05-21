@@ -70,6 +70,7 @@ Plug 'qstrahl/vim-dentures'               " in visual mode, press ai to select i
 Plug 'ap/vim-buftabline'                  " Shows buffer tab at the top
 "Plug 'skywind3000/asyncrun.vim'          " Runs commands asynchronously
 Plug 'cohama/lexima.vim'                  " autoclose { in functions, if statements
+let g:lexima_enable_basic_rules = 0
 
 "=== Custom configurations
 source ~/.vim/themes.vim        " themes
@@ -184,11 +185,19 @@ nmap 2 $
 " mapping for <End>
 nmap <Esc>[4~ $
 
-" delete lines without copying it (use x to cut)
+"These are to cancel the default behavior of d, D, c, C
+"  to put the text they delete in the default register.
+"  Note that this means e.g. "ad won't copy the text into
+"  register a anymore.  You have to explicitly yank it.
 nnoremap d "_d
-nnoremap D "_D
 xnoremap d "_d
+nnoremap D "_D
 xnoremap D "_D
+nnoremap c "_c
+xnoremap c "_c
+nnoremap C "_C
+xnoremap C "_C
+
 " <Delete> key
 nnoremap <Esc>[3~ "_x
 xnoremap <Esc>[3~ "_x
@@ -460,7 +469,7 @@ function! CloseBuffer() abort
 		"endfor
 	endif
 	if l:totalBuffers == 1 && (l:isNerdtreeLast || l:noSplits)
-		let l:command = 'quit'
+		let l:command = 'quit!'
 	endif
 	if l:totalBuffers > 1 && !l:nerdtreeOpen && l:windowCount > 1
 		let bDiff = filter(range(1, bufnr('$')), 'buflisted(v:val) && getbufvar(v:val, "&diff") && getbufvar(v:val, "&modifiable")')
@@ -866,8 +875,8 @@ nnoremap <leader><bar> :vnew<cr>
 "--Yggdroot/indentLine
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " IndentLine {{
-let g:indentLine_char = ''
-let g:indentLine_first_char = ''
+"let g:indentLine_char = ''
+"let g:indentLine_first_char = ''
 let g:indentLine_showFirstIndentLevel = 1
 let g:indentLine_setColors = 0
 " }}

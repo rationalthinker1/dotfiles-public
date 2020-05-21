@@ -39,13 +39,8 @@ HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
 
 # Basic auto/tab complete:
 autoload -Uz compinit
-#for dump in "${ZDOTDIR}"/.zcompdump(N.mh+24); do
-#compinit
-#done
-
-#_comp_options+=(globdots)		# Include hidden files.
 compinit
-
+# reference: http://zsh.sourceforge.net/Doc/Release/Options.html
 setopt CORRECT                    # Try to correct command line spelling
 setopt AUTO_CD
 setopt PUSHD_IGNORE_DUPS
@@ -60,6 +55,7 @@ setopt SHARE_HISTORY              # import new commands from the history file al
 setopt EXTENDED_HISTORY           # save each command's beginning timestamp and the duration to the history file
 setopt HIST_IGNORE_ALL_DUPS       # If a new command line being added to the history list duplicates an older one, the older command is removed from the list
 setopt HIST_IGNORE_SPACE          # remove command lines from the history list when the first character on the line is a space
+setopt EXTENDED_GLOB
 
 #=======================================================================================
 # Antigen
@@ -121,21 +117,6 @@ stty start undef
 #=======================================================================================
 # Load plugins functions
 #=======================================================================================
-# Defer initialization of nvm until nvm, node or a node-dependent command is
-# run. Ensure this block is only run once if .bashrc gets sourced multiple times
-# by checking whether __init_nvm is a function.
-if [ -s "$HOME/.nvm/nvm.sh" ] && [ ! "$(type -w __init_nvm | awk '{print $2}')" = function ]; then
-  [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-  declare -a __node_commands=('nvm' 'node' 'npm' 'yarn' 'gulp' 'grunt' 'webpack')
-  function __init_nvm() {
-    for i in "${__node_commands[@]}"; do unalias $i; done
-    . "$NVM_DIR"/nvm.sh
-    unset __node_commands
-    unset -f __init_nvm
-  }
-  for i in "${__node_commands[@]}"; do alias $i='__init_nvm && '$i; done
-fi
-
 # Load fzf
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
@@ -156,5 +137,10 @@ export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 # Load AFTER sourcing other files because some export path may not be defined
 if [ -f "${LOCAL_CONFIG}"/zsh/aliases.zsh ]; then
 	source "${LOCAL_CONFIG}"/zsh/aliases.zsh
+fi
+
+# Load tmux
+if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
+	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
 fi
 
