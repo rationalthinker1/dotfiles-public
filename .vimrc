@@ -90,12 +90,6 @@ source ~/.vim/vim-smoothie.vim  " smooth scrolling
 source ~/.vim/vim-smartword.vim " drop-in replacement for word (w) searching
 call plug#end()
 
-" https://vi.stackexchange.com/questions/10708/no-syntax-highlighting-in-tmux
-" getting colouring in tmux
-if &term =~# '256color' && ( &term =~# '^screen'  || &term =~# '^tmux' )
-	let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"
-	let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
-endif
 set termguicolors
 let ayucolor="mirage"
 set background=dark
@@ -466,12 +460,12 @@ function! CloseBuffer() abort
 	if l:totalBuffers > 1 && (l:isNerdtreeLast || l:noSplits)
 		let l:command = 'bprevious | bdelete # | NERDTree | wincmd w | NERDTreeFind | wincmd w'
 		"for i in range(1, bufnr("$"))
-			"if buflisted(i) && getbufvar(i, "&diff")
-				"if l:count == a:num
-					"exe "buffer " . i
-					"return
-				"endif
-			"endif
+		"if buflisted(i) && getbufvar(i, "&diff")
+		"if l:count == a:num
+		"exe "buffer " . i
+		"return
+		"endif
+		"endif
 		"endfor
 	endif
 	if l:totalBuffers == 1 && (l:isNerdtreeLast || l:noSplits)
@@ -706,54 +700,35 @@ nnoremap w. :call ReplaceTextUntil('.')<cr>
 nnoremap w> :call ReplaceTextUntil('<')<cr>
 nnoremap w) :call ReplaceTextUntil(')')<cr>
 
-" copy current line
 function! PasteText(mode)
-	let l:y = line('.')
-	let l:x = col('.')
-	if a:mode ==? 'i'
-		let old_reg = getreg("c")               " Save the current content of register 'c'
-		let old_reg_type = getregtype("c")      " Save the type of the register as well
+	let old_reg = getreg("c")               " Save the current content of register 'c'
+	let old_reg_type = getregtype("c")      " Save the type of the register as well
 
-		" Copies current line to register c and then paste line from register c
-		execute 'normal! "cY"cp'
-
-		call setreg("c", old_reg, old_reg_type) " Restore register 'c'
-		call cursor(l:y+1, l:x+1)
-		call feedkeys(a:mode)
-	elseif a:mode ==? 'n'
-		let old_reg = getreg("c")               " Save the current content of register 'c'
-		let old_reg_type = getregtype("c")      " Save the type of the register as well
-
-		execute 'normal! "cY"cp'
-
-		call setreg("c", old_reg, old_reg_type) " Restore register 'c'
-
-		call cursor(l:y+1, l:x)
-	else
+	if a:mode ==? 'v'
 		let [ l:line_start, l:column_start, l:line_end, l:column_end ] = GetVisualSelectionLine()
-		let l:lines = VisualSelect()
-		if( l:line_end == l:line_start)
-			let old_reg = getreg("c")               " Save the current content of register 'c'
-			let old_reg_type = getregtype("c")      " Save the type of the register as well
-
+		if l:line_end == l:line_start
 			" gv -> select previously highlighted portion
 			" "cy -> copy highlighted portion to register c
 			" '> -> to go end of the highlighted portion
 			" "cP -> paste from register c
 			execute 'normal! gv"cy`>"cP'
-			call setpos("'<", getpos("'["))
-			call setpos("'>", getpos("']"))
-			execute	"normal! gvl"
-
-			call setreg("c", old_reg, old_reg_type) " Restore register 'c'
 		else
-			"echom l:lines
-			let l:size = len(split(l:lines, "\n"))
-			call append(l:line_end, split(l:lines, "\n"))
-			call cursor(l:line_end+(l:size), l:x)
+			execute 'normal! gv"cy`>j"cP'
 		endif
+		call setpos("'<", getpos("'["))
+		call setpos("'>", getpos("']"))
+		execute	"normal! gvl"
+	else
+		" Copies current line to register c and then paste line from register c
+		execute 'normal! "cY"cp'
+	endif
+
+	call setreg("c", old_reg, old_reg_type) " Restore register 'c'
+	if a:mode ==? 'i'
+		call feedkeys(a:mode)
 	endif
 endfunc
+
 inoremap <C-d> <esc>:call PasteText('i')<cr>
 nnoremap <C-d> <esc>:call PasteText('n')<cr>
 vnoremap <C-d> <esc>:call PasteText('v')<cr>

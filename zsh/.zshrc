@@ -40,6 +40,25 @@ HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
 # Basic auto/tab complete:
 autoload -Uz compinit
 compinit
+
+#=======================================================================================
+# Styling
+#=======================================================================================
+zstyle ':completion:*' verbose yes
+zstyle ':completion:*' completer _expand _complete _match _prefix _approximate _list _history
+zstyle ':completion:*:messages' format '%F{YELLOW}%d'$DEFAULT
+zstyle ':completion:*:warnings' format '%F{RED}No matches for:''%F{YELLOW} %d'$DEFAULT
+zstyle ':completion:*:descriptions' format '%F{YELLOW}completing %B%d%b'$DEFAULT
+zstyle ':completion:*:options' description 'yes'
+zstyle ':completion:*:descriptions' format '%F{yellow}Completing %B%d%b%f'$DEFAULT
+
+zstyle ':completion:*:default' menu select=2  # 選択中の候補をハイライト
+export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
+zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}  # 補完時の色
+
+zstyle ':completion:*' matcher-list '' 'm:{[:lower:]}={[:upper:]}' '+m:{[:upper:]}={[:lower:]}'
+
+
 # reference: http://zsh.sourceforge.net/Doc/Release/Options.html
 setopt CORRECT                    # Try to correct command line spelling
 setopt AUTO_CD
@@ -66,6 +85,7 @@ fi
 # Antigen
 #=======================================================================================
 source "${ZPLUG_HOME}/init.zsh"
+zplug "zplug/zplug", hook-build: "zplug --self-manage"
 
 zplug "zsh-users/zsh-history-substring-search"
 zplug "plugins/git",   from:oh-my-zsh
@@ -73,13 +93,16 @@ zplug "plugins/fzf",   from:oh-my-zsh
 zplug "plugins/extract",   from:oh-my-zsh
 zplug "plugins/command-not-found",   from:oh-my-zsh
 zplug "zdharma/fast-syntax-highlighting", defer:2
-zplug "zsh-users/zsh-autosuggestions"
-zplug "zsh-users/zsh-completions"
-zplug "zsh-users/zsh-history-substring-search"
-zplug "hlissner/zsh-autopair"
-zplug "b4b4r07/enhancd", at:v1
-
-zplug "romkatv/powerlevel10k", as:theme, depth:1
+zplug "zsh-users/zsh-autosuggestions", depth:1
+zplug "zsh-users/zsh-completions", depth:1
+zplug "zsh-users/zsh-history-substring-search", depth:1
+zplug "hlissner/zsh-autopair", depth:1
+zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
+zplug "gko/ssh-connect", as:command, use:"ssh-connect.sh", rename-to:"ssh-connect", depth:1
+zplug 'romkatv/powerlevel10k', as:theme, depth:1, use:powerlevel10k.zsh-theme
+zplug "junegunn/fzf", as:command, rename-to:fzf, \
+	hook-build:"rm ${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh; ${LOCAL_CONFIG}/fzf/install --xdg --no-bash --no-fish --64 --key-bindings --completion --no-update-rc" \
+	use: "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh"
 
 # Install plugins if there are plugins that have not been installed
 if ! zplug check --verbose; then
@@ -89,14 +112,6 @@ if ! zplug check --verbose; then
     fi
 fi
 zplug load
-
-[[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.config/zsh/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block, everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-	source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
 
 #=======================================================================================
 # Setting up home/end keys for keyboard
@@ -122,18 +137,18 @@ stty start undef
 #=======================================================================================
 # Load plugins functions
 #=======================================================================================
-# Load fzf
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
-[ -f "${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf.zsh ] && source "${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf.zsh
-
-export ENHANCD_DISABLE_DOT=1
-# Enhancd Installation
-if [ -f "${LOCAL_CONFIG}/enhancd/init.sh" ]; then
-	source "${LOCAL_CONFIG}"/enhancd/init.sh
-fi
 
 export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
+
+[[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.config/zsh/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block, everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+	source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
 
 #=======================================================================================
 # Source aliases and functions
