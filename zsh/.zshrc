@@ -75,10 +75,10 @@ setopt EXTENDED_HISTORY           # save each command's beginning timestamp and 
 setopt HIST_IGNORE_ALL_DUPS       # If a new command line being added to the history list duplicates an older one, the older command is removed from the list
 setopt HIST_IGNORE_SPACE          # remove command lines from the history list when the first character on the line is a space
 setopt EXTENDED_GLOB
-# Load tmux
-if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
-	exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
-fi
+ #Load tmux
+#if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
+	#exec tmux -f "${LOCAL_CONFIG}"/tmux/tmux.conf
+#fi
 
 
 #=======================================================================================
@@ -150,6 +150,7 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
 	source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
+kitty + complete setup zsh | source /dev/stdin
 #=======================================================================================
 # Source aliases and functions
 #=======================================================================================
