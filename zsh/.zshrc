@@ -8,7 +8,7 @@ stty start undef
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
 	source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
-
+typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
 #=======================================================================================
 # Loading up variables
 #=======================================================================================
@@ -108,7 +108,6 @@ zplug 'romkatv/powerlevel10k', as:theme, depth:1, use:powerlevel10k.zsh-theme
 zplug "junegunn/fzf", as:command, rename-to:fzf, \
 	hook-build:"rm ${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh; ${LOCAL_CONFIG}/fzf/install --xdg --no-bash --no-fish --64 --key-bindings --completion --no-update-rc" \
 	use: "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh"
-
 # Install plugins if there are plugins that have not been installed
 if ! zplug check --verbose; then
     printf "Install? [y/N]: "

@@ -6,6 +6,7 @@ nnoremap <c-x> :call switch#Switch({'reverse': 1})<cr>
 let g:switch_custom_definitions =
 			\ [
 			\ ['true', 'false'],
+			\ ['next', 'previous'],
 			\ ['dark', 'light'],
 			\ ['yes', 'no'],
 			\ ['on', 'off'],
@@ -39,7 +40,7 @@ let s:switch_filetype_definitions.css =
 
 augroup Switches
 	autocmd!
-	autocmd FileType css,scss   let b:switch_custom_definitions = s:switch_filetype_definitions.css
+	autocmd FileType css,scss,javascript   let b:switch_custom_definitions = s:switch_filetype_definitions.css
 	autocmd FileType javascript let b:switch_custom_definitions = s:switch_filetype_definitions.javascript
 	autocmd FileType vim        let b:switch_custom_definitions = s:switch_filetype_definitions.vim
 augroup END
