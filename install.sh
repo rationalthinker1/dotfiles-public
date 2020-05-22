@@ -5,6 +5,14 @@ BACKUP_DIR="${BASE_DIR}/backup"
 LOCAL_CONFIG="${HOME}/.config"
 export ZSH="${LOCAL_CONFIG}/zsh"
 
+if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
+	source "${LOCAL_CONFIG}"/zsh/.zprofile
+fi
+
+if [ -f "${HOME}"/.zprofile ]; then
+	source "${HOME}"/.zprofile
+fi
+
 function decho() {
 	if [[ "${DEBUG}" ]]; then
 		echo "${1}"
@@ -62,14 +70,6 @@ function backupFile() {
 }
 
 
-if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
-    source "${LOCAL_CONFIG}"/zsh/.zprofile
-fi
-
-if [ -f "${HOME}"/.zprofile ]; then
-    source "${HOME}"/.zprofile
-fi
-
 # Installing zsh
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
@@ -102,7 +102,6 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	unzip \
 	wipe \
 	net-tools \
-	exuberant-ctags \
 	bd \
 	fzf \
 	xsel \
@@ -138,7 +137,7 @@ fi
 if [[ ! $(node --version 2>/dev/null) ]]; then
 	decho "node does not exist"
 	echo "installing node"
-	curl -sL https://deb.nodesource.com/setup_13.x | sudo -E bash -
+	curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
 	sudo apt-get install nodejs
 
 	# Installing yarn
@@ -238,8 +237,8 @@ decho "Installing vim plugins"
 vim -E -c PlugInstall -c qall!
 
 # Installing Oh My Zsh
-if [[ ! -d "${ZSH}" ]] ; then
-	decho "oh-my-zsh does not exist"
-	echo "installing oh-my-zsh"
-	sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
-fi
+#if [[ ! -d "${ZSH}" ]] ; then
+	#decho "oh-my-zsh does not exist"
+	#echo "installing oh-my-zsh"
+	#sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+#fi
