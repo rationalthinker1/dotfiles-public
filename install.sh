@@ -232,6 +232,11 @@ if [[ ! -d "${LOCAL_CONFIG}/tmux/plugins/tpm" ]]; then
 	git clone https://github.com/tmux-plugins/tpm "${LOCAL_CONFIG}"/tmux/plugins/tpm
 fi
 
+# Installing zplug for zshrc
+if [[ type -w zplug | awk '{print $2}' != 'function' ]]; then
+	curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
+fi
+
 # Installing vim plugins
 decho "Installing vim plugins"
 vim -E -c PlugInstall -c qall!
