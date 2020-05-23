@@ -19,6 +19,7 @@ export ZSH="${ZDOTDIR}/oh-my-zsh"
 export ENHANCD_DIR="${LOCAL_CONFIG}/enhancd"
 export NVM_DIR="${LOCAL_CONFIG}/.nvm"
 export ZPLUG_HOME="${ZDOTDIR}"/.zplug
+export TERM=xterm-256color
 
 if [ -f "${LOCAL_CONFIG}"/zsh/local.zsh ]; then
 	source "${LOCAL_CONFIG}"/zsh/local.zsh
