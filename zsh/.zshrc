@@ -141,8 +141,10 @@ export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 
 [[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
 
-kitty + complete setup zsh | source /dev/stdin
 
+if  [ -x "$(command -v kitty)" ]; then
+	kitty + complete setup zsh | source /dev/stdin
+fi
 
 #=======================================================================================
 # Source aliases and functions

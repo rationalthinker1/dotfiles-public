@@ -459,7 +459,7 @@ function! CloseBuffer() abort
 	let l:isNerdtreeLast = l:nerdtreeOpen && l:windowCount ==? 2
 	let l:noSplits = !l:nerdtreeOpen && l:windowCount ==? 1
 	if l:totalBuffers > 1 && (l:isNerdtreeLast || l:noSplits)
-		let l:command = 'bprevious | bdelete # | NERDTree | wincmd w | NERDTreeFind | wincmd w'
+		let l:command = 'bprevious | bdelete! # | NERDTree | wincmd w | NERDTreeFind | wincmd w'
 		"for i in range(1, bufnr("$"))
 		"if buflisted(i) && getbufvar(i, "&diff")
 		"if l:count == a:num
