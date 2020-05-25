@@ -30,5 +30,6 @@ rync \
 	--human-readable `# human-readable format` \
 	--xattrs `# preserves extended attributes` \
 	--copy-links `# copy symbolic links to actual files` \
+	--rsh="ssh -p 222" `# which port to use and ssh`
 	source
 	destination
