@@ -69,9 +69,9 @@ Plug 'andymass/vim-matchup'               " Press % to navigate between if endif
 Plug 'qstrahl/vim-dentures'               " in visual mode, press ai to select indented section
 Plug 'ap/vim-buftabline'                  " Shows buffer tab at the top
 "Plug 'skywind3000/asyncrun.vim'          " Runs commands asynchronously
+Plug 'knubie/vim-kitty-navigator'
 Plug 'cohama/lexima.vim'                  " autoclose { in functions, if statements
 let g:lexima_enable_basic_rules = 0
-Plug 'knubie/vim-kitty-navigator'
 
 "=== Custom configurations
 source ~/.vim/themes.vim        " themes
@@ -302,9 +302,20 @@ imap <C-Space> <Esc>
 vnoremap , <gv
 vnoremap . >gv
 
-" Use <cr> to confirm completion, `<C-g>u` means break undo chain at current position.
-" Coc only does snippet and additional edit on confirm.
-inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
+" Manually sets the mappings
+call lexima#set_default_rules()
+" https://github.com/cohama/lexima.vim/issues/65
+call lexima#insmode#map_hook('before', '<CR>', '')
+
+function! s:my_cr_function() abort
+  " Use <cr> to confirm completion, `<C-g>u` means break undo chain at current position.
+  " Coc only does snippet and additional edit on confirm.
+  " :h complete_CTRL-Y used to accept completion
+  " lexima needs to be triggered manually because it conflicts with <CR>
+  return pumvisible() ? "\<C-y>" : "\<C-g>u" . lexima#expand('<CR>', 'i')
+endfunction
+
+inoremap <CR> <C-r>=<SID>my_cr_function()<CR>
 
 " shortcut for :%s/.../.../g
 nnoremap s :%s///g<LEFT><LEFT><LEFT>
