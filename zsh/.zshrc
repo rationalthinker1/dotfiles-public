@@ -42,11 +42,12 @@ fi
 #=======================================================================================
 # History in cache directory:
 HISTSIZE=20000             # bash history will save N commands
-HISTFILE="${ZDOTDIR}"/.zsh_history
+SAVEHIST="${HISTSIZE}"
 HISTFILESIZE="${HISTSIZE}" # bash will remember N commands
+HISTFILE="${ZDOTDIR}"/.zsh_history
 HISTCONTROL=ignoreboth     # ingore duplicates and spaces
 HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
-
+setopt SHARE_HISTORY
 # Basic auto/tab complete:
 autoload -Uz compinit
 compinit
