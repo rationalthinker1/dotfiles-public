@@ -114,6 +114,7 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	pip3 install --user pynvim
 	sudo echo $(which zsh) | sudo tee -a /etc/shells
 	sudo chsh -s $(which zsh)
+	curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
 fi
 
 # Installing Rust for exa
@@ -154,10 +155,10 @@ fi
 if [[ ! $(fd --version 2>/dev/null) ]]; then
 	decho "fd does not exist"
 	echo "installing fd"
-	link=$(curl -s https://api.github.com/repos/sharkdp/fd/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep "deb" | head -n 1 |  cut -d '"' -f 4)
+	link=$(curl -s https://api.github.com/repos/sharkdp/fd/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep -vE "musl" | grep "deb" | head -n 1 |  cut -d '"' -f 4)
 	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
 	wget -q $link -P /tmp/
-	sudo dpkg -i /tmp/$download_filename
+	sudo dpkg -i --force-overwrite /tmp/$download_filename
 fi
 
 # Installing ripgrep
@@ -221,6 +222,8 @@ updateFiles "${BASE_DIR}/.vimrc" "${HOME}/.vimrc"
 updateFiles "${BASE_DIR}/.vim" "${HOME}/.vim"
 updateFiles "${BASE_DIR}/zsh" "${HOME}/.config/zsh"
 updateFiles "${BASE_DIR}/ranger" "${HOME}/.config/ranger"
+updateFiles "${BASE_DIR}/kitty" "${HOME}/.config/kitty"
+updateFiles "${BASE_DIR}/alacritty" "${HOME}/.config/alacritty"
 updateFiles "${BASE_DIR}/tmux" "${HOME}/.config/tmux"
 updateFiles "${BASE_DIR}/fzf/fzf.zsh" "${HOME}/.config/fzf/fzf.zsh"
 updateFiles "${BASE_DIR}/.Xresources" "${HOME}/.Xresources"
@@ -233,9 +236,9 @@ if [[ ! -d "${LOCAL_CONFIG}/tmux/plugins/tpm" ]]; then
 fi
 
 # Installing zplug for zshrc
-if [[ type -w zplug | awk '{print $2}' != 'function' ]]; then
-	curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
-fi
+#if [[ type -w zplug | awk '{print $2}' != 'function' ]]; then
+#	curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
+#fi
 
 # Installing vim plugins
 decho "Installing vim plugins"
