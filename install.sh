@@ -77,44 +77,40 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	sudo apt-get -y update > /dev/null
 	sudo apt-get -y upgrade > /dev/null
 	for package in \
-	fd-find \
-	ripgrep \
-	guake \
-	git \
-	vim-gtk3 \
-	bat \
-	tmux \
-	curl \
-	zsh \
-	powerline \
-	fonts-powerline \
-	python3-venv \
-	python3-pip \
-	python-pip \
-	jq \
-	csvtool \
-	xclip \
-	gnome-tweaks \
-	chrome-gnome-shell \
-	htop \
-	p7zip-full \
-	rename \
-	unzip \
-	wipe \
-	net-tools \
-	bd \
-	fzf \
-	xsel \
-	xclip \
-	; do
-		echo "installing ${package}"
-		sudo apt-get install --assume-yes --ignore-missing "${package}" -qq > /dev/null
-	done
+		guake \
+		git \
+		vim-gtk3 \
+		tmux \
+		curl \
+		zsh \
+		powerline \
+		fonts-powerline \
+		python3-venv \
+		python3-pip \
+		python-pip \
+		jq \
+		csvtool \
+		xclip \
+		gnome-tweaks \
+		chrome-gnome-shell \
+		htop \
+		p7zip-full \
+		rename \
+		unzip \
+		wipe \
+		net-tools \
+		bd \
+		xsel \
+		xclip \
+		; do
+			echo "installing ${package}"
+			sudo apt-get install --assume-yes --ignore-missing "${package}" -qq > /dev/null
+		done
 
-	pip3 install --user pynvim
-	sudo echo $(which zsh) | sudo tee -a /etc/shells
-	sudo chsh -s $(which zsh)
-	curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
+		pip3 install --user pynvim
+		sudo echo $(which zsh) | sudo tee -a /etc/shells
+		sudo chsh -s $(which zsh)
+		curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
 fi
 
 # Installing Rust for exa
@@ -168,17 +164,17 @@ if [[ ! $(rg --version 2>/dev/null) ]]; then
 	link=$(curl -s https://api.github.com/repos/BurntSushi/ripgrep/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep "deb" | head -n 1 |  cut -d '"' -f 4)
 	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
 	wget -q $link -P /tmp/
-	sudo dpkg -i /tmp/$download_filename
+	sudo dpkg -i --force-overwrite /tmp/$download_filename
 fi
 
 # Installing bat
 if [[ ! $(bat --version 2>/dev/null) ]]; then
 	decho "bat does not exist"
 	echo "installing bat"
-	link=$(curl -s https://api.github.com/repos/sharkdp/bat/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep "deb" | head -n 1 |  cut -d '"' -f 4)
+	link=$(curl -s https://api.github.com/repos/sharkdp/bat/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep -vE "musl" |  grep "deb" | head -n 1 |  cut -d '"' -f 4)
 	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
 	wget -q $link -P /tmp/
-	sudo dpkg -i /tmp/$download_filename
+	sudo dpkg -i --force-overwrite /tmp/$download_filename
 fi
 
 # Installing up

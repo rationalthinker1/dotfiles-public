@@ -8,7 +8,8 @@ stty start undef
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
 	source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
-typeset -g POWERLEVEL9K_INSTANT_PROMPT=quiet
+
+
 #=======================================================================================
 # Loading up variables
 #=======================================================================================
@@ -95,6 +96,7 @@ source "${ZPLUG_HOME}/init.zsh"
 zplug "zplug/zplug", hook-build: "zplug --self-manage"
 
 zplug "zsh-users/zsh-history-substring-search"
+zplug "ogham/exa", from:gh-r, as:command, use:\*macos-x86\*, rename-to:exa
 zplug "plugins/git",   from:oh-my-zsh
 zplug "plugins/fzf",   from:oh-my-zsh
 zplug "plugins/extract",   from:oh-my-zsh
@@ -103,13 +105,20 @@ zplug "zdharma/fast-syntax-highlighting", defer:2
 zplug "zsh-users/zsh-autosuggestions", depth:1
 zplug "zsh-users/zsh-completions", depth:1
 zplug "zsh-users/zsh-history-substring-search", depth:1
-zplug "hlissner/zsh-autopair", depth:1
+zplug "sharkdp/bat", as:command, from:gh-r, rename-to:bat
+zplug "sharkdp/fd", as:command, from:gh-r, rename-to:fd
+zplug "BurntSushi/ripgrep", if:"(( $+commands[rg] ))"
+zplug "b4b4r07/http_code", as:command, use:bin
 zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
 zplug "gko/ssh-connect", as:command, use:"ssh-connect.sh", rename-to:"ssh-connect", depth:1
 zplug 'romkatv/powerlevel10k', as:theme, depth:1, use:powerlevel10k.zsh-theme
-zplug "junegunn/fzf", as:command, rename-to:fzf, \
-	hook-build:"rm ${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh; ${LOCAL_CONFIG}/fzf/install --xdg --no-bash --no-fish --64 --key-bindings --completion --no-update-rc" \
-	use: "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh"
+zplug "junegunn/fzf-bin", as:command, from:gh-r, rename-to:fzf
+zplug "akavel/up", as:command, from:gh-r, use:"*up"
+zplug "stedolan/jq", as:command, from:gh-r
+#zplug "ajeetdsouza/zoxide", as:command, from:gh-r, rename-to:z, as:command, use:"zoxide"
+#zplug "junegunn/fzf", as:command, rename-to:fzf, \
+	#hook-build:"rm ${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh; ${LOCAL_CONFIG}/fzf/install --xdg --no-bash --no-fish --64 --key-bindings --completion --no-update-rc" \
+	#use: "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh"
 # Install plugins if there are plugins that have not been installed
 if ! zplug check --verbose; then
     printf "Install? [y/N]: "
@@ -118,6 +127,7 @@ if ! zplug check --verbose; then
     fi
 fi
 zplug load
+
 
 #=======================================================================================
 # Setting up home/end keys for keyboard
@@ -145,8 +155,12 @@ export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 
 
 if  [ -x "$(command -v kitty)" ]; then
+	export KITTY_CONFIG_DIRECTORY="${HOME}/.config/kitty"
 	kitty + complete setup zsh | source /dev/stdin
 fi
+
+export BAT_THEME="nord"
+
 
 #=======================================================================================
 # Source aliases and functions
@@ -155,5 +169,4 @@ fi
 if [ -f "${LOCAL_CONFIG}"/zsh/aliases.zsh ]; then
 	source "${LOCAL_CONFIG}"/zsh/aliases.zsh
 fi
-
 
