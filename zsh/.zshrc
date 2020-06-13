@@ -95,31 +95,27 @@ zstyle ':completion:*' matcher-list '' 'm:{[:lower:]}={[:upper:]}' '+m:{[:upper:
 source "${ZPLUG_HOME}/init.zsh"
 zplug "zplug/zplug", hook-build: "zplug --self-manage"
 
-zplug "zsh-users/zsh-history-substring-search"
+zplug "junegunn/fzf-bin", as:command, from:gh-r, rename-to:fzf
+zplug "akavel/up", as:command, from:gh-r, use:"*up"
+zplug "stedolan/jq", as:command, from:gh-r
 zplug "ogham/exa", from:gh-r, as:command, use:\*macos-x86\*, rename-to:exa
 zplug "plugins/git",   from:oh-my-zsh
 zplug "plugins/fzf",   from:oh-my-zsh
 zplug "plugins/extract",   from:oh-my-zsh
+zplug "sharkdp/bat", as:command, from:gh-r, rename-to:bat, hook-load:"export BAT_THEME='OneHalfDark'"
+zplug "sharkdp/fd", as:command, from:gh-r, rename-to:fd
+zplug "BurntSushi/ripgrep", if:"(( $+commands[rg] ))"
+zplug "zsh-users/zsh-history-substring-search"
 zplug "plugins/command-not-found",   from:oh-my-zsh
 zplug "zdharma/fast-syntax-highlighting", defer:2
 zplug "zsh-users/zsh-autosuggestions", depth:1
 zplug "zsh-users/zsh-completions", depth:1
 zplug "zsh-users/zsh-history-substring-search", depth:1
-zplug "sharkdp/bat", as:command, from:gh-r, rename-to:bat
-zplug "sharkdp/fd", as:command, from:gh-r, rename-to:fd
-zplug "BurntSushi/ripgrep", if:"(( $+commands[rg] ))"
 zplug "b4b4r07/http_code", as:command, use:bin
 zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
 zplug "gko/ssh-connect", as:command, use:"ssh-connect.sh", rename-to:"ssh-connect", depth:1
 zplug 'romkatv/powerlevel10k', as:theme, depth:1, use:powerlevel10k.zsh-theme
-zplug "junegunn/fzf-bin", as:command, from:gh-r, rename-to:fzf
-zplug "akavel/up", as:command, from:gh-r, use:"*up"
-zplug "stedolan/jq", as:command, from:gh-r
-#zplug "ajeetdsouza/zoxide", as:command, from:gh-r, rename-to:z, as:command, use:"zoxide"
-#zplug "junegunn/fzf", as:command, rename-to:fzf, \
-	#hook-build:"rm ${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh; ${LOCAL_CONFIG}/fzf/install --xdg --no-bash --no-fish --64 --key-bindings --completion --no-update-rc" \
-	#use: "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh"
-# Install plugins if there are plugins that have not been installed
+
 if ! zplug check --verbose; then
     printf "Install? [y/N]: "
     if read -q; then
@@ -133,6 +129,12 @@ zplug load
 # Setting up home/end keys for keyboard
 # https://unix.stackexchange.com/questions/20298/home-key-not-working-in-terminal
 #=======================================================================================
+# Vi mode
+bindkey -v
+
+bindkey "^[[1;5C" forward-word
+bindkey "^[[1;5D" backward-word
+bindkey '^w' backward-kill-word
 bindkey '\e[1~'   beginning-of-line  # Linux console
 bindkey '\e[H'    beginning-of-line  # xterm
 bindkey '\eOH'    beginning-of-line  # gnome-terminal
@@ -158,8 +160,6 @@ if  [ -x "$(command -v kitty)" ]; then
 	export KITTY_CONFIG_DIRECTORY="${HOME}/.config/kitty"
 	kitty + complete setup zsh | source /dev/stdin
 fi
-
-export BAT_THEME="nord"
 
 
 #=======================================================================================
