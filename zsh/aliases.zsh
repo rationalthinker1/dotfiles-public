@@ -435,7 +435,8 @@ dceb() {
   dc exec --user "$(id -u):$(id -g)" "$1" "$SCRIPT"
 }
 
-alias dce="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec --user \"$(id -u):$(id -g)\""
+#alias dce="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec --user \"$(id -u):$(id -g)\""
+alias dce="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec"
 
 # Get latest container ID
 alias dl="docker ps -l -q"
