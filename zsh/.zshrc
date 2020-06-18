@@ -52,7 +52,8 @@ HISTFILESIZE="${HISTSIZE}" # bash will remember N commands
 HISTFILE="${ZDOTDIR}"/.zsh_history
 HISTCONTROL=ignoreboth     # ingore duplicates and spaces
 HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
-setopt SHARE_HISTORY
+#https://github.com/ohmyzsh/ohmyzsh/issues/5108
+WORDCHARS=''
 # Basic auto/tab complete:
 autoload -Uz compinit
 compinit
@@ -119,6 +120,7 @@ zplug "b4b4r07/http_code", as:command, use:bin
 zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
 zplug "gko/ssh-connect", as:command, use:"ssh-connect.sh", rename-to:"ssh-connect", depth:1
 zplug 'romkatv/powerlevel10k', as:theme, depth:1, use:powerlevel10k.zsh-theme
+zplug 'marlonrichert/zsh-autocomplete'
 
 if ! zplug check --verbose; then
     printf "Install? [y/N]: "
