@@ -184,7 +184,7 @@ noremap $ g$
 nmap 1 ^
 nmap 2 $
 " mapping for <End>
-nmap <Esc>[4~ $
+"nmap <Esc>[4~ $
 
 "These are to cancel the default behavior of d, D, c, C
 "  to put the text they delete in the default register.
