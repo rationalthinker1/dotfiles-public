@@ -154,7 +154,7 @@ bindkey '\eOF'    end-of-line        # gnome-terminal
 #https://github.com/marlonrichert/zsh-autocomplete/issues/59
 function precmd_remove_up_down_bindkey() {
   bindkey '^[OA' up-line-or-history
-  bindkey '^[OB' down-line-or-history
+  #bindkey '^[OB' down-line-or-history
 }
 autoload -Uz add-zsh-hook
 add-zsh-hook precmd precmd_remove_up_down_bindkey
