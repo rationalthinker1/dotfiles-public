@@ -120,7 +120,7 @@ zplug "b4b4r07/http_code", as:command, use:bin
 zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
 zplug "gko/ssh-connect", as:command, use:"ssh-connect.sh", rename-to:"ssh-connect", depth:1
 zplug 'romkatv/powerlevel10k', as:theme, depth:1, use:powerlevel10k.zsh-theme
-zplug 'marlonrichert/zsh-autocomplete'
+#zplug 'marlonrichert/zsh-autocomplete'
 zplug "holman/boom", from:github, use:"completion/zsh", hook-build: "sudo gem install boom"
 
 if ! zplug check --verbose; then
@@ -152,12 +152,12 @@ bindkey '\e[F'    end-of-line        # xterm
 bindkey '\eOF'    end-of-line        # gnome-terminal
 
 #https://github.com/marlonrichert/zsh-autocomplete/issues/59
-function precmd_remove_up_down_bindkey() {
-  bindkey '^[OA' up-line-or-history
+#function precmd_remove_up_down_bindkey() {
+  #bindkey '^[OA' up-line-or-history
   #bindkey '^[OB' down-line-or-history
-}
-autoload -Uz add-zsh-hook
-add-zsh-hook precmd precmd_remove_up_down_bindkey
+#}
+#autoload -Uz add-zsh-hook
+#add-zsh-hook precmd precmd_remove_up_down_bindkey
 
 #=======================================================================================
 # Load plugins functions
