@@ -95,12 +95,32 @@ zstyle ':completion:*' matcher-list '' 'm:{[:lower:]}={[:upper:]}' '+m:{[:upper:
 
 
 #=======================================================================================
+# Setting up home/end keys for keyboard
+# https://unix.stackexchange.com/questions/20298/home-key-not-working-in-terminal
+#=======================================================================================
+# Vi mode
+bindkey -v
+
+bindkey "^[[1;5C" forward-word
+bindkey "^[[1;5D" backward-word
+bindkey '^w' backward-kill-word
+bindkey '\e[1~'   beginning-of-line  # Linux console
+bindkey '\e[H'    beginning-of-line  # xterm
+bindkey '\eOH'    beginning-of-line  # gnome-terminal
+bindkey '\e[2~'   overwrite-mode     # Linux console, xterm, gnome-terminal
+bindkey '\e[3~'   delete-char        # Linux console, xterm, gnome-terminal
+bindkey '\e[4~'   end-of-line        # Linux console
+bindkey '\e[F'    end-of-line        # xterm
+bindkey '\eOF'    end-of-line        # gnome-terminal
+
+
+#=======================================================================================
 # Zplug
 #=======================================================================================
 source "${ZPLUG_HOME}/init.zsh"
 zplug "zplug/zplug", hook-build: "zplug --self-manage"
 
-zplug "junegunn/fzf-bin", as:command, from:gh-r, rename-to:fzf
+#zplug "junegunn/fzf-bin", as:command, from:gh-r, rename-to:fzf
 zplug "akavel/up", as:command, from:gh-r, use:"*up"
 zplug "stedolan/jq", as:command, from:gh-r
 zplug "ogham/exa", from:gh-r, as:command, use:\*macos-x86\*, rename-to:exa
@@ -109,7 +129,7 @@ zplug "plugins/fzf",   from:oh-my-zsh
 zplug "plugins/extract",   from:oh-my-zsh
 zplug "sharkdp/bat", as:command, from:gh-r, rename-to:bat, hook-load:"export BAT_THEME='OneHalfDark'"
 zplug "sharkdp/fd", as:command, from:gh-r, rename-to:fd
-zplug "BurntSushi/ripgrep", if:"(( $+commands[rg] ))"
+zplug "BurntSushi/ripgrep", as:command, rename-to:rg
 zplug "zsh-users/zsh-history-substring-search"
 zplug "plugins/command-not-found",   from:oh-my-zsh
 zplug "zdharma/fast-syntax-highlighting", defer:2
@@ -133,33 +153,6 @@ zplug load
 
 
 #=======================================================================================
-# Setting up home/end keys for keyboard
-# https://unix.stackexchange.com/questions/20298/home-key-not-working-in-terminal
-#=======================================================================================
-# Vi mode
-bindkey -v
-
-bindkey "^[[1;5C" forward-word
-bindkey "^[[1;5D" backward-word
-bindkey '^w' backward-kill-word
-bindkey '\e[1~'   beginning-of-line  # Linux console
-bindkey '\e[H'    beginning-of-line  # xterm
-bindkey '\eOH'    beginning-of-line  # gnome-terminal
-bindkey '\e[2~'   overwrite-mode     # Linux console, xterm, gnome-terminal
-bindkey '\e[3~'   delete-char        # Linux console, xterm, gnome-terminal
-bindkey '\e[4~'   end-of-line        # Linux console
-bindkey '\e[F'    end-of-line        # xterm
-bindkey '\eOF'    end-of-line        # gnome-terminal
-
-#https://github.com/marlonrichert/zsh-autocomplete/issues/59
-#function precmd_remove_up_down_bindkey() {
-  #bindkey '^[OA' up-line-or-history
-  #bindkey '^[OB' down-line-or-history
-#}
-#autoload -Uz add-zsh-hook
-#add-zsh-hook precmd precmd_remove_up_down_bindkey
-
-#=======================================================================================
 # Load plugins functions
 #=======================================================================================
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,snap/*,*.lock}'"
@@ -170,12 +163,6 @@ export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 [[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
 
 
-if  [ -x "$(command -v kitty)" ]; then
-	export KITTY_CONFIG_DIRECTORY="${HOME}/.config/kitty"
-	kitty + complete setup zsh | source /dev/stdin
-fi
-
-
 #=======================================================================================
 # Source aliases and functions
 #=======================================================================================
@@ -184,3 +171,7 @@ if [ -f "${LOCAL_CONFIG}"/zsh/aliases.zsh ]; then
 	source "${LOCAL_CONFIG}"/zsh/aliases.zsh
 fi
 
+if  [ -x "$(command -v kitty)" ]; then
+	export KITTY_CONFIG_DIRECTORY="${HOME}/.config/kitty"
+	kitty + complete setup zsh | source /dev/stdin
+fi
