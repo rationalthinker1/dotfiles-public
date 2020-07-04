@@ -1,4 +1,9 @@
 #zmodload zsh/zprof # top of your .zshrc file
+# Load tmux on guake
+if [[  $(which $(ps -o 'cmd=' -p $(ps -o 'ppid=' -p $$)) | tail -n1) =~ "guake"  ]]; then
+	tmux -f "${LOCAL_CONFIG}/tmux/tmux.conf"
+fi
+
 # https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
 stty start undef
 
@@ -77,24 +82,6 @@ setopt EXTENDED_GLOB
 
 
 #=======================================================================================
-# Styling
-#=======================================================================================
-zstyle ':completion:*' verbose yes
-zstyle ':completion:*' completer _expand _complete _match _prefix _approximate _list _history
-zstyle ':completion:*:messages' format '%F{YELLOW}%d'$DEFAULT
-zstyle ':completion:*:warnings' format '%F{RED}No matches for:''%F{YELLOW} %d'$DEFAULT
-zstyle ':completion:*:descriptions' format '%F{YELLOW}completing %B%d%b'$DEFAULT
-zstyle ':completion:*:options' description 'yes'
-zstyle ':completion:*:descriptions' format '%F{yellow}Completing %B%d%b%f'$DEFAULT
-
-zstyle ':completion:*:default' menu select=2  # 選択中の候補をハイライト
-export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
-zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}  # 補完時の色
-
-zstyle ':completion:*' matcher-list '' 'm:{[:lower:]}={[:upper:]}' '+m:{[:upper:]}={[:lower:]}'
-
-
-#=======================================================================================
 # Setting up home/end keys for keyboard
 # https://unix.stackexchange.com/questions/20298/home-key-not-working-in-terminal
 #=======================================================================================
@@ -140,7 +127,7 @@ zplug "b4b4r07/http_code", as:command, use:bin
 zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
 zplug "gko/ssh-connect", as:command, use:"ssh-connect.sh", rename-to:"ssh-connect", depth:1
 zplug 'romkatv/powerlevel10k', as:theme, depth:1, use:powerlevel10k.zsh-theme
-#zplug 'marlonrichert/zsh-autocomplete'
+zplug 'marlonrichert/zsh-autocomplete'
 zplug "holman/boom", from:github, use:"completion/zsh", hook-build: "sudo gem install boom"
 
 if ! zplug check --verbose; then
@@ -153,11 +140,27 @@ zplug load
 
 
 #=======================================================================================
-# Load plugins functions
+# ZSH Settings
 #=======================================================================================
-export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,snap/*,*.lock}'"
-export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
+export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
+zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}  # 補完時の色
+zstyle ':completion:*' verbose yes
+zstyle ':completion:*' completer _expand _complete _match _prefix _approximate _list _history
+zstyle ':completion:*:default' menu select=2  # 選択中の候補をハイライト
+zstyle ':completion:*:messages' format '%F{YELLOW}%d'$DEFAULT
+zstyle ':completion:*:warnings' format '%F{RED}No matches for:''%F{YELLOW} %d'$DEFAULT
+zstyle ':completion:*:descriptions' format '%F{YELLOW}completing %B%d%b'$DEFAULT
+zstyle ':completion:*:options' description 'yes'
+zstyle ':completion:*:descriptions' format '%F{yellow}Completing %B%d%b%f'$DEFAULT
+zstyle ':completion:*' matcher-list '' 'm:{[:lower:]}={[:upper:]}' '+m:{[:upper:]}={[:lower:]}'
 
+#https://github.com/marlonrichert/zsh-autocomplete#with-fzf
+zstyle ':autocomplete:*' fuzzy-search off
+zstyle ':autocomplete:tab:*' completion cycle
+zstyle ':autocomplete:list-choices:*' min-input 3
+
+export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
+export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 
 [[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
@@ -175,3 +178,4 @@ if  [ -x "$(command -v kitty)" ]; then
 	export KITTY_CONFIG_DIRECTORY="${HOME}/.config/kitty"
 	kitty + complete setup zsh | source /dev/stdin
 fi
+
