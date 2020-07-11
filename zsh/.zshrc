@@ -128,7 +128,8 @@ zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
 zplug "gko/ssh-connect", as:command, use:"ssh-connect.sh", rename-to:"ssh-connect", depth:1
 zplug 'romkatv/powerlevel10k', as:theme, depth:1, use:powerlevel10k.zsh-theme
 zplug 'marlonrichert/zsh-autocomplete'
-zplug "holman/boom", from:github, use:"completion/zsh", hook-build: "sudo gem install boom"
+#zplug "holman/boom", from:github, use:"completion/zsh", hook-build: "sudo gem install boom"
+zplug "rationalthinker1/loom", from:github, as:command, rename-to:"loom"
 
 if ! zplug check --verbose; then
     printf "Install? [y/N]: "
