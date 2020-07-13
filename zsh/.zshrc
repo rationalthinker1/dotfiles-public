@@ -1,20 +1,4 @@
 #zmodload zsh/zprof # top of your .zshrc file
-# Load tmux on guake
-if [[  $(which $(ps -o 'cmd=' -p $(ps -o 'ppid=' -p $$)) | tail -n1) =~ "guake"  ]]; then
-	tmux -f "${LOCAL_CONFIG}/tmux/tmux.conf"
-fi
-
-# https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
-stty start undef
-
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.config/zsh/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block, everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-	source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
-
 #=======================================================================================
 # Loading up variables
 #=======================================================================================
@@ -50,6 +34,22 @@ fi
 #=======================================================================================
 # Basic Settings
 #=======================================================================================
+# Load tmux on guake
+if [[  $(which $(ps -o 'cmd=' -p $(ps -o 'ppid=' -p $$)) | tail -n1) =~ "guake"  ]]; then
+	tmux -f "${LOCAL_CONFIG}/tmux/tmux.conf"
+fi
+
+# https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
+stty start undef
+
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.config/zsh/.zshrc.
+# Initialization code that may require console input (password prompts, [y/n]
+# confirmations, etc.) must go above this block, everything else may go below.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+	source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+
 # History in cache directory:
 HISTSIZE=20000             # bash history will save N commands
 SAVEHIST="${HISTSIZE}"
