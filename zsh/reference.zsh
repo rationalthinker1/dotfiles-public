@@ -17,7 +17,7 @@ sudo lsof -i -P -n | grep LISTEN
 route -n
 
 # Rsync for synchronization
-rync \
+rsync \
 	--verbose \
 	--recursive `# recursively get files/directories` \
 	--archive `# preserves permission,owner,time` \
