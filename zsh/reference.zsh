@@ -33,3 +33,17 @@ rsync \
 	--rsh="ssh -p 222" `# which port to use and ssh`
 	source
 	destination
+
+# Wget
+wget \
+	--verbose \
+	--show-progress \
+	--mirror `# This option turns on recursion and time-stamping, sets infinite recursion depth and keeps FTP directory listings.` \
+	--no-clobber `# ignore already downloaded files` \
+	--continue `# continue downloading partially downloaded files` \
+	--no-parent `# do not follow links outside the directory` \
+	--convert-links `# convert links so that they work locally, off-line` \
+	--page-requisites `# get all the elements that compose the page images, CSS and so on` \
+	--adjust-extension `# Save files with .html on the end.` \
+	--domains website.org `# do not follow links outside website.org` \
+	website.org/whatever/path `# The URL to download`
