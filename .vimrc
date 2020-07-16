@@ -731,8 +731,11 @@ function! PasteText(mode)
 		call setpos("'>", getpos("']"))
 		execute	"normal! gvl"
 	else
+		let l:y = line('.')
+		let l:x = col('.')
 		" Copies current line to register c and then paste line from register c
 		execute 'normal! "cY"cp'
+		cal cursor(l:y+1, l:x)
 	endif
 
 	call setreg("c", old_reg, old_reg_type) " Restore register 'c'

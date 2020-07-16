@@ -96,7 +96,7 @@ alias hiberate='sudo pm-suspend'
 alias psg='ps aux | grep -v grep | grep -i -e VSZ -e'
 
 # Append -c to continue the download in case of problems
-alias wget='wget -c'
+#alias wget='wget -c'
 
 # Prints out your public IP
 alias myip="curl http://ipecho.net/plain; echo"
@@ -121,11 +121,12 @@ FD_EXCLUDE_PATTERN+=bundles,
 FD_EXCLUDE_PATTERN+=build,
 FD_EXCLUDE_PATTERN+="}"
 
-# usage fdf --extension jpg "tag"
+# search for files with fdf
 function fdf() {
 	echo fd --hidden --ignore-case --follow --type f --exclude "$FD_EXCLUDE_PATTERN" $@
 	fd --hidden --ignore-case --follow --type f --exclude "$FD_EXCLUDE_PATTERN" $@
 }
+# search for directories with fdd
 function fdd() {
 	echo fd --hidden --ignore-case --follow --type d --exclude "$FD_EXCLUDE_PATTERN" $@
 	fd --hidden --ignore-case --follow --type d --exclude "$FD_EXCLUDE_PATTERN" $@
@@ -320,7 +321,40 @@ alias gre=git_reset
 git-clone() {
 	git clone "$@"
 }
+
+#=======================================================================================
+# Suffix Aliases
+#=======================================================================================
 alias -s git='git-clone'
+alias -s txt=$EDITOR
+alias -s cond=$EDITOR
+alias -s log=$EDITOR
+alias -s vim=$=$EDITOR
+alias -s deb="sudo dpkg -i"
+alias -s {c,py,cpp,r,rb,go,js,jsx,ts,java,sql,hs,md}='vim'
+alias -s {xml,json,toml,yaml,yml,ini,conf,log}='vim'
+alias -s {gz,tgz,zip,lzh,bz2,tbz,Z,tar,arj,xz,7z}='extract'
+
+
+#=======================================================================================
+# Global Aliases
+#=======================================================================================
+alias -g A='| a'
+alias -g B='| bcat'
+alias -g C='| wc -l'
+alias -g D='| dump'
+alias -g G='| grep'
+alias -g F='| fzf'
+alias -g H='| head'
+alias -g J='| jq'
+alias -g L='| less'
+alias -g P='| $PAGER'
+alias -g S='| sort -n'
+alias -g T='| tail'
+alias -g U='| uniq'
+alias -g X='| xsel -b'
+
+
 #=======================================================================================
 # Vagrant Aliases and functions
 #=======================================================================================
