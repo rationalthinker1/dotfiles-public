@@ -74,10 +74,10 @@ function backupFile() {
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
 	echo "upgrading all packages"
-	sudo apt-get -y update > /dev/null
-	sudo apt-get -y upgrade > /dev/null
+	sudo apt-get -y update
+	sudo apt-get -y upgrade
 	for package in \
-		guake \
+		#guake \
 		git \
 		vim-gtk3 \
 		tmux \
@@ -102,9 +102,10 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		bd \
 		xsel \
 		xclip \
+		fzf \
 		; do
 			echo "installing ${package}"
-			sudo apt-get install --assume-yes --ignore-missing "${package}" -qq > /dev/null
+			sudo apt-get install --assume-yes --ignore-missing "${package}"
 		done
 
 		pip3 install --user pynvim
