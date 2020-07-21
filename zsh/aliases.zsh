@@ -141,7 +141,24 @@ function rg() {
     fi
 }
 
-alias ref="cat ~/.config/zsh/reference.zsh"
+function ref() {
+	if [[ $# -ne 1 ]]; then
+		cat ~/.config/zsh/reference.zsh
+	else
+		name="${1}"
+		folder="${LOCAL_CONFIG}/zsh/references"
+		file="${folder}/${name}.zsh"
+		if [[ ! -d $folder ]]; then
+			mkdir -p $folder
+		fi
+		if [[ ! -f $file ]]; then
+			touch $file
+		fi
+		$EDITOR $file
+	fi
+}
+
+#alias ref="cat ~/.config/zsh/reference.zsh"
 
 # look at the size of the sub-directories level 1
 # Uncommented and created function below
