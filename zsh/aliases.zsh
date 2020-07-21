@@ -142,7 +142,7 @@ function rg() {
 }
 
 function ref() {
-	if [[ $# -ne 1 ]]; then
+	if [[ "$#" -gt 1 ]]; then
 		cat ~/.config/zsh/reference.zsh
 	else
 		name="${1}"
