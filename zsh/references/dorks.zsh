@@ -40,3 +40,11 @@ site:{site} filetype:ini
 site:{site} filetype:json
 site:{site} filetype:env
 site:{site} filetype:db
+
+
+"drive.google.com/open?id=" udemy
+"drive.google.com/drive/folders" udemy
+"mega.nz/folder/" udemy
+"https://uploadgig.com/file/download" udemy
+"https://rapidgator.net/file/" udemy
+"http://nitroflare.com/view/" udemy

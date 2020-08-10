@@ -107,29 +107,27 @@ bindkey '\eOF'    end-of-line        # gnome-terminal
 source "${ZPLUG_HOME}/init.zsh"
 zplug "zplug/zplug", hook-build: "zplug --self-manage"
 
-#zplug "junegunn/fzf-bin", as:command, from:gh-r, rename-to:fzf
-zplug "akavel/up", as:command, from:gh-r, use:"*up"
-zplug "stedolan/jq", as:command, from:gh-r
+#zplug "akavel/up", as:command, from:gh-r, use:"*up"
+#zplug "stedolan/jq", as:command, from:gh-r
 zplug "ogham/exa", from:gh-r, as:command, use:\*macos-x86\*, rename-to:exa
-zplug "plugins/git",   from:oh-my-zsh
+#zplug "plugins/git",   from:oh-my-zsh
 zplug "plugins/fzf",   from:oh-my-zsh
-zplug "plugins/extract",   from:oh-my-zsh
+#zplug "plugins/extract",   from:oh-my-zsh
 zplug "sharkdp/bat", as:command, from:gh-r, rename-to:bat, hook-load:"export BAT_THEME='OneHalfDark'"
 zplug "sharkdp/fd", as:command, from:gh-r, rename-to:fd
 zplug "BurntSushi/ripgrep", as:command, rename-to:rg
-zplug "zsh-users/zsh-history-substring-search"
-zplug "plugins/command-not-found",   from:oh-my-zsh
-zplug "zdharma/fast-syntax-highlighting", defer:2
+#zplug "zsh-users/zsh-history-substring-search"
+#zplug "plugins/command-not-found",   from:oh-my-zsh
+#zplug "zdharma/fast-syntax-highlighting", defer:2
 zplug "zsh-users/zsh-autosuggestions", depth:1
-zplug "zsh-users/zsh-completions", depth:1
+#zplug "zsh-users/zsh-completions", depth:1
 zplug "zsh-users/zsh-history-substring-search", depth:1
-zplug "b4b4r07/http_code", as:command, use:bin
+#zplug "b4b4r07/http_code", as:command, use:bin
 zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
-zplug "gko/ssh-connect", as:command, use:"ssh-connect.sh", rename-to:"ssh-connect", depth:1
+#zplug "gko/ssh-connect", as:command, use:"ssh-connect.sh", rename-to:"ssh-connect", depth:1
 zplug 'romkatv/powerlevel10k', as:theme, depth:1, use:powerlevel10k.zsh-theme
-zplug 'marlonrichert/zsh-autocomplete'
-#zplug "holman/boom", from:github, use:"completion/zsh", hook-build: "sudo gem install boom"
-zplug "rationalthinker1/loom", from:github, as:command, rename-to:"loom"
+#zplug 'marlonrichert/zsh-autocomplete'
+#zplug "rationalthinker1/loom", from:github, as:command, rename-to:"loom"
 
 if ! zplug check --verbose; then
     printf "Install? [y/N]: "

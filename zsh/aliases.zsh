@@ -154,7 +154,7 @@ function ref() {
 		if [[ ! -f $file ]]; then
 			touch $file
 		fi
-		$EDITOR $file
+		vim $file
 	fi
 }
 
@@ -431,6 +431,8 @@ alias aplist='sudo apache2ctl -S'
 # Node Aliases and functions
 #=======================================================================================
 #alias npm='sudo npm'
+alias ncon="cd /etc/nginx/sites-available/"
+alias nerr="cd /var/log/nginx/"
 
 #=======================================================================================
 # Lampp Aliases and functions
