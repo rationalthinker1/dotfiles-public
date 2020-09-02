@@ -39,6 +39,7 @@ site:{site} filetype:sql
 site:{site} filetype:ini
 site:{site} filetype:json
 site:{site} filetype:env
+site:{site} filetype:db
 
 
 "drive.google.com/open?id=" udemy
