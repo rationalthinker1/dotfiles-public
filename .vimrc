@@ -780,6 +780,15 @@ function! ExecuteMacroOverVisualRange()
 endfunction
 xnoremap @ :<C-u>call ExecuteMacroOverVisualRange()<CR>
 
+" function to fix tabs on the current file
+function! FixTabs(...)
+	let l:tabstop = get(a:, 1, 2)
+	"echo l:tabstop
+	let &tabstop=l:tabstop
+	let &shiftwidth=l:tabstop
+	let &expandtab=1
+endfunction
+command! -bang -nargs=? FixTabs call FixTabs(<args>)
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Helper functions

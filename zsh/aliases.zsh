@@ -299,7 +299,7 @@ function install-font-zip() {
 	directory="${directory##*/}"
 	unzipd "${filename}"
 	install-font-folder "${directory}"
-	rm -rf ./"${directory}"
+	rm -rf "./${directory}"
 }
 
 #=======================================================================================
@@ -324,6 +324,11 @@ alias gp="git pull"
 #alias gpu="git push"
 alias gpu='[[ -z $(git config "branch.$(git symbolic-ref --short HEAD).merge") ]] && git push -u origin $(git symbolic-ref --short HEAD) || git push'
 alias gpuf="git push --force"
+
+git_search() {
+	git rev-list --all | GIT_PAGER=cat xargs git grep '"${@}"'
+}
+alias gse=git_search
 
 git_reset() {
     COMMIT="HEAD"
