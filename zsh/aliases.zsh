@@ -171,13 +171,13 @@ alias vim="stty stop '' -ixoff ; vim"
 # get top biggest files
 function fs() {
 	LIMIT=${1:-50}
-	du -lah | grep -v -e '^.*K[[:space:]]' | sort -r -n | head "-n${LIMIT}"
+	sudo du -lah 2>/dev/null | grep -v -e '^.*K[[:space:]]' | sort -r -n | head "-n${LIMIT}"
 }
 
 # get top biggest directories
 function ds() {
 	LIMIT=${1:-51}
-	du -h --max-depth=1 | sort -r -h | head "-n$((${LIMIT}+1))"
+	sudo du -h --max-depth=1 2>/dev/null | sort -r -h | head "-n$((${LIMIT}+1))"
 }
 # So that vim shortcuts can work
 #alias vim="stty stop '' -ixoff ; vim"

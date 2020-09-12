@@ -96,6 +96,7 @@ let ayucolor="mirage"
 set background=dark
 color onedark
 color ayu
+color cosmic-barf
 highlight Comment cterm=italic
 let g:one_allow_italics = 1 " I love italic for comments
 let g:onedark_terminal_italics = 1
