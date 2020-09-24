@@ -7,8 +7,8 @@ window:
     lines: 25
 
   padding:
-    x: 0
-    y: 0
+    x: 10
+    y: 10
 
   dynamic_padding: true
 
@@ -16,17 +16,14 @@ window:
 
   startup_mode: Maximized
 
-tabspaces: 4
-
 draw_bold_text_with_bright_colors: true
 
 scrolling:
   history: 10000
   multiplier: 5
-  auto_scroll: false
 
 font:
-  size: 13.0
+  size: 9.0
   normal:
     family: "Input Mono"
     style: "Regular"
@@ -126,7 +123,7 @@ colors:
     cyan:    '#73FBF1'
     white:   '#FEFEF8'
 
-visual_bell:
+bell:
   animation: EaseOutExpo
   duration: 0
 
