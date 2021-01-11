@@ -114,7 +114,7 @@ zplug "ogham/exa", from:gh-r, as:command, use:\*macos-x86\*, rename-to:exa
 zplug "plugins/fzf",   from:oh-my-zsh
 #zplug "plugins/extract",   from:oh-my-zsh
 zplug "sharkdp/bat", as:command, from:gh-r, rename-to:bat, hook-load:"export BAT_THEME='OneHalfDark'"
-zplug "sharkdp/fd", as:command, from:gh-r, rename-to:fd
+#zplug "sharkdp/fd", as:command, from:gh-r, rename-to:fd
 zplug "BurntSushi/ripgrep", as:command, rename-to:rg
 #zplug "zsh-users/zsh-history-substring-search"
 #zplug "plugins/command-not-found",   from:oh-my-zsh

@@ -77,7 +77,6 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	sudo apt-get -y update
 	sudo apt-get -y upgrade
 	for package in \
-		#guake \
 		git \
 		vim-gtk3 \
 		tmux \
@@ -91,8 +90,6 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		jq \
 		csvtool \
 		xclip \
-		gnome-tweaks \
-		chrome-gnome-shell \
 		htop \
 		p7zip-full \
 		rename \
@@ -211,7 +208,6 @@ if [[ ! -f "${BASE_DIR}/fonts/.installed" ]]; then
 	touch "${BASE_DIR}/fonts/.installed"
 	cd -
 fi
-
 
 mkdir -p "${BACKUP_DIR}"
 updateFiles "${BASE_DIR}/zsh/.zshrc" "${HOME}/.zshrc"
