@@ -50,8 +50,8 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
 fi
 
 
-# History in cache directory:
-HISTSIZE=20000             # bash history will save N commands
+# History in cache directory
+HISTSIZE=10000000             # bash history will save N commands
 SAVEHIST="${HISTSIZE}"
 HISTFILESIZE="${HISTSIZE}" # bash will remember N commands
 HISTFILE="${ZDOTDIR}"/.zsh_history
@@ -62,6 +62,9 @@ WORDCHARS=''
 # Basic auto/tab complete:
 autoload -Uz compinit
 compinit
+
+#Calculator: zcalc
+autoload -U zcalc
 
 # reference: http://zsh.sourceforge.net/Doc/Release/Options.html
 setopt CORRECT                    # Try to correct command line spelling

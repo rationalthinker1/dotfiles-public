@@ -389,12 +389,9 @@ alias vkill='vagrant destroy'
 #=======================================================================================
 # Laravel Aliases and functions
 #=======================================================================================
-#alias pa="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec php php -dxdebug.remote_enable=1 -dxdebug.remote_autostart=on -dxdebug.idekey=PHPSTORM -dxdebug.remote_mode=req -dxdebug.remote_port=9000 -dxdebug.remote_host=127.0.0.1 artisan"
-#alias pam="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec php php -dxdebug.remote_enable=1 -dxdebug.remote_autostart=on -dxdebug.idekey=PHPSTORM -dxdebug.remote_mode=req -dxdebug.remote_port=9000 -dxdebug.remote_host=127.0.0.1 artisan migrate"
-#alias par="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec php php -dxdebug.remote_enable=1 -dxdebug.remote_autostart=on -dxdebug.idekey=PHPSTORM -dxdebug.remote_mode=req -dxdebug.remote_port=9000 -dxdebug.remote_host=127.0.0.1 artisan routes"
-alias pa="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec php php -dxdebug.remote_enable=1 -dxdebug.remote_autostart=on -dxdebug.idekey=PHPSTORM -dxdebug.remote_mode=req -dxdebug.remote_port=9000 -dxdebug.remote_host=127.0.0.1 artisan"
-alias pam="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec php php -dxdebug.remote_enable=1 -dxdebug.remote_autostart=on -dxdebug.idekey=PHPSTORM -dxdebug.remote_mode=req -dxdebug.remote_port=9000 -dxdebug.remote_host=127.0.0.1 artisan migrate"
-alias par="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec php php -dxdebug.remote_enable=1 -dxdebug.remote_autostart=on -dxdebug.idekey=PHPSTORM -dxdebug.remote_mode=req -dxdebug.remote_port=9000 -dxdebug.remote_host=127.0.0.1 artisan routes"
+alias pa="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec -e XDEBUG_SESSION=PHPSTORM php php artisan"
+alias pam="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec -e XDEBUG_SESSION=PHPSTORM php php artisan migrate"
+alias par="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec -e XDEBUG_SESSION=PHPSTORM php php artisan routes"
 
 alias pam:r="php artisan migrate:refresh"
 alias pam:roll="php artisan migrate:rollback"
