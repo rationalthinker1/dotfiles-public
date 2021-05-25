@@ -22,3 +22,5 @@ init.vim.bak
 zsh/.zcompdump*
 *.bak
 zsh/.zplug
+.aws/largefile
+.aws/credentials
