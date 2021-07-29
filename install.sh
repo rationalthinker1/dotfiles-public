@@ -78,7 +78,7 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	sudo apt-get -y upgrade
 	for package in \
 		git \
-		vim-gtk3 \
+		vim \
 		tmux \
 		curl \
 		zsh \
@@ -117,6 +117,7 @@ if [[ ! $(exa --help 2>/dev/null) ]]; then
 	echo "installing rust and exa"
 	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 	echo "export PATH=$HOME/.cargo/bin:$PATH" >> ~/.zprofile
+	source ~/.zprofile
 	$HOME/.cargo/bin/cargo install exa --force
 fi
 
@@ -125,14 +126,14 @@ if [[ ! -d "${LOCAL_CONFIG}/fzf" ]]; then
 	decho "fzf does not exist"
 	echo "installing fzf"
 	git clone --depth 1 https://github.com/junegunn/fzf.git "${LOCAL_CONFIG}/"fzf
-	"${LOCAL_CONFIG}/"fzf/install --xdg --no-bash --no-fish --64 --key-bindings --completion --no-update-rc
+	"${LOCAL_CONFIG}/"fzf/install --xdg --no-bash --no-fish --key-bindings --completion --no-update-rc
 fi
 
 # Installing node
 if [[ ! $(node --version 2>/dev/null) ]]; then
 	decho "node does not exist"
 	echo "installing node"
-	curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+	curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
 	sudo apt-get install nodejs
 
 	# Installing yarn
