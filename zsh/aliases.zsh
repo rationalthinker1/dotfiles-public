@@ -521,6 +521,9 @@ alias dkd="docker run -d -P"
 # Run interactive container, e.g., $dki base /bin/bash
 alias dki="docker run -i -t -P"
 
+# Stop all containers
+alias dstop='docker stop $(docker ps -a -q)'
+
 # Stop and Remove all containers
 alias drmf='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)'
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURCE[0]}"`
 BASE_DIR=$(dirname ${ABSOLUTE_PATH})
-BACKUP_DIR="${BASE_DIR}/backup"
+BACKUP_DIR="${HOME}/.dotfiles/backup"
 LOCAL_CONFIG="${HOME}/.config"
 export ZSH="${LOCAL_CONFIG}/zsh"
 
@@ -199,29 +199,29 @@ fi
 	#rm -rf /tmp/"${go_file}"
 #fi
 
-if [[ ! -f "${BASE_DIR}/fonts/.installed" ]]; then
-	cd "${BASE_DIR}"/fonts
+if [[ ! -f "${HOME}/.dotfiles/fonts/.installed" ]]; then
+	cd "${HOME}/.dotfiles"/fonts
 	mkdir installations
 	unzip "*.zip" -d installations
-	source "${BASE_DIR}/zsh/aliases.zsh"
-	install-font-subdirectories "${BASE_DIR}/fonts/installations"
-	rm -rf "${BASE_DIR}/fonts/installations"
-	touch "${BASE_DIR}/fonts/.installed"
+	source "${HOME}/.dotfiles/zsh/aliases.zsh"
+	install-font-subdirectories "${HOME}/.dotfiles/fonts/installations"
+	rm -rf "${HOME}/.dotfiles/fonts/installations"
+	touch "${HOME}/.dotfiles/fonts/.installed"
 	cd -
 fi
 
 mkdir -p "${BACKUP_DIR}"
-updateFiles "${BASE_DIR}/zsh/.zshrc" "${HOME}/.zshrc"
-updateFiles "${BASE_DIR}/.vimrc" "${HOME}/.vimrc"
-updateFiles "${BASE_DIR}/.vim" "${HOME}/.vim"
-updateFiles "${BASE_DIR}/zsh" "${HOME}/.config/zsh"
-updateFiles "${BASE_DIR}/ranger" "${HOME}/.config/ranger"
-updateFiles "${BASE_DIR}/kitty" "${HOME}/.config/kitty"
-updateFiles "${BASE_DIR}/alacritty" "${HOME}/.config/alacritty"
-updateFiles "${BASE_DIR}/tmux" "${HOME}/.config/tmux"
-updateFiles "${BASE_DIR}/fzf/fzf.zsh" "${HOME}/.config/fzf/fzf.zsh"
-updateFiles "${BASE_DIR}/.Xresources" "${HOME}/.Xresources"
-updateFiles "${BASE_DIR}/rc.sh" "${HOME}/.ssh/rc"
+updateFiles "${HOME}/.dotfiles/zsh/.zshrc" "${HOME}/.zshrc"
+updateFiles "${HOME}/.dotfiles/.vimrc" "${HOME}/.vimrc"
+updateFiles "${HOME}/.dotfiles/.vim" "${HOME}/.vim"
+updateFiles "${HOME}/.dotfiles/zsh" "${HOME}/.config/zsh"
+updateFiles "${HOME}/.dotfiles/ranger" "${HOME}/.config/ranger"
+updateFiles "${HOME}/.dotfiles/kitty" "${HOME}/.config/kitty"
+updateFiles "${HOME}/.dotfiles/alacritty" "${HOME}/.config/alacritty"
+updateFiles "${HOME}/.dotfiles/tmux" "${HOME}/.config/tmux"
+updateFiles "${HOME}/.dotfiles/fzf/fzf.zsh" "${HOME}/.config/fzf/fzf.zsh"
+updateFiles "${HOME}/.dotfiles/.Xresources" "${HOME}/.Xresources"
+updateFiles "${HOME}/.dotfiles/rc.sh" "${HOME}/.ssh/rc"
 
 # Installing tmux plugin manager
 if [[ ! -d "${LOCAL_CONFIG}/tmux/plugins/tpm" ]]; then

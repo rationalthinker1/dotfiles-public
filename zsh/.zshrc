@@ -124,7 +124,7 @@ zplug "BurntSushi/ripgrep", as:command, rename-to:rg
 #zplug "zdharma/fast-syntax-highlighting", defer:2
 zplug "zsh-users/zsh-autosuggestions", depth:1
 #zplug "zsh-users/zsh-completions", depth:1
-zplug "zsh-users/zsh-history-substring-search", depth:1
+#zplug "zsh-users/zsh-history-substring-search", depth:1
 #zplug "b4b4r07/http_code", as:command, use:bin
 zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
 #zplug "gko/ssh-connect", as:command, use:"ssh-connect.sh", rename-to:"ssh-connect", depth:1
@@ -181,3 +181,9 @@ if  [ -x "$(command -v kitty)" ]; then
 	kitty + complete setup zsh | source /dev/stdin
 fi
 
+
+source /home/nookta/.config/broot/launcher/bash/br
+
+eval "$(mcfly init zsh)"
+export MCFLY_KEY_SCHEME=vim
+export MCFLY_FUZZY=true
