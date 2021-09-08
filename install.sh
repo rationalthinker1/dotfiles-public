@@ -129,6 +129,24 @@ if [[ ! -d "${LOCAL_CONFIG}/fzf" ]]; then
 	"${LOCAL_CONFIG}/"fzf/install --xdg --no-bash --no-fish --key-bindings --completion --no-update-rc
 fi
 
+
+# Installing broot
+if [[ ! $(broot --version 2>/dev/null) ]]; then
+	decho "broot does not exist"
+	echo "installing broot"
+	wget https://dystroy.org/broot/download/x86_64-linux/broot
+	mv broot /usr/local/bin
+	sudo mv broot /usr/local/bin
+	sudo chmod +x /usr/local/bin/broot
+fi
+
+# Installing mcfly
+if [[ ! $(mcfly --version 2>/dev/null) ]]; then
+	decho "mcfly does not exist"
+	echo "installing mcfly"
+	curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sudo sh -s -- --git cantino/mcfly
+fi
+
 # Installing node
 if [[ ! $(node --version 2>/dev/null) ]]; then
 	decho "node does not exist"
