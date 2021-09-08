@@ -135,7 +135,6 @@ if [[ ! $(broot --version 2>/dev/null) ]]; then
 	decho "broot does not exist"
 	echo "installing broot"
 	wget https://dystroy.org/broot/download/x86_64-linux/broot
-	mv broot /usr/local/bin
 	sudo mv broot /usr/local/bin
 	sudo chmod +x /usr/local/bin/broot
 fi

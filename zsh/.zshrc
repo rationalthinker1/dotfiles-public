@@ -182,7 +182,7 @@ if  [ -x "$(command -v kitty)" ]; then
 fi
 
 
-source /home/nookta/.config/broot/launcher/bash/br
+source "${LOCAL_CONFIG}/broot/launcher/bash/br"
 
 eval "$(mcfly init zsh)"
 export MCFLY_KEY_SCHEME=vim
