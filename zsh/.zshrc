@@ -181,8 +181,7 @@ if  [ -x "$(command -v kitty)" ]; then
 	kitty + complete setup zsh | source /dev/stdin
 fi
 
-
-source "${LOCAL_CONFIG}/broot/launcher/bash/br"
+source "${HOME}/.local/share/broot/launcher/bash/1"
 
 eval "$(mcfly init zsh)"
 export MCFLY_KEY_SCHEME=vim
