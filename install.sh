@@ -129,7 +129,6 @@ if [[ ! -d "${LOCAL_CONFIG}/fzf" ]]; then
 	"${LOCAL_CONFIG}/"fzf/install --xdg --no-bash --no-fish --key-bindings --completion --no-update-rc
 fi
 
-
 # Installing broot
 if [[ ! $(broot --version 2>/dev/null) ]]; then
 	decho "broot does not exist"
@@ -201,6 +200,13 @@ if [[ ! $(which up 2>/dev/null) ]]; then
 	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
 	sudo wget -q $link -P /usr/local/bin/
 	sudo chmod +x /usr/local/bin/up
+fi
+
+# Installing glances
+if [[ ! $(which glances 2>/dev/null) ]]; then
+	decho "glances does not exist"
+	echo "Installing glances"
+	sudo pip install glances
 fi
 
 # Installing go-lang
