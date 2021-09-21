@@ -316,10 +316,10 @@ function b { git branch "$@"; }
 alias gcam="git commit -a --amend"
 alias gc="git commit -am"
 alias gs="git status"
-alias gd="git diff --ignore-all-space --ignore-space-at-eol --ignore-space-change --ignore-blank-lines -- . ':(exclude)*package-lock.json' -- . ':(exclude)*yarn.lock'"
+#alias gd="git diff --ignore-all-space --ignore-space-at-eol --ignore-space-change --ignore-blank-lines -- . ':(exclude)*package-lock.json' -- . ':(exclude)*yarn.lock'"
 #alias dc="git diff --cached"
 #alias dv="git diff | vim -"
-alias gl="git log"
+#alias gl="git log"
 alias gp="git pull"
 #alias gpu="git push"
 alias gpu='[[ -z $(git config "branch.$(git symbolic-ref --short HEAD).merge") ]] && git push -u origin $(git symbolic-ref --short HEAD) || git push'

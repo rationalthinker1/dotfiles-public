@@ -10,6 +10,7 @@ export ENHANCD_DIR="${LOCAL_CONFIG}/enhancd"
 export NVM_DIR="${LOCAL_CONFIG}/.nvm"
 export ZPLUG_HOME="${ZDOTDIR}"/.zplug
 export TERM=xterm-256color
+export EDITOR=vim
 
 if [ -f "${LOCAL_CONFIG}"/zsh/local.zsh ]; then
 	source "${LOCAL_CONFIG}"/zsh/local.zsh
@@ -131,6 +132,8 @@ zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
 zplug 'romkatv/powerlevel10k', as:theme, depth:1, use:powerlevel10k.zsh-theme
 #zplug 'marlonrichert/zsh-autocomplete'
 #zplug "rationalthinker1/loom", from:github, as:command, rename-to:"loom"
+zplug 'wfxr/forgit'
+forgit_log=gl
 
 if ! zplug check --verbose; then
     printf "Install? [y/N]: "
@@ -165,6 +168,8 @@ export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 
+source "${HOME}/.local/share/broot/launcher/bash/1"
+
 [[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
 
 
@@ -181,8 +186,7 @@ if  [ -x "$(command -v kitty)" ]; then
 	kitty + complete setup zsh | source /dev/stdin
 fi
 
-source "${HOME}/.local/share/broot/launcher/bash/1"
 
-eval "$(mcfly init zsh)"
-export MCFLY_KEY_SCHEME=vim
-export MCFLY_FUZZY=true
+#eval "$(mcfly init zsh)"
+#export MCFLY_KEY_SCHEME=vim
+#export MCFLY_FUZZY=true

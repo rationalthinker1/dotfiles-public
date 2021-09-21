@@ -139,11 +139,11 @@ if [[ ! $(broot --version 2>/dev/null) ]]; then
 fi
 
 # Installing mcfly
-if [[ ! $(mcfly --version 2>/dev/null) ]]; then
-	decho "mcfly does not exist"
-	echo "installing mcfly"
-	curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sudo sh -s -- --git cantino/mcfly
-fi
+#if [[ ! $(mcfly --version 2>/dev/null) ]]; then
+	#decho "mcfly does not exist"
+	#echo "installing mcfly"
+	#curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sudo sh -s -- --git cantino/mcfly
+#fi
 
 # Installing node
 if [[ ! $(node --version 2>/dev/null) ]]; then
