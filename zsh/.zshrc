@@ -186,7 +186,3 @@ if  [ -x "$(command -v kitty)" ]; then
 	kitty + complete setup zsh | source /dev/stdin
 fi
 
-
-#eval "$(mcfly init zsh)"
-#export MCFLY_KEY_SCHEME=vim
-#export MCFLY_FUZZY=true
