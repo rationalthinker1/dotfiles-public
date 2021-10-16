@@ -230,7 +230,7 @@ if [[ ! -f "${HOME}/.dotfiles/fonts/.installed" ]]; then
 	install-font-subdirectories "${HOME}/.dotfiles/fonts/installations"
 	rm -rf "${HOME}/.dotfiles/fonts/installations"
 	touch "${HOME}/.dotfiles/fonts/.installed"
-	cd -
+	cd "${HOME}/.dotfiles"
 fi
 
 mkdir -p "${BACKUP_DIR}"
