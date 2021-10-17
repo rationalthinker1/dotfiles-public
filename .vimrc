@@ -147,8 +147,7 @@ cnoreabbrev Q q
 cnoreabbrev Qall qall
 
 " Set zsh aliases
-set shell=/bin/zsh\ -l
-let $BASH_ENV = "~/.dotfiles/zsh/aliases.zsh"
+set shell=/bin/zsh
 
 " https://vim.fandom.com/wiki/Set_working_directory_to_the_current_file
 "autocmd BufEnter * silent! lcd %:p:h

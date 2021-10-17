@@ -153,7 +153,7 @@ zplug "ptavares/zsh-exa"
 
 zplug "plugins/gitfast", from:oh-my-zsh
 zplug "plugins/git-it-on", from:oh-my-zsh
-zplug "plugins/git", from:oh-my-zsh
+#zplug "plugins/git", from:oh-my-zsh
 zplug "plugins/docker", from:oh-my-zsh
 zplug "plugins/docker-compose", from:oh-my-zsh
 export forgit_log=gl
