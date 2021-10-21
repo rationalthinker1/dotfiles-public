@@ -104,6 +104,8 @@ alias myip="curl http://ipecho.net/plain; echo"
 # Searches up history commands
 alias hgrep="history | grep"
 
+alias br=broot
+
 # use fdfind
 alias fd=fdfind
 
