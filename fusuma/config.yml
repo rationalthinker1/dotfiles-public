@@ -1,13 +1,13 @@
 swipe:
   3:
     left:
-      command: 'xdotool key super+Page_Down'
+      command: 'xdotool key alt+Right'
     right:
-      command: 'xdotool key super+Page_Up'
+      command: 'xdotool key alt+Left'
     up:
-      command: 'xdotool key ctrl+Page_Up'
+      command: 'xdotool key ctrl+alt+Down'
     down:
-      command: 'xdotool key ctrl+Page_Down'
+      command: 'xdotool key ctrl+alt+Up'
   4:
     left:
       command: 'xdotool key alt+Shift+Tab'
