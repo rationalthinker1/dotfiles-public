@@ -343,7 +343,7 @@ git_reset() {
 alias gre=git_reset
 
 git-clone() {
-	git clone "$@"
+	git clone "$@" && cd "$(basename "$1" .git)"
 }
 
 #=======================================================================================
