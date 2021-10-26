@@ -17,6 +17,8 @@ export NVM_DIR="${LOCAL_CONFIG}/.nvm"
 export ZPLUG_HOME="${ZDOTDIR}"/.zplug
 export TERM=xterm-256color
 export EDITOR=vim
+# allows commands like cat to stay in teminal after using it
+export LESS="-XRF"
 
 if [ -f "${LOCAL_CONFIG}"/zsh/local.zsh ]; then
 	source "${LOCAL_CONFIG}"/zsh/local.zsh
