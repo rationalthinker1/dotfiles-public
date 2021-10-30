@@ -143,8 +143,23 @@ function rg() {
     fi
 }
 
+function bak() {
+	if [[ "$#" -eq 0 ]]; then
+		echo "used to back up file or folder"
+		echo "usage: bak test"
+		exit 0
+	fi
+	if [[ $1 == *".bak" ]]; then
+		echo "renaming ${1%.bak}.bak to ${1%.bak}"
+		mv "${1%.bak}.bak" "${1%.bak}"
+	else
+		echo "renaming ${1} to ${1}.bak"
+		mv "${1}" "${1}.bak"
+	fi
+}
+
 function ref() {
-	if [[ "$#" -gt 1 ]]; then
+	if [[ "$#" -eq 0 ]]; then
 		cat ~/.config/zsh/reference.zsh
 	else
 		name="${1}"
