@@ -13,3 +13,4 @@ Plug 'rakr/vim-one'
 Plug 'effkay/argonaut.vim'
 "Plug 'flazz/vim-colorschemes'
 
+Plug 'rationalthinker1/cyberpunk.vim'
