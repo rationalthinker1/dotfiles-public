@@ -148,7 +148,7 @@ zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
 zplug 'romkatv/powerlevel10k', as:theme, depth:1, use:powerlevel10k.zsh-theme
 zplug 'marlonrichert/zsh-autocomplete'
 #zplug "rationalthinker1/loom", from:github, as:command, rename-to:"loom"
-zplug "zdharma/fast-syntax-highlighting",       defer:3, on:"zsh-users/zsh-autosuggestions"
+zplug "zdharma-continuum/fast-syntax-highlighting", defer:2
 zplug 'wfxr/forgit'
 zplug "ptavares/zsh-exa"
 
