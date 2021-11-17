@@ -39,6 +39,32 @@ function updateFiles() {
 	return 0
 }
 
+function isDesktop() {
+	x=$( dpkg -l ubuntu-desktop > /dev/null 2>&1)$?
+	if [[ "${x}" == "0" ]]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+function isServer() {
+	x=$( dpkg -l ubuntu-desktop > /dev/null 2>&1)$?
+	if [[ "${x}" == "0" ]]; then
+		return 1
+	else
+		return 0
+	fi
+}
+
+function isDesktopOrServer() {
+	if [[ isDesktop ]]; then
+		echo "desktop"
+	else
+		echo "server"
+	fi
+}
+
 function createSymlink() {
 	if [[ ! -L "${1}" ]]; then
 		decho "FUNCTION createSymlink"
@@ -100,6 +126,7 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		xsel \
 		xclip \
 		fzf \
+		glances \
 		; do
 			echo "installing ${package}"
 			sudo apt-get install --assume-yes --ignore-missing "${package}"
@@ -110,6 +137,19 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		sudo chsh -s $(which zsh)
 		curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
 fi
+
+
+
+# Installing BLACKHOSTS
+if [[ ! $(blackhosts --help 2>/dev/null) ]] && [[ isDesktop ]]; then
+	decho "blackhosts does not exist"
+	echo "installing blackhosts"
+	link=$(curl -sL https://github.com/Lateralus138/blackhosts/releases/latest | grep -P "href=" | grep -vE "musl" | grep "blackhosts.deb" | head -n 1 | cut -d '"' -f 2 | sed -e "s|^|https://github.com|")
+	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
+	wget -q $link -P /tmp/
+	sudo dpkg -i --force-overwrite /tmp/$download_filename
+fi
+
 
 # Installing Rust for exa
 if [[ ! $(exa --help 2>/dev/null) ]]; then
@@ -203,11 +243,11 @@ if [[ ! $(which up 2>/dev/null) ]]; then
 fi
 
 # Installing glances
-if [[ ! $(which glances 2>/dev/null) ]]; then
-	decho "glances does not exist"
-	echo "Installing glances"
-	sudo pip install glances
-fi
+# if [[ ! $(which glances 2>/dev/null) ]]; then
+# 	decho "glances does not exist"
+# 	echo "Installing glances"
+# 	sudo pip install glances
+# fi
 
 # Installing go-lang
 #if [[ ! $(go verion 2>/dev/null) ]]; then
@@ -222,7 +262,7 @@ fi
 	#rm -rf /tmp/"${go_file}"
 #fi
 
-if [[ ! -f "${HOME}/.dotfiles/fonts/.installed" ]]; then
+if [[ ! -f "${HOME}/.dotfiles/fonts/.installed" ]] && [[ isDesktop ]]; then
 	cd "${HOME}/.dotfiles"/fonts
 	mkdir installations
 	unzip "*.zip" -d installations
@@ -248,7 +288,7 @@ updateFiles "${HOME}/.dotfiles/.Xresources" "${HOME}/.Xresources"
 updateFiles "${HOME}/.dotfiles/rc.sh" "${HOME}/.ssh/rc"
 
 # Installing tmux plugin manager
-if [[ ! -d "${LOCAL_CONFIG}/tmux/plugins/tpm" ]]; then
+if [[ ! -d "${LOCAL_CONFIG}/tmux/plugins/tpm" ]] && [[ isDesktop ]]; then
 	decho "Installing tmux plugin manager"
 	git clone https://github.com/tmux-plugins/tpm "${LOCAL_CONFIG}"/tmux/plugins/tpm
 fi

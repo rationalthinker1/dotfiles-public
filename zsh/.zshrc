@@ -145,13 +145,13 @@ zplug "zsh-users/zsh-autosuggestions", depth:1
 #zplug "b4b4r07/http_code", as:command, use:bin
 zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
 #zplug "gko/ssh-connect", as:command, use:"ssh-connect.sh", rename-to:"ssh-connect", depth:1
-zplug 'romkatv/powerlevel10k', as:theme, depth:1, use:powerlevel10k.zsh-theme
+zplug "romkatv/powerlevel10k", as:theme, depth:1, use:powerlevel10k.zsh-theme
 
 #zplug "marlonrichert/zsh-autocomplete", use:zsh-autocomplete.plugin.zsh, from:github, as:plugin
 
 #zplug "rationalthinker1/loom", from:github, as:command, rename-to:"loom"
 zplug "zdharma-continuum/fast-syntax-highlighting", defer:2
-zplug 'wfxr/forgit'
+zplug "wfxr/forgit"
 zplug "ptavares/zsh-exa"
 
 
