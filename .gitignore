@@ -24,3 +24,4 @@ zsh/.zcompdump*
 zsh/.zplug
 .aws/largefile
 .aws/credentials
+*.DS_Store
