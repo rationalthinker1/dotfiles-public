@@ -8,6 +8,12 @@ else
 	USE_OS="linux"
 fi
 
+if grep -qi "Microsoft" /proc/version ; then
+	IS_WSL=1
+else
+	IS_WSL=0
+fi
+
 export LOCAL_CONFIG="${HOME}/.config"
 export ZDOTDIR="${LOCAL_CONFIG}/zsh"
 export ADOTDIR="${ZDOTDIR}/antigen"
@@ -44,8 +50,13 @@ fi
 # Basic Settings
 #=======================================================================================
 # Load tmux on guake
-if [[ "${USE_OS}" == 'linux' ]] && [[  $(which $(ps -o 'cmd=' -p $(ps -o 'ppid=' -p $$)) | tail -n1) =~ "guake"  ]]; then
-	tmux -f "${LOCAL_CONFIG}/tmux/tmux.conf"
+#if [[ "${USE_OS}" == 'linux' ]] && [[  $(which $(ps -o 'cmd=' -p $(ps -o 'ppid=' -p $$)) | tail -n1) =~ "guake"  ]]; then
+	#tmux -f "${LOCAL_CONFIG}/tmux/tmux.conf"
+#fi
+
+# Load tmux on Windows WSL
+if [[ -z "$TMUX" ]] && [[ "${IS_WSL}" == "1"  ]]; then
+	tmux -f ~/.config/tmux/tmux.conf
 fi
 
 # https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
