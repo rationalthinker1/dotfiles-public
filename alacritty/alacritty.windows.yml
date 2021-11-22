@@ -376,6 +376,7 @@ colors:
 
     foreground: '0xE5E5E5'
 
+    # Vim Theme
     #COLOR1 0xFF7092
     #COLOR2 0x00FBAC
     #COLOR3 0xFFFA6A
@@ -392,6 +393,30 @@ colors:
     #COLOR13 0xE6AEFE
     #COLOR14 0x99D6FC
     #COLOR15 0xFFFFFF
+
+    # Windows Terminal
+    #"background": "#140B2F",
+    #"black": "#01060E",
+    #"blue": "#00BFFF",
+    #"brightBlack": "#686868",
+    #"brightBlue": "#1BCCFD",
+    #"brightCyan": "#99D6FC",
+    #"brightGreen": "#21F6BC",
+    #"brightPurple": "#E6AEFE",
+    #"brightRed": "#FF8AA4",
+    #"brightWhite": "#FFFFFF",
+    #"brightYellow": "#FFF787",
+    #"cursorColor": "#FFFFFF",
+    #"cyan": "#86CBFE",
+    #"foreground": "#E5E5E5",
+    #"green": "#00FBAC",
+    #"name": "Cyberpunk",
+    #"purple": "#DF95FF",
+    #"red": "#FF7092",
+    #"selectionBackground": "#FFFFFF",
+    #"white": "#FFFFFF",
+    #"yellow": "#FFFA6A"
+
 
   # Normal colors
 
