@@ -55,9 +55,9 @@ fi
 #fi
 
 # Load tmux on Windows WSL
-if [[ -z "$TMUX" ]] && [[ "${IS_WSL}" == "1"  ]]; then
-	tmux -f ~/.config/tmux/tmux.conf
-fi
+#if [[ -z "$TMUX" ]] && [[ "${IS_WSL}" == "1"  ]]; then
+	#tmux -f ~/.config/tmux/tmux.conf
+#fi
 
 # https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
 stty start undef
