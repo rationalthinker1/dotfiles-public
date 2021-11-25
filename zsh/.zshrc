@@ -165,6 +165,7 @@ zplug "zdharma-continuum/fast-syntax-highlighting", defer:2
 zplug "wfxr/forgit"
 zplug "ptavares/zsh-exa"
 
+zplug "direnv/direnv", as:command, rename-to:direnv, use:"direnv", hook-build:"make"
 
 zplug "plugins/gitfast", from:oh-my-zsh
 zplug "peterhurford/git-it-on.zsh"

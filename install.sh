@@ -127,6 +127,7 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		xclip \
 		fzf \
 		glances \
+		exuberant-ctags \
 		; do
 			echo "installing ${package}"
 			sudo apt-get install --assume-yes --ignore-missing "${package}"
