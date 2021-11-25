@@ -211,6 +211,14 @@ export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 
 [[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
 
+if  [ -x "$(command -v kitty)" ]; then
+	export KITTY_CONFIG_DIRECTORY="${HOME}/.config/kitty"
+	kitty + complete setup zsh | source /dev/stdin
+fi
+
+if  [ -x "$(command -v direnv)" ]; then
+	eval "$(direnv hook zsh)"
+fi
 
 #=======================================================================================
 # Source aliases and functions
@@ -219,9 +227,3 @@ export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 if [ -f "${LOCAL_CONFIG}"/zsh/aliases.zsh ]; then
 	source "${LOCAL_CONFIG}"/zsh/aliases.zsh
 fi
-
-if  [ -x "$(command -v kitty)" ]; then
-	export KITTY_CONFIG_DIRECTORY="${HOME}/.config/kitty"
-	kitty + complete setup zsh | source /dev/stdin
-fi
-
