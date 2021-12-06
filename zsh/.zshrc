@@ -8,11 +8,11 @@ else
 	USE_OS="linux"
 fi
 
-if grep -qi "Microsoft" /proc/version ; then
-	IS_WSL=1
-else
-	IS_WSL=0
-fi
+#if [[ -f "/proc/version" ]] && [[ grep -qi "Microsoft" /proc/version ]]; then
+	#IS_WSL=1
+#else
+	#IS_WSL=0
+#fi
 
 export LOCAL_CONFIG="${HOME}/.config"
 export ZDOTDIR="${LOCAL_CONFIG}/zsh"
@@ -218,6 +218,27 @@ fi
 
 if  [ -x "$(command -v direnv)" ]; then
 	eval "$(direnv hook zsh)"
+fi
+
+# Source a file in zsh when entering a directory
+# https://stackoverflow.com/questions/17051123/source-a-file-in-zsh-when-entering-a-directory
+load-local-conf() {
+     # check file exists, is regular file and is readable:
+     if [[ -f .dirrc && -r .dirrc ]]; then
+       source .dirrc
+     fi
+}
+chpwd_functions+=( load-local-conf )
+
+# WSL?
+if [[ -f "/proc/sys/kernal/osrelease" ]] && [[ "$(< /proc/sys/kernel/osrelease)" == *microsoft* ]]; then
+    export $(dbus-launch)
+    export LIBGL_ALWAYS_INDIRECT=1
+    export WSL_VERSION=$(wsl.exe -l -v | grep -a '[*]' | sed 's/[^0-9]*//g')
+    export IP_ADDRESS=$(tail -1 /etc/resolv.conf | cut -d' ' -f2)
+    export DISPLAY=$IP_ADDRESS:0
+    # pip path if using --user
+    export PATH=$PATH:$HOME/.local/bin
 fi
 
 #=======================================================================================
