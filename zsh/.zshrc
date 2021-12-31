@@ -2,10 +2,12 @@
 #=======================================================================================
 # Loading up variables
 #=======================================================================================
-if [[ "$OSTYPE" == "darwin"* ]]; then
-	USE_OS="darwin"
+if [[ -f "/proc/sys/kernal/osrelease" ]] && [[ "$(< /proc/sys/kernel/osrelease)" == *microsoft* ]]; then
+	HOST_OS="windows"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+	HOST_OS="darwin"
 else
-	USE_OS="linux"
+	HOST_OS="linux"
 fi
 
 #if [[ -f "/proc/version" ]] && [[ grep -qi "Microsoft" /proc/version ]]; then
@@ -14,6 +16,7 @@ fi
 	#IS_WSL=0
 #fi
 
+export HOST_OS="${HOST_OS}"
 export LOCAL_CONFIG="${HOME}/.config"
 export ZDOTDIR="${LOCAL_CONFIG}/zsh"
 export ADOTDIR="${ZDOTDIR}/antigen"
@@ -140,10 +143,10 @@ zplug "junegunn/fzf", use:"shell/*.zsh"
 zplug "junegunn/fzf-bin", as:command, from:gh-r, rename-to:fzf
 #zplug "plugins/extract",   from:oh-my-zsh
 
-zplug "sharkdp/bat", as:command, from:gh-r, rename-to:"bat", use:"*x86_64*linux-gnu*", if:"[[ $OSTYPE == *linux* ]]", hook-load:"export BAT_THEME='OneHalfDark'"
+zplug "sharkdp/bat", as:command, from:gh-r, rename-to:"bat", use:"*x86_64*linux-gnu*", if:"[[ $OSTYPE != *darwin* ]]", hook-load:"export BAT_THEME='OneHalfDark'"
 zplug "sharkdp/bat", as:command, from:gh-r, rename-to:"bat", use:"*x86_64*darwin*", if:"[[ $OSTYPE == *darwin* ]]", hook-load:"export BAT_THEME='OneHalfDark'"
 
-zplug "sharkdp/fd", as:command, from:gh-r, rename-to:"fd", use:"*x86_64*linux-gnu*", if:"[[ $OSTYPE == *linux* ]]"
+zplug "sharkdp/fd", as:command, from:gh-r, rename-to:"fd", use:"*x86_64*linux-gnu*", if:"[[ $OSTYPE != *darwin* ]]"
 zplug "sharkdp/fd", as:command, from:gh-r, rename-to:"fd", use:"*x86_64*darwin*", if:"[[ $OSTYPE == *darwin* ]]"
 
 zplug "BurntSushi/ripgrep", as:command, rename-to:rg
@@ -231,7 +234,7 @@ load-local-conf() {
 chpwd_functions+=( load-local-conf )
 
 # WSL?
-if [[ -f "/proc/sys/kernal/osrelease" ]] && [[ "$(< /proc/sys/kernel/osrelease)" == *microsoft* ]]; then
+if [[ "${HOST_OS}" == *windows* ]]; then
     export $(dbus-launch)
     export LIBGL_ALWAYS_INDIRECT=1
     export WSL_VERSION=$(wsl.exe -l -v | grep -a '[*]' | sed 's/[^0-9]*//g')
