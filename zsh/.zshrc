@@ -10,12 +10,6 @@ else
 	HOST_OS="linux"
 fi
 
-#if [[ -f "/proc/version" ]] && [[ grep -qi "Microsoft" /proc/version ]]; then
-	#IS_WSL=1
-#else
-	#IS_WSL=0
-#fi
-
 export HOST_OS="${HOST_OS}"
 export LOCAL_CONFIG="${HOME}/.config"
 export ZDOTDIR="${LOCAL_CONFIG}/zsh"
@@ -52,16 +46,6 @@ fi
 #=======================================================================================
 # Basic Settings
 #=======================================================================================
-# Load tmux on guake
-#if [[ "${USE_OS}" == 'linux' ]] && [[  $(which $(ps -o 'cmd=' -p $(ps -o 'ppid=' -p $$)) | tail -n1) =~ "guake"  ]]; then
-	#tmux -f "${LOCAL_CONFIG}/tmux/tmux.conf"
-#fi
-
-# Load tmux on Windows WSL
-#if [[ -z "$TMUX" ]] && [[ "${IS_WSL}" == "1"  ]]; then
-	#tmux -f ~/.config/tmux/tmux.conf
-#fi
-
 # https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
 stty start undef
 
@@ -118,7 +102,7 @@ bindkey -v
 
 bindkey "^[[1;5C" forward-word
 bindkey "^[[1;5D" backward-word
-bindkey '^w' backward-kill-word
+bindkey '^w'	  backward-kill-word
 bindkey '\e[1~'   beginning-of-line  # Linux console
 bindkey '\e[H'    beginning-of-line  # xterm
 bindkey '\eOH'    beginning-of-line  # gnome-terminal
@@ -138,7 +122,6 @@ zplug "zplug/zplug", hook-build: "zplug --self-manage"
 #zplug "akavel/up", as:command, from:gh-r, use:"*up"
 #zplug "stedolan/jq", as:command, from:gh-r
 zplug "ogham/exa", from:gh-r, as:command, use:\*macos-x86\*, rename-to:exa
-#zplug "plugins/git",   from:oh-my-zsh
 zplug "junegunn/fzf", use:"shell/*.zsh"
 zplug "junegunn/fzf-bin", as:command, from:gh-r, rename-to:fzf
 #zplug "plugins/extract",   from:oh-my-zsh
@@ -152,7 +135,6 @@ zplug "sharkdp/fd", as:command, from:gh-r, rename-to:"fd", use:"*x86_64*darwin*"
 zplug "BurntSushi/ripgrep", as:command, rename-to:rg
 #zplug "zsh-users/zsh-history-substring-search"
 #zplug "plugins/command-not-found",   from:oh-my-zsh
-#zplug "zdharma/fast-syntax-highlighting", defer:2
 zplug "zsh-users/zsh-autosuggestions", depth:1
 #zplug "zsh-users/zsh-completions", depth:1
 #zplug "zsh-users/zsh-history-substring-search", depth:1
@@ -160,8 +142,6 @@ zplug "zsh-users/zsh-autosuggestions", depth:1
 zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
 #zplug "gko/ssh-connect", as:command, use:"ssh-connect.sh", rename-to:"ssh-connect", depth:1
 zplug "romkatv/powerlevel10k", as:theme, depth:1, use:powerlevel10k.zsh-theme
-
-#zplug "marlonrichert/zsh-autocomplete", use:zsh-autocomplete.plugin.zsh, from:github, as:plugin
 
 #zplug "rationalthinker1/loom", from:github, as:command, rename-to:"loom"
 zplug "zdharma-continuum/fast-syntax-highlighting", defer:2
