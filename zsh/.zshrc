@@ -2,7 +2,7 @@
 #=======================================================================================
 # Loading up variables
 #=======================================================================================
-if [[ -f "/proc/sys/kernal/osrelease" ]] && [[ "$(< /proc/sys/kernel/osrelease)" == *microsoft* ]]; then
+if [[ -f "/proc/sys/kernel/osrelease" ]] && [[ "$(< /proc/sys/kernel/osrelease)" == *microsoft* ]]; then
 	HOST_OS="windows"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
 	HOST_OS="darwin"
