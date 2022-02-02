@@ -71,6 +71,7 @@ Plug 'ap/vim-buftabline'                  " Shows buffer tab at the top
 "Plug 'skywind3000/asyncrun.vim'          " Runs commands asynchronously
 Plug 'knubie/vim-kitty-navigator'
 Plug 'cohama/lexima.vim'                  " autoclose { in functions, if statements
+Plug 'fladson/vim-kitty'                  " add coloring on kitty.config file
 let g:lexima_enable_basic_rules = 0
 
 "=== Custom configurations
