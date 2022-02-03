@@ -224,6 +224,9 @@ if [[ "${HOST_OS}" == *windows* ]]; then
     export PATH=$PATH:$HOME/.local/bin
 fi
 
+if [[ "${HOST_OS}" == *darwin* ]]; then
+    launchctl setenv HOST_OS darwin
+fi
 #=======================================================================================
 # Source aliases and functions
 #=======================================================================================
