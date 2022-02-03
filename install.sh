@@ -96,7 +96,7 @@ function backupFile() {
 }
 
 
-# Installing zsh
+# Installing zsh and basic packages
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
 	echo "upgrading all packages"
@@ -128,6 +128,7 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		fzf \
 		glances \
 		exuberant-ctags \
+		fd-find \
 		; do
 			echo "installing ${package}"
 			sudo apt-get install --assume-yes --ignore-missing "${package}"
