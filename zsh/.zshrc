@@ -91,7 +91,7 @@ setopt HIST_EXPIRE_DUPS_FIRST     # Expire duplicate entries first when trimming
 setopt HIST_IGNORE_DUPS           # Don't record an entry that was just recorded again.
 setopt HIST_IGNORE_ALL_DUPS       # If a new command line being added to the history list duplicates an older one, the older command is removed from the list
 setopt EXTENDED_HISTORY           # save each command's beginning timestamp and the duration to the history file
-setopt INC_APPEND_HISTORY        # Write to the history file immediately, not when the shell exits.
+setopt INC_APPEND_HISTORY         # Write to the history file immediately, not when the shell exits.
 
 #=======================================================================================
 # Setting up home/end keys for keyboard
@@ -119,12 +119,20 @@ bindkey '\eOF'    end-of-line        # gnome-terminal
 source "${ZPLUG_HOME}/init.zsh"
 zplug "zplug/zplug", hook-build: "zplug --self-manage"
 
-#zplug "akavel/up", as:command, from:gh-r, use:"*up"
-#zplug "stedolan/jq", as:command, from:gh-r
+# helping out building better pipe commands
+zplug "akavel/up", as:command, from:gh-r, use:"*up"
+
+# for parsing json file
+zplug "stedolan/jq", as:command, from:gh-r
+
 zplug "ogham/exa", from:gh-r, as:command, use:\*macos-x86\*, rename-to:exa
+zplug "ptavares/zsh-exa"
+
 zplug "junegunn/fzf", use:"shell/*.zsh"
 zplug "junegunn/fzf-bin", as:command, from:gh-r, rename-to:fzf
-#zplug "plugins/extract",   from:oh-my-zsh
+
+# for creating extract function to extract compressed files such as zip, tar, etc...
+zplug "plugins/extract",   from:oh-my-zsh
 
 zplug "sharkdp/bat", as:command, from:gh-r, rename-to:"bat", use:"*x86_64*linux-gnu*", if:"[[ $OSTYPE != *darwin* ]]", hook-load:"export BAT_THEME='OneHalfDark'"
 zplug "sharkdp/bat", as:command, from:gh-r, rename-to:"bat", use:"*x86_64*darwin*", if:"[[ $OSTYPE == *darwin* ]]", hook-load:"export BAT_THEME='OneHalfDark'"
@@ -133,20 +141,13 @@ zplug "sharkdp/fd", as:command, from:gh-r, rename-to:"fd", use:"*x86_64*linux-gn
 zplug "sharkdp/fd", as:command, from:gh-r, rename-to:"fd", use:"*x86_64*darwin*", if:"[[ $OSTYPE == *darwin* ]]"
 
 zplug "BurntSushi/ripgrep", as:command, rename-to:rg
-#zplug "zsh-users/zsh-history-substring-search"
-#zplug "plugins/command-not-found",   from:oh-my-zsh
 zplug "zsh-users/zsh-autosuggestions", depth:1
-#zplug "zsh-users/zsh-completions", depth:1
-#zplug "zsh-users/zsh-history-substring-search", depth:1
-#zplug "b4b4r07/http_code", as:command, use:bin
 zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
-#zplug "gko/ssh-connect", as:command, use:"ssh-connect.sh", rename-to:"ssh-connect", depth:1
 zplug "romkatv/powerlevel10k", as:theme, depth:1, use:powerlevel10k.zsh-theme
 
 #zplug "rationalthinker1/loom", from:github, as:command, rename-to:"loom"
 zplug "zdharma-continuum/fast-syntax-highlighting", defer:2
 zplug "wfxr/forgit"
-zplug "ptavares/zsh-exa"
 
 zplug "direnv/direnv", as:command, rename-to:direnv, use:"direnv", hook-build:"make"
 
@@ -155,6 +156,19 @@ zplug "peterhurford/git-it-on.zsh"
 #zplug "plugins/git", from:oh-my-zsh
 zplug "plugins/docker", from:oh-my-zsh
 zplug "plugins/docker-compose", from:oh-my-zsh
+
+#By pressing the esc key twice, you will have the same command with sudo prefixed without typing:
+zplug "plugins/sudo", from:oh-my-zsh
+
+#copies the contents of a file in your system clipboard
+zplug "plugins/copyfile", from:oh-my-zsh
+
+# alt+left -> Go to previous directory
+# alt+right -> Go to next directory
+# alt+up -> Go to parent directory
+# alt+down -> Go to first child directory by alphabetical order
+zplug "plugins/dirhistory", from:oh-my-zsh
+
 export forgit_log=gl
 
 if ! zplug check; then
@@ -225,7 +239,8 @@ if [[ "${HOST_OS}" == *windows* ]]; then
 fi
 
 if [[ "${HOST_OS}" == *darwin* ]]; then
-    launchctl setenv HOST_OS darwin
+	# sets environment variables on MacOS
+	launchctl setenv HOST_OS darwin
 fi
 #=======================================================================================
 # Source aliases and functions
