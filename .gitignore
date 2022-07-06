@@ -9,6 +9,7 @@ tmp
 backup
 zsh/antigen
 zsh/local.zsh
+zsh/.zsh_history
 .zcompdump
 .zcompdump-*
 .vim/.viminfo
