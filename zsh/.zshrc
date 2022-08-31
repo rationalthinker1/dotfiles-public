@@ -200,6 +200,9 @@ zstyle ':autocomplete:*' fuzzy-search off
 zstyle ':autocomplete:tab:*' completion cycle
 zstyle ':autocomplete:list-choices:*' min-input 3
 
+if [ -f "/usr/share/doc/fzf/examples/key-bindings.zsh" ]; then
+	source "/usr/share/doc/fzf/examples/key-bindings.zsh"
+fi
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
@@ -249,3 +252,4 @@ fi
 if [ -f "${LOCAL_CONFIG}"/zsh/aliases.zsh ]; then
 	source "${LOCAL_CONFIG}"/zsh/aliases.zsh
 fi
+
