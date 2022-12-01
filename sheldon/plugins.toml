@@ -10,7 +10,7 @@
 #
 # See the documentation for more https://github.com/rossmacarthur/sheldon#readme
 
-shell = "zsh"
+shell = 'zsh'
 
 [templates]
 defer = "{% for file in files %}zsh-defer source \"{{ file }}\"\n{% endfor %}"
@@ -18,52 +18,44 @@ defer = "{% for file in files %}zsh-defer source \"{{ file }}\"\n{% endfor %}"
 [plugins]
 
 [plugins.zsh-defer]
-github = "romkatv/zsh-defer"
+github = 'romkatv/zsh-defer'
 
 [plugins.up]
 github = 'akavel/up'
-apply = ["defer"]
-
-[plugins.exa]
-github = 'ptavares/zsh-exa'
-apply = ["defer"]
+apply = ['defer']
 
 [plugins.fzf-zsh-plugin]
 github = 'unixorn/fzf-zsh-plugin'
-apply = ["defer"]
+apply = ['defer']
 
 [plugins.extract]
 github = 'ohmyzsh/ohmyzsh'
 use = ['plugins/extract/*.zsh']
-apply = ["defer"]
+apply = ['defer']
 
 [plugins.ripgrep]
 github = 'BurntSushi/ripgrep'
-apply = ["defer"]
+apply = ['defer']
 
 [plugins.zsh-autosuggestions]
 github = 'zsh-users/zsh-autosuggestions'
 use = ["{{ name }}.zsh"]
-apply = ["defer"]
+apply = ['defer']
 
 [plugins.base16]
-github = "chriskempson/base16-shell"
+github = 'chriskempson/base16-shell'
 
-[plugins.enhancd-pre]
-inline = """
-  export ENHANCD_DISABLE_DOT=1;
-"""
 [plugins.enhancd]
 github = 'b4b4r07/enhancd'
-apply = ["defer"]
+apply = ['defer']
 
 [plugins.yarn-extra-completion]
 github = 'buonomo/yarn-extra-completion'
-apply = ["defer"]
+apply = ['defer']
 
 [plugins.fzf]
-github = "junegunn/fzf"
-apply = ["defer"]
+github = 'junegunn/fzf'
+apply = ['defer']
 use = [
   "completion.zsh",
   "key-bindings.zsh",
@@ -74,46 +66,46 @@ github = 'romkatv/powerlevel10k'
 
 [plugins.fast-syntax-highlighting]
 github = 'zdharma-continuum/fast-syntax-highlighting'
-apply = ["defer"]
+apply = ['defer']
 
 [plugins.zsh-completions]
 github = 'zsh-users/zsh-completions'
-apply = ["defer"]
+apply = ['defer']
 
 [plugins.forgit]
 github = 'wfxr/forgit'
-apply = ["defer"]
+apply = ['defer']
 
 [plugins.git-it-on]
 github = 'peterhurford/git-it-on.zsh'
-apply = ["defer"]
+apply = ['defer']
 
 [plugins.gitfast]
 github = 'ohmyzsh/ohmyzsh'
 dir = 'plugins/gitfast'
-apply = ["defer"]
+apply = ['defer']
 
 [plugins.docker]
 github = 'ohmyzsh/ohmyzsh'
 dir = 'plugins/docker'
-apply = ["defer"]
+apply = ['defer']
 
 [plugins.docker-compose]
 github = 'ohmyzsh/ohmyzsh'
 dir = 'plugins/docker-compose'
-apply = ["defer"]
+apply = ['defer']
 
 # By pressing the esc key twice, you will have the same command with sudo prefixed without typing
 [plugins.sudo]
 github = 'ohmyzsh/ohmyzsh'
 dir = 'plugins/sudo'
-apply = ["defer"]
+apply = ['defer']
 
 #copies the contents of a file in your system clipboard
 [plugins.copyfile]
 github = 'ohmyzsh/ohmyzsh'
 dir = 'plugins/copyfile'
-apply = ["defer"]
+apply = ['defer']
 
 # alt+left -> Go to previous directory
 # alt+right -> Go to next directory
@@ -122,4 +114,4 @@ apply = ["defer"]
 [plugins.dirhistory]
 github = 'ohmyzsh/ohmyzsh'
 dir = 'plugins/dirhistory'
-apply = ["defer"]
+apply = ['defer']
