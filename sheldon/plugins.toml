@@ -1,0 +1,82 @@
+# `sheldon` configuration file
+# ----------------------------
+#
+# You can modify this file directly or you can use one of the following
+# `sheldon` commands which are provided to assist in editing the config file:
+#
+# - `sheldon add` to add a new plugin to the config file
+# - `sheldon edit` to open up the config file in the default editor
+# - `sheldon remove` to remove a plugin from the config file
+#
+# See the documentation for more https://github.com/rossmacarthur/sheldon#readme
+
+shell = "zsh"
+
+[plugins]
+
+[plugins.up]
+github = 'akavel/up'
+
+[plugins.powerlevel10k]
+github = 'romkatv/powerlevel10k'
+
+[plugins.fast-syntax-highlighting]
+github = 'zdharma-continuum/fast-syntax-highlighting'
+
+[plugins.enhancd]
+github = 'b4b4r07/enhancd'
+
+[plugins.zsh-autosuggestions]
+github = 'zsh-users/zsh-autosuggestions'
+
+[plugins.ripgrep]
+github = 'BurntSushi/ripgrep'
+
+[plugins.zsh-completions]
+github = 'zsh-users/zsh-completions'
+
+[plugins.forgit]
+github = 'wfxr/forgit'
+
+[plugins.exa]
+github = 'ptavares/zsh-exa'
+
+[plugins.fzf-zsh-plugin]
+github = 'unixorn/fzf-zsh-plugin'
+
+[plugins.gitfast]
+github = 'ohmyzsh/ohmyzsh'
+use = ['plugins/gitfast/*.zsh']
+
+[plugins.docker]
+github = 'ohmyzsh/ohmyzsh'
+use = ['plugins/docker/*.zsh']
+
+[plugins.docker-compose]
+github = 'ohmyzsh/ohmyzsh'
+use = ['plugins/docker-compose/*.zsh']
+
+# By pressing the esc key twice, you will have the same command with sudo prefixed without typing
+[plugins.sudo]
+github = 'ohmyzsh/ohmyzsh'
+use = ['plugins/sudo/*.zsh']
+
+#copies the contents of a file in your system clipboard
+[plugins.copyfile]
+github = 'ohmyzsh/ohmyzsh'
+use = ['plugins/copyfile/*.zsh']
+
+# alt+left -> Go to previous directory
+# alt+right -> Go to next directory
+# alt+up -> Go to parent directory
+# alt+down -> Go to first child directory by alphabetical order
+[plugins.dirhistory]
+github = 'ohmyzsh/ohmyzsh'
+use = ['plugins/dirhistory/*.zsh']
+
+[plugins.extract]
+github = 'ohmyzsh/ohmyzsh'
+use = ['plugins/extract/*.zsh']
+
+[plugins.git-it-on]
+github = 'peterhurford/git-it-on.zsh'

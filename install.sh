@@ -126,11 +126,14 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		xsel \
 		xclip \
 		fzf \
+		exa \
+		bat \
+		ripgrep \
 		glances \
 		exuberant-ctags \
 		fd-find \
 		; do
-			echo "installing ${package}"
+			echo "<======================================== installing ${package} ========================================>"
 			sudo apt-get install --assume-yes --ignore-missing "${package}"
 		done
 
@@ -146,29 +149,10 @@ fi
 if [[ ! $(blackhosts --help 2>/dev/null) ]] && [[ isDesktop ]]; then
 	decho "blackhosts does not exist"
 	echo "installing blackhosts"
-	link=$(curl -sL https://github.com/Lateralus138/blackhosts/releases/latest | grep -P "href=" | grep -vE "musl" | grep "blackhosts.deb" | head -n 1 | cut -d '"' -f 2 | sed -e "s|^|https://github.com|")
+	link=$(curl -s https://api.github.com/repos/Lateralus138/blackhosts/releases/latest | grep -P "browser_download_url" | grep -vE "musl" | grep "blackhosts.deb" | head -n 1 |  cut -d '"' -f 4)
 	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
 	wget -q $link -P /tmp/
 	sudo dpkg -i --force-overwrite /tmp/$download_filename
-fi
-
-
-# Installing Rust for exa
-if [[ ! $(exa --help 2>/dev/null) ]]; then
-	decho "exa does not exist"
-	echo "installing rust and exa"
-	curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-	echo "export PATH=$HOME/.cargo/bin:$PATH" >> ~/.zprofile
-	source ~/.zprofile
-	$HOME/.cargo/bin/cargo install exa --force
-fi
-
-# Installing fzf
-if [[ ! -d "${LOCAL_CONFIG}/fzf" ]]; then
-	decho "fzf does not exist"
-	echo "installing fzf"
-	git clone --depth 1 https://github.com/junegunn/fzf.git "${LOCAL_CONFIG}/"fzf
-	"${LOCAL_CONFIG}/"fzf/install --xdg --no-bash --no-fish --key-bindings --completion --no-update-rc
 fi
 
 # Installing broot
@@ -180,18 +164,11 @@ if [[ ! $(broot --version 2>/dev/null) ]]; then
 	sudo chmod +x /usr/local/bin/broot
 fi
 
-# Installing mcfly
-#if [[ ! $(mcfly --version 2>/dev/null) ]]; then
-	#decho "mcfly does not exist"
-	#echo "installing mcfly"
-	#curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sudo sh -s -- --git cantino/mcfly
-#fi
-
 # Installing node
 if [[ ! $(node --version 2>/dev/null) ]]; then
 	decho "node does not exist"
 	echo "installing node"
-	curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+	curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 	sudo apt-get install nodejs
 
 	# Installing yarn
@@ -214,26 +191,6 @@ if [[ ! $(fd --version 2>/dev/null) ]]; then
 	sudo dpkg -i --force-overwrite /tmp/$download_filename
 fi
 
-# Installing ripgrep
-if [[ ! $(rg --version 2>/dev/null) ]]; then
-	decho "ripgrep does not exist"
-	echo "installing ripgrep"
-	link=$(curl -s https://api.github.com/repos/BurntSushi/ripgrep/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep "deb" | head -n 1 |  cut -d '"' -f 4)
-	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
-	wget -q $link -P /tmp/
-	sudo dpkg -i --force-overwrite /tmp/$download_filename
-fi
-
-# Installing bat
-if [[ ! $(bat --version 2>/dev/null) ]]; then
-	decho "bat does not exist"
-	echo "installing bat"
-	link=$(curl -s https://api.github.com/repos/sharkdp/bat/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep -vE "musl" |  grep "deb" | head -n 1 |  cut -d '"' -f 4)
-	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
-	wget -q $link -P /tmp/
-	sudo dpkg -i --force-overwrite /tmp/$download_filename
-fi
-
 # Installing up
 if [[ ! $(which up 2>/dev/null) ]]; then
 	decho "up does not exist"
@@ -243,26 +200,6 @@ if [[ ! $(which up 2>/dev/null) ]]; then
 	sudo wget -q $link -P /usr/local/bin/
 	sudo chmod +x /usr/local/bin/up
 fi
-
-# Installing glances
-# if [[ ! $(which glances 2>/dev/null) ]]; then
-# 	decho "glances does not exist"
-# 	echo "Installing glances"
-# 	sudo pip install glances
-# fi
-
-# Installing go-lang
-#if [[ ! $(go verion 2>/dev/null) ]]; then
-	#decho "go-lang does not exist"
-	#go_file="go1.13.4.linux-amd64.tar.gz"
-	#cd /tmp
-	#wget -nc https://dl.google.com/go/"${go_file}"
-	#sudo tar -C /usr/local/ -vzxf /tmp/"${go_file}" > /dev/null
-	#echo "export PATH=\$PATH:/usr/local/go/bin:\$HOME/.go-projects/bin" >> ~/.zprofile
-	#echo "export GOROOT=/usr/local/go" >> ~/.zprofile
-	#echo "export GOPATH=\$HOME/.go-projects" >> ~/.zprofile
-	#rm -rf /tmp/"${go_file}"
-#fi
 
 if [[ ! -f "${HOME}/.dotfiles/fonts/.installed" ]] && [[ isDesktop ]]; then
 	cd "${HOME}/.dotfiles"/fonts
@@ -281,7 +218,7 @@ updateFiles "${HOME}/.dotfiles/.vimrc" "${HOME}/.vimrc"
 updateFiles "${HOME}/.dotfiles/.vim" "${HOME}/.vim"
 updateFiles "${HOME}/.dotfiles/zsh" "${HOME}/.config/zsh"
 updateFiles "${HOME}/.dotfiles/ranger" "${HOME}/.config/ranger"
-updateFiles "${HOME}/.dotfiles/ripgrep "${HOME}/.config/ripgrep"
+updateFiles "${HOME}/.dotfiles/ripgrep" "${HOME}/.config/ripgrep"
 updateFiles "${HOME}/.dotfiles/kitty" "${HOME}/.config/kitty"
 updateFiles "${HOME}/.dotfiles/broot" "${HOME}/.config/broot"
 updateFiles "${HOME}/.dotfiles/alacritty" "${HOME}/.config/alacritty"

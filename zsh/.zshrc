@@ -113,71 +113,71 @@ bindkey '\e[F'    end-of-line        # xterm
 bindkey '\eOF'    end-of-line        # gnome-terminal
 
 
-#=======================================================================================
-# Zplug
-#=======================================================================================
-source "${ZPLUG_HOME}/init.zsh"
-zplug "zplug/zplug", hook-build: "zplug --self-manage"
+# #=======================================================================================
+# # Zplug
+# #=======================================================================================
+# source "${ZPLUG_HOME}/init.zsh"
+# zplug "zplug/zplug", hook-build: "zplug --self-manage"
 
-# helping out building better pipe commands
-zplug "akavel/up", as:command, from:gh-r, use:"*up"
+# # helping out building better pipe commands
+# zplug "akavel/up", as:command, from:gh-r, use:"*up"
 
-# for parsing json file
-zplug "stedolan/jq", as:command, from:gh-r
+# # for parsing json file
+# zplug "stedolan/jq", as:command, from:gh-r
 
-zplug "ogham/exa", from:gh-r, as:command, use:\*macos-x86\*, rename-to:exa
-zplug "ptavares/zsh-exa"
+# zplug "ogham/exa", from:gh-r, as:command, use:\*macos-x86\*, rename-to:exa
+# zplug "ptavares/zsh-exa"
 
-zplug "junegunn/fzf", use:"shell/*.zsh"
-zplug "junegunn/fzf-bin", as:command, from:gh-r, rename-to:fzf
+# zplug "junegunn/fzf", use:"shell/*.zsh"
+# zplug "junegunn/fzf-bin", as:command, from:gh-r, rename-to:fzf
 
-# for creating extract function to extract compressed files such as zip, tar, etc...
-zplug "plugins/extract",   from:oh-my-zsh
+# # for creating extract function to extract compressed files such as zip, tar, etc...
+# zplug "plugins/extract",   from:oh-my-zsh
 
-zplug "sharkdp/bat", as:command, from:gh-r, rename-to:"bat", use:"*x86_64*linux-gnu*", if:"[[ $OSTYPE != *darwin* ]]", hook-load:"export BAT_THEME='OneHalfDark'"
-zplug "sharkdp/bat", as:command, from:gh-r, rename-to:"bat", use:"*x86_64*darwin*", if:"[[ $OSTYPE == *darwin* ]]", hook-load:"export BAT_THEME='OneHalfDark'"
+# zplug "sharkdp/bat", as:command, from:gh-r, rename-to:"bat", use:"*x86_64*linux-gnu*", if:"[[ $OSTYPE != *darwin* ]]", hook-load:"export BAT_THEME='OneHalfDark'"
+# zplug "sharkdp/bat", as:command, from:gh-r, rename-to:"bat", use:"*x86_64*darwin*", if:"[[ $OSTYPE == *darwin* ]]", hook-load:"export BAT_THEME='OneHalfDark'"
 
-zplug "sharkdp/fd", as:command, from:gh-r, rename-to:"fd", use:"*x86_64*linux-gnu*", if:"[[ $OSTYPE != *darwin* ]]"
-zplug "sharkdp/fd", as:command, from:gh-r, rename-to:"fd", use:"*x86_64*darwin*", if:"[[ $OSTYPE == *darwin* ]]"
+# zplug "sharkdp/fd", as:command, from:gh-r, rename-to:"fd", use:"*x86_64*linux-gnu*", if:"[[ $OSTYPE != *darwin* ]]"
+# zplug "sharkdp/fd", as:command, from:gh-r, rename-to:"fd", use:"*x86_64*darwin*", if:"[[ $OSTYPE == *darwin* ]]"
 
-zplug "BurntSushi/ripgrep", as:command, rename-to:rg
-zplug "zsh-users/zsh-autosuggestions", depth:1
-zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
-zplug "romkatv/powerlevel10k", as:theme, depth:1, use:powerlevel10k.zsh-theme
+# zplug "BurntSushi/ripgrep", as:command, rename-to:rg
+# zplug "zsh-users/zsh-autosuggestions", depth:1
+# zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
+# zplug "romkatv/powerlevel10k", as:theme, depth:1, use:powerlevel10k.zsh-theme
 
-#zplug "rationalthinker1/loom", from:github, as:command, rename-to:"loom"
-zplug "zdharma-continuum/fast-syntax-highlighting", defer:2
-zplug "wfxr/forgit"
+# #zplug "rationalthinker1/loom", from:github, as:command, rename-to:"loom"
+# zplug "zdharma-continuum/fast-syntax-highlighting", defer:2
+# zplug "wfxr/forgit"
 
-zplug "direnv/direnv", as:command, rename-to:direnv, use:"direnv", hook-build:"make"
+# zplug "direnv/direnv", as:command, rename-to:direnv, use:"direnv", hook-build:"make"
 
-zplug "plugins/gitfast", from:oh-my-zsh
-zplug "peterhurford/git-it-on.zsh"
-#zplug "plugins/git", from:oh-my-zsh
-zplug "plugins/docker", from:oh-my-zsh
-zplug "plugins/docker-compose", from:oh-my-zsh
+# zplug "plugins/gitfast", from:oh-my-zsh
+# zplug "peterhurford/git-it-on.zsh"
+# #zplug "plugins/git", from:oh-my-zsh
+# zplug "plugins/docker", from:oh-my-zsh
+# zplug "plugins/docker-compose", from:oh-my-zsh
 
-#By pressing the esc key twice, you will have the same command with sudo prefixed without typing:
-zplug "plugins/sudo", from:oh-my-zsh
+# #By pressing the esc key twice, you will have the same command with sudo prefixed without typing:
+# zplug "plugins/sudo", from:oh-my-zsh
 
-#copies the contents of a file in your system clipboard
-zplug "plugins/copyfile", from:oh-my-zsh
+# #copies the contents of a file in your system clipboard
+# zplug "plugins/copyfile", from:oh-my-zsh
 
-# alt+left -> Go to previous directory
-# alt+right -> Go to next directory
-# alt+up -> Go to parent directory
-# alt+down -> Go to first child directory by alphabetical order
-zplug "plugins/dirhistory", from:oh-my-zsh
+# # alt+left -> Go to previous directory
+# # alt+right -> Go to next directory
+# # alt+up -> Go to parent directory
+# # alt+down -> Go to first child directory by alphabetical order
+# zplug "plugins/dirhistory", from:oh-my-zsh
 
-export forgit_log=gl
+# export forgit_log=gl
 
-if ! zplug check; then
-    printf "Install? [y/N]: "
-    if read -q; then
-        echo; zplug install
-    fi
-fi
-zplug load
+# if ! zplug check; then
+#     printf "Install? [y/N]: "
+#     if read -q; then
+#         echo; zplug install
+#     fi
+# fi
+# zplug load
 
 
 #=======================================================================================
@@ -206,6 +206,7 @@ fi
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
+export forgit_log=gl
 
 [[ -f "${HOME}/.local/share/broot/launcher/bash/1" ]] && source "${HOME}/.local/share/broot/launcher/bash/1"
 
@@ -253,3 +254,4 @@ if [ -f "${LOCAL_CONFIG}"/zsh/aliases.zsh ]; then
 	source "${LOCAL_CONFIG}"/zsh/aliases.zsh
 fi
 
+eval "$(sheldon source)"
