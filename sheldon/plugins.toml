@@ -12,59 +12,108 @@
 
 shell = "zsh"
 
+[templates]
+defer = "{% for file in files %}zsh-defer source \"{{ file }}\"\n{% endfor %}"
+
 [plugins]
+
+[plugins.zsh-defer]
+github = "romkatv/zsh-defer"
 
 [plugins.up]
 github = 'akavel/up'
+apply = ["defer"]
+
+[plugins.exa]
+github = 'ptavares/zsh-exa'
+apply = ["defer"]
+
+[plugins.fzf-zsh-plugin]
+github = 'unixorn/fzf-zsh-plugin'
+apply = ["defer"]
+
+[plugins.extract]
+github = 'ohmyzsh/ohmyzsh'
+use = ['plugins/extract/*.zsh']
+apply = ["defer"]
+
+[plugins.ripgrep]
+github = 'BurntSushi/ripgrep'
+apply = ["defer"]
+
+[plugins.zsh-autosuggestions]
+github = 'zsh-users/zsh-autosuggestions'
+use = ["{{ name }}.zsh"]
+apply = ["defer"]
+
+[plugins.base16]
+github = "chriskempson/base16-shell"
+
+[plugins.enhancd-pre]
+inline = """
+  export ENHANCD_DISABLE_DOT=1;
+"""
+[plugins.enhancd]
+github = 'b4b4r07/enhancd'
+apply = ["defer"]
+
+[plugins.yarn-extra-completion]
+github = 'buonomo/yarn-extra-completion'
+apply = ["defer"]
+
+[plugins.fzf]
+github = "junegunn/fzf"
+apply = ["defer"]
+use = [
+  "completion.zsh",
+  "key-bindings.zsh",
+]
 
 [plugins.powerlevel10k]
 github = 'romkatv/powerlevel10k'
 
 [plugins.fast-syntax-highlighting]
 github = 'zdharma-continuum/fast-syntax-highlighting'
-
-[plugins.enhancd]
-github = 'b4b4r07/enhancd'
-
-[plugins.zsh-autosuggestions]
-github = 'zsh-users/zsh-autosuggestions'
-
-[plugins.ripgrep]
-github = 'BurntSushi/ripgrep'
+apply = ["defer"]
 
 [plugins.zsh-completions]
 github = 'zsh-users/zsh-completions'
+apply = ["defer"]
 
 [plugins.forgit]
 github = 'wfxr/forgit'
+apply = ["defer"]
 
-[plugins.exa]
-github = 'ptavares/zsh-exa'
-
-[plugins.fzf-zsh-plugin]
-github = 'unixorn/fzf-zsh-plugin'
+[plugins.git-it-on]
+github = 'peterhurford/git-it-on.zsh'
+apply = ["defer"]
 
 [plugins.gitfast]
 github = 'ohmyzsh/ohmyzsh'
-use = ['plugins/gitfast/*.zsh']
+dir = 'plugins/gitfast'
+apply = ["defer"]
 
 [plugins.docker]
 github = 'ohmyzsh/ohmyzsh'
-use = ['plugins/docker/*.zsh']
+dir = 'plugins/docker'
+apply = ["defer"]
 
 [plugins.docker-compose]
 github = 'ohmyzsh/ohmyzsh'
-use = ['plugins/docker-compose/*.zsh']
+dir = 'plugins/docker-compose'
+apply = ["defer"]
 
 # By pressing the esc key twice, you will have the same command with sudo prefixed without typing
 [plugins.sudo]
 github = 'ohmyzsh/ohmyzsh'
-use = ['plugins/sudo/*.zsh']
+dir = 'plugins/sudo'
+apply = ["defer"]
 
 #copies the contents of a file in your system clipboard
 [plugins.copyfile]
 github = 'ohmyzsh/ohmyzsh'
-use = ['plugins/copyfile/*.zsh']
+dir = 'plugins/copyfile'
+apply = ["defer"]
 
 # alt+left -> Go to previous directory
 # alt+right -> Go to next directory
@@ -72,11 +121,5 @@ use = ['plugins/copyfile/*.zsh']
 # alt+down -> Go to first child directory by alphabetical order
 [plugins.dirhistory]
 github = 'ohmyzsh/ohmyzsh'
-use = ['plugins/dirhistory/*.zsh']
-
-[plugins.extract]
-github = 'ohmyzsh/ohmyzsh'
-use = ['plugins/extract/*.zsh']
-
-[plugins.git-it-on]
-github = 'peterhurford/git-it-on.zsh'
+dir = 'plugins/dirhistory'
+apply = ["defer"]

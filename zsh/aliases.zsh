@@ -21,23 +21,23 @@ if  [ -x "$(command -v exa)" ]; then
 
 	## Use a long listing format ##
 	# List with human readable filesizes
-	alias l="exa --color=auto --long --header --group --group-directories-first"
+	alias l="exa --color=auto --long --header --group --git --group-directories-first"
 	# List all, with human readable filesizes
-	alias ll="exa --color=auto --long --header --group --all --group-directories-first"
+	alias ll="exa --color=auto --long --header --group --git --all --group-directories-first"
 	# Same as above, but ordered by size
-	alias lls="exa --color=auto --long --header --group --all --group-directories-first --sort size"
+	alias lls="exa --color=auto --long --header --group --git --all --group-directories-first --sort size"
 	# Same as above, but ordered by date
-	alias llt="exa --color=auto --long --header --group --all --group-directories-first --reverse --sort oldest"
+	alias llt="exa --color=auto --long --header --group --git --all --group-directories-first --reverse --sort oldest"
 	# Show tree level 2
-	alias lt="exa --color=auto --long --header --group --all --group-directories-first --tree --level=2"
+	alias lt="exa --color=auto --long --header --group --git --all --group-directories-first --tree --level=2"
 	# Show tree level 3
-	alias lt3="exa --color=auto --long --header --group --all --group-directories-first --tree --level=3"
+	alias lt3="exa --color=auto --long --header --group --git --all --group-directories-first --tree --level=3"
 	# Show tree level 4
-	alias lt4="exa --color=auto --long --header --group --all --group-directories-first --tree --level=4"
+	alias lt4="exa --color=auto --long --header --group --git --all --group-directories-first --tree --level=4"
 	# Show hidden files ##
-	alias l.="exa --color=auto --long --header --group --all --group-directories-first --list-dirs .*"
+	alias l.="exa --color=auto --long --header --group --git --all --group-directories-first --list-dirs .*"
 	# Show only directories
-	alias ld="exa --color=auto --long --header --group --all --group-directories-first --only-dirs"
+	alias ld="exa --color=auto --long --header --group --git --all --group-directories-first --only-dirs"
 else
 	## Colorize the ls output ##
 	alias ls='ls --color=auto'
