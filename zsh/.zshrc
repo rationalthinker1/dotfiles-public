@@ -207,6 +207,8 @@ export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 export forgit_log=gl
+export BAT_THEME='OneHalfDark'
+export ENHANCD_DISABLE_DOT=1
 
 [[ -f "${HOME}/.local/share/broot/launcher/bash/1" ]] && source "${HOME}/.local/share/broot/launcher/bash/1"
 
