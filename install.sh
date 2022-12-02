@@ -5,6 +5,23 @@ BACKUP_DIR="${HOME}/.dotfiles/backup"
 LOCAL_CONFIG="${HOME}/.config"
 export ZSH="${LOCAL_CONFIG}/zsh"
 
+#=======================================================================================
+# Loading up variables
+#=======================================================================================
+if [[ -f "/proc/sys/kernel/osrelease" ]] && [[ "$(< /proc/sys/kernel/osrelease)" == *microsoft* ]]; then
+	HOST_OS="wsl"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+	HOST_OS="darwin"
+else
+	HOST_OS="linux"
+fi
+
+if [[ $( dpkg -l ubuntu-desktop > /dev/null 2>&1)$? == "1" ]]; then
+	LOCATION="desktop"
+else
+	LOCATION="server"
+fi
+
 if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
 	source "${LOCAL_CONFIG}"/zsh/.zprofile
 fi
@@ -39,32 +56,6 @@ function updateFiles() {
 	return 0
 }
 
-function isDesktop() {
-	x=$( dpkg -l ubuntu-desktop > /dev/null 2>&1)$?
-	if [[ "${x}" == "0" ]]; then
-		return 0
-	else
-		return 1
-	fi
-}
-
-function isServer() {
-	x=$( dpkg -l ubuntu-desktop > /dev/null 2>&1)$?
-	if [[ "${x}" == "0" ]]; then
-		return 1
-	else
-		return 0
-	fi
-}
-
-function isDesktopOrServer() {
-	if [[ isDesktop ]]; then
-		echo "desktop"
-	else
-		echo "server"
-	fi
-}
-
 function createSymlink() {
 	if [[ ! -L "${1}" ]]; then
 		decho "FUNCTION createSymlink"
@@ -74,7 +65,8 @@ function createSymlink() {
 		if [[ ! "${DEBUG}" ]]; then
 			ln -nfs "${1}" "${2}"
 		fi
-		echo "Link created: ${2}"
+		echo ""
+		echo "<======================================== link created: ${2} ========================================>"
 	fi
 }
 
@@ -92,7 +84,8 @@ function backupFile() {
 		rsync -avzhL --quiet "${1}" "${BACKUP_DIR}/"
 		rm -rf "${1}"
 	fi
-	echo "Backed up ${filename} to ${BACKUP_DIR}"
+	echo ""
+	echo "<======================================== backed up ${filename} to ${BACKUP_DIR} ========================================>"
 }
 
 
@@ -133,6 +126,7 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		exuberant-ctags \
 		fd-find \
 		; do
+			echo ""
 			echo "<======================================== installing ${package} ========================================>"
 			sudo apt-get install --assume-yes --ignore-missing "${package}"
 		done
@@ -143,12 +137,11 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
 fi
 
-
-
 # Installing BLACKHOSTS
-if [[ ! $(blackhosts --help 2>/dev/null) ]] && [[ isDesktop ]]; then
+if [[ ! $(blackhosts --help 2>/dev/null) ]] && [[ $LOCATION == 'desktop' ]] && [[ $HOST_OS == 'linux' ]]; then
 	decho "blackhosts does not exist"
-	echo "installing blackhosts"
+	echo ""
+	echo "<======================================== installing blackhosts"
 	link=$(curl -s https://api.github.com/repos/Lateralus138/blackhosts/releases/latest | grep -P "browser_download_url" | grep -vE "musl" | grep "blackhosts.deb" | head -n 1 |  cut -d '"' -f 4)
 	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
 	wget -q $link -P /tmp/
@@ -158,7 +151,8 @@ fi
 # Installing broot
 if [[ ! $(broot --version 2>/dev/null) ]]; then
 	decho "broot does not exist"
-	echo "installing broot"
+	echo ""
+	echo "<======================================== installing broot"
 	wget https://dystroy.org/broot/download/x86_64-linux/broot
 	sudo mv broot /usr/local/bin
 	sudo chmod +x /usr/local/bin/broot
@@ -167,12 +161,14 @@ fi
 # Installing node
 if [[ ! $(node --version 2>/dev/null) ]]; then
 	decho "node does not exist"
-	echo "installing node"
+	echo ""
+	echo "<======================================== installing node"
 	curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 	sudo apt-get install nodejs
 
 	# Installing yarn
-	echo "installing yarn"
+	echo ""
+	echo "<======================================== installing yarn"
 	curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
 	echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
 	sudo apt-get update -y && sudo apt-get install -y yarn
@@ -184,7 +180,8 @@ fi
 # Installing fd
 if [[ ! $(fd --version 2>/dev/null) ]]; then
 	decho "fd does not exist"
-	echo "installing fd"
+	echo ""
+	echo "<======================================== installing fd"
 	link=$(curl -s https://api.github.com/repos/sharkdp/fd/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep -vE "musl" | grep "deb" | head -n 1 |  cut -d '"' -f 4)
 	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
 	wget -q $link -P /tmp/
@@ -194,14 +191,15 @@ fi
 # Installing up
 if [[ ! $(which up 2>/dev/null) ]]; then
 	decho "up does not exist"
-	echo "Installing up"
+	echo ""
+	echo "<======================================== installing up"
 	link=$(curl -s https://api.github.com/repos/akavel/up/releases/latest | grep -P "browser_download_url" | head -n 1 |  cut -d '"' -f 4)
 	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
 	sudo wget -q $link -P /usr/local/bin/
 	sudo chmod +x /usr/local/bin/up
 fi
 
-if [[ ! -f "${HOME}/.dotfiles/fonts/.installed" ]] && [[ isDesktop ]]; then
+if [[ ! -f "${HOME}/.dotfiles/fonts/.installed" ]] && [[ $LOCATION == 'desktop' ]] && [[ $HOST_OS == 'linux' ]]; then
 	cd "${HOME}/.dotfiles"/fonts
 	mkdir installations
 	unzip "*.zip" -d installations
@@ -228,24 +226,8 @@ updateFiles "${HOME}/.dotfiles/fzf/fzf.zsh" "${HOME}/.config/fzf/fzf.zsh"
 updateFiles "${HOME}/.dotfiles/.Xresources" "${HOME}/.Xresources"
 updateFiles "${HOME}/.dotfiles/rc.sh" "${HOME}/.ssh/rc"
 
-# Installing tmux plugin manager
-if [[ ! -d "${LOCAL_CONFIG}/tmux/plugins/tpm" ]] && [[ isDesktop ]]; then
-	decho "Installing tmux plugin manager"
-	git clone https://github.com/tmux-plugins/tpm "${LOCAL_CONFIG}"/tmux/plugins/tpm
-fi
-
-# Installing zplug for zshrc
-#if [[ type -w zplug | awk '{print $2}' != 'function' ]]; then
-#	curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
-#fi
 
 # Installing vim plugins
-decho "Installing vim plugins"
+echo ""
+echo "<======================================== installing vim plugins"
 vim -E -c PlugInstall -c qall!
-
-# Installing Oh My Zsh
-#if [[ ! -d "${ZSH}" ]] ; then
-	#decho "oh-my-zsh does not exist"
-	#echo "installing oh-my-zsh"
-	#sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
-#fi

@@ -13,7 +13,7 @@
 shell = 'zsh'
 
 [templates]
-defer = "{% for file in files %}zsh-defer source \"{{ file }}\"\n{% endfor %}"
+defer = '{% for file in files %}zsh-defer source "{{ file }}"\n{% endfor %}'
 
 [plugins]
 
@@ -39,7 +39,7 @@ apply = ['defer']
 
 [plugins.zsh-autosuggestions]
 github = 'zsh-users/zsh-autosuggestions'
-use = ["{{ name }}.zsh"]
+use = ['{{ name }}.zsh']
 apply = ['defer']
 
 [plugins.base16]
@@ -57,8 +57,8 @@ apply = ['defer']
 github = 'junegunn/fzf'
 apply = ['defer']
 use = [
-  "completion.zsh",
-  "key-bindings.zsh",
+  'completion.zsh',
+  'key-bindings.zsh',
 ]
 
 [plugins.powerlevel10k]
@@ -74,10 +74,6 @@ apply = ['defer']
 
 [plugins.forgit]
 github = 'wfxr/forgit'
-apply = ['defer']
-
-[plugins.git-it-on]
-github = 'peterhurford/git-it-on.zsh'
 apply = ['defer']
 
 [plugins.gitfast]
@@ -101,7 +97,7 @@ github = 'ohmyzsh/ohmyzsh'
 dir = 'plugins/sudo'
 apply = ['defer']
 
-#copies the contents of a file in your system clipboard
+#copies the contents of a file in your system clipboard by using command 'copyfile <filename>'
 [plugins.copyfile]
 github = 'ohmyzsh/ohmyzsh'
 dir = 'plugins/copyfile'
