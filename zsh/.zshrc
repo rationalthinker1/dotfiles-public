@@ -66,29 +66,42 @@ HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
 WORDCHARS=''
 
 # Basic auto/tab complete:
-autoload -Uz compinit
-compinit
+# enable completion
+autoload -Uz compinit && compinit
+autoload -Uz colors && colors
 
 #Calculator: zcalc
 autoload -U zcalc
 
 # reference: http://zsh.sourceforge.net/Doc/Release/Options.html
 setopt CORRECT                    # Try to correct command line spelling
-setopt AUTO_CD
+setopt AUTO_CD                    # Use cd by typing directory name if it's not a command.
 setopt PUSHD_IGNORE_DUPS
 unsetopt MENU_COMPLETE            # DO NOT AUTOSELECT THE FIRST COMPLETION ENTRY
 unsetopt FLOWCONTROL
-setopt AUTO_MENU                  # SHOW COMPLETION MENU ON SUCCESIVE TAB PRESs
+setopt AUTO_MENU                  # SHOW COMPLETION MENU ON SUCCESIVE TAB PRESS
 setopt COMPLETE_IN_WORD
 setopt ALWAYS_TO_END
 setopt EXTENDED_GLOB
+setopt AUTO_LIST                  # Automatically list choices on ambiguous completion.
+setopt AUTO_PUSHD                 # Make cd push the old directory onto the directory stack.
+setopt BANG_HIST                  # Treat the '!' character, especially during Expansion.
+setopt INTERACTIVE_COMMENTS       # Comments even in interactive shells.
+setopt MULTIOS                    # Implicit tees or cats when multiple redirections are attempted.
+setopt NO_BEEP                    # Don't beep on error.
+setopt PROMPT_SUBST               # Substitution of parameters inside the prompt each time the prompt is drawn.
+setopt PUSHD_IGNORE_DUPS          # Don't push multiple copies directory onto the directory stack.
+setopt PUSHD_MINUS                # Swap the meaning of cd +1 and cd -1 to the opposite.
 
-setopt HIST_REDUCE_BLANKS
+setopt HIST_REDUCE_BLANKS         # Remove superfluous blanks from history items.
 setopt HIST_IGNORE_SPACE          # remove command lines from the history list when the first character on the line is a space
 setopt SHARE_HISTORY              # import new commands from the history file also in other zsh-session
 setopt HIST_EXPIRE_DUPS_FIRST     # Expire duplicate entries first when trimming history.
+setopt HIST_FIND_NO_DUPS          # Remove older duplicate entries from history.
 setopt HIST_IGNORE_DUPS           # Don't record an entry that was just recorded again.
 setopt HIST_IGNORE_ALL_DUPS       # If a new command line being added to the history list duplicates an older one, the older command is removed from the list
+setopt HIST_SAVE_NO_DUPS          # Do not write a duplicate event to the history file.
+setopt APPEND_HISTORY             # Allow multiple sessions to append to one Zsh command history.
 setopt EXTENDED_HISTORY           # save each command's beginning timestamp and the duration to the history file
 setopt INC_APPEND_HISTORY         # Write to the history file immediately, not when the shell exits.
 
@@ -123,16 +136,75 @@ export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 export forgit_log=gl
 export BAT_THEME='OneHalfDark'
-export ENHANCD_DISABLE_DOT=1
-eval "$(sheldon source)"
+# export ENHANCD_DISABLE_DOT=1
+# eval "$(sheldon source)"
+
+typeset -Ag ZI
+typeset -gx ZI[HOME_DIR]="${LOCAL_CONFIG}/zi" ZI[BIN_DIR]="${ZI[HOME_DIR]}/bin"
+command mkdir -p "$ZI[BIN_DIR]"
+source <(curl -sL git.io/zi-loader); zzinit
+
+zi ice proto'ssh' depth=1;  zi light romkatv/powerlevel10k
+
+zi ice proto'ssh' wait'!0'; zi light zsh-users/zsh-autosuggestions
+zi ice proto'ssh' wait'!0'; zi light zsh-users/zsh-completions
+zi ice proto'ssh' wait'!0'; zi light wfxr/forgit
+zi ice proto'ssh' wait'!0'; zi light zdharma-continuum/fast-syntax-highlighting
+zi ice proto'ssh' wait'!0' from"gh-r" as"command"; zi light akavel/up
+zi ice proto'ssh' wait'!0' from"gh-r" as"command"; zi light ogham/exa
+
+# zplug "junegunn/fzf", use:"shell/*.zsh"
+# zi ice multisrc'shell/{key-bindings,completion}.zsh'
+# zi light junegunn/fzf
+zi for \
+  from'gh-r' nocompile junegunn/fzf \
+  https://github.com/junegunn/fzf/raw/master/shell/{'completion','key-bindings'}.zsh
+
+# zi ice proto'ssh' wait'!0' pick"shell/*.zsh"; zi light junegunn/fzf
+zi ice proto'ssh' wait'!0' from"gh-r" as"command"; zi light junegunn/fzf
+
+# zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
+zi ice proto'ssh' wait'!0' atinit'export ENHANCD_DISABLE_DOT=1'; zi light b4b4r07/enhancd
+
+# zplug "sharkdp/bat", as:command, from:gh-r, rename-to:"bat", use:"*x86_64*linux-gnu*", if:"[[ $OSTYPE != *darwin* ]]", hook-load:"export BAT_THEME='OneHalfDark'"
+zi ice proto'ssh' wait'!0' from"gh-r" as"command" atinit'export BAT_THEME="OneHalfDark"'; zi light sharkdp/bat
+
+# zplug "sharkdp/fd", as:command, from:gh-r, rename-to:"fd", use:"*x86_64*linux-gnu*", if:"[[ $OSTYPE != *darwin* ]]"
+zi ice proto'ssh' wait'!0' from"gh-r" as"command" bpick'*x86_64*linux-gnu*'; zi light sharkdp/fd
+
+# zplug "stedolan/jq", as:command, from:gh-r
+zi ice proto'ssh' wait'!0' from"gh-r" as"command"; zi light stedolan/jq
+
+zi ice proto'ssh' wait'!0' from"gh-r" as="command" pick="*/rg"; zi light BurntSushi/ripgrep
+
+zi ice proto'ssh' wait'!0'; zi snippet OMZP::gitfast
+zi ice proto'ssh' wait'!0'; zi snippet OMZP::docker
+zi ice proto'ssh' wait'!0'; zi snippet OMZP::docker-compose
+
+# press ESC twice to sudo previous command
+zi ice proto'ssh' wait'!0'; zi snippet OMZP::sudo
+
+# adds a 'extract' function to unzip zip/rar/7z/tar.gz etc...
+zi ice proto'ssh' wait'!0'; zi snippet OMZP::extract
+
+#copies the contents of a file in your system clipboard by using command 'copyfile <filename>'
+zi ice proto'ssh' wait'!0'; zi snippet OMZP::copyfile
+
+# alt+left -> Go to previous directory
+# alt+right -> Go to next directory
+# alt+up -> Go to parent directory
+# alt+down -> Go to first child directory by alphabetical order
+zi ice proto'ssh' wait'!0'; zi snippet OMZP::dirhistory
+
 
 
 #=======================================================================================
 # ZSH Settings
 #=======================================================================================
 export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
+zstyle ':completion:*:match:*' original only
+zstyle -e ':completion:*:approximate:*' max-errors 'reply=($((($#PREFIX+$#SUFFIX)/3>7?7:($#PREFIX+$#SUFFIX)/3))numeric)'
 zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}  # 補完時の色
-zstyle ':completion:*' verbose yes
 zstyle ':completion:*' completer _expand _complete _match _prefix _approximate _list _history
 zstyle ':completion:*:default' menu select=2  # 選択中の候補をハイライト
 zstyle ':completion:*:messages' format '%F{YELLOW}%d'$DEFAULT
@@ -141,12 +213,23 @@ zstyle ':completion:*:descriptions' format '%F{YELLOW}completing %B%d%b'$DEFAULT
 zstyle ':completion:*:options' description 'yes'
 zstyle ':completion:*:descriptions' format '%F{yellow}Completing %B%d%b%f'$DEFAULT
 zstyle ':completion:*' matcher-list '' 'm:{[:lower:]}={[:upper:]}' '+m:{[:upper:]}={[:lower:]}'
-
-#https://github.com/marlonrichert/zsh-autocomplete#with-fzf
-zstyle ':autocomplete:*' fuzzy-search off
-zstyle ':autocomplete:tab:*' completion cycle
-zstyle ':autocomplete:list-choices:*' min-input 3
-
+zstyle ':completion:*:matches' group 'yes'
+zstyle ':completion:*:options' description 'yes'
+zstyle ':completion:*:options' auto-description '%d'
+zstyle ':completion:*:corrections' format ' %F{green}-- %d (errors: %e) --%f'
+zstyle ':completion:*:descriptions' format ' %F{yellow}-- %d --%f'
+zstyle ':completion:*:messages' format ' %F{purple} -- %d --%f'
+zstyle ':completion:*:warnings' format ' %F{red}-- no matches found --%f'
+zstyle ':completion:*:default' list-prompt '%S%M matches%s'
+zstyle ':completion:*' format ' %F{yellow}-- %d --%f'
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*' verbose yes
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+zstyle ':completion:*:functions' ignored-patterns '(_*|pre(cmd|exec))'
+zstyle ':completion:*' use-cache true
+zstyle ':completion:*' rehash true
+zstyle ':completion:*' menu select
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 
 
 [[ -f "${HOME}/.local/share/broot/launcher/bash/1" ]] && source "${HOME}/.local/share/broot/launcher/bash/1"
@@ -181,6 +264,7 @@ if [[ "${HOST_OS}" == *wsl* ]]; then
     export DISPLAY=$IP_ADDRESS:0
     # pip path if using --user
     export PATH=$PATH:$HOME/.local/bin
+	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
 fi
 
 if [[ "${HOST_OS}" == *darwin* ]]; then
