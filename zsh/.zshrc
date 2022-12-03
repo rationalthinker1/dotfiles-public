@@ -65,45 +65,37 @@ HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
 #https://github.com/ohmyzsh/ohmyzsh/issues/5108
 WORDCHARS=''
 
-# Basic auto/tab complete:
-# enable completion
-autoload -Uz compinit && compinit
-autoload -Uz colors && colors
-
-#Calculator: zcalc
-autoload -U zcalc
-
 # reference: http://zsh.sourceforge.net/Doc/Release/Options.html
-setopt CORRECT                    # Try to correct command line spelling
-setopt AUTO_CD                    # Use cd by typing directory name if it's not a command.
+setopt CORRECT                    # try to correct command line spelling
+setopt AUTO_CD                    # use cd by typing directory name if it's not a command
 setopt PUSHD_IGNORE_DUPS
-unsetopt MENU_COMPLETE            # DO NOT AUTOSELECT THE FIRST COMPLETION ENTRY
-unsetopt FLOWCONTROL
-setopt AUTO_MENU                  # SHOW COMPLETION MENU ON SUCCESIVE TAB PRESS
+# unsetopt MENU_COMPLETE            # do not autoselect the first completion entry
+# unsetopt FLOWCONTROL
+setopt AUTO_MENU                  # show completion menu on succesive tab press
 setopt COMPLETE_IN_WORD
 setopt ALWAYS_TO_END
 setopt EXTENDED_GLOB
-setopt AUTO_LIST                  # Automatically list choices on ambiguous completion.
-setopt AUTO_PUSHD                 # Make cd push the old directory onto the directory stack.
-setopt BANG_HIST                  # Treat the '!' character, especially during Expansion.
-setopt INTERACTIVE_COMMENTS       # Comments even in interactive shells.
-setopt MULTIOS                    # Implicit tees or cats when multiple redirections are attempted.
-setopt NO_BEEP                    # Don't beep on error.
-setopt PROMPT_SUBST               # Substitution of parameters inside the prompt each time the prompt is drawn.
-setopt PUSHD_IGNORE_DUPS          # Don't push multiple copies directory onto the directory stack.
-setopt PUSHD_MINUS                # Swap the meaning of cd +1 and cd -1 to the opposite.
+setopt AUTO_LIST                  # automatically list choices on ambiguous completion
+setopt AUTO_PUSHD                 # make cd push the old directory onto the directory stack
+setopt INTERACTIVE_COMMENTS       # comments even in interactive shells
+setopt MULTIOS                    # implicit tees or cats when multiple redirections are attempted
+setopt NO_BEEP                    # don't beep on error
+setopt PROMPT_SUBST               # substitution of parameters inside the prompt each time the prompt is drawn
+setopt PUSHD_IGNORE_DUPS          # don't push multiple copies directory onto the directory stack
+setopt PUSHD_MINUS                # swap the meaning of cd +1 and cd -1 to the opposite
 
-setopt HIST_REDUCE_BLANKS         # Remove superfluous blanks from history items.
+setopt BANG_HIST                  # treat the '!' character, especially during expansion
+setopt HIST_REDUCE_BLANKS         # remove superfluous blanks from history items
 setopt HIST_IGNORE_SPACE          # remove command lines from the history list when the first character on the line is a space
 setopt SHARE_HISTORY              # import new commands from the history file also in other zsh-session
-setopt HIST_EXPIRE_DUPS_FIRST     # Expire duplicate entries first when trimming history.
-setopt HIST_FIND_NO_DUPS          # Remove older duplicate entries from history.
-setopt HIST_IGNORE_DUPS           # Don't record an entry that was just recorded again.
-setopt HIST_IGNORE_ALL_DUPS       # If a new command line being added to the history list duplicates an older one, the older command is removed from the list
-setopt HIST_SAVE_NO_DUPS          # Do not write a duplicate event to the history file.
-setopt APPEND_HISTORY             # Allow multiple sessions to append to one Zsh command history.
+setopt HIST_EXPIRE_DUPS_FIRST     # expire duplicate entries first when trimming history
+setopt HIST_FIND_NO_DUPS          # remove older duplicate entries from history
+setopt HIST_IGNORE_DUPS           # don't record an entry that was just recorded again
+setopt HIST_IGNORE_ALL_DUPS       # if a new command line being added to the history list duplicates an older one, the older command is removed from the list
+setopt HIST_SAVE_NO_DUPS          # do not write a duplicate event to the history file
+setopt APPEND_HISTORY             # allow multiple sessions to append to one zsh command history
 setopt EXTENDED_HISTORY           # save each command's beginning timestamp and the duration to the history file
-setopt INC_APPEND_HISTORY         # Write to the history file immediately, not when the shell exits.
+setopt INC_APPEND_HISTORY         # write to the history file immediately, not when the shell exits
 
 #=======================================================================================
 # Setting up home/end keys for keyboard
@@ -134,9 +126,6 @@ fi
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
-export forgit_log=gl
-export BAT_THEME='OneHalfDark'
-# export ENHANCD_DISABLE_DOT=1
 # eval "$(sheldon source)"
 
 typeset -Ag ZI
@@ -144,14 +133,14 @@ typeset -gx ZI[HOME_DIR]="${LOCAL_CONFIG}/zi" ZI[BIN_DIR]="${ZI[HOME_DIR]}/bin"
 command mkdir -p "$ZI[BIN_DIR]"
 source <(curl -sL git.io/zi-loader); zzinit
 
-zi ice proto'ssh' depth=1;  zi light romkatv/powerlevel10k
+zi ice depth=1;  zi light romkatv/powerlevel10k
 
-zi ice proto'ssh' wait'!0'; zi light zsh-users/zsh-autosuggestions
-zi ice proto'ssh' wait'!0'; zi light zsh-users/zsh-completions
-zi ice proto'ssh' wait'!0'; zi light wfxr/forgit
-zi ice proto'ssh' wait'!0'; zi light zdharma-continuum/fast-syntax-highlighting
-zi ice proto'ssh' wait'!0' from"gh-r" as"command"; zi light akavel/up
-zi ice proto'ssh' wait'!0' from"gh-r" as"command"; zi light ogham/exa
+zi ice wait'!0'; zi light zsh-users/zsh-autosuggestions
+zi ice wait'!0'; zi light zsh-users/zsh-completions
+zi ice wait'!0' atinit'export forgit_log=gl'; zi light wfxr/forgit
+zi ice wait'!0'; zi light zdharma-continuum/fast-syntax-highlighting
+zi ice wait'!0' from"gh-r" as"command"; zi light akavel/up
+zi ice wait'!0' from"gh-r" as"command"; zi light ogham/exa
 
 # zplug "junegunn/fzf", use:"shell/*.zsh"
 # zi ice multisrc'shell/{key-bindings,completion}.zsh'
@@ -160,42 +149,50 @@ zi for \
   from'gh-r' nocompile junegunn/fzf \
   https://github.com/junegunn/fzf/raw/master/shell/{'completion','key-bindings'}.zsh
 
-# zi ice proto'ssh' wait'!0' pick"shell/*.zsh"; zi light junegunn/fzf
-zi ice proto'ssh' wait'!0' from"gh-r" as"command"; zi light junegunn/fzf
+# zi ice wait'!0' pick"shell/*.zsh"; zi light junegunn/fzf
+zi ice wait'!0' from"gh-r" as"command"; zi light junegunn/fzf
 
 # zplug "b4b4r07/enhancd", use:init.sh, hook-load:"ENHANCD_DISABLE_DOT=1"
-zi ice proto'ssh' wait'!0' atinit'export ENHANCD_DISABLE_DOT=1'; zi light b4b4r07/enhancd
+zi ice wait'!0' atinit'export ENHANCD_DISABLE_DOT=1'; zi light b4b4r07/enhancd
 
 # zplug "sharkdp/bat", as:command, from:gh-r, rename-to:"bat", use:"*x86_64*linux-gnu*", if:"[[ $OSTYPE != *darwin* ]]", hook-load:"export BAT_THEME='OneHalfDark'"
-zi ice proto'ssh' wait'!0' from"gh-r" as"command" atinit'export BAT_THEME="OneHalfDark"'; zi light sharkdp/bat
+zi ice wait'!0' from"gh-r" as"command" atinit'export BAT_THEME="OneHalfDark"'; zi light sharkdp/bat
 
 # zplug "sharkdp/fd", as:command, from:gh-r, rename-to:"fd", use:"*x86_64*linux-gnu*", if:"[[ $OSTYPE != *darwin* ]]"
-zi ice proto'ssh' wait'!0' from"gh-r" as"command" bpick'*x86_64*linux-gnu*'; zi light sharkdp/fd
+zi ice wait'!0' from"gh-r" as"command" bpick'*x86_64*linux-gnu*'; zi light sharkdp/fd
 
 # zplug "stedolan/jq", as:command, from:gh-r
-zi ice proto'ssh' wait'!0' from"gh-r" as"command"; zi light stedolan/jq
+zi ice wait'!0' from"gh-r" as"command"; zi light stedolan/jq
 
-zi ice proto'ssh' wait'!0' from"gh-r" as="command" pick="*/rg"; zi light BurntSushi/ripgrep
+zi ice wait'!0' from"gh-r" as="command" pick="*/rg"; zi light BurntSushi/ripgrep
 
-zi ice proto'ssh' wait'!0'; zi snippet OMZP::gitfast
-zi ice proto'ssh' wait'!0'; zi snippet OMZP::docker
-zi ice proto'ssh' wait'!0'; zi snippet OMZP::docker-compose
+zi ice wait'!0'; zi light lukechilds/zsh-better-npm-completion
+zi ice wait'!0'; zi light BuonOmo/yarn-extra-completion
+zi ice wait'!0'; zi light z-shell/zsh-fancy-completions
+
+# type out a command that you expect to produce json on it's standard output
+# press alt + j and interactively write a jq expression
+# press enter, and the jq expression is appended to your initial command!
+zi ice wait'!0'; zi light reegnz/jq-zsh-plugin
+
+zi ice wait'!0'; zi snippet OMZP::gitfast
+zi ice wait'!0'; zi snippet OMZP::docker
+zi ice wait'!0'; zi snippet OMZP::docker-compose
 
 # press ESC twice to sudo previous command
-zi ice proto'ssh' wait'!0'; zi snippet OMZP::sudo
+zi ice wait'!0'; zi snippet OMZP::sudo
 
 # adds a 'extract' function to unzip zip/rar/7z/tar.gz etc...
-zi ice proto'ssh' wait'!0'; zi snippet OMZP::extract
+zi ice wait'!0'; zi snippet OMZP::extract
 
 #copies the contents of a file in your system clipboard by using command 'copyfile <filename>'
-zi ice proto'ssh' wait'!0'; zi snippet OMZP::copyfile
+zi ice wait'!0'; zi snippet OMZP::copyfile
 
 # alt+left -> Go to previous directory
 # alt+right -> Go to next directory
 # alt+up -> Go to parent directory
 # alt+down -> Go to first child directory by alphabetical order
-zi ice proto'ssh' wait'!0'; zi snippet OMZP::dirhistory
-
+zi ice wait'!0'; zi snippet OMZP::dirhistory
 
 
 #=======================================================================================
@@ -271,6 +268,17 @@ if [[ "${HOST_OS}" == *darwin* ]]; then
 	# sets environment variables on MacOS
 	launchctl setenv HOST_OS darwin
 fi
+
+#=======================================================================================
+# Autocompletion
+#=======================================================================================
+# Basic auto/tab complete:
+# enable completion
+autoload -Uz compinit && compinit
+autoload -Uz colors && colors
+
+#Calculator: zcalc
+autoload -U zcalc
 
 #=======================================================================================
 # Source aliases and functions
