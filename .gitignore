@@ -25,3 +25,4 @@ zsh/.zplug
 .aws/largefile
 .aws/credentials
 *.DS_Store
+*:Zone.Identifiere
