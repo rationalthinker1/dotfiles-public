@@ -175,7 +175,7 @@ zi ice wait'!0'; zi light reegnz/jq-zsh-plugin
 zi ice wait'!0'; zi light hlissner/zsh-autopair
 
 
-zi ice svn wait'!0'; zi snippet OMZP::gitfast
+zi ice wait'!0'; zi snippet OMZP::gitfast
 zi ice wait'!0'; zi snippet OMZP::docker
 zi ice wait'!0'; zi snippet OMZP::docker-compose
 
@@ -242,6 +242,11 @@ if  [ -x "$(command -v direnv)" ]; then
 	eval "$(direnv hook zsh)"
 fi
 
+if  [ -x "$(command -v doctl)" ]; then
+	source <(doctl completion zsh)
+	compdef _doctl doctl
+fi
+
 # Source a file in zsh when entering a directory
 # https://stackoverflow.com/questions/17051123/source-a-file-in-zsh-when-entering-a-directory
 load-local-conf() {
@@ -259,7 +264,6 @@ if [[ "${HOST_OS}" == *wsl* ]]; then
     export WSL_VERSION=$(wsl.exe -l -v | grep -a '[*]' | sed 's/[^0-9]*//g')
     export IP_ADDRESS=$(tail -1 /etc/resolv.conf | cut -d' ' -f2)
     export DISPLAY=$IP_ADDRESS:0
-    # pip path if using --user
     export PATH=$PATH:$HOME/.local/bin
 	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
 fi
