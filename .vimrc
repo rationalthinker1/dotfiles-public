@@ -74,6 +74,11 @@ Plug 'cohama/lexima.vim'                  " autoclose { in functions, if stateme
 Plug 'fladson/vim-kitty'                  " add coloring on kitty.config file
 let g:lexima_enable_basic_rules = 0
 
+Plug 'mbbill/undotree' " press F5 to see history of undos
+nnoremap <F5> :UndotreeToggle<CR>
+
+Plug 'github/copilot.vim'
+
 "=== Custom configurations
 source ~/.vim/themes.vim        " themes
 source ~/.vim/coc.vim           " Autocomplete for many languages
@@ -379,13 +384,13 @@ set directory=$HOME/.vim/tmp/swap   " swap files
 
 " Make those folders automatically if they don't already exist.
 if !isdirectory(expand(&undodir))
-	call mkdir(expand(&undodir), "p")
+	call mkdir(expand(&undodir), "p", 0700)
 endif
 if !isdirectory(expand(&backupdir))
-	call mkdir(expand(&backupdir), "p")
+	call mkdir(expand(&backupdir), "p", 0700)
 endif
 if !isdirectory(expand(&directory))
-	call mkdir(expand(&directory), "p")
+	call mkdir(expand(&directory), "p", 0700)
 endif
 
 
