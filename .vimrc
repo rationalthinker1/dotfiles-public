@@ -96,7 +96,6 @@ set termguicolors
 let ayucolor="mirage"
 set background=dark
 color onedark
-color ayu
 color cosmic-barf
 color cyberpunk
 highlight Comment cterm=italic
