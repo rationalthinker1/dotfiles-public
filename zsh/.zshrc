@@ -194,6 +194,8 @@ zi ice wait'!0'; zi snippet OMZP::copyfile
 # alt+down -> Go to first child directory by alphabetical order
 zi ice wait'!0'; zi snippet OMZP::dirhistory
 
+zi ice wait'!0'; zi light zsh-users/zsh-completions
+
 
 #=======================================================================================
 # ZSH Settings
