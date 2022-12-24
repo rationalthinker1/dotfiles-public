@@ -117,16 +117,15 @@ bindkey '\e[F'    end-of-line        # xterm
 bindkey '\eOF'    end-of-line        # gnome-terminal
 
 
-# #=======================================================================================
-# # Sheldon
-# #=======================================================================================
+#=======================================================================================
+# ZINIT
+#=======================================================================================
 if [ -f "/usr/share/doc/fzf/examples/key-bindings.zsh" ]; then
 	source "/usr/share/doc/fzf/examples/key-bindings.zsh"
 fi
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
-# eval "$(sheldon source)"
 
 typeset -Ag ZI
 typeset -gx ZI[HOME_DIR]="${LOCAL_CONFIG}/zi" ZI[BIN_DIR]="${ZI[HOME_DIR]}/bin"
@@ -134,37 +133,22 @@ command mkdir -p "$ZI[BIN_DIR]"
 source <(curl -sL git.io/zi-loader); zzinit
 
 zi ice depth=1;  zi light romkatv/powerlevel10k
-
 zi ice wait'!0'; zi light zsh-users/zsh-autosuggestions
 zi ice wait'!0'; zi light zsh-users/zsh-completions
 zi ice wait'!0' atinit'export forgit_log=gl'; zi light wfxr/forgit
 zi ice wait'!0'; zi light zdharma-continuum/fast-syntax-highlighting
-zi ice wait'!0' from"gh-r" as"command"; zi light akavel/up
-zi ice wait'!0' from"gh-r" as"command"; zi light ogham/exa
-
-# zplug "junegunn/fzf", use:"shell/*.zsh"
-# zi ice multisrc'shell/{key-bindings,completion}.zsh'
-# zi light junegunn/fzf
-zi for \
-  from'gh-r' nocompile junegunn/fzf \
-  https://github.com/junegunn/fzf/raw/master/shell/{'completion','key-bindings'}.zsh
-
-zi ice wait'!0' from"gh-r" as"command"; zi light junegunn/fzf
-
+zi ice wait'!0' from'gh-r' as'command'; zi light akavel/up
+zi ice wait'!0' from'gh-r' as'command'; zi light ogham/exa
+zi for from'gh-r' nocompile junegunn/fzf https://github.com/junegunn/fzf/raw/master/shell/{'completion','key-bindings'}.zsh
+zi ice wait'!0' from'gh-r' as'command'; zi light junegunn/fzf
 zi ice wait'!0' atinit'export ENHANCD_DISABLE_DOT=1'; zi light b4b4r07/enhancd
-
-# zplug "sharkdp/bat", as:command, from:gh-r, rename-to:"bat", use:"*x86_64*linux-gnu*", if:"[[ $OSTYPE != *darwin* ]]", hook-load:"export BAT_THEME='OneHalfDark'"
-zi ice wait'!0' from"gh-r" as"command" atinit'export BAT_THEME="OneHalfDark"'; zi light sharkdp/bat
-
-# zplug "sharkdp/fd", as:command, from:gh-r, rename-to:"fd", use:"*x86_64*linux-gnu*", if:"[[ $OSTYPE != *darwin* ]]"
-zi ice wait'!0' from"gh-r" as"command" bpick'*x86_64*linux-gnu*'; zi light sharkdp/fd
-
-zi ice wait'!0' from"gh-r" as"command"; zi light stedolan/jq
-
-zi ice wait'!0' from"gh-r" as="command" pick="*/rg"; zi light BurntSushi/ripgrep
-
+#zi ice wait'!0' from'gh-r' as'program' pick'bat/bat' atinit'export BAT_THEME="OneHalfDark"'; zi light sharkdp/bat
+#zi ice from'gh-r' as'program' mv'bat* bat' sbin'**/bat(.exe|) -> bat'; zi light @sharkdp/bat
+zi ice wait'!0' from'gh-r' as'program' mv"bat* -> bat" pick"bat/bat" atinit'export BAT_THEME="OneHalfDark"'; zi light sharkdp/bat
+zi ice wait'!0' from'gh-r' as'program' mv"fd* -> fd" pick"fd/fd"; zi light sharkdp/fd
+zi ice wait'!0' from'gh-r' as'command'; zi light stedolan/jq
+zi ice wait'!0' from'gh-r' as'command' pick='*/rg'; zi light BurntSushi/ripgrep
 zi ice wait'!0'; zi light z-shell/zsh-fancy-completions
-# zi ice wait'!0'; zi light Aloxaf/fzf-tab
 
 # type out a command that you expect to produce json on it's standard output
 # press alt + j and interactively write a jq expression
@@ -173,8 +157,6 @@ zi ice wait'!0'; zi light reegnz/jq-zsh-plugin
 
 # A simple plugin that auto-closes, deletes and skips over matching delimiters
 zi ice wait'!0'; zi light hlissner/zsh-autopair
-
-
 zi ice wait'!0'; zi snippet OMZP::gitfast
 zi ice wait'!0'; zi snippet OMZP::docker
 zi ice wait'!0'; zi snippet OMZP::docker-compose
