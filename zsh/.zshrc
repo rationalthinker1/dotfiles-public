@@ -142,13 +142,12 @@ zi ice wait'!0' from'gh-r' as'command'; zi light ogham/exa
 zi for from'gh-r' nocompile junegunn/fzf https://github.com/junegunn/fzf/raw/master/shell/{'completion','key-bindings'}.zsh
 zi ice wait'!0' from'gh-r' as'command'; zi light junegunn/fzf
 zi ice wait'!0' atinit'export ENHANCD_DISABLE_DOT=1'; zi light b4b4r07/enhancd
-#zi ice wait'!0' from'gh-r' as'program' pick'bat/bat' atinit'export BAT_THEME="OneHalfDark"'; zi light sharkdp/bat
-#zi ice from'gh-r' as'program' mv'bat* bat' sbin'**/bat(.exe|) -> bat'; zi light @sharkdp/bat
-zi ice wait'!0' from'gh-r' as'program' mv"bat* -> bat" pick"bat/bat" atinit'export BAT_THEME="OneHalfDark"'; zi light sharkdp/bat
-zi ice wait'!0' from'gh-r' as'program' mv"fd* -> fd" pick"fd/fd"; zi light sharkdp/fd
+zi ice wait'!0' from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat" atinit'export BAT_THEME="OneHalfDark"'; zi light sharkdp/bat
+zi ice wait'!0' from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"; zi light sharkdp/fd
 zi ice wait'!0' from'gh-r' as'command'; zi light stedolan/jq
 zi ice wait'!0' from'gh-r' as'command' pick='*/rg'; zi light BurntSushi/ripgrep
 zi ice wait'!0'; zi light z-shell/zsh-fancy-completions
+zi ice wait'!0' from'gh' as'command' make pick"imcat"; zi light stolk/imcat
 
 # type out a command that you expect to produce json on it's standard output
 # press alt + j and interactively write a jq expression
