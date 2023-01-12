@@ -130,9 +130,9 @@ export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 typeset -Ag ZI
 typeset -gx ZI[HOME_DIR]="${LOCAL_CONFIG}/zi" ZI[BIN_DIR]="${ZI[HOME_DIR]}/bin"
 command mkdir -p "$ZI[BIN_DIR]"
-source <(curl -sL git.io/zi-loader); zzinit
+source <(curl -sL init.zshell.dev); zzinit
 
-zi ice depth=1;  zi light romkatv/powerlevel10k
+#zi ice depth=1;  zi light romkatv/powerlevel10k
 zi ice wait'!0'; zi light zsh-users/zsh-autosuggestions
 zi ice wait'!0'; zi light zsh-users/zsh-completions
 zi ice wait'!0' atinit'export forgit_log=gl'; zi light wfxr/forgit
@@ -145,8 +145,10 @@ zi ice wait'!0' atinit'export ENHANCD_DISABLE_DOT=1'; zi light b4b4r07/enhancd
 zi ice wait'!0' from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat" atinit'export BAT_THEME="OneHalfDark"'; zi light sharkdp/bat
 zi ice wait'!0' from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"; zi light sharkdp/fd
 zi ice wait'!0' from'gh-r' as'command'; zi light stedolan/jq
+zi ice wait'!0' from'gh' as'command'; zi light sunlei/zsh-ssh
 zi ice wait'!0' from'gh-r' as'command' pick='*/rg'; zi light BurntSushi/ripgrep
 zi ice wait'!0'; zi light z-shell/zsh-fancy-completions
+zi ice wait'!0' atinit'export ZSH_THEME="bubblified"'; zi light hohmannr/bubblified
 zi ice wait'!0' from'gh' as'command' make pick"imcat"; zi light stolk/imcat
 
 # type out a command that you expect to produce json on it's standard output
