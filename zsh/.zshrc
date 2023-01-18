@@ -179,6 +179,17 @@ zi ice wait'!0'; zi snippet OMZP::dirhistory
 
 zi ice wait'!0'; zi light zsh-users/zsh-completions
 
+#=======================================================================================
+# Autocompletion
+#=======================================================================================
+# Basic auto/tab complete:
+# enable completion
+autoload -Uz compinit && compinit
+autoload -Uz colors && colors
+
+#Calculator: zcalc
+autoload -U zcalc
+
 
 #=======================================================================================
 # ZSH Settings
@@ -257,17 +268,6 @@ if [[ "${HOST_OS}" == *darwin* ]]; then
 	# sets environment variables on MacOS
 	launchctl setenv HOST_OS darwin
 fi
-
-#=======================================================================================
-# Autocompletion
-#=======================================================================================
-# Basic auto/tab complete:
-# enable completion
-autoload -Uz compinit && compinit
-autoload -Uz colors && colors
-
-#Calculator: zcalc
-autoload -U zcalc
 
 #=======================================================================================
 # Source aliases and functions
