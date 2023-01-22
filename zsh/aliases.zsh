@@ -416,7 +416,7 @@ alias pam:rs="php artisan migrate:refresh --seed"
 alias pda="php artisan dumpautoload"
 alias cu="composer update"
 alias ci="composer install"
-alias cda="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec php composer dump-autoload -o"
+alias cda="docker-compose -f "./docker-compose.yml" --project-directory ./ exec php composer dump-autoload -o"
 alias pacc="php artisan clear-compiled"
 
 #=======================================================================================
