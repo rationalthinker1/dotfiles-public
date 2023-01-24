@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Shred a file securely rewritten 5 times (-n5)
 shred -zvu -n5 "${file}"
 
