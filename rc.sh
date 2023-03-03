@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
 if [ -n "${SSH_TTY}" ]; then
 	echo loading and updating dotfiles
 	git -C "${HOME}"/.dotfiles reset --quiet --hard HEAD

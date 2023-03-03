@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 #zmodload zsh/zprof # top of your .zshrc file
 #=======================================================================================
 # Loading up variables

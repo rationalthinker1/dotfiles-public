@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ## zshrc Related ##
 alias dirzshrc="grep -nT '^#|' $HOME/.zshrc"
