@@ -499,6 +499,7 @@ dcp() { dc ps "$@"; }
 
 # Execute command in Docker Compose service
 dexec() { docker exec -it $(dc ps -q $1) $2; }
+drexec() { docker exec -u root:root -it $(dc ps -q $1) $2; }
 
 # Run a bash shell in the specified container (with docker-compose).
 dceb() {
