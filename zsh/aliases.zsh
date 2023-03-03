@@ -1,5 +1,22 @@
 #!/usr/bin/env bash
 
+#=======================================================================================
+# Loading up variables
+#=======================================================================================
+if [[ -f "/proc/sys/kernel/osrelease" ]] && [[ "$(< /proc/sys/kernel/osrelease)" == *microsoft* ]]; then
+	HOST_OS="wsl"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+	HOST_OS="darwin"
+else
+	HOST_OS="linux"
+fi
+
+if [[ $( dpkg -l ubuntu-desktop > /dev/null 2>&1)$? == "1" ]]; then
+	LOCATION="desktop"
+else
+	LOCATION="server"
+fi
+
 ## zshrc Related ##
 alias dirzshrc="grep -nT '^#|' $HOME/.zshrc"
 alias zshrc="vim $HOME/.zshrc"
@@ -499,7 +516,7 @@ dcp() { dc ps "$@"; }
 
 # Execute command in Docker Compose service
 dexec() { docker exec -it $(dc ps -q $1) $2; }
-drexec() { docker exec -u root:root -it $(dc ps -q $1) $2; }
+drexec() { docker exec --user root:root -it $(dc ps -q $1) $2; }
 
 # Run a bash shell in the specified container (with docker-compose).
 dceb() {
@@ -582,3 +599,17 @@ dbt() {
 
   docker build $ARGS
 }
+
+#=======================================================================================
+# WSL Aliases and functions
+#=======================================================================================
+if [[ $HOST_OS == "wsl" ]]; then
+	subl() {
+		DISTRO="Ubuntu"
+		SUBLIME_TEXT_LOCATION="/mnt/c/Program Files/Sublime Text 3/subl.exe"
+		FILE=$1
+		FULL_PATH=$(readlink -f $FILE)
+		$SUBLIME_TEXT_LOCATION "/\/\wsl.localhost\\${DISTRO}${FULL_PATH}"
+}
+fi
+
