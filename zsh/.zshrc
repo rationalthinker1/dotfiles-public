@@ -122,6 +122,7 @@ bindkey '\eOF'    end-of-line        # gnome-terminal
 #=======================================================================================
 # ZINIT
 #=======================================================================================
+# https://wiki.zshell.dev/docs/getting_started/installation
 if [ -f "/usr/share/doc/fzf/examples/key-bindings.zsh" ]; then
 	source "/usr/share/doc/fzf/examples/key-bindings.zsh"
 fi
@@ -146,7 +147,7 @@ zi ice wait'!0' from'gh-r' as'command'; zi light junegunn/fzf
 zi ice wait'!0' atinit'export ENHANCD_DISABLE_DOT=1'; zi light b4b4r07/enhancd
 zi ice wait'!0' from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat" atinit'export BAT_THEME="OneHalfDark"'; zi light sharkdp/bat
 zi ice wait'!0' from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"; zi light sharkdp/fd
-zi ice wait'!0' from'gh-r' as'command'; zi light stedolan/jq
+zi ice wait'!0' from'gh' as'command'; zi light stedolan/jq
 zi ice wait'!0' from'gh' as'command'; zi light sunlei/zsh-ssh
 zi ice wait'!0' from'gh-r' as'command' pick='*/rg'; zi light BurntSushi/ripgrep
 zi ice wait'!0'; zi light z-shell/zsh-fancy-completions
