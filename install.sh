@@ -16,12 +16,15 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
 else
 	HOST_OS="linux"
 fi
+decho "HOST_OS $HOST_OS"
 
-if [[ $( dpkg -l ubuntu-desktop > /dev/null 2>&1)$? == "1" ]]; then
+dpkg -l ubuntu-desktop > /dev/null 2>&1
+if [[ $? -eq 0 ]]; then
 	LOCATION="desktop"
 else
 	LOCATION="server"
 fi
+decho "LOCATION $LOCATION"
 
 if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
 	source "${LOCAL_CONFIG}"/zsh/.zprofile
