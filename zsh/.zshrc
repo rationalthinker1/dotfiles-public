@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-
 #zmodload zsh/zprof # top of your .zshrc file
+
 #=======================================================================================
 # Loading up variables
 #=======================================================================================
@@ -10,6 +10,13 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
 	HOST_OS="darwin"
 else
 	HOST_OS="linux"
+fi
+
+dpkg -l ubuntu-desktop > /dev/null 2>&1
+if [[ $? -eq 0 ]]; then
+	LOCATION="desktop"
+else
+	LOCATION="server"
 fi
 
 export HOST_OS="${HOST_OS}"
@@ -99,6 +106,7 @@ setopt APPEND_HISTORY             # allow multiple sessions to append to one zsh
 setopt EXTENDED_HISTORY           # save each command's beginning timestamp and the duration to the history file
 setopt INC_APPEND_HISTORY         # write to the history file immediately, not when the shell exits
 
+
 #=======================================================================================
 # Setting up home/end keys for keyboard
 # https://unix.stackexchange.com/questions/20298/home-key-not-working-in-terminal
@@ -118,7 +126,6 @@ bindkey '\e[4~'   end-of-line        # Linux console
 bindkey '\e[F'    end-of-line        # xterm
 bindkey '\eOF'    end-of-line        # gnome-terminal
 
-
 #=======================================================================================
 # ZINIT
 #=======================================================================================
@@ -135,6 +142,7 @@ typeset -gx ZI[HOME_DIR]="${LOCAL_CONFIG}/zi" ZI[BIN_DIR]="${ZI[HOME_DIR]}/bin"
 command mkdir -p "$ZI[BIN_DIR]"
 source <(curl -sLk init.zshell.dev); zzinit
 
+zi pack for fzf
 zi ice depth=1;  zi light romkatv/powerlevel10k
 zi ice wait'!0'; zi light zsh-users/zsh-autosuggestions
 zi ice wait'!0'; zi light zsh-users/zsh-completions
@@ -142,8 +150,6 @@ zi ice wait'!0' atinit'export forgit_log=gl'; zi light wfxr/forgit
 zi ice wait'!0'; zi light zdharma-continuum/fast-syntax-highlighting
 zi ice wait'!0' from'gh-r' as'command'; zi light akavel/up
 zi ice wait'!0' from'gh-r' as'command'; zi light ogham/exa
-zi for from'gh-r' nocompile junegunn/fzf https://github.com/junegunn/fzf/raw/master/shell/{'completion','key-bindings'}.zsh
-zi ice wait'!0' from'gh-r' as'command'; zi light junegunn/fzf
 zi ice wait'!0' atinit'export ENHANCD_DISABLE_DOT=1'; zi light b4b4r07/enhancd
 zi ice wait'!0' from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat" atinit'export BAT_THEME="OneHalfDark"'; zi light sharkdp/bat
 zi ice wait'!0' from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"; zi light sharkdp/fd
@@ -194,7 +200,6 @@ autoload -Uz colors && colors
 #Calculator: zcalc
 autoload -U zcalc
 
-
 #=======================================================================================
 # ZSH Settings
 #=======================================================================================
@@ -227,7 +232,6 @@ zstyle ':completion:*' use-cache true
 zstyle ':completion:*' rehash true
 zstyle ':completion:*' menu select
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
-
 
 [[ -f "${HOME}/.local/share/broot/launcher/bash/1" ]] && source "${HOME}/.local/share/broot/launcher/bash/1"
 
