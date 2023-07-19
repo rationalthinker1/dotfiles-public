@@ -6,6 +6,12 @@ BACKUP_DIR="${HOME}/.dotfiles/backup"
 LOCAL_CONFIG="${HOME}/.config"
 export ZSH="${LOCAL_CONFIG}/zsh"
 
+function decho() {
+	if [[ "${DEBUG}" ]]; then
+		echo "${1}"
+	fi
+}
+
 #=======================================================================================
 # Loading up variables
 #=======================================================================================
@@ -33,12 +39,6 @@ fi
 if [ -f "${HOME}"/.zprofile ]; then
 	source "${HOME}"/.zprofile
 fi
-
-function decho() {
-	if [[ "${DEBUG}" ]]; then
-		echo "${1}"
-	fi
-}
 
 function updateFiles() {
 	dotfiles_file="${1}"

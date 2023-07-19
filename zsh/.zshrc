@@ -133,7 +133,7 @@ export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 typeset -Ag ZI
 typeset -gx ZI[HOME_DIR]="${LOCAL_CONFIG}/zi" ZI[BIN_DIR]="${ZI[HOME_DIR]}/bin"
 command mkdir -p "$ZI[BIN_DIR]"
-source <(curl -sL init.zshell.dev); zzinit
+source <(curl -sLk init.zshell.dev); zzinit
 
 zi ice depth=1;  zi light romkatv/powerlevel10k
 zi ice wait'!0'; zi light zsh-users/zsh-autosuggestions
