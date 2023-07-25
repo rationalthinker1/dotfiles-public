@@ -238,6 +238,8 @@ zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 
 [[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
 
+[[ -f "${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf.zsh ]] && source "${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf.zsh
+
 if  [ -x "$(command -v kitty)" ]; then
 	export KITTY_CONFIG_DIRECTORY="${HOME}/.config/kitty"
 	kitty + complete setup zsh | source /dev/stdin
