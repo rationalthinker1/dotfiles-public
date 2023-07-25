@@ -21,6 +21,7 @@ fi
 
 export HOST_OS="${HOST_OS}"
 export LOCAL_CONFIG="${HOME}/.config"
+export XDG_CONFIG_HOME="${HOME}/.config"
 export ZDOTDIR="${LOCAL_CONFIG}/zsh"
 export ADOTDIR="${ZDOTDIR}/antigen"
 export ZSH="${ZDOTDIR}/oh-my-zsh"
