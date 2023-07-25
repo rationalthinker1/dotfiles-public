@@ -122,7 +122,7 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		bd \
 		xsel \
 		xclip \
-		fzf \
+		# fzf \ because of old version available on ubuntu repo
 		exa \
 		bat \
 		ripgrep \
@@ -190,6 +190,21 @@ if [[ ! $(fd --version 2>/dev/null) ]]; then
 	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
 	wget -q $link -P /tmp/
 	sudo dpkg -i --force-overwrite /tmp/$download_filename
+fi
+
+# Installing fzf
+if [[ ! $(fzf --version 2>/dev/null) ]]; then
+	decho "fzf does not exist"
+	echo ""
+	echo "<======================================== installing fzf"
+	# link=$(curl -s https://api.github.com/repos/junegunn/fzf/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep "linux" | grep -vE "musl" | grep "tar.gz" | head -n 1 |  cut -d '"' -f 4)
+	# download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
+	# wget -q $link -P /tmp/
+	# tar xf "/tmp/${download_filename}"
+	# sudo mv fzf /usr/local/bin/
+	rm "${LOCAL_CONFIG}/.fzf"
+	git clone --depth 1 https://github.com/junegunn/fzf.git "${LOCAL_CONFIG}/.fzf"
+	"${LOCAL_CONFIG}/.fzf/install" --xdg --key-bindings --completion  --no-bash  --no-fish --no-update-rc  
 fi
 
 # Installing up
