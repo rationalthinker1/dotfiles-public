@@ -122,13 +122,13 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		bd \
 		xsel \
 		xclip \
-		# fzf \ because of old version available on ubuntu repo
 		exa \
 		bat \
 		ripgrep \
 		glances \
 		exuberant-ctags \
 		fd-find \
+		golang-go \
 		; do
 			echo ""
 			echo "<======================================== installing ${package} ========================================>"
