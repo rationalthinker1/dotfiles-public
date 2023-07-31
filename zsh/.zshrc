@@ -24,7 +24,8 @@ export LOCAL_CONFIG="${HOME}/.config"
 export XDG_CONFIG_HOME="${HOME}/.config"
 export ZDOTDIR="${LOCAL_CONFIG}/zsh"
 export ADOTDIR="${ZDOTDIR}/antigen"
-export ZSH="${ZDOTDIR}/oh-my-zsh"
+export ZSH="${ZDOTDIR}"
+export ZSH_CACHE_DIR="${ZSH}/cache"
 export ENHANCD_DIR="${LOCAL_CONFIG}/enhancd"
 export NVM_DIR="${LOCAL_CONFIG}/.nvm"
 export TERM=xterm-256color
@@ -237,6 +238,9 @@ zstyle ':completion:*' use-cache true
 zstyle ':completion:*' rehash true
 zstyle ':completion:*' menu select
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+
+# https://github.com/ohmyzsh/ohmyzsh/issues/11817
+zstyle ':omz:plugins:docker' legacy-completion yes
 
 [[ -f "${HOME}/.local/share/broot/launcher/bash/1" ]] && source "${HOME}/.local/share/broot/launcher/bash/1"
 
