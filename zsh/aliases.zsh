@@ -266,6 +266,7 @@ alias install='sudo apt-get install -y '
 alias remove='sudo apt-get remove'
 alias update='sudo apt-get update -y'
 alias upgrade='sudo apt-get update && sudo apt-get upgrade'
+alias dist-upgrade='sudo apt-get update && sudo apt-get dist-upgrade'
 
 function apt-install() {
 	for application in "$@"
