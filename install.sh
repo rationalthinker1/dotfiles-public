@@ -117,6 +117,7 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		p7zip-full \
 		rename \
 		unzip \
+		unrar \
 		wipe \
 		net-tools \
 		bd \
