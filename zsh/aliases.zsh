@@ -28,7 +28,9 @@ alias con="cd ~/.config"
 
 # if bat exists, use it instead of cat
 if  [ -x "$(command -v bat)" ]; then
-	alias cat="bat"
+	alias rcat=$(which cat)
+	alias cat=$(which bat)
+	export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 fi
 
 ## if exa exists, use it instead of ls
