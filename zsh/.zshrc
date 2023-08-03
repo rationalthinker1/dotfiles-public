@@ -132,13 +132,90 @@ bindkey '\e[4~'   end-of-line        # Linux console
 bindkey '\e[F'    end-of-line        # xterm
 bindkey '\eOF'    end-of-line        # gnome-terminal
 
+
+#=======================================================================================
+# Autocompletion
+#=======================================================================================
+# Basic auto/tab complete:
+# enable completion
+autoload -Uz compinit && compinit
+autoload -Uz colors && colors
+
+#Calculator: zcalc
+autoload -U zcalc
+
+#=======================================================================================
+# ZSH Settings
+#=======================================================================================
+export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
+zstyle ':completion:*:match:*' original only
+zstyle -e ':completion:*:approximate:*' max-errors 'reply=($((($#PREFIX+$#SUFFIX)/3>7?7:($#PREFIX+$#SUFFIX)/3))numeric)'
+zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}  # 補完時の色
+zstyle ':completion:*' completer _expand _complete _match _prefix _approximate _list _history
+zstyle ':completion:*:default' menu select=2  # 選択中の候補をハイライト
+zstyle ':completion:*:messages' format '%F{YELLOW}%d'$DEFAULT
+zstyle ':completion:*:warnings' format '%F{RED}No matches for:''%F{YELLOW} %d'$DEFAULT
+zstyle ':completion:*:descriptions' format '%F{YELLOW}completing %B%d%b'$DEFAULT
+zstyle ':completion:*:options' description 'yes'
+zstyle ':completion:*:descriptions' format '%F{yellow}Completing %B%d%b%f'$DEFAULT
+zstyle ':completion:*' matcher-list '' 'm:{[:lower:]}={[:upper:]}' '+m:{[:upper:]}={[:lower:]}'
+zstyle ':completion:*:matches' group 'yes'
+zstyle ':completion:*:options' description 'yes'
+zstyle ':completion:*:options' auto-description '%d'
+zstyle ':completion:*:corrections' format ' %F{green}-- %d (errors: %e) --%f'
+zstyle ':completion:*:descriptions' format ' %F{yellow}-- %d --%f'
+zstyle ':completion:*:messages' format ' %F{purple} -- %d --%f'
+zstyle ':completion:*:warnings' format ' %F{red}-- no matches found --%f'
+zstyle ':completion:*:default' list-prompt '%S%M matches%s'
+zstyle ':completion:*' format ' %F{yellow}-- %d --%f'
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*' verbose yes
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+zstyle ':completion:*:functions' ignored-patterns '(_*|pre(cmd|exec))'
+zstyle ':completion:*' use-cache true
+zstyle ':completion:*' rehash true
+zstyle ':completion:*' menu select
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+
+# https://github.com/ohmyzsh/ohmyzsh/issues/11817
+zstyle ':omz:plugins:docker' legacy-completion yes
+
+# Escape ? so you don't have to put \? or in quotes everytime
+set zle_bracketed_paste
+autoload -Uz bracketed-paste-magic url-quote-magic
+zle -N bracketed-paste bracketed-paste-magic
+zle -N self-insert url-quote-magic
+
+# Source a file in zsh when entering a directory
+# https://stackoverflow.com/questions/17051123/source-a-file-in-zsh-when-entering-a-directory
+load-local-conf() {
+	# check file exists, is regular file and is readable:
+	if [[ -f .dirrc && -r .dirrc ]]; then
+		source .dirrc
+	fi
+}
+chpwd_functions+=( load-local-conf )
+
+# WSL?
+if [[ "${HOST_OS}" == "wsl" ]]; then
+	export $(dbus-launch)
+	export LIBGL_ALWAYS_INDIRECT=1
+	export WSL_VERSION=$(wsl.exe -l -v | grep -a '[*]' | sed 's/[^0-9]*//g')
+	export IP_ADDRESS=$(tail -1 /etc/resolv.conf | cut -d' ' -f2)
+	export DISPLAY=$IP_ADDRESS:0
+	export PATH=$PATH:$HOME/.local/bin
+	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
+fi
+
+if [[ "${HOST_OS}" == "darwin" ]]; then
+	# sets environment variables on MacOS
+	launchctl setenv HOST_OS darwin
+fi
+
 #=======================================================================================
 # ZINIT
 #=======================================================================================
 # https://wiki.zshell.dev/docs/getting_started/installation
-if [ -f "/usr/share/doc/fzf/examples/key-bindings.zsh" ]; then
-	source "/usr/share/doc/fzf/examples/key-bindings.zsh"
-fi
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
@@ -196,57 +273,14 @@ zi ice wait'!0'; zi snippet OMZP::dirhistory
 zi ice wait'!0'; zi light zsh-users/zsh-completions
 
 #=======================================================================================
-# Autocompletion
+# Custom Application Settings
 #=======================================================================================
-# Basic auto/tab complete:
-# enable completion
-autoload -Uz compinit && compinit
-autoload -Uz colors && colors
-
-#Calculator: zcalc
-autoload -U zcalc
-
-#=======================================================================================
-# ZSH Settings
-#=======================================================================================
-export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
-zstyle ':completion:*:match:*' original only
-zstyle -e ':completion:*:approximate:*' max-errors 'reply=($((($#PREFIX+$#SUFFIX)/3>7?7:($#PREFIX+$#SUFFIX)/3))numeric)'
-zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}  # 補完時の色
-zstyle ':completion:*' completer _expand _complete _match _prefix _approximate _list _history
-zstyle ':completion:*:default' menu select=2  # 選択中の候補をハイライト
-zstyle ':completion:*:messages' format '%F{YELLOW}%d'$DEFAULT
-zstyle ':completion:*:warnings' format '%F{RED}No matches for:''%F{YELLOW} %d'$DEFAULT
-zstyle ':completion:*:descriptions' format '%F{YELLOW}completing %B%d%b'$DEFAULT
-zstyle ':completion:*:options' description 'yes'
-zstyle ':completion:*:descriptions' format '%F{yellow}Completing %B%d%b%f'$DEFAULT
-zstyle ':completion:*' matcher-list '' 'm:{[:lower:]}={[:upper:]}' '+m:{[:upper:]}={[:lower:]}'
-zstyle ':completion:*:matches' group 'yes'
-zstyle ':completion:*:options' description 'yes'
-zstyle ':completion:*:options' auto-description '%d'
-zstyle ':completion:*:corrections' format ' %F{green}-- %d (errors: %e) --%f'
-zstyle ':completion:*:descriptions' format ' %F{yellow}-- %d --%f'
-zstyle ':completion:*:messages' format ' %F{purple} -- %d --%f'
-zstyle ':completion:*:warnings' format ' %F{red}-- no matches found --%f'
-zstyle ':completion:*:default' list-prompt '%S%M matches%s'
-zstyle ':completion:*' format ' %F{yellow}-- %d --%f'
-zstyle ':completion:*' group-name ''
-zstyle ':completion:*' verbose yes
-zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
-zstyle ':completion:*:functions' ignored-patterns '(_*|pre(cmd|exec))'
-zstyle ':completion:*' use-cache true
-zstyle ':completion:*' rehash true
-zstyle ':completion:*' menu select
-zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
-
-# https://github.com/ohmyzsh/ohmyzsh/issues/11817
-zstyle ':omz:plugins:docker' legacy-completion yes
-
 [[ -f "${HOME}/.local/share/broot/launcher/bash/1" ]] && source "${HOME}/.local/share/broot/launcher/bash/1"
 
 [[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
 
 [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf.zsh ]] && source "${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf.zsh
+[[ -f "/usr/share/doc/fzf/examples/key-bindings.zsh" ]] && source "/usr/share/doc/fzf/examples/key-bindings.zsh"
 
 if  [ -x "$(command -v kitty)" ]; then
 	export KITTY_CONFIG_DIRECTORY="${HOME}/.config/kitty"
@@ -260,32 +294,6 @@ fi
 if  [ -x "$(command -v doctl)" ]; then
 	source <(doctl completion zsh)
 	compdef _doctl doctl
-fi
-
-# Source a file in zsh when entering a directory
-# https://stackoverflow.com/questions/17051123/source-a-file-in-zsh-when-entering-a-directory
-load-local-conf() {
-     # check file exists, is regular file and is readable:
-     if [[ -f .dirrc && -r .dirrc ]]; then
-       source .dirrc
-     fi
-}
-chpwd_functions+=( load-local-conf )
-
-# WSL?
-if [[ "${HOST_OS}" == *wsl* ]]; then
-    export $(dbus-launch)
-    export LIBGL_ALWAYS_INDIRECT=1
-    export WSL_VERSION=$(wsl.exe -l -v | grep -a '[*]' | sed 's/[^0-9]*//g')
-    export IP_ADDRESS=$(tail -1 /etc/resolv.conf | cut -d' ' -f2)
-    export DISPLAY=$IP_ADDRESS:0
-    export PATH=$PATH:$HOME/.local/bin
-	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
-fi
-
-if [[ "${HOST_OS}" == *darwin* ]]; then
-	# sets environment variables on MacOS
-	launchctl setenv HOST_OS darwin
 fi
 
 #=======================================================================================
