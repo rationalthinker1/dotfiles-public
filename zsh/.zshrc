@@ -216,29 +216,41 @@ fi
 # ZINIT
 #=======================================================================================
 # https://wiki.zshell.dev/docs/getting_started/installation
-export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
-export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
-export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 
 typeset -Ag ZI
 typeset -gx ZI[HOME_DIR]="${LOCAL_CONFIG}/zi" ZI[BIN_DIR]="${ZI[HOME_DIR]}/bin"
 command mkdir -p "$ZI[BIN_DIR]"
 source <(curl -sLk init.zshell.dev); zzinit
 
+export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
+export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 zi pack for fzf
+
 zi ice depth=1;  zi light romkatv/powerlevel10k
 zi ice wait'!0'; zi light zsh-users/zsh-autosuggestions
 zi ice wait'!0'; zi light zsh-users/zsh-completions
-zi ice wait'!0' atinit'export forgit_log=gl'; zi light wfxr/forgit
+
+export forgit_log=gl
+#export FORGIT_DIFF_FZF_OPTS="--ignore-all-space --ignore-blank-lines"
+zi ice wait'!0'; zi light wfxr/forgit
+
 zi ice wait'!0'; zi light zdharma-continuum/fast-syntax-highlighting
 zi ice wait'!0' from'gh-r' as'command'; zi light akavel/up
 zi ice wait'!0' from'gh-r' as'command'; zi light ogham/exa
-zi ice wait'!0' atinit'export ENHANCD_DISABLE_DOT=1'; zi light b4b4r07/enhancd
-zi ice wait'!0' from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat" atinit'export BAT_THEME="OneHalfDark"'; zi light sharkdp/bat
+
+export ENHANCD_DISABLE_DOT=1
+zi ice wait'!0'; zi light b4b4r07/enhancd
+
+export BAT_THEME="OneHalfDark"
+zi ice wait'!0' from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"; zi light sharkdp/bat
+
 zi ice wait'!0' from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"; zi light sharkdp/fd
 zi ice wait'!0' from'gh' as'command'; zi light stedolan/jq
 zi ice wait'!0' from'gh' as'command'; zi light sunlei/zsh-ssh
+
+export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
 zi ice wait'!0' from'gh-r' as'command' pick='*/rg'; zi light BurntSushi/ripgrep
+
 zi ice wait'!0' from'gh-r' as'command'; zi light solidiquis/erdtree
 zi ice wait'!0'; zi light z-shell/zsh-fancy-completions
 #zi ice wait'!0' atinit'export ZSH_THEME="bubblified"'; zi light hohmannr/bubblified
@@ -272,6 +284,9 @@ zi ice wait'!0'; zi snippet OMZP::dirhistory
 
 zi ice wait'!0'; zi light zsh-users/zsh-completions
 
+# sed s/before/after/g -> sd before after;  sd before after file.txt -> sed -i -e 's/before/after/g' file.txt
+#zi ice wait'!0' from'gh-r' as'command' pick'gnu'; zi light chmln/sd
+
 #=======================================================================================
 # Custom Application Settings
 #=======================================================================================
@@ -279,7 +294,9 @@ zi ice wait'!0'; zi light zsh-users/zsh-completions
 
 [[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
 
-[[ -f "${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf.zsh ]] && source "${XDG_CONFIG_HOME:-$HOME/.config}"/fzf/fzf.zsh
+[[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/.cargo/env" ]] && source "${XDG_CONFIG_HOME:-$HOME/.config}/.cargo/env"
+
+[[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh" ]] && source "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh"
 [[ -f "/usr/share/doc/fzf/examples/key-bindings.zsh" ]] && source "/usr/share/doc/fzf/examples/key-bindings.zsh"
 
 if  [ -x "$(command -v kitty)" ]; then

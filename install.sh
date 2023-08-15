@@ -4,6 +4,7 @@ ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURC
 BASE_DIR=$(dirname ${ABSOLUTE_PATH})
 BACKUP_DIR="${HOME}/.dotfiles/backup"
 LOCAL_CONFIG="${HOME}/.config"
+export XDG_CONFIG_HOME="${HOME}/.config"
 export ZSH="${LOCAL_CONFIG}/zsh"
 
 function decho() {
@@ -140,6 +141,11 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		sudo echo $(which zsh) | sudo tee -a /etc/shells
 		sudo chsh -s $(which zsh)
 		curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
+fi
+
+# Installing rust
+if  [[ ! -x "$(command -v cargo)" ]]; then
+	curl https://sh.rustup.rs -sSf | RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup" CARGO_HOME="${XDG_CONFIG_HOME}/.cargo" sh -s -- -y
 fi
 
 # Installing BLACKHOSTS
