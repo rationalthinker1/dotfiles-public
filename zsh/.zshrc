@@ -19,26 +19,49 @@ else
 	LOCATION="server"
 fi
 
+# WSL?
+if [[ "${HOST_OS}" == "wsl" ]]; then
+	export $(dbus-launch)
+	export LIBGL_ALWAYS_INDIRECT=1
+	export WSL_VERSION=$(wsl.exe -l -v | grep -a '[*]' | sed 's/[^0-9]*//g')
+	export IP_ADDRESS=$(tail -1 /etc/resolv.conf | cut -d' ' -f2)
+	export DISPLAY=$IP_ADDRESS:0
+	export PATH=$PATH:$HOME/.local/bin
+	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
+fi
+
+if [[ "${HOST_OS}" == "darwin" ]]; then
+	# sets environment variables on MacOS
+	launchctl setenv HOST_OS darwin
+fi
+
 export HOST_OS="${HOST_OS}"
 export LOCAL_CONFIG="${HOME}/.config"
 export XDG_CONFIG_HOME="${HOME}/.config"
-export ZDOTDIR="${LOCAL_CONFIG}/zsh"
+export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 export ADOTDIR="${ZDOTDIR}/antigen"
 export ZSH="${ZDOTDIR}"
 export ZSH_CACHE_DIR="${ZSH}/cache"
-export ENHANCD_DIR="${LOCAL_CONFIG}/enhancd"
-export NVM_DIR="${LOCAL_CONFIG}/.nvm"
+export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
+export NVM_DIR="${XDG_CONFIG_HOME}/.nvm"
+export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
+export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export TERM=xterm-256color
 export EDITOR=vim
+export CODENAME=$(lsb_release -a 2>&1 | grep Codename | sed -E "s/Codename:\s+//g")
 # allows commands like cat to stay in teminal after using it
 export LESS="-XRF"
 
-if [ -f "${LOCAL_CONFIG}"/zsh/local.zsh ]; then
-	source "${LOCAL_CONFIG}"/zsh/local.zsh
+if [ -d "${XDG_CONFIG_HOME}/.cargo/bin" ] ; then
+	export PATH="${XDG_CONFIG_HOME}/.cargo/bin:$PATH"
 fi
 
-if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
-	source "${LOCAL_CONFIG}"/zsh/.zprofile
+if [ -f "${XDG_CONFIG_HOME}"/zsh/local.zsh ]; then
+	source "${XDG_CONFIG_HOME}"/zsh/local.zsh
+fi
+
+if [ -f "${XDG_CONFIG_HOME}"/zsh/.zprofile ]; then
+	source "${XDG_CONFIG_HOME}"/zsh/.zprofile
 fi
 
 if [ -f "${HOME}"/.zprofile ]; then
@@ -56,7 +79,6 @@ fi
 if [ -d "/usr/local/go/bin" ] ; then
 	export PATH="/usr/local/go/bin:$PATH"
 fi
-
 #=======================================================================================
 # Basic Settings
 #=======================================================================================
@@ -196,29 +218,13 @@ load-local-conf() {
 }
 chpwd_functions+=( load-local-conf )
 
-# WSL?
-if [[ "${HOST_OS}" == "wsl" ]]; then
-	export $(dbus-launch)
-	export LIBGL_ALWAYS_INDIRECT=1
-	export WSL_VERSION=$(wsl.exe -l -v | grep -a '[*]' | sed 's/[^0-9]*//g')
-	export IP_ADDRESS=$(tail -1 /etc/resolv.conf | cut -d' ' -f2)
-	export DISPLAY=$IP_ADDRESS:0
-	export PATH=$PATH:$HOME/.local/bin
-	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
-fi
-
-if [[ "${HOST_OS}" == "darwin" ]]; then
-	# sets environment variables on MacOS
-	launchctl setenv HOST_OS darwin
-fi
-
 #=======================================================================================
 # ZINIT
 #=======================================================================================
 # https://wiki.zshell.dev/docs/getting_started/installation
 
 typeset -Ag ZI
-typeset -gx ZI[HOME_DIR]="${LOCAL_CONFIG}/zi" ZI[BIN_DIR]="${ZI[HOME_DIR]}/bin"
+typeset -gx ZI[HOME_DIR]="${XDG_CONFIG_HOME}/zi" ZI[BIN_DIR]="${ZI[HOME_DIR]}/bin"
 command mkdir -p "$ZI[BIN_DIR]"
 source <(curl -sLk init.zshell.dev); zzinit
 
@@ -248,7 +254,7 @@ zi ice wait'!0' from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"; zi light shark
 zi ice wait'!0' from'gh' as'command'; zi light stedolan/jq
 zi ice wait'!0' from'gh' as'command'; zi light sunlei/zsh-ssh
 
-export RIPGREP_CONFIG_PATH="${LOCAL_CONFIG}/ripgrep/.ripgreprc"
+export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME}/ripgrep/.ripgreprc"
 zi ice wait'!0' from'gh-r' as'command' pick='*/rg'; zi light BurntSushi/ripgrep
 
 zi ice wait'!0' from'gh-r' as'command'; zi light solidiquis/erdtree
@@ -294,13 +300,15 @@ zi ice wait'!0'; zi light zsh-users/zsh-completions
 
 [[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
 
-[[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/.cargo/env" ]] && source "${XDG_CONFIG_HOME:-$HOME/.config}/.cargo/env"
+[[ -f "${XDG_CONFIG_HOME}/.cargo/env" ]] && source "${XDG_CONFIG_HOME}/.cargo/env"
 
-[[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh" ]] && source "${XDG_CONFIG_HOME:-$HOME/.config}/fzf/fzf.zsh"
+[[ -f "${XDG_CONFIG_HOME}/fzf/fzf.zsh" ]] && source "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
 [[ -f "/usr/share/doc/fzf/examples/key-bindings.zsh" ]] && source "/usr/share/doc/fzf/examples/key-bindings.zsh"
+[[ -f "${XDG_CONFIG_HOME}/envman/load.sh" ]] && source "${XDG_CONFIG_HOME}/envman/load.sh"
+
 
 if  [ -x "$(command -v kitty)" ]; then
-	export KITTY_CONFIG_DIRECTORY="${HOME}/.config/kitty"
+	export KITTY_CONFIG_DIRECTORY="${XDG_CONFIG_HOME}/kitty"
 	kitty + complete setup zsh | source /dev/stdin
 fi
 
@@ -317,6 +325,6 @@ fi
 # Source aliases and functions
 #=======================================================================================
 # Load AFTER sourcing other files because some export path may not be defined
-if [ -f "${LOCAL_CONFIG}"/zsh/aliases.zsh ]; then
-	source "${LOCAL_CONFIG}"/zsh/aliases.zsh
+if [ -f "${XDG_CONFIG_HOME}"/zsh/aliases.zsh ]; then
+	source "${XDG_CONFIG_HOME}"/zsh/aliases.zsh
 fi

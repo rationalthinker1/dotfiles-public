@@ -1,18 +1,5 @@
 #!/usr/bin/env bash
 
-ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURCE[0]}"`
-BASE_DIR=$(dirname ${ABSOLUTE_PATH})
-BACKUP_DIR="${HOME}/.dotfiles/backup"
-LOCAL_CONFIG="${HOME}/.config"
-export XDG_CONFIG_HOME="${HOME}/.config"
-export ZSH="${XDG_CONFIG_HOME:-$HOME/.config}/zsh"
-
-function decho() {
-	if [[ "${DEBUG}" ]]; then
-		echo "${1}"
-	fi
-}
-
 #=======================================================================================
 # Loading up variables
 #=======================================================================================
@@ -33,8 +20,35 @@ else
 fi
 decho "LOCATION $LOCATION"
 
-if [ -f "${LOCAL_CONFIG}"/zsh/.zprofile ]; then
-	source "${LOCAL_CONFIG}"/zsh/.zprofile
+export HOST_OS="${HOST_OS}"
+export LOCAL_CONFIG="${HOME}/.config"
+export XDG_CONFIG_HOME="${HOME}/.config"
+export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
+export ADOTDIR="${ZDOTDIR}/antigen"
+export ZSH="${ZDOTDIR}"
+export ZSH_CACHE_DIR="${ZSH}/cache"
+export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
+export NVM_DIR="${XDG_CONFIG_HOME}/.nvm"
+export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
+export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
+export TERM=xterm-256color
+export EDITOR=vim
+export CODENAME=$(lsb_release -a 2>&1 | grep Codename | sed -E "s/Codename:\s+//g")
+# allows commands like cat to stay in teminal after using it
+export LESS="-XRF"
+
+ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURCE[0]}"`
+BASE_DIR=$(dirname ${ABSOLUTE_PATH})
+BACKUP_DIR="${HOME}/.dotfiles/backup"
+
+function decho() {
+	if [[ "${DEBUG}" ]]; then
+		echo "${1}"
+	fi
+}
+
+if [ -f "${XDG_CONFIG_HOME}"/zsh/.zprofile ]; then
+	source "${XDG_CONFIG_HOME}"/zsh/.zprofile
 fi
 
 if [ -f "${HOME}"/.zprofile ]; then
@@ -145,8 +159,8 @@ fi
 
 # Installing rust
 if  [[ ! -x "$(command -v cargo)" ]]; then
-	curl https://sh.rustup.rs -sSf | RUSTUP_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/.rustup" CARGO_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/.cargo" sh -s -- -y
-	source "${XDG_CONFIG_HOME:-$HOME/.config}/.cargo/env"
+	curl https://sh.rustup.rs -sSf | RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup" CARGO_HOME="${XDG_CONFIG_HOME}/.cargo" sh -s -- -y
+	source "${XDG_CONFIG_HOME}/.cargo/env"
 fi
 
 # Installing sd
@@ -216,9 +230,9 @@ if [[ ! $(fzf --version 2>/dev/null) ]]; then
 	# wget -q $link -P /tmp/
 	# tar xf "/tmp/${download_filename}"
 	# sudo mv fzf /usr/local/bin/
-	rm -rf "${XDG_CONFIG_HOME:-$HOME/.config}/.fzf"
-	git clone --depth 1 https://github.com/junegunn/fzf.git "${XDG_CONFIG_HOME:-$HOME/.config}/.fzf"
-	"${XDG_CONFIG_HOME:-$HOME/.config}/.fzf/install" --xdg --key-bindings --completion  --no-bash  --no-fish --no-update-rc  
+	rm -rf "${XDG_CONFIG_HOME}/.fzf"
+	git clone --depth 1 https://github.com/junegunn/fzf.git "${XDG_CONFIG_HOME}/.fzf"
+	"${XDG_CONFIG_HOME}/.fzf/install" --xdg --key-bindings --completion  --no-bash  --no-fish --no-update-rc  
 fi
 
 # Installing up
