@@ -209,7 +209,7 @@ if [[ ! $(fzf --version 2>/dev/null) ]]; then
 	# wget -q $link -P /tmp/
 	# tar xf "/tmp/${download_filename}"
 	# sudo mv fzf /usr/local/bin/
-	rm "${LOCAL_CONFIG}/.fzf"
+	rm -rf "${LOCAL_CONFIG}/.fzf"
 	git clone --depth 1 https://github.com/junegunn/fzf.git "${LOCAL_CONFIG}/.fzf"
 	"${LOCAL_CONFIG}/.fzf/install" --xdg --key-bindings --completion  --no-bash  --no-fish --no-update-rc  
 fi
