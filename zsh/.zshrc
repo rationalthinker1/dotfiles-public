@@ -231,7 +231,7 @@ zi ice wait'!0'; zi light zsh-users/zsh-autosuggestions
 zi ice wait'!0'; zi light zsh-users/zsh-completions
 
 export forgit_log=gl
-export FORGIT_DIFF_GIT_OPTS="--ignore-all-space --ignore-blank-lines"
+export FORGIT_DIFF_GIT_OPTS="-w --ignore-blank-lines"
 zi ice wait'!0'; zi light wfxr/forgit
 
 zi ice wait'!0'; zi light zdharma-continuum/fast-syntax-highlighting

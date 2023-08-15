@@ -5,7 +5,7 @@ BASE_DIR=$(dirname ${ABSOLUTE_PATH})
 BACKUP_DIR="${HOME}/.dotfiles/backup"
 LOCAL_CONFIG="${HOME}/.config"
 export XDG_CONFIG_HOME="${HOME}/.config"
-export ZSH="${LOCAL_CONFIG}/zsh"
+export ZSH="${XDG_CONFIG_HOME:-$HOME/.config}/zsh"
 
 function decho() {
 	if [[ "${DEBUG}" ]]; then
@@ -145,7 +145,14 @@ fi
 
 # Installing rust
 if  [[ ! -x "$(command -v cargo)" ]]; then
-	curl https://sh.rustup.rs -sSf | RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup" CARGO_HOME="${XDG_CONFIG_HOME}/.cargo" sh -s -- -y
+	curl https://sh.rustup.rs -sSf | RUSTUP_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/.rustup" CARGO_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/.cargo" sh -s -- -y
+	source "${XDG_CONFIG_HOME:-$HOME/.config}/.cargo/env"
+fi
+
+# Installing sd
+# sed s/before/after/g -> sd before after;  sd before after file.txt -> sed -i -e 's/before/after/g' file.txt
+if  [[ ! -x "$(command -v sd)" ]]; then
+	cargo install sd
 fi
 
 # Installing BLACKHOSTS
@@ -209,9 +216,9 @@ if [[ ! $(fzf --version 2>/dev/null) ]]; then
 	# wget -q $link -P /tmp/
 	# tar xf "/tmp/${download_filename}"
 	# sudo mv fzf /usr/local/bin/
-	rm -rf "${LOCAL_CONFIG}/.fzf"
-	git clone --depth 1 https://github.com/junegunn/fzf.git "${LOCAL_CONFIG}/.fzf"
-	"${LOCAL_CONFIG}/.fzf/install" --xdg --key-bindings --completion  --no-bash  --no-fish --no-update-rc  
+	rm -rf "${XDG_CONFIG_HOME:-$HOME/.config}/.fzf"
+	git clone --depth 1 https://github.com/junegunn/fzf.git "${XDG_CONFIG_HOME:-$HOME/.config}/.fzf"
+	"${XDG_CONFIG_HOME:-$HOME/.config}/.fzf/install" --xdg --key-bindings --completion  --no-bash  --no-fish --no-update-rc  
 fi
 
 # Installing up
