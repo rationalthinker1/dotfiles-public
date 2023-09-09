@@ -143,7 +143,6 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		ripgrep \
 		glances \
 		exuberant-ctags \
-		fd-find \
 		golang-go \
 		; do
 			echo ""
