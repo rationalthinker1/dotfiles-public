@@ -3,6 +3,12 @@
 #=======================================================================================
 # Loading up variables
 #=======================================================================================
+function decho() {
+	if [[ "${DEBUG}" ]]; then
+		echo "${1}"
+	fi
+}
+
 if [[ -f "/proc/sys/kernel/osrelease" ]] && [[ "$(< /proc/sys/kernel/osrelease)" == *microsoft* ]]; then
 	HOST_OS="wsl"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
@@ -40,12 +46,6 @@ export LESS="-XRF"
 ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURCE[0]}"`
 BASE_DIR=$(dirname ${ABSOLUTE_PATH})
 BACKUP_DIR="${HOME}/.dotfiles/backup"
-
-function decho() {
-	if [[ "${DEBUG}" ]]; then
-		echo "${1}"
-	fi
-}
 
 if [ -f "${XDG_CONFIG_HOME}"/zsh/.zprofile ]; then
 	source "${XDG_CONFIG_HOME}"/zsh/.zprofile
