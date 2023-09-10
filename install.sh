@@ -138,7 +138,6 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		bd \
 		xsel \
 		xclip \
-		exa \
 		bat \
 		ripgrep \
 		glances \
@@ -194,10 +193,9 @@ if [[ ! $(node --version 2>/dev/null) ]]; then
 	decho "node does not exist"
 	echo ""
 	echo "<======================================== installing node"
-	curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-	sudo apt-get install nodejs
+	curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash
+	nvm install --lts
 
-	# Installing yarn
 	echo ""
 	echo "<======================================== installing yarn"
 	curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
@@ -217,6 +215,14 @@ if [[ ! $(fd --version 2>/dev/null) ]]; then
 	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
 	wget -q $link -P /tmp/
 	sudo dpkg -i --force-overwrite /tmp/$download_filename
+fi
+
+# Installing eza (newer version of exa)
+if  [[ ! -x "$(command -v eza)" ]]; then
+	decho "eza does not exist"
+	echo ""
+	echo "<======================================== installing eza"
+	cargo install eza
 fi
 
 # Installing fzf

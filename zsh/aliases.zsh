@@ -33,30 +33,30 @@ if  [ -x "$(command -v bat)" ]; then
 	export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 fi
 
-## if exa exists, use it instead of ls
-if  [ -x "$(command -v exa)" ]; then
+## if eza exists, use it instead of ls
+if  [ -x "$(command -v eza)" ]; then
 	## Colorize the ls output ##
-	alias ls='exa --color=auto'
+	alias ls='eza --color=auto'
 
 	## Use a long listing format ##
 	# List with human readable filesizes
-	alias l="exa --color=auto --long --header --group --group-directories-first"
+	alias l="eza --color=auto --long --header --group --group-directories-first"
 	# List all, with human readable filesizes
-	alias ll="exa --color=auto --long --header --group --all --group-directories-first"
+	alias ll="eza --color=auto --long --header --group --all --group-directories-first"
 	# Same as above, but ordered by size
-	alias lls="exa --color=auto --long --header --group --all --group-directories-first --sort size"
+	alias lls="eza --color=auto --long --header --group --all --group-directories-first --sort size"
 	# Same as above, but ordered by date
-	alias llt="exa --color=auto --long --header --group --all --group-directories-first --reverse --sort oldest"
+	alias llt="eza --color=auto --long --header --group --all --group-directories-first --reverse --sort oldest"
 	# Show tree level 2
-	alias lt="exa --color=auto --long --header --group --all --group-directories-first --tree --level=2"
+	alias lt="eza --color=auto --long --header --group --all --group-directories-first --tree --level=2"
 	# Show tree level 3
-	alias lt3="exa --color=auto --long --header --group --all --group-directories-first --tree --level=3"
+	alias lt3="eza --color=auto --long --header --group --all --group-directories-first --tree --level=3"
 	# Show tree level 4
-	alias lt4="exa --color=auto --long --header --group --all --group-directories-first --tree --level=4"
+	alias lt4="eza --color=auto --long --header --group --all --group-directories-first --tree --level=4"
 	# Show hidden files ##
-	alias l.="exa --color=auto --long --header --group --all --group-directories-first --list-dirs .*"
+	alias l.="eza --color=auto --long --header --group --all --group-directories-first --list-dirs .*"
 	# Show only directories
-	alias ld="exa --color=auto --long --header --group --all --group-directories-first --only-dirs"
+	alias ld="eza --color=auto --long --header --group --all --group-directories-first --only-dirs"
 else
 	## Colorize the ls output ##
 	alias ls='ls --color=auto'
