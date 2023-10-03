@@ -28,6 +28,7 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
 	export DISPLAY=$IP_ADDRESS:0
 	export PATH=$PATH:$HOME/.local/bin
 	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
+	export WSL_USERNAME=$(powershell.exe '$env:UserName')
 fi
 
 if [[ "${HOST_OS}" == "darwin" ]]; then
