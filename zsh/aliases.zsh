@@ -613,6 +613,8 @@ if [[ $HOST_OS == "wsl" ]]; then
 		FILE=$1
 		FULL_PATH=$(readlink -f $FILE)
 		$SUBLIME_TEXT_LOCATION "/\/\wsl.localhost\\${DISTRO}${FULL_PATH}"
-}
+	}
+
+	alias code="/mnt/c/Users/${WSL_USERNAME}/AppData/Local/Programs/Microsoft\ VS\ Code/Code.exe"
 fi
 

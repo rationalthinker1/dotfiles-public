@@ -11,12 +11,13 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
 else
 	HOST_OS="linux"
 fi
+export $HOST_OS
 
 dpkg -l ubuntu-desktop > /dev/null 2>&1
 if [[ $? -eq 0 ]]; then
-	LOCATION="desktop"
+	HOST_LOCATION="desktop"
 else
-	LOCATION="server"
+	HOST_LOCATION="server"
 fi
 
 # WSL?
@@ -28,7 +29,7 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
 	export DISPLAY=$IP_ADDRESS:0
 	export PATH=$PATH:$HOME/.local/bin
 	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
-	export WSL_USERNAME=$(powershell.exe '$env:UserName')
+	export WSL_USERNAME=$(powershell.exe '$env:UserName' | sed -E 's/\r//g')
 fi
 
 if [[ "${HOST_OS}" == "darwin" ]]; then
@@ -37,6 +38,7 @@ if [[ "${HOST_OS}" == "darwin" ]]; then
 fi
 
 export HOST_OS="${HOST_OS}"
+export HOST_LOCATION="${HOST_LOCATION}"
 export LOCAL_CONFIG="${HOME}/.config"
 export XDG_CONFIG_HOME="${HOME}/.config"
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
