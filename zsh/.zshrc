@@ -292,7 +292,7 @@ zi ice wait'!0'; zi snippet OMZP::copyfile
 zi ice wait'!0'; zi snippet OMZP::dirhistory
 
 zi ice wait'!0'; zi light zsh-users/zsh-completions
-zi ice wait'!0'; zi light zsh-users/zsh-autosuggestionss
+#zi ice wait'!0'; zi light zsh-users/zsh-autosuggestionss
 
 # sed s/before/after/g -> sd before after;  sd before after file.txt -> sed -i -e 's/before/after/g' file.txt
 #zi ice wait'!0' from'gh-r' as'command' pick'gnu'; zi light chmln/sd
