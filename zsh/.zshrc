@@ -289,6 +289,7 @@ zi ice wait'!0'; zi snippet OMZP::copyfile
 zi ice wait'!0'; zi snippet OMZP::dirhistory
 
 zi ice wait'!0'; zi light zsh-users/zsh-completions
+zi ice wait'!0'; zi light zsh-users/zsh-autosuggestionss
 
 # sed s/before/after/g -> sd before after;  sd before after file.txt -> sed -i -e 's/before/after/g' file.txt
 #zi ice wait'!0' from'gh-r' as'command' pick'gnu'; zi light chmln/sd
@@ -321,6 +322,10 @@ if  [ -x "$(command -v doctl)" ]; then
 	compdef _doctl doctl
 fi
 
+export NVM_DIR="$HOME/.config/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
 #=======================================================================================
 # Source aliases and functions
 #=======================================================================================
@@ -329,6 +334,3 @@ if [ -f "${XDG_CONFIG_HOME}"/zsh/aliases.zsh ]; then
 	source "${XDG_CONFIG_HOME}"/zsh/aliases.zsh
 fi
 
-export NVM_DIR="$HOME/.config/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
