@@ -26,7 +26,8 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
 	export LIBGL_ALWAYS_INDIRECT=1
 	export WSL_VERSION=$(wsl.exe -l -v | grep -a '[*]' | sed 's/[^0-9]*//g')
 	export IP_ADDRESS=$(tail -1 /etc/resolv.conf | cut -d' ' -f2)
-	export DISPLAY=$IP_ADDRESS:0
+	#export DISPLAY=$IP_ADDRESS:0
+	export DISPLAY=$(route.exe print | grep -w 0.0.0.0 | tail -1 | awk '{print $4}'):0.0
 	export PATH=$PATH:$HOME/.local/bin
 	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
 	export WSL_USERNAME=$(powershell.exe '$env:UserName' | sed -E 's/\r//g')
