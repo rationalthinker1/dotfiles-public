@@ -26,8 +26,8 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
 	export LIBGL_ALWAYS_INDIRECT=1
 	export WSL_VERSION=$(wsl.exe -l -v | grep -a '[*]' | sed 's/[^0-9]*//g')
 	export IP_ADDRESS=$(tail -1 /etc/resolv.conf | cut -d' ' -f2)
-	#export DISPLAY=$IP_ADDRESS:0
-	export DISPLAY=$(route.exe print | grep -w 0.0.0.0 | tail -1 | awk '{print $4}'):0.0
+	export DISPLAY=$IP_ADDRESS:0
+	# export DISPLAY=$(route.exe print | grep -w 0.0.0.0 | tail -1 | awk '{print $4}'):0.0
 	export PATH=$PATH:$HOME/.local/bin
 	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
 	export WSL_USERNAME=$(powershell.exe '$env:UserName' | sed -E 's/\r//g')
@@ -232,9 +232,12 @@ typeset -gx ZI[HOME_DIR]="${XDG_CONFIG_HOME}/zi" ZI[BIN_DIR]="${ZI[HOME_DIR]}/bi
 command mkdir -p "$ZI[BIN_DIR]"
 source <(curl -sLk init.zshell.dev); zzinit
 
+zi light z-shell/z-a-bin-gem-node
+zi light z-shell/z-a-patch-dl
+
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
-zi pack for fzf
+zi pack"default+keys" for fzf
 
 zi ice depth=1;  zi light romkatv/powerlevel10k
 zi ice wait'!0'; zi light zsh-users/zsh-autosuggestions
