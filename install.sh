@@ -189,11 +189,12 @@ if [[ ! $(broot --version 2>/dev/null) ]]; then
 fi
 
 # Installing node
-if [[ ! $(node --version 2>/dev/null) ]]; then
+if [[ ! $(nvm --version 2>/dev/null) ]]; then
+	mkdir -p "${NVM_DIR}"
 	decho "node does not exist"
 	echo ""
 	echo "<======================================== installing node"
-	curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash
+	curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
 	nvm install --lts
 
 	echo ""
