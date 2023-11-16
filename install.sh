@@ -195,6 +195,7 @@ if [[ ! $(nvm --version 2>/dev/null) ]]; then
 	echo ""
 	echo "<======================================== installing node"
 	curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
+	source "${NVM_DIR}/nvm.sh"
 	nvm install --lts
 
 	echo ""
