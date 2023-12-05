@@ -3,7 +3,7 @@
 #=======================================================================================
 # Loading up variables
 #=======================================================================================
-if [[ -f "/proc/sys/kernel/osrelease" ]] && [[ "$(< /proc/sys/kernel/osrelease)" == *microsoft* ]]; then
+if [[ -f "/proc/sys/kernel/osrelease" ]] && [[ "$(</proc/sys/kernel/osrelease)" == *microsoft* ]]; then
 	HOST_OS="wsl"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
 	HOST_OS="darwin"
@@ -11,7 +11,7 @@ else
 	HOST_OS="linux"
 fi
 
-if [[ $( dpkg -l ubuntu-desktop > /dev/null 2>&1)$? == "1" ]]; then
+if [[ $(dpkg -l ubuntu-desktop >/dev/null 2>&1)$? == "1" ]]; then
 	LOCATION="desktop"
 else
 	LOCATION="server"
@@ -27,14 +27,14 @@ alias dot="cd ~/.dotfiles"
 alias con="cd ~/.config"
 
 # if bat exists, use it instead of cat
-if  [ -x "$(command -v bat)" ]; then
+if [ -x "$(command -v bat)" ]; then
 	alias rcat=$(which cat)
 	alias cat=$(which bat)
 	export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 fi
 
 ## if eza exists, use it instead of ls
-if  [ -x "$(command -v eza)" ]; then
+if [ -x "$(command -v eza)" ]; then
 	## Colorize the ls output ##
 	alias ls='eza --color=auto'
 
@@ -62,8 +62,8 @@ else
 	alias ls='ls --color=auto'
 
 	## Use a long listing format ##
-	alias l="ls --color=auto -lh --group-directories-first" # List all, with human readable filesizes
-	alias ll="ls --color=auto -lah --group-directories-first" # List all, with human readable filesizes
+	alias l="ls --color=auto -lh --group-directories-first"       # List all, with human readable filesizes
+	alias ll="ls --color=auto -lah --group-directories-first"     # List all, with human readable filesizes
 	alias llt="ls --color=auto -lahFtr --group-directories-first" # Same as above, but ordered by date
 	alias lls="ls --color=auto -lahFSr --group-directories-first" # Same as above, but ordered by size
 
@@ -124,9 +124,6 @@ alias hgrep="history | grep"
 
 alias br=broot
 
-# use fdfind
-alias fd=fdfind
-
 FD_EXCLUDE_PATTERN="{"
 FD_EXCLUDE_PATTERN+=.cargo,
 FD_EXCLUDE_PATTERN+=node_modules,
@@ -154,11 +151,11 @@ function fdd() {
 
 # pages rg output automatically
 function rg() {
-    if [ -t 1 ]; then
-        command rg -p "$@" | less -RFX
-    else
-        command rg "$@"
-    fi
+	if [ -t 1 ]; then
+		command rg -p "$@" | less -RFX
+	else
+		command rg "$@"
+	fi
 }
 
 function bak() {
@@ -173,6 +170,31 @@ function bak() {
 	else
 		echo "renaming ${1} to ${1}.bak"
 		mv "${1}" "${1}.bak"
+	fi
+}
+
+function bak2() {
+	if [[ "$#" -eq 0 ]]; then
+		echo "used to back up file or folder"
+		echo "usage: bak test"
+		exit 0
+	fi
+	if [[ $1 =~ '^([^.]*?)(\.[0-9])?\.bak$' ]]; then
+		original="${match[1]}"
+		echo "renaming ${1} back to ${original}"
+		mv "${1}" "${original}"
+	else
+		if [[ -e "${1}.bak" ]]; then
+			i=2
+			while [[ -e "${1}.$i.bak" ]]; do
+				let i++
+			done
+			echo "renaming ${1} to ${1}.$i.bak"
+			mv "${1}" "${1}.$i.bak"
+		else
+			echo "renaming ${1} to ${1}.bak"
+			mv "${1}" "${1}.bak"
+		fi
 	fi
 }
 
@@ -212,14 +234,14 @@ function fs() {
 # get top biggest directories
 function ds() {
 	LIMIT=${1:-51}
-	sudo du --human-readable --max-depth=1 --exclude /media 2>/dev/null | sort -r -h | head "-n$((${LIMIT}+1))"
+	sudo du --human-readable --max-depth=1 --exclude /media 2>/dev/null | sort -r -h | head "-n$((${LIMIT} + 1))"
 }
 # So that vim shortcuts can work
 #alias vim="stty stop '' -ixoff ; vim"
 
 # Search current directory (SCD) in grep recursively
 function scd() {
-  grep -ir "$@" ./
+	grep -ir "$@" ./
 }
 
 # wgets portion of a line. Default is 10 lines
@@ -239,25 +261,25 @@ alias v!='fc -e "sed -i -e \"s/cat /vim /\""'
 
 # Extract archives files
 function extract() {
-    if [ -f "$1" ] ; then
-        case "$1" in
-            *.tar.bz2)   tar xvjf "$1"     ;;
-            *.tar.xz)    tar xvJf "$1"     ;;
-            *.tar.gz)    tar xvzf "$1"     ;;
-            *.bz2)       bunzip2 "$1"      ;;
-            *.rar)       unrar x "$1"      ;;
-            *.gz)        gunzip "$1"       ;;
-            *.tar)       tar xvf "$1"      ;;
-            *.tbz2)      tar xvjf "$1"     ;;
-            *.tgz)       tar xvzf "$1"     ;;
-            *.zip)       unzip "$1"        ;;
-            *.Z)         uncompress "$1"   ;;
-            *.7z)        7z x "$1"         ;;
-            *)           echo "'$1' cannot be extracted via >extract<" ;;
-        esac
-    else
-        echo "'$1' is not a valid file!"
-    fi
+	if [ -f "$1" ]; then
+		case "$1" in
+		*.tar.bz2) tar xvjf "$1" ;;
+		*.tar.xz) tar xvJf "$1" ;;
+		*.tar.gz) tar xvzf "$1" ;;
+		*.bz2) bunzip2 "$1" ;;
+		*.rar) unrar x "$1" ;;
+		*.gz) gunzip "$1" ;;
+		*.tar) tar xvf "$1" ;;
+		*.tbz2) tar xvjf "$1" ;;
+		*.tgz) tar xvzf "$1" ;;
+		*.zip) unzip "$1" ;;
+		*.Z) uncompress "$1" ;;
+		*.7z) 7z x "$1" ;;
+		*) echo "'$1' cannot be extracted via >extract<" ;;
+		esac
+	else
+		echo "'$1' is not a valid file!"
+	fi
 }
 
 #=======================================================================================
@@ -271,10 +293,9 @@ alias upgrade='sudo apt-get update && sudo apt-get upgrade'
 alias dist-upgrade='sudo apt-get update && sudo apt-get dist-upgrade'
 
 function apt-install() {
-	for application in "$@"
-	do
+	for application in "$@"; do
 		sudo apt-get install -f -y "${application}"
-    done
+	done
 }
 
 function apt-update() {
@@ -282,10 +303,9 @@ function apt-update() {
 }
 
 function add-repo() {
-	for repository in "$@"
-	do
+	for repository in "$@"; do
 		sudo add-apt-repository -y "${repository}"
-    done
+	done
 }
 
 # simple-install ppa:numix/ppa numix-gtk-theme numix-icon-theme-circle
@@ -299,8 +319,7 @@ function simple-install() {
 	# Update list of available packages
 	apt-update
 
-	for application in "$@"
-	do
+	for application in "$@"; do
 		# Install application
 		apt-install "${application}"
 	done
@@ -367,12 +386,11 @@ git_search() {
 alias gse=git_search
 
 git_reset() {
-    COMMIT="HEAD"
-    if [[ "$#" -eq 1 ]];
-    then
-        COMMIT="HEAD~$1"
-    fi
-    git reset --hard "${COMMIT}"
+	COMMIT="HEAD"
+	if [[ "$#" -eq 1 ]]; then
+		COMMIT="HEAD~$1"
+	fi
+	git reset --hard "${COMMIT}"
 }
 alias gre=git_reset
 
@@ -393,7 +411,6 @@ alias -s {c,py,cpp,r,rb,go,js,jsx,ts,java,sql,hs,md}='vim'
 alias -s {xml,json,toml,yaml,yml,ini,conf,log}='vim'
 alias -s {gz,tgz,zip,lzh,bz2,tbz,Z,tar,arj,xz,7z}='extract'
 
-
 #=======================================================================================
 # Global Aliases
 #=======================================================================================
@@ -411,7 +428,6 @@ alias -g S='| sort -n'
 alias -g T='| tail'
 alias -g U='| uniq'
 alias -g X='| xsel -b'
-
 
 #=======================================================================================
 # Vagrant Aliases and functions
@@ -488,22 +504,22 @@ alias alog='sudo tail -f /opt/lampp/logs/*'
 #=======================================================================================
 # Runs docker-compose command looking at other files
 dc() {
-  if [ -e "docker-compose.yml" ]; then
-    docker-compose "$@"
-  elif [ -e "./docker/docker-compose.yml" ]; then
-    docker-compose -f "./docker/docker-compose.yml" --project-directory ./ "$@"
-  fi
+	if [ -e "docker-compose.yml" ]; then
+		docker-compose "$@"
+	elif [ -e "./docker/docker-compose.yml" ]; then
+		docker-compose -f "./docker/docker-compose.yml" --project-directory ./ "$@"
+	fi
 }
 
 # Runs the docker-compose detached
 dcu() {
-  if [[ -a "docker/docker.sh" ]]; then
-    ./docker/docker.sh "$@"
-  elif [ -e "docker.sh" ]; then
-    ./docker.sh "$@"
-  else
-    dc up -d
-  fi
+	if [[ -e "docker/docker.sh" ]]; then
+		./docker/docker.sh "$@"
+	elif [ -e "docker.sh" ]; then
+		./docker.sh "$@"
+	else
+		dc up -d
+	fi
 }
 
 # Get the ip addresses of the dockers
@@ -523,16 +539,16 @@ drexec() { docker exec --user root:root -it $(dc ps -q $1) $2; }
 
 # Run a bash shell in the specified container (with docker-compose).
 dceb() {
-  SCRIPT="/bin/bash"
-  if [ $# -lt 1 ]; then
-    echo "Usage: ${FUNCNAME[0]} CONTAINER_ID"
-    return 1
-  fi
-  if [ -n "$2" ]; then
-    SCRIPT="$2"
-  fi
+	SCRIPT="/bin/bash"
+	if [ $# -lt 1 ]; then
+		echo "Usage: ${FUNCNAME[0]} CONTAINER_ID"
+		return 1
+	fi
+	if [ -n "$2" ]; then
+		SCRIPT="$2"
+	fi
 
-  dc exec --user "$(id -u):$(id -g)" "$1" "$SCRIPT"
+	dc exec --user "$(id -u):$(id -g)" "$1" "$SCRIPT"
 }
 
 #alias dce="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec --user \"$(id -u):$(id -g)\""
@@ -579,28 +595,28 @@ dbu() { docker build -t=$1 .; }
 
 # Run a bash shell in the specified container.
 dexbash() {
-  if [ $# -ne 1 ]; then
-    echo "Usage: ${FUNCNAME[0]} CONTAINER_ID"
-    return 1
-  fi
+	if [ $# -ne 1 ]; then
+		echo "Usage: ${FUNCNAME[0]} CONTAINER_ID"
+		return 1
+	fi
 
-  docker exec -it --user "$(id -u):$(id -g)" "$1" /bin/bash
+	docker exec -it --user "$(id -u):$(id -g)" "$1" /bin/bash
 }
 
 # Runs Docker build and tag it with the given name.
 dbt() {
-  if [ $# -lt 1 ]; then
-    echo "Usage ${FUNCNAME[0]} DIRNAME [TAGNAME ...]"
-    return 1
-  fi
+	if [ $# -lt 1 ]; then
+		echo "Usage ${FUNCNAME[0]} DIRNAME [TAGNAME ...]"
+		return 1
+	fi
 
-  ARGS="$1"
-  shift
-  if [ $# -ge 2 ]; then
-    ARGS="$ARGS -t $@"
-  fi
+	ARGS="$1"
+	shift
+	if [ $# -ge 2 ]; then
+		ARGS="$ARGS -t $@"
+	fi
 
-  docker build $ARGS
+	docker build $ARGS
 }
 
 #=======================================================================================
@@ -617,4 +633,3 @@ if [[ $HOST_OS == "wsl" ]]; then
 
 	alias code="/mnt/c/Users/${WSL_USERNAME}/AppData/Local/Programs/Microsoft\ VS\ Code/Code.exe"
 fi
-
