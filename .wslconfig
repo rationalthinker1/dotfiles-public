@@ -1,0 +1,11 @@
+[wsl2]
+autoProxy = true
+firewall = false
+networkingMode = "mirrored"
+dnsTunneling = true
+localhostForwarding = true
+
+[experimental]
+autoMemoryReclaim = "gradual"
+hostAddressLoopback = true
+useWindowsDnsCache = true
