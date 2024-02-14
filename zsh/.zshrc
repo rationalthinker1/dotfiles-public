@@ -340,3 +340,5 @@ if [ -f "${XDG_CONFIG_HOME}"/zsh/aliases.zsh ]; then
 	source "${XDG_CONFIG_HOME}"/zsh/aliases.zsh
 fi
 
+
+export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"

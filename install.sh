@@ -251,6 +251,16 @@ if [[ ! $(which up 2>/dev/null) ]]; then
 	sudo chmod +x /usr/local/bin/up
 fi
 
+# Installing WSL Utils
+if [[ ! $(which wslpath 2>/dev/null) ]] && [[ $HOST_OS == 'wsl' ]]; then
+	decho "wslpath does not exist"
+	echo ""
+	echo "<======================================== installing wslpath"
+	sudo add-apt-repository ppa:wslutilities/wslu -y
+	sudo apt update -y
+	sudo apt install -f -y wslu
+fi
+
 if [[ ! -f "${HOME}/.dotfiles/fonts/.installed" ]] && [[ $LOCATION == 'desktop' ]] && [[ $HOST_OS == 'linux' ]]; then
 	cd "${HOME}/.dotfiles"/fonts
 	mkdir installations
