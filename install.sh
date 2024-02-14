@@ -200,9 +200,7 @@ if [[ ! $(nvm --version 2>/dev/null) ]]; then
 
 	echo ""
 	echo "<======================================== installing yarn"
-	curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-	echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-	sudo apt-get update -y && sudo apt-get install -y yarn
+	curl -o- -L https://yarnpkg.com/install.sh | bash
 	echo "export PATH=$(yarn global bin):$PATH" >> ~/.zprofile
 	source ~/.zprofile
 	yarn global add gtop
