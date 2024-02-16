@@ -31,6 +31,10 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
 	export PATH=$PATH:$HOME/.local/bin
 	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
 	export WSL_USERNAME=$(powershell.exe '$env:UserName' | sed -E 's/\r//g')
+
+	# https://hackmd.io/@stargazerwang/HkYFVktlY
+	export LIBGL_ALWAYS_INDIRECT=1 # Indirect rendering
+	export LIBGL_ALWAYS_SOFTWARE=1 # Direct rendering<F29>
 fi
 
 if [[ "${HOST_OS}" == "darwin" ]]; then
@@ -38,14 +42,16 @@ if [[ "${HOST_OS}" == "darwin" ]]; then
 	launchctl setenv HOST_OS darwin
 fi
 
+export XDG_CONFIG_HOME="${HOME}/.config"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:=${HOME}/.cache}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:=${HOME}/.local/share}"
+export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
+export ZSH="${ZDOTDIR}"
+export ZSH_CACHE_DIR="${ZSH}/cache"
 export HOST_OS="${HOST_OS}"
 export HOST_LOCATION="${HOST_LOCATION}"
 export LOCAL_CONFIG="${HOME}/.config"
-export XDG_CONFIG_HOME="${HOME}/.config"
-export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 export ADOTDIR="${ZDOTDIR}/antigen"
-export ZSH="${ZDOTDIR}"
-export ZSH_CACHE_DIR="${ZSH}/cache"
 export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
 export NVM_DIR="${XDG_CONFIG_HOME}/.nvm"
 export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
