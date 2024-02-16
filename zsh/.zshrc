@@ -11,35 +11,12 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
 else
 	HOST_OS="linux"
 fi
-export $HOST_OS
 
 dpkg -l ubuntu-desktop > /dev/null 2>&1
 if [[ $? -eq 0 ]]; then
 	HOST_LOCATION="desktop"
 else
 	HOST_LOCATION="server"
-fi
-
-# WSL?
-if [[ "${HOST_OS}" == "wsl" ]]; then
-	export $(dbus-launch)
-	export LIBGL_ALWAYS_INDIRECT=1
-	export WSL_VERSION=$(wsl.exe -l -v | grep -a '[*]' | sed 's/[^0-9]*//g')
-	export IP_ADDRESS=$(tail -1 /etc/resolv.conf | cut -d' ' -f2)
-	export DISPLAY=$IP_ADDRESS:0
-	# export DISPLAY=$(route.exe print | grep -w 0.0.0.0 | tail -1 | awk '{print $4}'):0.0
-	export PATH=$PATH:$HOME/.local/bin
-	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
-	export WSL_USERNAME=$(powershell.exe '$env:UserName' | sed -E 's/\r//g')
-
-	# https://hackmd.io/@stargazerwang/HkYFVktlY
-	export LIBGL_ALWAYS_INDIRECT=1 # Indirect rendering
-	export LIBGL_ALWAYS_SOFTWARE=1 # Direct rendering<F29>
-fi
-
-if [[ "${HOST_OS}" == "darwin" ]]; then
-	# sets environment variables on MacOS
-	launchctl setenv HOST_OS darwin
 fi
 
 export XDG_CONFIG_HOME="${HOME}/.config"
@@ -56,38 +33,43 @@ export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
 export NVM_DIR="${XDG_CONFIG_HOME}/.nvm"
 export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
 export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
+export VOLTA_HOME="${XDG_CONFIG_HOME}/volta"
 export TERM=xterm-256color
 export EDITOR=vim
 export CODENAME=$(lsb_release -a 2>&1 | grep Codename | sed -E "s/Codename:\s+//g")
 # allows commands like cat to stay in teminal after using it
 export LESS="-XRF"
 
-if [ -d "${XDG_CONFIG_HOME}/.cargo/bin" ] ; then
-	export PATH="${XDG_CONFIG_HOME}/.cargo/bin:$PATH"
+if [ -d "${CARGO_HOME}/bin" ]; then
+	export PATH="${CARGO_HOME}/bin:${PATH}"
 fi
 
-if [ -f "${XDG_CONFIG_HOME}"/zsh/local.zsh ]; then
-	source "${XDG_CONFIG_HOME}"/zsh/local.zsh
+if [ -d "${VOLTA_HOME}/bin" ]; then
+	export PATH="${VOLTA_HOME}/bin:${PATH}"
 fi
 
-if [ -f "${XDG_CONFIG_HOME}"/zsh/.zprofile ]; then
-	source "${XDG_CONFIG_HOME}"/zsh/.zprofile
+if [ -f "${ZDOTDIR}/local.zsh" ]; then
+	source "${ZDOTDIR}/local.zsh"
 fi
 
-if [ -f "${HOME}"/.zprofile ]; then
-	source "${HOME}"/.zprofile
+if [ -f "${ZDOTDIR}/.zprofile" ]; then
+	source "${ZDOTDIR}/.zprofile"
 fi
 
-if [ -f "${HOME}"/.bash_local ]; then
-	source "${HOME}"/.bash_local
+if [ -f "${HOME}/.zprofile" ]; then
+	source "${HOME}/.zprofile"
 fi
 
-if [ -d "${HOME}/.local/bin" ] ; then
-	export PATH="${HOME}/.local/bin:$PATH"
+if [ -f "${HOME}/.bash_local" ]; then
+	source "${HOME}/.bash_local"
 fi
 
-if [ -d "/usr/local/go/bin" ] ; then
-	export PATH="/usr/local/go/bin:$PATH"
+if [ -d "${HOME}/.local/bin" ]; then
+	export PATH="${HOME}/.local/bin:${PATH}"
+fi
+
+if [ -d "/usr/local/go/bin" ]; then
+	export PATH="/usr/local/go/bin:${PATH}"
 fi
 
 # WSL?
@@ -99,7 +81,6 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
 	export DISPLAY="{$IP_ADDRESS}:0"
 	export PATH="{$PATH}:{$HOME}/.local/bin"
 	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
-	export WSL_USERNAME=$(powershell.exe '$env:UserName' | sed -E 's/\r//g')
 fi
 
 if [[ "${HOST_OS}" == "darwin" ]]; then
@@ -334,7 +315,7 @@ zi ice wait'!0'; zi light zsh-users/zsh-completions
 
 [[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
 
-[[ -f "${XDG_CONFIG_HOME}/.cargo/env" ]] && source "${XDG_CONFIG_HOME}/.cargo/env"
+[[ -f "${CARGO_HOME}/env" ]] && source "${CARGO_HOME}/env"
 
 [[ -f "${XDG_CONFIG_HOME}/fzf/fzf.zsh" ]] && source "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
 [[ -f "/usr/share/doc/fzf/examples/key-bindings.zsh" ]] && source "/usr/share/doc/fzf/examples/key-bindings.zsh"
@@ -354,16 +335,16 @@ if  [ -x "$(command -v doctl)" ]; then
 	compdef _doctl doctl
 fi
 
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+[ -s "${NVM_DIR}/nvm.sh" ] && \. "${NVM_DIR}/nvm.sh"  # This loads nvm
+[ -s "${NVM_DIR}/bash_completion" ] && \. "${NVM_DIR}/bash_completion"  # This loads nvm bash_completion
 
 
 #=======================================================================================
 # Source aliases and functions
 #=======================================================================================
 # Load AFTER sourcing other files because some export path may not be defined
-if [ -f "${XDG_CONFIG_HOME}"/zsh/aliases.zsh ]; then
-	source "${XDG_CONFIG_HOME}"/zsh/aliases.zsh
+if [ -f "${ZDOTDIR}"/aliases.zsh ]; then
+	source "${ZDOTDIR}"/aliases.zsh
 fi
 
 export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"

@@ -38,6 +38,7 @@ export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
 export NVM_DIR="${XDG_CONFIG_HOME}/.nvm"
 export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
 export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
+export VOLTA_HOME="${XDG_CONFIG_HOME}/volta"
 export TERM=xterm-256color
 export EDITOR=vim
 export CODENAME=$(lsb_release -a 2>&1 | grep Codename | sed -E "s/Codename:\s+//g")
@@ -190,21 +191,16 @@ if [[ ! $(broot --version 2>/dev/null) ]]; then
 fi
 
 # Installing node
-if [[ ! $(nvm --version 2>/dev/null) ]]; then
-	mkdir -p "${NVM_DIR}"
-	decho "node does not exist"
+if [[ ! $(volta --version 2>/dev/null) ]]; then
+	mkdir -p "${VOLTA_HOME}"
+	echo "volta does not exist"
 	echo ""
-	echo "<======================================== installing node"
-	curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
-	source "${NVM_DIR}/nvm.sh"
-	nvm install --lts
-
-	echo ""
-	echo "<======================================== installing yarn"
-	curl -o- -L https://yarnpkg.com/install.sh | bash
-	echo "export PATH=$(yarn global bin):$PATH" >> ~/.zprofile
-	source ~/.zprofile
-	yarn global add gtop
+	echo "<======================================== installing volta"
+	curl https://get.volta.sh | bash
+	if [ -d "${VOLTA_HOME}/bin" ]; then
+		export PATH="${VOLTA_HOME}/bin:${PATH}"
+	fi
+	volta install node npm yarn
 fi
 
 # Installing fd

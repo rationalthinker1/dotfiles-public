@@ -1,22 +1,5 @@
 #!/usr/bin/env bash
 
-#=======================================================================================
-# Loading up variables
-#=======================================================================================
-if [[ -f "/proc/sys/kernel/osrelease" ]] && [[ "$(</proc/sys/kernel/osrelease)" == *microsoft* ]]; then
-	HOST_OS="wsl"
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-	HOST_OS="darwin"
-else
-	HOST_OS="linux"
-fi
-
-if [[ $(dpkg -l ubuntu-desktop >/dev/null 2>&1)$? == "1" ]]; then
-	LOCATION="desktop"
-else
-	LOCATION="server"
-fi
-
 ## zshrc Related ##
 alias dirzshrc="grep -nT '^#|' $HOME/.zshrc"
 alias zshrc="vim $HOME/.zshrc"
@@ -200,10 +183,10 @@ function bak2() {
 
 function ref() {
 	if [[ "$#" -eq 0 ]]; then
-		cat ~/.config/zsh/reference.zsh
+		cat ${ZDOTDIR}/reference.zsh
 	else
 		name="${1}"
-		folder="${LOCAL_CONFIG}/zsh/references"
+		folder="${ZDOTDIR}/references"
 		file="${folder}/${name}.zsh"
 		if [[ ! -d $folder ]]; then
 			mkdir -p $folder
@@ -631,5 +614,6 @@ if [[ $HOST_OS == "wsl" ]]; then
 		$SUBLIME_TEXT_LOCATION "/\/\wsl.localhost\\${DISTRO}${FULL_PATH}"
 	}
 
+	WSL_USERNAME=$(powershell.exe '$env:UserName' | sed -E 's/\r//g')
 	alias code="/mnt/c/Users/${WSL_USERNAME}/AppData/Local/Programs/Microsoft\ VS\ Code/Code.exe"
 fi
