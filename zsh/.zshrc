@@ -89,6 +89,25 @@ fi
 if [ -d "/usr/local/go/bin" ] ; then
 	export PATH="/usr/local/go/bin:$PATH"
 fi
+
+# WSL?
+if [[ "${HOST_OS}" == "wsl" ]]; then
+	export $(dbus-launch)
+	export LIBGL_ALWAYS_INDIRECT=1
+	export WSL_VERSION=$(wsl.exe -l -v | grep -a '[*]' | sed 's/[^0-9]*//g')
+	export IP_ADDRESS=$(tail -1 /etc/resolv.conf | cut -d' ' -f2)
+	export DISPLAY="{$IP_ADDRESS}:0"
+	export PATH="{$PATH}:{$HOME}/.local/bin"
+	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
+	export WSL_USERNAME=$(powershell.exe '$env:UserName' | sed -E 's/\r//g')
+fi
+
+if [[ "${HOST_OS}" == "darwin" ]]; then
+	# sets environment variables on MacOS
+	launchctl setenv HOST_OS darwin
+fi
+
+
 #=======================================================================================
 # Basic Settings
 #=======================================================================================
@@ -228,6 +247,7 @@ load-local-conf() {
 }
 chpwd_functions+=( load-local-conf )
 
+
 #=======================================================================================
 # ZINIT
 #=======================================================================================
@@ -320,7 +340,6 @@ zi ice wait'!0'; zi light zsh-users/zsh-completions
 [[ -f "/usr/share/doc/fzf/examples/key-bindings.zsh" ]] && source "/usr/share/doc/fzf/examples/key-bindings.zsh"
 [[ -f "${XDG_CONFIG_HOME}/envman/load.sh" ]] && source "${XDG_CONFIG_HOME}/envman/load.sh"
 
-
 if  [ -x "$(command -v kitty)" ]; then
 	export KITTY_CONFIG_DIRECTORY="${XDG_CONFIG_HOME}/kitty"
 	kitty + complete setup zsh | source /dev/stdin
@@ -338,6 +357,7 @@ fi
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
+
 #=======================================================================================
 # Source aliases and functions
 #=======================================================================================
@@ -345,6 +365,5 @@ fi
 if [ -f "${XDG_CONFIG_HOME}"/zsh/aliases.zsh ]; then
 	source "${XDG_CONFIG_HOME}"/zsh/aliases.zsh
 fi
-
 
 export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"

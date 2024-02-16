@@ -20,13 +20,14 @@ decho "HOST_OS $HOST_OS"
 
 dpkg -l ubuntu-desktop > /dev/null 2>&1
 if [[ $? -eq 0 ]]; then
-	LOCATION="desktop"
+	HOST_LOCATION="desktop"
 else
-	LOCATION="server"
+	HOST_LOCATION="server"
 fi
-decho "LOCATION $LOCATION"
+decho "HOST_LOCATION $HOST_LOCATION"
 
 export HOST_OS="${HOST_OS}"
+export HOST_LOCATION="${HOST_LOCATION}"
 export LOCAL_CONFIG="${HOME}/.config"
 export XDG_CONFIG_HOME="${HOME}/.config"
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
@@ -168,7 +169,7 @@ if  [[ ! -x "$(command -v sd)" ]]; then
 fi
 
 # Installing BLACKHOSTS
-if [[ ! $(blackhosts --help 2>/dev/null) ]] && [[ $LOCATION == 'desktop' ]] && [[ $HOST_OS == 'linux' ]]; then
+if [[ ! $(blackhosts --help 2>/dev/null) ]] && [[ $HOST_LOCATION == 'desktop' ]] && [[ $HOST_OS == 'linux' ]]; then
 	decho "blackhosts does not exist"
 	echo ""
 	echo "<======================================== installing blackhosts"
@@ -252,16 +253,16 @@ if [[ ! $(which up 2>/dev/null) ]]; then
 fi
 
 # Installing WSL Utils
-if [[ ! $(which wslpath 2>/dev/null) ]] && [[ $HOST_OS == 'wsl' ]]; then
-	decho "wslpath does not exist"
+if [[ ! $(which wslvar 2>/dev/null) ]] && [[ $HOST_OS == 'wsl' ]]; then
+	decho "wslvar does not exist"
 	echo ""
-	echo "<======================================== installing wslpath"
+	echo "<======================================== installing wslvar"
 	sudo add-apt-repository ppa:wslutilities/wslu -y
 	sudo apt update -y
 	sudo apt install -f -y wslu
 fi
 
-if [[ ! -f "${HOME}/.dotfiles/fonts/.installed" ]] && [[ $LOCATION == 'desktop' ]] && [[ $HOST_OS == 'linux' ]]; then
+if [[ ! -f "${HOME}/.dotfiles/fonts/.installed" ]] && [[ $HOST_LOCATION == 'desktop' ]] && [[ $HOST_OS == 'linux' ]]; then
 	cd "${HOME}/.dotfiles"/fonts
 	mkdir installations
 	unzip "*.zip" -d installations
@@ -289,6 +290,10 @@ updateFiles "${HOME}/.dotfiles/fzf/fzf.zsh" "${HOME}/.config/fzf/fzf.zsh"
 updateFiles "${HOME}/.dotfiles/.Xresources" "${HOME}/.Xresources"
 updateFiles "${HOME}/.dotfiles/rc.sh" "${HOME}/.ssh/rc"
 
+if [[ $HOST_OS == 'wsl' ]]; then
+	WINDOWS_HOME_DIRECTORY=$(wslpath $(wslvar USERPROFILE))
+	updateFiles "${HOME}/.dotfiles/.wslconfig" "${WINDOWS_HOME_DIRECTORY}/.wslconfig"
+fi
 
 # Installing vim plugins
 echo ""
