@@ -44,10 +44,6 @@ if [ -d "${CARGO_HOME}/bin" ]; then
 	export PATH="${CARGO_HOME}/bin:${PATH}"
 fi
 
-if [ -d "${VOLTA_HOME}/bin" ]; then
-	export PATH="${VOLTA_HOME}/bin:${PATH}"
-fi
-
 if [ -f "${ZDOTDIR}/local.zsh" ]; then
 	source "${ZDOTDIR}/local.zsh"
 fi
@@ -239,6 +235,8 @@ typeset -gx ZI[HOME_DIR]="${XDG_CONFIG_HOME}/zi" ZI[BIN_DIR]="${ZI[HOME_DIR]}/bi
 command mkdir -p "$ZI[BIN_DIR]"
 source <(curl -sLk init.zshell.dev); zzinit
 
+zi ice depth=1;  zi light romkatv/powerlevel10k
+
 zi light z-shell/z-a-bin-gem-node
 zi light z-shell/z-a-patch-dl
 
@@ -246,67 +244,77 @@ export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 zi pack"default+keys" for fzf
 
-zi ice depth=1;  zi light romkatv/powerlevel10k
-zi ice wait'!0'; zi light zsh-users/zsh-autosuggestions
-zi ice wait'!0'; zi light zsh-users/zsh-completions
+# zi light zsh-users/zsh-autosuggestions
+# zi light zsh-users/zsh-completions
+
+zi wait lucid for \
+  atinit"ZI[COMPINIT_OPTS]=-C; zicompinit; zicdreplay" \
+     z-shell/F-Sy-H \
+  blockf \
+     zsh-users/zsh-completions \
+  atload"!_zsh_autosuggest_start" \
+     zsh-users/zsh-autosuggestions
 
 export forgit_log=gl
 export FORGIT_DIFF_GIT_OPTS="-w --ignore-blank-lines"
-zi ice wait'!0'; zi light wfxr/forgit
+zi light wfxr/forgit
 
-zi ice wait'!0'; zi light zdharma-continuum/fast-syntax-highlighting
-zi ice wait'!0' from'gh-r' as'command'; zi light akavel/up
-zi ice wait'!0' from'gh-r' as'command'; zi light ogham/exa
+zi light zdharma-continuum/fast-syntax-highlighting
+zi ice from'gh-r' as'command'; zi light akavel/up
+
+zi light Aloxaf/fzf-tab
+zi light Freed-Wu/fzf-tab-source
+
+zi ice from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza'
+zi light eza-community/eza
+zi light z-shell/zsh-eza
 
 export ENHANCD_DISABLE_DOT=1
-zi ice wait'!0'; zi light b4b4r07/enhancd
+zi light b4b4r07/enhancd
 
 export BAT_THEME="OneHalfDark"
-zi ice wait'!0' from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"; zi light sharkdp/bat
+zi ice from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"; zi light sharkdp/bat
 
-zi ice wait'!0' from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"; zi light sharkdp/fd
-zi ice wait'!0' from'gh' as'command'; zi light stedolan/jq
-zi ice wait'!0' from'gh' as'command'; zi light sunlei/zsh-ssh
+zi ice from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"; zi light sharkdp/fd
+zi ice from'gh' as'command'; zi light stedolan/jq
+zi ice from'gh' as'command'; zi light sunlei/zsh-ssh
 
 export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME}/ripgrep/.ripgreprc"
-zi ice wait'!0' from'gh-r' as'command' pick='*/rg'; zi light BurntSushi/ripgrep
+zi ice from'gh-r' as'command' pick='*/rg'; zi light BurntSushi/ripgrep
 
-zi ice wait'!0' from'gh-r' as'command'; zi light solidiquis/erdtree
-zi ice wait'!0'; zi light z-shell/zsh-fancy-completions
-#zi ice wait'!0' atinit'export ZSH_THEME="bubblified"'; zi light hohmannr/bubblified
-zi ice wait'!0' from'gh' as'command' make pick"imcat"; zi light stolk/imcat
+zi ice from'gh-r' as'command'; zi light solidiquis/erdtree
+zi light z-shell/zsh-fancy-completions
+#zi ice atinit'export ZSH_THEME="bubblified"'; zi light hohmannr/bubblified
+zi ice from'gh' as'command' make pick"imcat"; zi light stolk/imcat
 
 # type out a command that you expect to produce json on it's standard output
 # press alt + j and interactively write a jq expression
 # press enter, and the jq expression is appended to your initial command!
-zi ice wait'!0'; zi light reegnz/jq-zsh-plugin
+zi light reegnz/jq-zsh-plugin
 
 # A simple plugin that auto-closes, deletes and skips over matching delimiters
-zi ice wait'!0'; zi light hlissner/zsh-autopair
-zi ice wait'!0'; zi snippet OMZP::gitfast
-zi ice wait'!0'; zi snippet OMZP::docker
-zi ice wait'!0'; zi snippet OMZP::docker-compose
+zi light hlissner/zsh-autopair
+# zi snippet OMZP::gitfast
+# zi snippet OMZP::docker
+zi snippet OMZP::docker-compose
 
 # press ESC twice to sudo previous command
-zi ice wait'!0'; zi snippet OMZP::sudo
+zi snippet OMZP::sudo
 
 # adds a 'extract' function to unzip zip/rar/7z/tar.gz etc...
-zi ice wait'!0'; zi snippet OMZP::extract
+zi snippet OMZP::extract
 
 #copies the contents of a file in your system clipboard by using command 'copyfile <filename>'
-zi ice wait'!0'; zi snippet OMZP::copyfile
+zi snippet OMZP::copyfile
 
 # alt+left -> Go to previous directory
 # alt+right -> Go to next directory
 # alt+up -> Go to parent directory
 # alt+down -> Go to first child directory by alphabetical order
-zi ice wait'!0'; zi snippet OMZP::dirhistory
-
-zi ice wait'!0'; zi light zsh-users/zsh-completions
-#zi ice wait'!0'; zi light zsh-users/zsh-autosuggestionss
+zi snippet OMZP::dirhistory
 
 # sed s/before/after/g -> sd before after;  sd before after file.txt -> sed -i -e 's/before/after/g' file.txt
-#zi ice wait'!0' from'gh-r' as'command' pick'gnu'; zi light chmln/sd
+zi ice from'gh-r' as'command' pick'gnu'; zi light chmln/sd
 
 #=======================================================================================
 # Custom Application Settings
@@ -347,4 +355,4 @@ if [ -f "${ZDOTDIR}"/aliases.zsh ]; then
 	source "${ZDOTDIR}"/aliases.zsh
 fi
 
-export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
+export PATH="${HOME}/.yarn/bin:${HOME}/.config/yarn/global/node_modules/.bin:${PATH}"
