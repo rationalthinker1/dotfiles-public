@@ -471,7 +471,6 @@ alias aplist='sudo apache2ctl -S'
 #=======================================================================================
 # Node Aliases and functions
 #=======================================================================================
-#alias npm='sudo npm'
 alias ncon="cd /etc/nginx/sites-available/"
 alias nerr="cd /var/log/nginx/"
 

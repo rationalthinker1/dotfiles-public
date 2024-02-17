@@ -78,8 +78,8 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
 	export LIBGL_ALWAYS_INDIRECT=1
 	export WSL_VERSION=$(wsl.exe -l -v | grep -a '[*]' | sed 's/[^0-9]*//g')
 	export IP_ADDRESS=$(tail -1 /etc/resolv.conf | cut -d' ' -f2)
-	export DISPLAY="{$IP_ADDRESS}:0"
-	export PATH="{$PATH}:{$HOME}/.local/bin"
+	export DISPLAY="${IP_ADDRESS}:0"
+	export PATH="${PATH}:${HOME}/.local/bin"
 	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
 fi
 
@@ -335,8 +335,8 @@ if  [ -x "$(command -v doctl)" ]; then
 	compdef _doctl doctl
 fi
 
-[ -s "${NVM_DIR}/nvm.sh" ] && \. "${NVM_DIR}/nvm.sh"  # This loads nvm
-[ -s "${NVM_DIR}/bash_completion" ] && \. "${NVM_DIR}/bash_completion"  # This loads nvm bash_completion
+[ -f "${NVM_DIR}/nvm.sh" ] && source "${NVM_DIR}/nvm.sh" # This loads nvm
+[ -f "${NVM_DIR}/bash_completion" ] && source "${NVM_DIR}/bash_completion" # This loads nvm bash_completion
 
 
 #=======================================================================================
