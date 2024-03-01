@@ -113,9 +113,12 @@ function backupFile() {
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
 	echo "upgrading all packages"
+	# this sets the clock correctly 
+	sudo hwclock --hctosys
 	sudo apt-get -y update
 	sudo apt-get -y upgrade
 	for package in \
+		build-essential \
 		git \
 		vim \
 		tmux \
