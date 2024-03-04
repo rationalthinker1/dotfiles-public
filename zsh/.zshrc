@@ -224,6 +224,13 @@ load-local-conf() {
 }
 chpwd_functions+=( load-local-conf )
 
+# If you duplicate a tab in WSL, it will open a new tab with the same directory
+if [[ "${HOST_OS}" == "wsl" ]]; then
+	keep_current_path() {
+	printf "\e]9;9;%s\e\\" "$(wslpath -w "$PWD")"
+	}
+	precmd_functions+=(keep_current_path)
+fi
 
 #=======================================================================================
 # ZINIT
