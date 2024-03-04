@@ -376,11 +376,10 @@ function gp () {
 }
 
 function gpu () {
+	COMMAND="git push"
 	REMOTE_BRANCH=$(git config "branch.$(git symbolic-ref --short HEAD).merge")
-	if [[ -z $(git config "branch.${REMOTE_BRANCH}") ]]; then
+	if [[ -z $(git config "branch.${REMOTE_BRANCH}" &> /dev/null) ]]; then
 		COMMAND="git push -u origin $(git symbolic-ref --short HEAD)"
-	else
-		COMMAND="git push"
 	fi
 
 	PREPEND_COMMAND=""

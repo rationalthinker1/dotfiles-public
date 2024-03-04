@@ -113,9 +113,12 @@ function backupFile() {
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
 	echo "upgrading all packages"
+	# this sets the clock correctly 
+	sudo hwclock --hctosys
 	sudo apt-get -y update
 	sudo apt-get -y upgrade
 	for package in \
+		build-essential \
 		git \
 		vim \
 		tmux \
@@ -124,6 +127,7 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		powerline \
 		fonts-powerline \
 		python3-venv \
+		python3-dev \
 		python3-pip \
 		python-pip \
 		jq \
@@ -154,6 +158,18 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 		sudo echo $(which zsh) | sudo tee -a /etc/shells
 		sudo chsh -s $(which zsh)
 		curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
+fi
+
+# Installing vim
+if  [[ ! -x "$(command -v vim)" ]]; then
+	git clone https://github.com/vim/vim.git
+	cd vim/src
+	./configure --with-features=huge --enable-python3interp --enable-fail-if-missing --with-python3-command=/usr/bin/python3 --with-python3-config-dir=/usr/lib/python3.10/config-3.10-x86_64-linux-gnu
+	make
+	make install
+	cd ..
+	cd ..
+	rm -rf vim
 fi
 
 # Installing rust
