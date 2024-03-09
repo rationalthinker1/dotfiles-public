@@ -326,7 +326,7 @@ zi ice from'gh-r' as'command' pick'gnu'; zi light chmln/sd
 #=======================================================================================
 # Custom Application Settings
 #=======================================================================================
-[[ -f "${HOME}/.local/share/broot/launcher/bash/1" ]] && source "${HOME}/.local/share/broot/launcher/bash/1"
+[[ -f "${HOME}/.local/share/broot/launcher/bash/br" ]] && source "${HOME}/.local/share/broot/launcher/bash/br"
 
 [[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
 

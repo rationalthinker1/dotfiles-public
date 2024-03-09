@@ -40,7 +40,6 @@ export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
 export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export TERM=xterm-256color
 export EDITOR=vim
-export CODENAME=$(lsb_release -a 2>&1 | grep Codename | sed -E "s/Codename:\s+//g")
 # allows commands like cat to stay in teminal after using it
 export LESS="-XRF"
 
@@ -112,51 +111,38 @@ function backupFile() {
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
 	echo "upgrading all packages"
-	# this sets the clock correctly 
-	sudo hwclock --hctosys
-	sudo apt-get -y update
-	sudo apt-get -y upgrade
-	for package in \
-		build-essential \
-		git \
-		vim \
-		tmux \
-		curl \
-		zsh \
-		powerline \
-		fonts-powerline \
-		python3-venv \
-		python3-dev \
-		python3-pip \
-		python-pip \
-		jq \
-		csvtool \
-		xclip \
-		htop \
-		p7zip-full \
-		rename \
-		unzip \
-		unrar \
-		wipe \
-		net-tools \
-		bd \
-		xsel \
-		xclip \
-		bat \
-		ripgrep \
-		glances \
-		exuberant-ctags \
-		golang-go \
-		; do
-			echo ""
-			echo "<======================================== installing ${package} ========================================>"
-			sudo apt-get install --assume-yes --ignore-missing "${package}"
-		done
+	/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+	(echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> "/Users/${USER}/.zprofile"
+	eval "$(/opt/homebrew/bin/brew shellenv)"
 
-		pip3 install --user pynvim
-		sudo echo $(which zsh) | sudo tee -a /etc/shells
-		sudo chsh -s $(which zsh)
-		curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
+	brew install \
+			git \
+			grep \
+			wget \
+			curl \
+			zsh \
+			powerline-go \
+			fontconfig \
+			python3 \
+			jq \
+			csvkit \
+			xclip \
+			htop \
+			p7zip \
+			rename \
+			unzip \
+			xsel \
+			xclip \
+			bat \
+			ripgrep \
+			glances \
+			ctags \
+			fd \
+			fzf \
+			up \
+			eza \
+			broot \
+			go
 fi
 
 # Installing vim
@@ -184,25 +170,6 @@ if  [[ ! -x "$(command -v sd)" ]]; then
 	cargo install sd
 fi
 
-# Installing BLACKHOSTS
-if [[ ! $(blackhosts --help 2>/dev/null) ]] && [[ $HOST_LOCATION == 'desktop' ]] && [[ $HOST_OS == 'linux' ]]; then
-	decho "blackhosts does not exist"
-	echo ""
-	echo "<======================================== installing blackhosts"
-	link=$(curl -s https://api.github.com/repos/Lateralus138/blackhosts/releases/latest | grep -P "browser_download_url" | grep -vE "musl" | grep "blackhosts.deb" | head -n 1 |  cut -d '"' -f 4)
-	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
-	wget -q $link -P /tmp/
-	sudo dpkg -i --force-overwrite /tmp/$download_filename
-fi
-
-# Installing broot
-if [[ ! $(broot --version 2>/dev/null) ]]; then
-	decho "broot does not exist"
-	echo ""
-	echo "<======================================== installing broot"
-	cargo install --locked --features clipboard --path .
-fi
-
 # Installing node
 if [[ ! $(nvm --version 2>/dev/null) ]]; then
 	mkdir -p "${NVM_DIR}"
@@ -219,61 +186,6 @@ if [[ ! $(nvm --version 2>/dev/null) ]]; then
 	echo "export PATH=$(yarn global bin):$PATH" >> ~/.zprofile
 	source ~/.zprofile
 	yarn global add gtop
-fi
-
-# Installing fd
-if [[ ! $(fd --version 2>/dev/null) ]]; then
-	decho "fd does not exist"
-	echo ""
-	echo "<======================================== installing fd"
-	link=$(curl -s https://api.github.com/repos/sharkdp/fd/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep -vE "musl" | grep "deb" | head -n 1 |  cut -d '"' -f 4)
-	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
-	wget -q $link -P /tmp/
-	sudo dpkg -i --force-overwrite /tmp/$download_filename
-fi
-
-# Installing eza (newer version of exa)
-if  [[ ! -x "$(command -v eza)" ]]; then
-	decho "eza does not exist"
-	echo ""
-	echo "<======================================== installing eza"
-	cargo install eza
-fi
-
-# Installing fzf
-if [[ ! $(fzf --version 2>/dev/null) ]]; then
-	decho "fzf does not exist"
-	echo ""
-	echo "<======================================== installing fzf"
-	# link=$(curl -s https://api.github.com/repos/junegunn/fzf/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep "linux" | grep -vE "musl" | grep "tar.gz" | head -n 1 |  cut -d '"' -f 4)
-	# download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
-	# wget -q $link -P /tmp/
-	# tar xf "/tmp/${download_filename}"
-	# sudo mv fzf /usr/local/bin/
-	rm -rf "${XDG_CONFIG_HOME}/.fzf"
-	git clone --depth 1 https://github.com/junegunn/fzf.git "${XDG_CONFIG_HOME}/.fzf"
-	"${XDG_CONFIG_HOME}/.fzf/install" --xdg --key-bindings --completion  --no-bash  --no-fish --no-update-rc  
-fi
-
-# Installing up
-if [[ ! $(which up 2>/dev/null) ]]; then
-	decho "up does not exist"
-	echo ""
-	echo "<======================================== installing up"
-	link=$(curl -s https://api.github.com/repos/akavel/up/releases/latest | grep -P "browser_download_url" | head -n 1 |  cut -d '"' -f 4)
-	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
-	sudo wget -q $link -P /usr/local/bin/
-	sudo chmod +x /usr/local/bin/up
-fi
-
-# Installing WSL Utils
-if [[ ! $(which wslvar 2>/dev/null) ]] && [[ $HOST_OS == 'wsl' ]]; then
-	decho "wslvar does not exist"
-	echo ""
-	echo "<======================================== installing wslvar"
-	sudo add-apt-repository ppa:wslutilities/wslu -y
-	sudo apt update -y
-	sudo apt install -f -y wslu
 fi
 
 if [[ ! -f "${HOME}/.dotfiles/fonts/.installed" ]] && [[ $HOST_LOCATION == 'desktop' ]] && [[ $HOST_OS == 'linux' ]]; then
