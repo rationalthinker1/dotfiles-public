@@ -323,11 +323,16 @@ function install-font-subdirectories() {
 }
 
 function install-font-folder() {
+	if [[ "${HOST_OS}" == "darwin" ]]; then
+		$FONT_DIRECTORY="/Library/Fonts"
+	else
+		$FONT_DIRECTORY="/usr/share/fonts"
+	fi
 	directory="${1}"
 	last_folder=$(basename $directory)
-	sudo mkdir -p /usr/share/fonts/{true,open}type/"${last_folder}"
-	find "${directory}" -type f -name "*.otf" | xargs -I{} sudo cp {} /usr/share/fonts/opentype/"${last_folder}"
-	find "${directory}" -type f -name "*.ttf" | xargs -I{} sudo cp {} /usr/share/fonts/truetype/"${last_folder}"
+	sudo mkdir -p "${FONT_DIRECTORY}"/{true,open}type/"${last_folder}"
+	find "${directory}" -type f -name "*.otf" | xargs -I{} sudo cp {} "${FONT_DIRECTORY}"/opentype/"${last_folder}"
+	find "${directory}" -type f -name "*.ttf" | xargs -I{} sudo cp {} "${FONT_DIRECTORY}"/truetype/"${last_folder}"
 	fc-cache -f -v | grep "${last_folder}"
 }
 
