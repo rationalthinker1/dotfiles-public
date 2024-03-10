@@ -108,55 +108,95 @@ function backupFile() {
 	echo "<======================================== backed up ${filename} to ${BACKUP_DIR} ========================================>"
 }
 
+function install-essential-packages() {
+	if [[ "${HOST_OS}" == "darwin" ]]; then
+		# installing homebrew
+		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+		(echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> "/Users/${USER}/.zprofile"
+		eval "$(/opt/homebrew/bin/brew shellenv)"
+
+		brew install \
+			git \
+			grep \
+			wget \
+			curl \
+			zsh \
+			powerline-go \
+			fontconfig \
+			python3 \
+			jq \
+			csvkit \
+			xclip \
+			htop \
+			p7zip \
+			rename \
+			unzip \
+			xsel \
+			xclip \
+			bat \
+			ripgrep \
+			glances \
+			ctags \
+			fd \
+			fzf \
+			up \
+			eza \
+			broot \
+			go
+	else 
+		# this sets the clock correctly 
+		sudo hwclock --hctosys
+
+		sudo apt-get -y update
+		sudo apt-get -y upgrade
+		for package in \
+			build-essential \
+			git \
+			vim \
+			tmux \
+			curl \
+			zsh \
+			powerline \
+			fonts-powerline \
+			python3-venv \
+			python3-dev \
+			python3-pip \
+			python-pip \
+			jq \
+			csvtool \
+			xclip \
+			htop \
+			p7zip-full \
+			rename \
+			unzip \
+			unrar \
+			wipe \
+			net-tools \
+			bd \
+			xsel \
+			xclip \
+			bat \
+			ripgrep \
+			glances \
+			exuberant-ctags \
+			golang-go \
+			; do
+				echo ""
+				echo "<======================================== installing ${package} ========================================>"
+				sudo apt-get install --assume-yes --ignore-missing "${package}"
+			done
+	fi
+
+	pip3 install --user pynvim
+	sudo echo $(which zsh) | sudo tee -a /etc/shells
+	sudo chsh -s $(which zsh)
+	curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
+}
+
 # Installing zsh and basic packages
 if [[ ! $(zsh --version 2>/dev/null) ]]; then
 	decho "zsh does not exist"
-	echo "upgrading all packages"
-	# this sets the clock correctly 
-	sudo hwclock --hctosys
-	sudo apt-get -y update
-	sudo apt-get -y upgrade
-	for package in \
-		build-essential \
-		git \
-		vim \
-		tmux \
-		curl \
-		zsh \
-		powerline \
-		fonts-powerline \
-		python3-venv \
-		python3-dev \
-		python3-pip \
-		python-pip \
-		jq \
-		csvtool \
-		xclip \
-		htop \
-		p7zip-full \
-		rename \
-		unzip \
-		unrar \
-		wipe \
-		net-tools \
-		bd \
-		xsel \
-		xclip \
-		bat \
-		ripgrep \
-		glances \
-		exuberant-ctags \
-		golang-go \
-		; do
-			echo ""
-			echo "<======================================== installing ${package} ========================================>"
-			sudo apt-get install --assume-yes --ignore-missing "${package}"
-		done
-
-		pip3 install --user pynvim
-		sudo echo $(which zsh) | sudo tee -a /etc/shells
-		sudo chsh -s $(which zsh)
-		curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
+	install-essential-packages
 fi
 
 # Installing vim
@@ -222,7 +262,7 @@ if [[ ! $(nvm --version 2>/dev/null) ]]; then
 fi
 
 # Installing fd
-if [[ ! $(fd --version 2>/dev/null) ]]; then
+if [[ ! $(fd --version 2>/dev/null) ]] && [[ $HOST_OS == 'linux' ]]; then
 	decho "fd does not exist"
 	echo ""
 	echo "<======================================== installing fd"
