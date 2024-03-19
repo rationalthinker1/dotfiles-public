@@ -1,7 +1,10 @@
 [wsl2]
 autoProxy = true
 firewall = false
-networkingMode = "mirrored"
+
+# disabled due to docker not working with localhost
+#networkingMode = "mirrored"
+
 dnsTunneling = true
 localhostForwarding = true
 
