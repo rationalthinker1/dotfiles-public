@@ -73,7 +73,7 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
 	export $(dbus-launch)
 	export LIBGL_ALWAYS_INDIRECT=1
 	export WSL_VERSION=$(wsl.exe -l -v | grep -a '[*]' | sed 's/[^0-9]*//g')
-	export IP_ADDRESS=$(tail -1 /etc/resolv.conf | cut -d' ' -f2)
+	export IP_ADDRESS=$(ip addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
 	export DISPLAY="${IP_ADDRESS}:0"
 	export PATH="${PATH}:${HOME}/.local/bin"
 	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
@@ -353,6 +353,13 @@ fi
 [ -f "${NVM_DIR}/nvm.sh" ] && source "${NVM_DIR}/nvm.sh" # This loads nvm
 [ -f "${NVM_DIR}/bash_completion" ] && source "${NVM_DIR}/bash_completion" # This loads nvm bash_completion
 
+if [[ -d "${HOME}/android" ]]; then
+  export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+	export ANDROID_HOME=$HOME/android
+	export ANDROID_SDK_ROOT=${ANDROID_HOME}
+	export PATH=${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${PATH}
+fi
+
 #=======================================================================================
 # Source aliases and functions
 #=======================================================================================
@@ -362,3 +369,4 @@ if [ -f "${ZDOTDIR}"/aliases.zsh ]; then
 fi
 
 export PATH="${HOME}/.yarn/bin:${HOME}/.config/yarn/global/node_modules/.bin:${PATH}"
+
