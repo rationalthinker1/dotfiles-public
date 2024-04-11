@@ -332,17 +332,22 @@ updateFiles "${HOME}/.dotfiles/zsh/.zshrc" "${HOME}/.zshrc"
 updateFiles "${HOME}/.dotfiles/.vimrc" "${HOME}/.vimrc"
 updateFiles "${HOME}/.dotfiles/.vim" "${HOME}/.vim"
 updateFiles "${HOME}/.dotfiles/.gitconfig" "${HOME}/.gitconfig"
-updateFiles "${HOME}/.dotfiles/zsh" "${HOME}/.config/zsh"
-updateFiles "${HOME}/.dotfiles/ranger" "${HOME}/.config/ranger"
-updateFiles "${HOME}/.dotfiles/sheldon" "${HOME}/.config/sheldon"
-updateFiles "${HOME}/.dotfiles/ripgrep" "${HOME}/.config/ripgrep"
-updateFiles "${HOME}/.dotfiles/kitty" "${HOME}/.config/kitty"
-updateFiles "${HOME}/.dotfiles/broot" "${HOME}/.config/broot"
-updateFiles "${HOME}/.dotfiles/alacritty" "${HOME}/.config/alacritty"
-updateFiles "${HOME}/.dotfiles/tmux" "${HOME}/.config/tmux"
-updateFiles "${HOME}/.dotfiles/fzf/fzf.zsh" "${HOME}/.config/fzf/fzf.zsh"
+updateFiles "${HOME}/.dotfiles/zsh" "${XDG_CONFIG_HOME}/zsh"
+updateFiles "${HOME}/.dotfiles/ranger" "${XDG_CONFIG_HOME}/ranger"
+updateFiles "${HOME}/.dotfiles/sheldon" "${XDG_CONFIG_HOME}/sheldon"
+updateFiles "${HOME}/.dotfiles/ripgrep" "${XDG_CONFIG_HOME}/ripgrep"
+updateFiles "${HOME}/.dotfiles/kitty" "${XDG_CONFIG_HOME}/kitty"
+updateFiles "${HOME}/.dotfiles/broot" "${XDG_CONFIG_HOME}/broot"
+updateFiles "${HOME}/.dotfiles/alacritty" "${XDG_CONFIG_HOME}/alacritty"
+updateFiles "${HOME}/.dotfiles/tmux" "${XDG_CONFIG_HOME}/tmux"
+updateFiles "${HOME}/.dotfiles/fzf/fzf.zsh" "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
 updateFiles "${HOME}/.dotfiles/.Xresources" "${HOME}/.Xresources"
 updateFiles "${HOME}/.dotfiles/rc.sh" "${HOME}/.ssh/rc"
+
+if [[ ! -d "${XDG_CONFIG_HOME}/zi" ]]; then
+	mkdir -p "${XDG_CONFIG_HOME}/zi"
+fi
+updateFiles "${HOME}/.dotfiles/zi/init.zsh" "${XDG_CONFIG_HOME}/zi/init.zsh"
 
 if [[ $HOST_OS == 'wsl' ]]; then
 	WINDOWS_HOME_DIRECTORY=$(wslpath $(wslvar USERPROFILE))
