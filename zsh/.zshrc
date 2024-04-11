@@ -357,7 +357,9 @@ fi
 if [[ -d "${HOME}/android" ]]; then
 	export JAVA_HOME="/usr/lib/jvm/jdk-17"
 	export ANDROID_HOME=$HOME/android
+	#export ANDROID_HOME=/mnt/c/Users/razaf/AppData/Local/Android/Sdk
 	export ANDROID_SDK_ROOT=${ANDROID_HOME}
+	export WSLENV="${ANDROID_HOME}/p"
 	export PATH=${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${PATH}
 fi
 
