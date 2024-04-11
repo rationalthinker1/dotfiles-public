@@ -85,6 +85,15 @@ if [[ "${HOST_OS}" == "darwin" ]]; then
 	launchctl setenv HOST_OS darwin
 fi
 
+if [[ -d "${HOME}/android" ]]; then
+	export JAVA_HOME="/usr/lib/jvm/jdk-17"
+	export ANDROID_HOME=$HOME/android
+	#export ANDROID_HOME=/mnt/c/Users/razaf/AppData/Local/Android/Sdk
+	export ANDROID_SDK_ROOT=${ANDROID_HOME}
+	export WSLENV="${ANDROID_HOME}/p"
+	export PATH=${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${PATH}
+fi
+
 
 #=======================================================================================
 # Basic Settings
@@ -353,15 +362,6 @@ fi
 
 [ -f "${NVM_DIR}/nvm.sh" ] && source "${NVM_DIR}/nvm.sh" # This loads nvm
 [ -f "${NVM_DIR}/bash_completion" ] && source "${NVM_DIR}/bash_completion" # This loads nvm bash_completion
-
-if [[ -d "${HOME}/android" ]]; then
-	export JAVA_HOME="/usr/lib/jvm/jdk-17"
-	export ANDROID_HOME=$HOME/android
-	#export ANDROID_HOME=/mnt/c/Users/razaf/AppData/Local/Android/Sdk
-	export ANDROID_SDK_ROOT=${ANDROID_HOME}
-	export WSLENV="${ANDROID_HOME}/p"
-	export PATH=${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${PATH}
-fi
 
 #=======================================================================================
 # Source aliases and functions

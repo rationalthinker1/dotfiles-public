@@ -292,7 +292,7 @@ if [[ ! $(fzf --version 2>/dev/null) ]]; then
 	# sudo mv fzf /usr/local/bin/
 	rm -rf "${XDG_CONFIG_HOME}/.fzf"
 	git clone --depth 1 https://github.com/junegunn/fzf.git "${XDG_CONFIG_HOME}/.fzf"
-	"${XDG_CONFIG_HOME}/.fzf/install" --xdg --key-bindings --completion  --no-bash  --no-fish --no-update-rc  
+	"${XDG_CONFIG_HOME}/.fzf/install" --xdg --key-bindings --completion  --no-bash  --no-fish --no-update-rc
 fi
 
 # Installing up
@@ -346,7 +346,7 @@ updateFiles "${HOME}/.dotfiles/rc.sh" "${HOME}/.ssh/rc"
 
 if [[ $HOST_OS == 'wsl' ]]; then
 	WINDOWS_HOME_DIRECTORY=$(wslpath $(wslvar USERPROFILE))
-	updateFiles "${HOME}/.dotfiles/.wslconfig" "${WINDOWS_HOME_DIRECTORY}/.wslconfig"
+	cp "${HOME}/.dotfiles/.wslconfig" "${WINDOWS_HOME_DIRECTORY}/.wslconfig"
 fi
 
 # Installing vim plugins
