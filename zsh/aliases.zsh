@@ -27,17 +27,14 @@ if [ -x "$(command -v eza)" ]; then
 	# List all, with human readable filesizes
 	alias ll="eza --color=auto --long --header --group --all --group-directories-first"
 	# Same as above, but ordered by size
-	alias lls="eza --color=auto --long --header --group --all --group-directories-first --sort size"
+	alias ls="eza --color=auto --long --header --group --all --group-directories-first --sort size"
 	# Same as above, but ordered by date
 	alias lt="eza --color=auto --long --header --group --all --group-directories-first --reverse --sort oldest"
 	# Show tree level 2
-	alias lt2="eza --color=auto --long --header --group --all --group-directories-first --tree --level=2 --git-ignore"
 	alias llt="eza --color=auto --long --header --group --all --group-directories-first --tree --level=2 --git-ignore"
 	# Show tree level 3
-	alias lt3="eza --color=auto --long --header --group --all --group-directories-first --tree --level=3 --git-ignore"
 	alias lllt="eza --color=auto --long --header --group --all --group-directories-first --tree --level=3 --git-ignore"
 	# Show tree level 4
-	alias lt4="eza --color=auto --long --header --group --all --group-directories-first --tree --level=4 --git-ignore"
 	alias llllt="eza --color=auto --long --header --group --all --group-directories-first --tree --level=4 --git-ignore"
 	# Show hidden files ##
 	alias l.="eza --color=auto --long --header --group --all --group-directories-first --list-dirs .*"
@@ -45,13 +42,13 @@ if [ -x "$(command -v eza)" ]; then
 	alias ld="eza --color=auto --long --header --group --all --group-directories-first --only-dirs"
 else
 	## Colorize the ls output ##
-	alias ls='ls --color=auto'
+	#alias ls='ls --color=auto'
 
 	## Use a long listing format ##
 	alias l="ls --color=auto -lh --group-directories-first"       # List all, with human readable filesizes
 	alias ll="ls --color=auto -lah --group-directories-first"     # List all, with human readable filesizes
-	alias llt="ls --color=auto -lahFtr --group-directories-first" # Same as above, but ordered by date
-	alias lls="ls --color=auto -lahFSr --group-directories-first" # Same as above, but ordered by size
+	alias lt="ls --color=auto -lahFtr --group-directories-first" # Same as above, but ordered by date
+	alias ls="ls --color=auto -lahFSr --group-directories-first" # Same as above, but ordered by size
 
 	## Show hidden files ##
 	alias l.='ls -d .* --color=auto'

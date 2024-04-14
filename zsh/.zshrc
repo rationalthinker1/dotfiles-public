@@ -215,6 +215,17 @@ zstyle ':completion:*' rehash true
 zstyle ':completion:*' menu select
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 
+# https://ali.anari.io/posts/zinit/
+zstyle ':completion:*:git-checkout:*' sort false
+# set descriptions format to enable group support
+zstyle ':completion:*:descriptions' format '[%d]'
+# set list-colors to enable filename colorizing
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+# preview directory's content with exa when completing cd
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
+# switch group using `,` and `.`
+zstyle ':fzf-tab:*' switch-group ',' '.'
+
 # https://github.com/ohmyzsh/ohmyzsh/issues/11817
 zstyle ':omz:plugins:docker' legacy-completion yes
 
@@ -258,12 +269,16 @@ source <(curl -sLk git.io/zi-loader); zzinit
 
 zi ice depth=1;  zi light romkatv/powerlevel10k
 
+# Install and run Ruby gems, Node and Python modules. Download files and apply patches.
 zi light z-shell/z-a-bin-gem-node
 zi light z-shell/z-a-patch-dl
 
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 zi pack"default+keys" for fzf
+
+zi light Aloxaf/fzf-tab
+zi light Freed-Wu/fzf-tab-source
 
 # zi light zsh-users/zsh-autosuggestions
 # zi light zsh-users/zsh-completions
@@ -282,9 +297,6 @@ zi light wfxr/forgit
 
 zi light zdharma-continuum/fast-syntax-highlighting
 zi ice from'gh-r' as'command'; zi light akavel/up
-
-zi light Aloxaf/fzf-tab
-zi light Freed-Wu/fzf-tab-source
 
 zi ice from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza'
 zi light eza-community/eza
@@ -336,6 +348,11 @@ zi snippet OMZP::dirhistory
 
 # sed s/before/after/g -> sd before after;  sd before after file.txt -> sed -i -e 's/before/after/g' file.txt
 zi ice from'gh-r' as'command' pick'gnu'; zi light chmln/sd
+
+
+export NVM_COMPLETION=true
+export NVM_SYMLINK_CURRENT="true"
+zinit wait lucid light-mode for lukechilds/zsh-nvm
 
 #=======================================================================================
 # Custom Application Settings
