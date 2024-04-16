@@ -261,11 +261,11 @@ fi
 typeset -Ag ZI
 typeset -gx ZI[HOME_DIR]="${XDG_CONFIG_HOME}/zi" ZI[BIN_DIR]="${ZI[HOME_DIR]}/bin"
 command mkdir -p "$ZI[BIN_DIR]"
-source <(curl -sLk git.io/zi-loader); zzinit
+#source <(curl -sLk git.io/zi-loader); zzinit
 # If the link is down, Use the following:
-# if [[ -r "${XDG_CONFIG_HOME:-${HOME}/.config}/zi/init.zsh" ]]; then
-#   source "${XDG_CONFIG_HOME:-${HOME}/.config}/zi/init.zsh" && zzinit
-# fi
+ if [[ -r "${ZI[HOME_DIR]}/init.zsh" ]]; then
+   source "${ZI[HOME_DIR]}/init.zsh" && zzinit
+ fi
 
 zi ice depth=1;  zi light romkatv/powerlevel10k
 
