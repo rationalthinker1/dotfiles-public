@@ -258,52 +258,44 @@ fi
 #=======================================================================================
 # https://wiki.zshell.dev/docs/getting_started/installation
 
-typeset -Ag ZI
-typeset -gx ZI[HOME_DIR]="${XDG_CONFIG_HOME}/zi" ZI[BIN_DIR]="${ZI[HOME_DIR]}/bin"
-command mkdir -p "$ZI[BIN_DIR]"
-#source <(curl -sLk git.io/zi-loader); zzinit
-# If the link is down, Use the following:
- if [[ -r "${ZI[HOME_DIR]}/init.zsh" ]]; then
-   source "${ZI[HOME_DIR]}/init.zsh" && zzinit
- fi
+ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
+[ ! -d $ZINIT_HOME ] && mkdir -p "$(dirname $ZINIT_HOME)"
+[ ! -d $ZINIT_HOME/.git ] && git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+source "${ZINIT_HOME}/zinit.zsh"
 
-zi ice depth=1;  zi light romkatv/powerlevel10k
+autoload -Uz _zinit
+(( ${+_comps} )) && _comps[zinit]=_zinit
 
-# Install and run Ruby gems, Node and Python modules. Download files and apply patches.
-zi light z-shell/z-a-bin-gem-node
-zi light z-shell/z-a-patch-dl
+zi ice depth'1'; zi light romkatv/powerlevel10k
 
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
-zi pack"default+keys" for fzf
+zi ice depth'1'; zi pack"default+keys" for fzf
 
-zi light Aloxaf/fzf-tab
-zi light Freed-Wu/fzf-tab-source
+zi ice depth'1'; zi light Aloxaf/fzf-tab
+
+zi ice depth'1'; zi light Freed-Wu/fzf-tab-source
 
 # zi light zsh-users/zsh-autosuggestions
 # zi light zsh-users/zsh-completions
 
-zi wait lucid for \
-  atinit"ZI[COMPINIT_OPTS]=-C; zicompinit; zicdreplay" \
-     z-shell/F-Sy-H \
-  blockf \
-     zsh-users/zsh-completions \
-  atload"!_zsh_autosuggest_start" \
-     zsh-users/zsh-autosuggestions
+zinit ice depth'1'; zinit light zsh-users/zsh-autosuggestions
+
 
 export forgit_log=gl
 export FORGIT_DIFF_GIT_OPTS="-w --ignore-blank-lines"
-zi light wfxr/forgit
+zinit ice depth'1'; zi light wfxr/forgit
 
-zi light zdharma-continuum/fast-syntax-highlighting
-zi ice from'gh-r' as'command'; zi light akavel/up
+zinit ice depth'1'; zi light zdharma-continuum/fast-syntax-highlighting
+
+zi ice from'gh-r' as'command' depth'1'; zi light akavel/up
 
 zi ice from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza'
-zi light eza-community/eza
-zi light z-shell/zsh-eza
+zinit ice depth'1'; zi light eza-community/eza
+zinit ice depth'1'; zi light z-shell/zsh-eza
 
 export ENHANCD_DISABLE_DOT=1
-zi light b4b4r07/enhancd
+zinit ice depth'1'; zi light b4b4r07/enhancd
 
 export BAT_THEME="OneHalfDark"
 zi ice from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"; zi light sharkdp/bat
@@ -316,17 +308,17 @@ export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME}/ripgrep/.ripgreprc"
 zi ice from'gh-r' as'command' pick='*/rg'; zi light BurntSushi/ripgrep
 
 zi ice from'gh-r' as'command'; zi light solidiquis/erdtree
-zi light z-shell/zsh-fancy-completions
+zinit ice depth'1'; zi light z-shell/zsh-fancy-completions
 #zi ice atinit'export ZSH_THEME="bubblified"'; zi light hohmannr/bubblified
 zi ice from'gh' as'command' make pick"imcat"; zi light stolk/imcat
 
 # type out a command that you expect to produce json on it's standard output
 # press alt + j and interactively write a jq expression
 # press enter, and the jq expression is appended to your initial command!
-zi light reegnz/jq-zsh-plugin
+zinit ice depth'1'; zi light reegnz/jq-zsh-plugin
 
 # A simple plugin that auto-closes, deletes and skips over matching delimiters
-zi light hlissner/zsh-autopair
+zinit ice depth'1'; zi light hlissner/zsh-autopair
 # zi snippet OMZP::gitfast
 # zi snippet OMZP::docker
 zi snippet OMZP::docker-compose
@@ -352,7 +344,7 @@ zi ice from'gh-r' as'command' pick'gnu'; zi light chmln/sd
 
 export NVM_COMPLETION=true
 export NVM_SYMLINK_CURRENT="true"
-zinit wait lucid light-mode for lukechilds/zsh-nvm
+zinit wait depth'1' lucid light-mode for lukechilds/zsh-nvm
 
 #=======================================================================================
 # Custom Application Settings
