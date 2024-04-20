@@ -272,6 +272,7 @@ export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 zi ice depth'1'; zi pack"default+keys" for fzf
 
+zinit ice lucid wait'0'; zinit light joshskidmore/zsh-fzf-history-search
 zi ice depth'1'; zi light Aloxaf/fzf-tab
 
 zi ice depth'1'; zi light Freed-Wu/fzf-tab-source
