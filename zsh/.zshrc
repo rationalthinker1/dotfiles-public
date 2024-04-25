@@ -291,9 +291,11 @@ zinit ice depth'1'; zi light zdharma-continuum/fast-syntax-highlighting
 
 zi ice from'gh-r' as'command' depth'1'; zi light akavel/up
 
-zi ice from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza'
-zinit ice depth'1'; zi light eza-community/eza
-zinit ice depth'1'; zi light z-shell/zsh-eza
+if  [[ -x "$(command -v eza)" ]]; then
+	zi ice from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza'
+	zinit ice depth'1'; zi light eza-community/eza
+	zinit ice depth'1'; zi light z-shell/zsh-eza
+fi
 
 export ENHANCD_DISABLE_DOT=1
 zinit ice depth'1'; zi light b4b4r07/enhancd
