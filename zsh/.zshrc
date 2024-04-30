@@ -77,7 +77,8 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
 	export IP_ADDRESS=$(ip route list default | awk '{print $3}')
 	export DISPLAY="${IP_ADDRESS}:0"
 	export PATH="${PATH}:${HOME}/.local/bin"
-	export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
+	#export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
+	export BROWSER=wslview
 fi
 
 if [[ "${HOST_OS}" == "darwin" ]]; then
