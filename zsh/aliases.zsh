@@ -660,6 +660,6 @@ if [[ $HOST_OS == "wsl" ]]; then
 		$SUBLIME_TEXT_LOCATION "/\/\wsl.localhost\\${DISTRO}${FULL_PATH}"
 	}
 
-	WSL_USERNAME=$(powershell.exe '$env:UserName' | sed -E 's/\r//g')
-	alias code="/mnt/c/Users/${WSL_USERNAME}/AppData/Local/Programs/Microsoft\ VS\ Code/Code.exe"
+	FIRST_PATH=$(wslpath "$(wslvar USERPROFILE)")
+	alias code="${FIRST_PATH}/AppData/Local/Programs/Microsoft\ VS\ Code/Code.exe"
 fi
