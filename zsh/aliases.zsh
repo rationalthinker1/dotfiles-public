@@ -471,9 +471,9 @@ alias vkill='vagrant destroy'
 #=======================================================================================
 # Laravel Aliases and functions
 #=======================================================================================
-alias pa="docker-compose -f "./docker-compose.yml" --project-directory ./ exec -e XDEBUG_SESSION=PHPSTORM php php -dxdebug.client_host=172.17.0.1 artisan"
-alias pam="docker-compose -f "./docker-compose.yml" --project-directory ./ exec -e XDEBUG_SESSION=PHPSTORM php php -dxdebug.client_host=172.17.0.1 artisan migrate"
-alias par="docker-compose -f "./docker-compose.yml" --project-directory ./ exec -e XDEBUG_SESSION=PHPSTORM php php -dxdebug.client_host=172.17.0.1 artisan routes"
+alias pa="docker-compose exec -e XDEBUG_SESSION=PHPSTORM php php -dxdebug.client_host=host.docker.internal artisan"
+alias pam="docker-compose exec -e XDEBUG_SESSION=PHPSTORM php php -dxdebug.client_host=host.docker.internal artisan migrate"
+alias par="docker-compose exec -e XDEBUG_SESSION=PHPSTORM php php -dxdebug.client_host=host.docker.internal artisan routes"
 alias mysqlr="docker-compose exec -it db mysql -u root -p123"
 
 alias pam:r="php artisan migrate:refresh"
