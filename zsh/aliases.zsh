@@ -31,11 +31,11 @@ if [ -x "$(command -v eza)" ]; then
 	# Same as above, but ordered by date
 	alias lt="eza --color=auto --long --header --group --all --group-directories-first --reverse --sort oldest"
 	# Show tree level 2
-	alias llt="eza --color=auto --long --header --group --all --group-directories-first --tree --level=2 --git-ignore"
+	alias llt="eza --color=auto --long --header --group --all --group-directories-first --tree --level=2"
 	# Show tree level 3
-	alias lllt="eza --color=auto --long --header --group --all --group-directories-first --tree --level=3 --git-ignore"
+	alias lllt="eza --color=auto --long --header --group --all --group-directories-first --tree --level=3"
 	# Show tree level 4
-	alias llllt="eza --color=auto --long --header --group --all --group-directories-first --tree --level=4 --git-ignore"
+	alias llllt="eza --color=auto --long --header --group --all --group-directories-first --tree --level=4"
 	# Show hidden files ##
 	alias l.="eza --color=auto --long --header --group --all --group-directories-first --list-dirs .*"
 	# Show only directories

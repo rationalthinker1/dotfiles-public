@@ -312,7 +312,7 @@ export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME}/ripgrep/.ripgreprc"
 zi ice from'gh-r' as'command' pick='*/rg'; zi light BurntSushi/ripgrep
 
 # xsv is a command line program for indexing, slicing, analyzing, splitting and joining CSV files
-zi ice from'gh-r' as'command'; zi light BurntSushi/xsv
+zi ice from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv'; zi light BurntSushi/xsv
 
 zi ice from'gh-r' as'command'; zi light solidiquis/erdtree
 zinit ice depth'1'; zi light z-shell/zsh-fancy-completions
