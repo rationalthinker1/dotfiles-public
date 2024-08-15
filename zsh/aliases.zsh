@@ -27,7 +27,7 @@ if [ -x "$(command -v eza)" ]; then
 	# List all, with human readable filesizes
 	alias ll="eza --color=auto --long --header --group --all --group-directories-first"
 	# Same as above, but ordered by size
-	alias ls="eza --color=auto --long --header --group --all --group-directories-first --sort size"
+	alias lls="eza --color=auto --long --header --group --all --group-directories-first --sort size"
 	# Same as above, but ordered by date
 	alias lt="eza --color=auto --long --header --group --all --group-directories-first --reverse --sort oldest"
 	# Show tree level 2
@@ -48,7 +48,7 @@ else
 	alias l="ls --color=auto -lh --group-directories-first"       # List all, with human readable filesizes
 	alias ll="ls --color=auto -lah --group-directories-first"     # List all, with human readable filesizes
 	alias lt="ls --color=auto -lahFtr --group-directories-first" # Same as above, but ordered by date
-	alias ls="ls --color=auto -lahFSr --group-directories-first" # Same as above, but ordered by size
+	alias lls="ls --color=auto -lahFSr --group-directories-first" # Same as above, but ordered by size
 
 	## Show hidden files ##
 	alias l.='ls -d .* --color=auto'
@@ -141,7 +141,7 @@ function rg() {
 	fi
 }
 
-function bak() {
+function bak3() {
 	if [[ "$#" -eq 0 ]]; then
 		echo "used to back up file or folder"
 		echo "usage: bak test"
@@ -154,6 +154,31 @@ function bak() {
 		echo "renaming ${1} to ${1}.bak"
 		mv "${1}" "${1}.bak"
 	fi
+}
+
+function bak() {
+    if [[ -z "$1" ]]; then
+        echo "Error: No file or folder name provided."
+        return 1
+    fi
+
+    if [[ ! -e "$1" && ! -e "$1.bak" ]]; then
+        echo "Error: Neither $1 nor $1.bak exists."
+        return 1
+    fi
+
+    if [[ -e "$1" && -e "$1.bak" ]]; then
+        mv "$1" "$1.tmp"
+        mv "$1.bak" "$1"
+        mv "$1.tmp" "$1.bak"
+        echo "Swapped $1 and $1.bak"
+    elif [[ -e "$1" ]]; then
+        mv "$1" "$1.bak"
+        echo "Renamed $1 to $1.bak"
+    elif [[ -e "$1.bak" ]]; then
+        mv "$1.bak" "$1"
+        echo "Renamed $1.bak to $1"
+    fi
 }
 
 function bak2() {
