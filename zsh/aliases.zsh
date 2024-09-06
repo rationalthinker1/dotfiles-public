@@ -27,7 +27,7 @@ if [ -x "$(command -v eza)" ]; then
 	# List all, with human readable filesizes
 	alias ll="eza --color=auto --long --header --group --all --group-directories-first"
 	# Same as above, but ordered by size
-	alias lls="eza --color=auto --long --header --group --all --group-directories-first --sort size"
+	alias ls="eza --color=auto --long --header --group --all --group-directories-first --sort size"
 	# Same as above, but ordered by date
 	alias lt="eza --color=auto --long --header --group --all --group-directories-first --reverse --sort oldest"
 	# Show tree level 2
@@ -48,7 +48,7 @@ else
 	alias l="ls --color=auto -lh --group-directories-first"       # List all, with human readable filesizes
 	alias ll="ls --color=auto -lah --group-directories-first"     # List all, with human readable filesizes
 	alias lt="ls --color=auto -lahFtr --group-directories-first" # Same as above, but ordered by date
-	alias lls="ls --color=auto -lahFSr --group-directories-first" # Same as above, but ordered by size
+	alias ls="ls --color=auto -lahFSr --group-directories-first" # Same as above, but ordered by size
 
 	## Show hidden files ##
 	alias l.='ls -d .* --color=auto'
