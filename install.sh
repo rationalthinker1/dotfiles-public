@@ -142,6 +142,7 @@ function install-essential-packages() {
 			up \
 			eza \
 			broot \
+			pcre2-utils \
 			go
 	else 
 		# this sets the clock correctly 
@@ -182,6 +183,7 @@ function install-essential-packages() {
 			golang-go \
 			libncurses5-dev \
 			libncursesw5-dev \
+			pcre2-utils \
 			; do
 				echo ""
 				echo "<======================================== installing ${package} ========================================>"

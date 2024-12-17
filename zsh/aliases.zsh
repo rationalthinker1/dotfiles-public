@@ -604,6 +604,19 @@ dceb() {
 
 	dc exec --user "$(id -u):$(id -g)" "$1" "$SCRIPT"
 }
+# Run a bash shell in the specified container (with docker-compose).
+dcebr() {
+	SCRIPT="/bin/bash"
+	if [ $# -lt 1 ]; then
+		echo "Usage: ${FUNCNAME[0]} CONTAINER_ID"
+		return 1
+	fi
+	if [ -n "$2" ]; then
+		SCRIPT="$2"
+	fi
+
+	dc exec --user root:root "$1" "$SCRIPT"
+}
 
 #alias dce="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec --user \"$(id -u):$(id -g)\""
 alias dce="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec"
