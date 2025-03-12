@@ -181,6 +181,7 @@ function install-essential-packages() {
 			glances \
 			exuberant-ctags \
 			golang-go \
+			rsync \
 			libncurses5-dev \
 			libncursesw5-dev \
 			pcre2-utils \
@@ -214,7 +215,6 @@ if [[ $(echo "$vim_version" | awk '{print ($1 < 9)}') == 1 ]]; then
 	sudo make install
 	cd ../..
 	rm -rf vim
-fi
 fi
 
 # Installing rust
