@@ -138,7 +138,7 @@ function install-essential-packages() {
 			glances \
 			ctags \
 			fd \
-			fzf \
+			# fzf \
 			up \
 			eza \
 			broot \

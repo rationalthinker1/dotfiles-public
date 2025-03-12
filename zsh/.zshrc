@@ -276,7 +276,7 @@ zi ice depth'1'; zi light romkatv/powerlevel10k
 
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
-zi ice depth'1'; zi pack"default+keys" for fzf
+# zi ice depth'1'; zi pack"default+keys" for fzf
 
 zinit ice lucid wait'0'; zinit light joshskidmore/zsh-fzf-history-search
 zi ice depth'1'; zi light Aloxaf/fzf-tab
