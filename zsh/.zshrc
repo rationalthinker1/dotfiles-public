@@ -2,16 +2,17 @@
 #zmodload zsh/zprof # top of your .zshrc file
 
 #=======================================================================================
-# Loading up variables
+# Detect Host OS
 #=======================================================================================
-if [[ -f "/proc/sys/kernel/osrelease" ]] && [[ "$(< /proc/sys/kernel/osrelease)" == *microsoft* ]]; then
-	HOST_OS="wsl"
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-	HOST_OS="darwin"
+if [[ -f "/proc/sys/kernel/osrelease" ]] && grep -qi microsoft /proc/sys/kernel/osrelease; then
+    HOST_OS="wsl"
+elif [[ "${OSTYPE}" == "darwin"* ]]; then
+    HOST_OS="darwin"
 else
-	HOST_OS="linux"
+    HOST_OS="linux"
 fi
 
+# Determine if running on Desktop or Server
 dpkg -l ubuntu-desktop > /dev/null 2>&1
 if [[ $? -eq 0 ]]; then
 	HOST_LOCATION="desktop"
@@ -19,6 +20,7 @@ else
 	HOST_LOCATION="server"
 fi
 
+# Export Key Environment Variables
 export XDG_CONFIG_HOME="${HOME}/.config"
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:=${HOME}/.cache}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:=${HOME}/.local/share}"
@@ -27,22 +29,24 @@ export ZSH="${ZDOTDIR}"
 export ZSH_CACHE_DIR="${ZSH}/cache"
 export HOST_OS="${HOST_OS}"
 export HOST_LOCATION="${HOST_LOCATION}"
-export LOCAL_CONFIG="${HOME}/.config"
+export LOCAL_CONFIG="${XDG_CONFIG_HOME}"
 export ADOTDIR="${ZDOTDIR}/antigen"
 export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
 export NVM_DIR="${XDG_CONFIG_HOME}/.nvm"
 export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
 export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export VOLTA_HOME="${XDG_CONFIG_HOME}/volta"
-export TERM=xterm-256color
-export EDITOR=vim
-export CODENAME=$(lsb_release -a 2>&1 | grep Codename | sed -E "s/Codename:\s+//g")
+export TERM="xterm-256color"
+export EDITOR="vim"
+export CODENAME=$(lsb_release -cs 2>/dev/null)
 # allows commands like cat to stay in teminal after using it
 export LESS="-XRF"
 
-if [ -d "${CARGO_HOME}/bin" ]; then
-	export PATH="${CARGO_HOME}/bin:${PATH}"
-fi
+# Update PATH
+[[ -d "${CARGO_HOME}/bin" ]] && export PATH="${CARGO_HOME}/bin:${PATH}"
+[[ -d "${HOME}/.local/bin" ]] && export PATH="${HOME}/.local/bin:${PATH}"
+[[ -d "/usr/local/go/bin" ]] && export PATH="/usr/local/go/bin:${PATH}"
+[[ -d "${HOME}/.yarn" ]] && export PATH="${HOME}/.yarn/bin:${HOME}/.config/yarn/global/node_modules/.bin:${PATH}"
 
 if [ -f "${ZDOTDIR}/local.zsh" ]; then
 	source "${ZDOTDIR}/local.zsh"
@@ -60,47 +64,48 @@ if [ -f "${HOME}/.bash_local" ]; then
 	source "${HOME}/.bash_local"
 fi
 
-if [ -d "${HOME}/.local/bin" ]; then
-	export PATH="${HOME}/.local/bin:${PATH}"
-fi
-
-if [ -d "/usr/local/go/bin" ]; then
-	export PATH="/usr/local/go/bin:${PATH}"
-fi
-
-# WSL?
+#=======================================================================================
+# WSL-Specific Settings
+#=======================================================================================
 if [[ "${HOST_OS}" == "wsl" ]]; then
-	export $(dbus-launch)
-	export LIBGL_ALWAYS_INDIRECT=1
-	export WSL_VERSION=$(wsl.exe -l -v | grep -a '[*]' | sed 's/[^0-9]*//g')
-	#export IP_ADDRESS=$(ip addr show eth0 | grep -oP '(?<=inet\s)\d+(\.\d+){3}')
-	export IP_ADDRESS=$(ip route list default | awk '{print $3}')
-	export DISPLAY="${IP_ADDRESS}:0"
-	export PATH="${PATH}:${HOME}/.local/bin"
-	#export BROWSER="/mnt/c/Program\ Files/Google/Chrome/Application/chrome.exe"
-	export BROWSER=wslview
+    export $(dbus-launch)
+    export LIBGL_ALWAYS_INDIRECT=1
+    export WSL_VERSION=$(wsl.exe -l -v | awk '/[*]/{print $NF}')
+    export IP_ADDRESS=$(ip route list default | awk '{print $3}')
+    export DISPLAY="${IP_ADDRESS}:0"
+    export PATH="${PATH}:${HOME}/.local/bin"
+    export BROWSER="wslview"
+
+    keep_current_path() {
+        printf "\e]9;9;%s\e\\" "$(wslpath -w "${PWD}")"
+    }
+    precmd_functions+=(keep_current_path)
 fi
 
+#=======================================================================================
+# macOS-Specific Settings
+#=======================================================================================
 if [[ "${HOST_OS}" == "darwin" ]]; then
-	# sets environment variables on MacOS
-	launchctl setenv HOST_OS darwin
+    launchctl setenv HOST_OS darwin
 fi
 
+#=======================================================================================
+# Android Development Environment
+#=======================================================================================
 if [[ -d "${HOME}/android" ]]; then
-	export JAVA_HOME="/usr/lib/jvm/jdk-17"
-	export ANDROID_HOME=$HOME/android
-	#export ANDROID_HOME=/mnt/c/Users/razaf/AppData/Local/Android/Sdk
-	export ANDROID_SDK_ROOT=${ANDROID_HOME}
-	export WSLENV="${ANDROID_HOME}/p"
-	export PATH=${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${PATH}
+    export JAVA_HOME="/usr/lib/jvm/jdk-17"
+    export ANDROID_HOME="${HOME}/android"
+    export ANDROID_SDK_ROOT="${ANDROID_HOME}"
+    export WSLENV="${ANDROID_HOME}/p"
+    export PATH="${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${PATH}"
 fi
 
 
 #=======================================================================================
-# Basic Settings
+# Shell Settings
 #=======================================================================================
 # https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
-stty start undef
+stty start undef # Fix for Vim Ctrl+Q issue
 
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.config/zsh/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
@@ -348,7 +353,6 @@ zi snippet OMZP::dirhistory
 # sed s/before/after/g -> sd before after;  sd before after file.txt -> sed -i -e 's/before/after/g' file.txt
 zi ice from'gh-r' as'command' pick'gnu'; zi light chmln/sd
 
-
 export NVM_COMPLETION=true
 export NVM_SYMLINK_CURRENT="true"
 zinit wait depth'1' lucid light-mode for lukechilds/zsh-nvm
@@ -391,6 +395,3 @@ if [[ -f "${ZDOTDIR}/aliases.zsh" ]]; then
 	source "${ZDOTDIR}"/aliases.zsh
 fi
 
-if [[ -d "${HOME}/.yarn" ]]; then
-	export PATH="${HOME}/.yarn/bin:${HOME}/.config/yarn/global/node_modules/.bin:${PATH}"
-fi
