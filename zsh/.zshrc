@@ -39,6 +39,7 @@ export VOLTA_HOME="${XDG_CONFIG_HOME}/volta"
 export TERM="xterm-256color"
 export EDITOR="vim"
 export CODENAME=$(lsb_release -cs 2>/dev/null)
+export OPENAI_API_KEY="OPENAI_API_KEY_REMOVED"
 # allows commands like cat to stay in teminal after using it
 export LESS="-XRF"
 
@@ -395,3 +396,5 @@ if [[ -f "${ZDOTDIR}/aliases.zsh" ]]; then
 	source "${ZDOTDIR}"/aliases.zsh
 fi
 
+
+[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
