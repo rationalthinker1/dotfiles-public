@@ -97,10 +97,9 @@ if [[ -d "${HOME}/android" ]]; then
     export JAVA_HOME="/usr/lib/jvm/jdk-17"
     export ANDROID_HOME="${HOME}/android"
     export ANDROID_SDK_ROOT="${ANDROID_HOME}"
-    export WSLENV="${ANDROID_HOME}/p"
+    export WSLENV="${ANDROID_HOME}/p:${WSLENV}"
     export PATH="${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${PATH}"
 fi
-
 
 #=======================================================================================
 # Shell Settings
@@ -361,9 +360,9 @@ zinit wait depth'1' lucid light-mode for lukechilds/zsh-nvm
 #=======================================================================================
 # Custom Application Settings
 #=======================================================================================
-[[ -f "${HOME}/.local/share/broot/launcher/bash/br" ]] && source "${HOME}/.local/share/broot/launcher/bash/br"
+[[ -f "{XDG_CONFIG_HOME}/broot/launcher/bash/br" ]] && source "{XDG_CONFIG_HOME}/broot/launcher/bash/br"
 
-[[ -f "${ZDOTDIR}"/.p10k.zsh ]] && source "${ZDOTDIR}"/.p10k.zsh
+[[ -f "${ZDOTDIR}/.p10k.zsh" ]] && source "${ZDOTDIR}/.p10k.zsh"
 
 [[ -f "${CARGO_HOME}/env" ]] && source "${CARGO_HOME}/env"
 
@@ -397,4 +396,4 @@ if [[ -f "${ZDOTDIR}/aliases.zsh" ]]; then
 fi
 
 
-[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
+#[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.

@@ -246,7 +246,7 @@ if [[ ! $(broot --version 2>/dev/null) ]]; then
 	decho "broot does not exist"
 	echo ""
 	echo "<======================================== installing broot"
-	cargo install --locked --features clipboard --path .
+	cargo install --locked --features clipboard broot
 fi
 
 # Installing node
