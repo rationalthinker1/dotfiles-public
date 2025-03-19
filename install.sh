@@ -208,12 +208,39 @@ fi
 # if version less than 9
 vim_version=$(vim --version | awk 'NR==1 {print $5}')
 if [[ $(echo "$vim_version" | awk '{print ($1 < 9)}') == 1 ]]; then
-	sudo apt-get install --assume-yes --ignore-missing libncurses5-dev libncursesw5-dev
+	sudo apt-get install -y \
+    build-essential \
+    libncurses5-dev \
+    libncursesw5-dev \
+    python3-dev \
+    ruby-dev \
+    lua5.3 liblua5.3-dev \
+    libperl-dev \
+    git \
+    libx11-dev libxt-dev libxpm-dev libgtk-3-dev
+	PY3_CONFIG=$(python3-config --configdir)
+
 	git clone https://github.com/vim/vim.git
 	cd vim/src
-	./configure --with-features=huge --enable-python3interp --enable-fail-if-missing --with-python3-command=/usr/bin/python3 --with-python3-config-dir=/usr/lib/python3.11/config-3.11-x86_64-linux-gnu
-	make
+	./configure \
+		--with-features=huge \
+		--enable-multibyte \
+		--enable-rubyinterp=yes \
+		--enable-python3interp=yes \
+		--with-python3-config-dir=$PY3_CONFIG \
+		--enable-perlinterp=yes \
+		--enable-luainterp=yes \
+		--disable-gui \
+		--without-x \
+		--enable-cscope \
+		--enable-fail-if-missing \
+		--prefix=/usr/local \
+		--with-tlib=ncurses
+
+	# Full throttle compile
+	make -j$(nproc)
 	sudo make install
+
 	cd ../..
 	rm -rf vim
 fi
