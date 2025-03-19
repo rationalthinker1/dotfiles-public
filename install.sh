@@ -208,6 +208,7 @@ fi
 # if version less than 9
 vim_version=$(vim --version | awk 'NR==1 {print $5}')
 if [[ $(echo "$vim_version" | awk '{print ($1 < 9)}') == 1 ]]; then
+	sudo apt-get install --assume-yes --ignore-missing libncurses5-dev libncursesw5-dev
 	git clone https://github.com/vim/vim.git
 	cd vim/src
 	./configure --with-features=huge --enable-python3interp --enable-fail-if-missing --with-python3-command=/usr/bin/python3 --with-python3-config-dir=/usr/lib/python3.11/config-3.11-x86_64-linux-gnu
