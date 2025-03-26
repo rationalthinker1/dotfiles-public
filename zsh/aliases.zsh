@@ -485,13 +485,10 @@ alias -g U='| uniq'
 alias -g X='| xsel -b'
 
 #=======================================================================================
-# Vagrant Aliases and functions
+# Yarn Aliases and functions
 #=======================================================================================
-alias vst='vagrant status'
-alias vup='vagrant up'
-alias vdo='vagrant halt'
-alias vssh='vagrant ssh'
-alias vkill='vagrant destroy'
+alias yd="yarn dev"
+alias yb="yarn build"
 
 #=======================================================================================
 # Laravel Aliases and functions
