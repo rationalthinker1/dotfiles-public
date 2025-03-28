@@ -288,7 +288,6 @@ zi ice depth'1'; zi light Freed-Wu/fzf-tab-source
 
 zinit ice depth'1'; zinit light zsh-users/zsh-autosuggestions
 
-
 export forgit_log=gl
 export FORGIT_DIFF_GIT_OPTS="-w --ignore-blank-lines"
 zinit ice depth'1'; zi light wfxr/forgit
@@ -297,24 +296,22 @@ zinit ice depth'1'; zi light zdharma-continuum/fast-syntax-highlighting
 
 zi ice from'gh-r' as'command' depth'1'; zi light akavel/up
 
-if  [[ -x "$(command -v eza)" ]]; then
-	zi ice from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza'
-	zinit ice depth'1'; zi light eza-community/eza
-	zinit ice depth'1'; zi light z-shell/zsh-eza
-fi
+zi ice from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza'
+zinit ice depth'1'; zi light eza-community/eza
+zinit ice depth'1'; zi light z-shell/zsh-eza
 
 export ENHANCD_DISABLE_DOT=1
 zinit ice depth'1'; zi light b4b4r07/enhancd
 
 export BAT_THEME="OneHalfDark"
-zi ice from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"; zi light sharkdp/bat
+zi ice from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"; zi load sharkdp/bat
 
-zi ice from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"; zi light sharkdp/fd
-zi ice from'gh' as'command'; zi light stedolan/jq
+zi ice from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"; zi load sharkdp/fd
+
 zi ice from'gh' as'command'; zi light sunlei/zsh-ssh
 
 export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME}/ripgrep/.ripgreprc"
-zi ice from'gh-r' as'command' pick='*/rg'; zi light BurntSushi/ripgrep
+zi ice from'gh-r' as'command' pick='*/rg'; zi load BurntSushi/ripgrep
 
 # xsv is a command line program for indexing, slicing, analyzing, splitting and joining CSV files
 zi ice from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv'; zi light BurntSushi/xsv
@@ -352,6 +349,21 @@ zi snippet OMZP::dirhistory
 
 # sed s/before/after/g -> sd before after;  sd before after file.txt -> sed -i -e 's/before/after/g' file.txt
 zi ice from'gh-r' as'command' pick'gnu'; zi light chmln/sd
+
+zi ice as'program' from'gh-r' bpick'*linux64' mv'jq* -> jq'; zi load jqlang/jq
+
+zi ice as'program' pick'csvtool/csvtool.py' \
+  atclone'python3 -m venv venv && venv/bin/pip install pandas openpyxl' \
+  atpull'%atclone' \
+  cmd'./venv/bin/python csvtool "$@"'; zi load maroofi/csvtool
+
+zi ice as'program' from'gh-r' bpick'*linux-amd64*' mv'tmux* -> tmux'; zi load tmux/tmux
+
+zi ice as'program' from'gh-r' bpick'*linux_amd64*' mv'htop* -> htop'; zi load htop-dev/htop
+
+zi ice as'program' pick'bd' mv'bd -> bd'; zi load vigneshwaranr/bd
+
+zi ice as'program' pick'rename' mv'rename -> rename'; zi load ap/rename
 
 export NVM_COMPLETION=true
 export NVM_SYMLINK_CURRENT="true"

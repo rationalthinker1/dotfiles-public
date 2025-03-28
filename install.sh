@@ -153,8 +153,6 @@ function install-essential-packages() {
 		for package in \
 			build-essential \
 			git \
-			vim \
-			tmux \
 			curl \
 			zsh \
 			powerline \
@@ -163,22 +161,14 @@ function install-essential-packages() {
 			python3-dev \
 			python3-pip \
 			python-pip \
-			jq \
-			csvtool \
 			xclip \
-			htop \
 			p7zip-full \
-			rename \
 			unzip \
 			unrar \
 			wipe \
 			net-tools \
-			bd \
 			xsel \
 			xclip \
-			bat \
-			ripgrep \
-			glances \
 			exuberant-ctags \
 			golang-go \
 			rsync \
