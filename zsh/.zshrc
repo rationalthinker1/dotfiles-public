@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#zmodload zsh/zprof # top of your .zshrc file
+# zmodload zsh/zprof # top of your .zshrc file
 
 #=======================================================================================
 # Detect Host OS
@@ -194,37 +194,25 @@ autoload -U zcalc
 export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
 zstyle ':completion:*:match:*' original only
 zstyle -e ':completion:*:approximate:*' max-errors 'reply=($((($#PREFIX+$#SUFFIX)/3>7?7:($#PREFIX+$#SUFFIX)/3))numeric)'
-zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}  # 補完時の色
 zstyle ':completion:*' completer _expand _complete _match _prefix _approximate _list _history
-zstyle ':completion:*:default' menu select=2  # 選択中の候補をハイライト
 zstyle ':completion:*:messages' format '%F{YELLOW}%d'$DEFAULT
 zstyle ':completion:*:warnings' format '%F{RED}No matches for:''%F{YELLOW} %d'$DEFAULT
 zstyle ':completion:*:descriptions' format '%F{YELLOW}completing %B%d%b'$DEFAULT
 zstyle ':completion:*:options' description 'yes'
-zstyle ':completion:*:descriptions' format '%F{yellow}Completing %B%d%b%f'$DEFAULT
 zstyle ':completion:*' matcher-list '' 'm:{[:lower:]}={[:upper:]}' '+m:{[:upper:]}={[:lower:]}'
 zstyle ':completion:*:matches' group 'yes'
-zstyle ':completion:*:options' description 'yes'
 zstyle ':completion:*:options' auto-description '%d'
-zstyle ':completion:*:corrections' format ' %F{green}-- %d (errors: %e) --%f'
-zstyle ':completion:*:descriptions' format ' %F{yellow}-- %d --%f'
-zstyle ':completion:*:messages' format ' %F{purple} -- %d --%f'
-zstyle ':completion:*:warnings' format ' %F{red}-- no matches found --%f'
 zstyle ':completion:*:default' list-prompt '%S%M matches%s'
 zstyle ':completion:*' format ' %F{yellow}-- %d --%f'
 zstyle ':completion:*' group-name ''
 zstyle ':completion:*' verbose yes
-zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
 zstyle ':completion:*:functions' ignored-patterns '(_*|pre(cmd|exec))'
 zstyle ':completion:*' use-cache true
 zstyle ':completion:*' rehash true
 zstyle ':completion:*' menu select
-zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 
 # https://ali.anari.io/posts/zinit/
 zstyle ':completion:*:git-checkout:*' sort false
-# set descriptions format to enable group support
-zstyle ':completion:*:descriptions' format '[%d]'
 # set list-colors to enable filename colorizing
 zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 # preview directory's content with exa when completing cd
@@ -273,15 +261,24 @@ autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
 
 zi ice depth'1'; zi light romkatv/powerlevel10k
+zi ice lucid wait'1' depth'1'; zi light Aloxaf/fzf-tab
 
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
+export FZF_ALT_C_COMMAND="fd --type d"
+# FZF options for sexy dropdowns
+export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --info=inline"
+
+# Preview file contents on Ctrl-T
+export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-range :500 {}'"
+
+# Change directories with preview using exa
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
 # zi ice depth'1'; zi pack"default+keys" for fzf
 
-zinit ice lucid wait'0'; zinit light joshskidmore/zsh-fzf-history-search
-zi ice depth'1'; zi light Aloxaf/fzf-tab
+zinit ice lucid wait'1' depth'1'; zinit light joshskidmore/zsh-fzf-history-search
 
-zi ice depth'1'; zi light Freed-Wu/fzf-tab-source
+zi ice lucid wait'4' depth'1'; zi light Freed-Wu/fzf-tab-source
 
 # zi light zsh-users/zsh-autosuggestions
 # zi light zsh-users/zsh-completions
@@ -290,44 +287,44 @@ zinit ice depth'1'; zinit light zsh-users/zsh-autosuggestions
 
 export forgit_log=gl
 export FORGIT_DIFF_GIT_OPTS="-w --ignore-blank-lines"
-zinit ice depth'1'; zi light wfxr/forgit
+zinit ice lucid wait'1' depth'1'; zi light wfxr/forgit
 
 zinit ice depth'1'; zi light zdharma-continuum/fast-syntax-highlighting
 
-zi ice from'gh-r' as'command' depth'1'; zi light akavel/up
+zi ice  lucid wait'3' depth'1' from'gh-r' as'command'; zi light akavel/up
 
 zi ice from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza'
 zinit ice depth'1'; zi light eza-community/eza
 zinit ice depth'1'; zi light z-shell/zsh-eza
 
 export ENHANCD_DISABLE_DOT=1
-zinit ice depth'1'; zi light b4b4r07/enhancd
+zinit ice lucid wait'2' depth'1'; zi light b4b4r07/enhancd
 
 export BAT_THEME="OneHalfDark"
 zi ice from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"; zi load sharkdp/bat
 
 zi ice from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"; zi load sharkdp/fd
 
-zi ice from'gh' as'command'; zi light sunlei/zsh-ssh
+zi ice lucid lucid wait'2' depth'1' from'gh' as'command'; zi light sunlei/zsh-ssh
 
 export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME}/ripgrep/.ripgreprc"
 zi ice from'gh-r' as'command' pick='*/rg'; zi load BurntSushi/ripgrep
 
 # xsv is a command line program for indexing, slicing, analyzing, splitting and joining CSV files
-zi ice from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv'; zi light BurntSushi/xsv
+zi ice lucid wait'3' depth'1' from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv'; zi light BurntSushi/xsv
 
-zi ice from'gh-r' as'command'; zi light solidiquis/erdtree
-zinit ice depth'1'; zi light z-shell/zsh-fancy-completions
+zi ice lucid wait'3' depth'1' from'gh-r' as'command'; zi light solidiquis/erdtree
+zinit ice lucid wait'3' depth'1'; zi light z-shell/zsh-fancy-completions
 #zi ice atinit'export ZSH_THEME="bubblified"'; zi light hohmannr/bubblified
-zi ice from'gh' as'command' make pick"imcat"; zi light stolk/imcat
+zi ice lucid wait'2' depth'1' from'gh' as'command' make pick"imcat"; zi light stolk/imcat
 
 # type out a command that you expect to produce json on it's standard output
 # press alt + j and interactively write a jq expression
 # press enter, and the jq expression is appended to your initial command!
-zinit ice depth'1'; zi light reegnz/jq-zsh-plugin
+zinit ice lucid wait'2' depth'1'; zi light reegnz/jq-zsh-plugin
 
 # A simple plugin that auto-closes, deletes and skips over matching delimiters
-zinit ice depth'1'; zi light hlissner/zsh-autopair
+zinit ice lucid wait'2' depth'1'; zi light hlissner/zsh-autopair
 # zi snippet OMZP::gitfast
 # zi snippet OMZP::docker
 zi snippet OMZP::docker-compose
@@ -361,9 +358,9 @@ zi ice as'program' pick'bd' mv'bd -> bd'; zi load vigneshwaranr/bd
 
 zi ice as'program' pick'rename' mv'rename -> rename'; zi load ap/rename
 
-export NVM_COMPLETION=true
-export NVM_SYMLINK_CURRENT="true"
-zinit wait depth'1' lucid light-mode for lukechilds/zsh-nvm
+# export NVM_COMPLETION=true
+# export NVM_SYMLINK_CURRENT="true"
+# zinit wait depth'1' lucid light-mode for lukechilds/zsh-nvm
 
 #=======================================================================================
 # Custom Application Settings
@@ -392,8 +389,18 @@ if  [ -x "$(command -v doctl)" ]; then
 	compdef _doctl doctl
 fi
 
-[ -f "${NVM_DIR}/nvm.sh" ] && source "${NVM_DIR}/nvm.sh" # This loads nvm
-[ -f "${NVM_DIR}/bash_completion" ] && source "${NVM_DIR}/bash_completion" # This loads nvm bash_completion
+
+nvm() {
+  unset -f nvm
+  export NVM_COMPLETION=true
+  export NVM_SYMLINK_CURRENT=true
+  source "$NVM_DIR/nvm.sh"
+  [ -f "$NVM_DIR/bash_completion" ] && source "$NVM_DIR/bash_completion"
+  nvm "$@"
+}
+
+# [ -f "${NVM_DIR}/nvm.sh" ] && source "${NVM_DIR}/nvm.sh" # This loads nvm
+# [ -f "${NVM_DIR}/bash_completion" ] && source "${NVM_DIR}/bash_completion" # This loads nvm bash_completion
 
 #=======================================================================================
 # Source aliases and functions
@@ -405,3 +412,6 @@ fi
 
 
 #[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
+
+# If zsh is really show, enable profiling via zprof, uncomment the line below and the first line
+# zprof
