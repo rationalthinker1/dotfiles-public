@@ -357,10 +357,6 @@ zi ice as'program' pick'csvtool/csvtool.py' \
   atpull'%atclone' \
   cmd'./venv/bin/python csvtool "$@"'; zi load maroofi/csvtool
 
-zi ice as'program' from'gh-r' bpick'*linux-amd64*' mv'tmux* -> tmux'; zi load tmux/tmux
-
-zi ice as'program' from'gh-r' bpick'*linux_amd64*' mv'htop* -> htop'; zi load htop-dev/htop
-
 zi ice as'program' pick'bd' mv'bd -> bd'; zi load vigneshwaranr/bd
 
 zi ice as'program' pick'rename' mv'rename -> rename'; zi load ap/rename

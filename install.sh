@@ -153,6 +153,8 @@ function install-essential-packages() {
 		for package in \
 			build-essential \
 			git \
+			tmux \
+			htop \
 			curl \
 			zsh \
 			powerline \
