@@ -208,7 +208,8 @@ zstyle ':completion:*' verbose yes
 zstyle ':completion:*:functions' ignored-patterns '(_*|pre(cmd|exec))'
 zstyle ':completion:*' use-cache true
 zstyle ':completion:*' rehash true
-zstyle ':completion:*' menu select
+zstyle ':completion:*' menu select interactive
+
 
 # https://ali.anari.io/posts/zinit/
 zstyle ':completion:*:git-checkout:*' sort false
@@ -279,10 +280,8 @@ zinit ice lucid wait'1' depth'1'; zinit light joshskidmore/zsh-fzf-history-searc
 
 zi ice lucid wait'4' depth'1'; zi light Freed-Wu/fzf-tab-source
 
-# zi light zsh-users/zsh-autosuggestions
-# zi light zsh-users/zsh-completions
-
 zinit ice depth'1'; zinit light zsh-users/zsh-autosuggestions
+zinit ice depth'1'; zinit light zsh-users/zsh-completions
 
 export forgit_log=gl
 export FORGIT_DIFF_GIT_OPTS="-w --ignore-blank-lines"
@@ -357,6 +356,15 @@ zi ice as'program' pick'csvtool/csvtool.py' \
 zi ice as'program' pick'bd' mv'bd -> bd'; zi load vigneshwaranr/bd
 
 zi ice as'program' pick'rename' mv'rename -> rename'; zi load ap/rename
+
+# Ctrl+R to search through your history
+zinit ice lucid wait'2' depth'1'; zi light atuinsh/atuin
+
+# reminder to use the alias
+zinit ice lucid wait'2' depth'1'; zi light MichaelAquilina/zsh-you-should-use
+
+# Type git open and it opens the GitHub/GitLab/etc. page for the current repo/branch in your browser.
+zi from"gh-r" as"command"; zi light paulirish/git-open
 
 # export NVM_COMPLETION=true
 # export NVM_SYMLINK_CURRENT="true"
