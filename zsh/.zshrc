@@ -364,7 +364,7 @@ zinit ice lucid wait'2' depth'1'; zi light atuinsh/atuin
 zinit ice lucid wait'2' depth'1'; zi light MichaelAquilina/zsh-you-should-use
 
 # Type git open and it opens the GitHub/GitLab/etc. page for the current repo/branch in your browser.
-zi from"gh-r" as"command"; zi light paulirish/git-open
+zinit ice lucid wait'2' depth'1'; zi light paulirish/git-open
 
 # export NVM_COMPLETION=true
 # export NVM_SYMLINK_CURRENT="true"
