@@ -48,21 +48,12 @@ export LESS="-XRF"
 [[ -d "/usr/local/go/bin" ]] && export PATH="/usr/local/go/bin:${PATH}"
 [[ -d "${HOME}/.yarn" ]] && export PATH="${HOME}/.yarn/bin:${HOME}/.config/yarn/global/node_modules/.bin:${PATH}"
 
-if [ -f "${ZDOTDIR}/local.zsh" ]; then
-	source "${ZDOTDIR}/local.zsh"
-fi
-
-if [ -f "${ZDOTDIR}/.zprofile" ]; then
-	source "${ZDOTDIR}/.zprofile"
-fi
-
-if [ -f "${HOME}/.zprofile" ]; then
-	source "${HOME}/.zprofile"
-fi
-
-if [ -f "${HOME}/.bash_local" ]; then
-	source "${HOME}/.bash_local"
-fi
+[[ -f "${ZDOTDIR}/local.zsh" ]] && source "${ZDOTDIR}/local.zsh"
+[[ -f "${HOME}/local.zsh" ]] && source "${HOME}/local.zsh"
+[[ -f "${ZDOTDIR}/.zprofile" ]] && source "${ZDOTDIR}/.zprofile"
+[[ -f "${HOME}/.zprofile" ]] && source "${HOME}/.zprofile"
+[[ -f "${ZDOTDIR}/.bash_local" ]] && source "${ZDOTDIR}/.bash_local"
+[[ -f "${HOME}/.bash_local" ]] && source "${HOME}/.bash_local"
 
 #=======================================================================================
 # WSL-Specific Settings
@@ -414,9 +405,8 @@ nvm() {
 # Source aliases and functions
 #=======================================================================================
 # Load AFTER sourcing other files because some export path may not be defined
-if [[ -f "${ZDOTDIR}/aliases.zsh" ]]; then
-	source "${ZDOTDIR}"/aliases.zsh
-fi
+[[ -f "${ZDOTDIR}/aliases.zsh" ]] && source "${ZDOTDIR}/aliases.zsh"
+[[ -f "${HOME}/aliases.zsh" ]] && source "${HOME}/aliases.zsh"
 
 
 #[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
