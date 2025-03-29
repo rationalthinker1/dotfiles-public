@@ -284,7 +284,7 @@ zi ice  lucid wait'3' depth'1' from'gh-r' as'command'; zi light akavel/up
 
 zi ice from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza'
 zinit ice depth'1'; zi light eza-community/eza
-zinit ice depth'1'; zi light z-shell/zsh-eza
+# zinit ice depth'1'; zi light z-shell/zsh-eza
 
 export ENHANCD_DISABLE_DOT=1
 export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
