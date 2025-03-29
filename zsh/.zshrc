@@ -280,11 +280,13 @@ zinit ice lucid wait'1' depth'1'; zi light wfxr/forgit
 
 zinit ice depth'1'; zi light zdharma-continuum/fast-syntax-highlighting
 
-zi ice  lucid wait'3' depth'1' from'gh-r' as'command'; zi light akavel/up
+zi ice lucid wait'3' depth'1' from'gh-r' as'command'; zi light akavel/up
 
-zi ice from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza'
-zinit ice depth'1'; zi light eza-community/eza
-# zinit ice depth'1'; zi light z-shell/zsh-eza
+# zi ice from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza'
+# zinit ice depth'1'; zi light eza-community/eza
+
+zi ice lucid wait'0' depth'1' from'gh-r' as'command' bpick'eza_x86_64-unknown-linux-gnu.tar.gz' pick'eza' mv'eza -> eza'
+zi light eza-community/eza
 
 export ENHANCD_DISABLE_DOT=1
 export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
