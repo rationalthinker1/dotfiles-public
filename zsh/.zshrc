@@ -31,7 +31,6 @@ export HOST_OS="${HOST_OS}"
 export HOST_LOCATION="${HOST_LOCATION}"
 export LOCAL_CONFIG="${XDG_CONFIG_HOME}"
 export ADOTDIR="${ZDOTDIR}/antigen"
-export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
 export NVM_DIR="${XDG_CONFIG_HOME}/.nvm"
 export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
 export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
@@ -298,7 +297,8 @@ zinit ice depth'1'; zi light eza-community/eza
 zinit ice depth'1'; zi light z-shell/zsh-eza
 
 export ENHANCD_DISABLE_DOT=1
-zinit ice lucid wait'2' depth'1'; zi light b4b4r07/enhancd
+export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
+zinit ice lucid wait'2' depth'1'; zi light babarot/enhancd
 
 export BAT_THEME="OneHalfDark"
 zi ice from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"; zi load sharkdp/bat
