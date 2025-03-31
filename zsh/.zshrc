@@ -43,10 +43,11 @@ export OPENAI_API_KEY="OPENAI_API_KEY_REMOVED"
 export LESS="-XRF"
 
 # Update PATH
-[[ -d "${CARGO_HOME}/bin" ]] && export PATH="${CARGO_HOME}/bin:${PATH}"
-[[ -d "${HOME}/.local/bin" ]] && export PATH="${HOME}/.local/bin:${PATH}"
-[[ -d "/usr/local/go/bin" ]] && export PATH="/usr/local/go/bin:${PATH}"
-[[ -d "${HOME}/.yarn" ]] && export PATH="${HOME}/.yarn/bin:${HOME}/.config/yarn/global/node_modules/.bin:${PATH}"
+[[ -d "${CARGO_HOME}/bin" ]] && [[ ":$PATH:" != *":${CARGO_HOME}/bin:"* ]] && export PATH="${CARGO_HOME}/bin:$PATH"
+[[ -d "${HOME}/.local/bin" ]] && [[ ":$PATH:" != *":${HOME}/.local/bin:"* ]] && export PATH="${HOME}/.local/bin:$PATH"
+[[ -d "/usr/local/go/bin" ]] && [[ ":$PATH:" != *":/usr/local/go/bin:"* ]] && export PATH="/usr/local/go/bin:$PATH"
+[[ -d "${HOME}/.yarn/bin" ]] && [[ ":$PATH:" != *":${HOME}/.yarn/bin:"* ]] && export PATH="${HOME}/.yarn/bin:$PATH"
+[[ -d "${HOME}/.config/yarn/global/node_modules/.bin" ]] && [[ ":$PATH:" != *":${HOME}/.config/yarn/global/node_modules/.bin:"* ]] && export PATH="${HOME}/.config/yarn/global/node_modules/.bin:$PATH"
 
 [[ -f "${ZDOTDIR}/local.zsh" ]] && source "${ZDOTDIR}/local.zsh"
 [[ -f "${HOME}/local.zsh" ]] && source "${HOME}/local.zsh"
@@ -54,7 +55,6 @@ export LESS="-XRF"
 [[ -f "${HOME}/.zprofile" ]] && source "${HOME}/.zprofile"
 [[ -f "${ZDOTDIR}/.bash_local" ]] && source "${ZDOTDIR}/.bash_local"
 [[ -f "${HOME}/.bash_local" ]] && source "${HOME}/.bash_local"
-
 #=======================================================================================
 # WSL-Specific Settings
 #=======================================================================================
