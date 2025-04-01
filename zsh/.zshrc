@@ -59,12 +59,16 @@ export LESS="-XRF"
 # WSL-Specific Settings
 #=======================================================================================
 if [[ "${HOST_OS}" == "wsl" ]]; then
-    export $(dbus-launch)
+    # causing issues with vscode terminal, and everytime you open a new terminal, it would lauch dbus everytime
+    #if [[ "$HOST_OS" == "wsl" && -n "$DISPLAY" && -z "$DBUS_SESSION_BUS_ADDRESS" && ! -f "/tmp/dbus-session-started"  ]]; then
+    #   echo "Starting D-Bus session..."
+    #   eval "$(dbus-launch --sh-syntax)"
+    #   touch /tmp/dbus-session-started
+    #fi
     export LIBGL_ALWAYS_INDIRECT=1
     export WSL_VERSION=$(wsl.exe -l -v | awk '/[*]/{print $NF}')
     export IP_ADDRESS=$(ip route list default | awk '{print $3}')
     export DISPLAY="${IP_ADDRESS}:0"
-    export PATH="${PATH}:${HOME}/.local/bin"
     export BROWSER="wslview"
 
     keep_current_path() {
