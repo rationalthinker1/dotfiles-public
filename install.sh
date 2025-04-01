@@ -269,24 +269,6 @@ if [[ ! $(broot --version 2>/dev/null) ]]; then
 	cargo install --locked --features clipboard broot
 fi
 
-# Installing node
-if [[ ! $(nvm --version 2>/dev/null) ]]; then
-	mkdir -p "${NVM_DIR}"
-	decho "node does not exist"
-	echo ""
-	echo "<======================================== installing node"
-	curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | bash
-	source "${NVM_DIR}/nvm.sh"
-	nvm install --lts
-
-	echo ""
-	echo "<======================================== installing yarn"
-	curl -o- -L https://yarnpkg.com/install.sh | zsh
-	echo "export PATH=$(yarn global bin):$PATH" >> ~/.zprofile
-	source ~/.zprofile
-	yarn global add gtop
-fi
-
 # Installing fd
 if [[ ! $(fd --version 2>/dev/null) ]] && [[ $HOST_OS == 'linux' ]]; then
 	decho "fd does not exist"

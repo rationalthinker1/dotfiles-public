@@ -360,9 +360,8 @@ zinit ice lucid wait'2' depth'1'; zi light MichaelAquilina/zsh-you-should-use
 # Type git open and it opens the GitHub/GitLab/etc. page for the current repo/branch in your browser.
 zinit ice lucid wait'2' depth'1'; zi light paulirish/git-open
 
-# export NVM_COMPLETION=true
-# export NVM_SYMLINK_CURRENT="true"
-# zinit wait depth'1' lucid light-mode for lukechilds/zsh-nvm
+# Fast Node Manager installing Node 20
+zi ice wait lucid atinit'ZSH_FNM_NODE_VERSION="20"'; zi light "dominik-schwabe/zsh-fnm"
 
 #=======================================================================================
 # Custom Application Settings
@@ -390,19 +389,6 @@ if  [ -x "$(command -v doctl)" ]; then
 	source <(doctl completion zsh)
 	compdef _doctl doctl
 fi
-
-
-nvm() {
-  unset -f nvm
-  export NVM_COMPLETION=true
-  export NVM_SYMLINK_CURRENT=true
-  source "$NVM_DIR/nvm.sh"
-  [ -f "$NVM_DIR/bash_completion" ] && source "$NVM_DIR/bash_completion"
-  nvm "$@"
-}
-
-# [ -f "${NVM_DIR}/nvm.sh" ] && source "${NVM_DIR}/nvm.sh" # This loads nvm
-# [ -f "${NVM_DIR}/bash_completion" ] && source "${NVM_DIR}/bash_completion" # This loads nvm bash_completion
 
 #=======================================================================================
 # Source aliases and functions
