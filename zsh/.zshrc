@@ -382,7 +382,7 @@ zi ice lucid wait'2' depth'1' src'init.sh' branch'main'; zi load babarot/enhancd
 #=======================================================================================
 # Custom Application Settings
 #=======================================================================================
-[[ -f "{XDG_CONFIG_HOME}/broot/launcher/bash/br" ]] && source "{XDG_CONFIG_HOME}/broot/launcher/bash/br"
+[[ -f "${XDG_CONFIG_HOME}/broot/launcher/bash/br" ]] && source "${XDG_CONFIG_HOME}/broot/launcher/bash/br"
 
 [[ -f "${ZDOTDIR}/.p10k.zsh" ]] && source "${ZDOTDIR}/.p10k.zsh"
 
