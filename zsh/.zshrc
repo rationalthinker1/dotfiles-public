@@ -257,23 +257,19 @@ autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
 
 zi ice depth'1'; zi light romkatv/powerlevel10k
-zi ice lucid wait'1' depth'1'; zi light Aloxaf/fzf-tab
 
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export FZF_ALT_C_COMMAND="fd --type d"
 # FZF options for sexy dropdowns
 export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --info=inline"
-
 # Preview file contents on Ctrl-T
 export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-range :500 {}'"
-
 # Change directories with preview using exa
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
-# zi ice depth'1'; zi pack"default+keys" for fzf
-
+zi ice depth'1'; zi pack"default+keys" for fzf
+zi ice lucid wait'1' depth'1'; zi light Aloxaf/fzf-tab
 zinit ice lucid wait'1' depth'1'; zinit light joshskidmore/zsh-fzf-history-search
-
 zi ice lucid wait'4' depth'1'; zi light Freed-Wu/fzf-tab-source
 
 zinit ice depth'1'; zinit light zsh-users/zsh-autosuggestions
@@ -292,7 +288,7 @@ zi light eza-community/eza
 
 export ENHANCD_DISABLE_DOT=1
 export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
-zinit ice lucid wait'2' depth'1'; zi light babarot/enhancd
+zinit ice lucid wait'2' depth'1' src'init.sh'; zi light babarot/enhancd
 
 export BAT_THEME="OneHalfDark"
 zi ice from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"; zi load sharkdp/bat
@@ -362,7 +358,7 @@ zinit ice lucid wait'2' depth'1'; zi light MichaelAquilina/zsh-you-should-use
 zinit ice lucid wait'2' depth'1'; zi light paulirish/git-open
 
 # Fast Node Manager installing Node 20
-zi ice lucid wait'1' depth'1' atinit'ZSH_FNM_NODE_VERSION="20"'; zi light "dominik-schwabe/zsh-fnm"
+zi ice lucid wait'1' depth'1' atinit'ZSH_FNM_NODE_VERSION="20"'; zi light dominik-schwabe/zsh-fnm
 
 # Set your interactive fuzzy finder (fzf is default & best)
 export ENHANCD_FILTER="fzf"
