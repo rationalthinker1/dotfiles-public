@@ -270,7 +270,7 @@ zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
 zi ice depth'1'; zi pack"default+keys" for fzf
 zi ice lucid wait'1' depth'1'; zi light Aloxaf/fzf-tab
 zinit ice lucid wait'1' depth'1'; zinit light joshskidmore/zsh-fzf-history-search
-zi ice lucid wait'4' depth'1'; zi light Freed-Wu/fzf-tab-source
+zi ice lucid wait'4' depth'1' branch'main'; zi light Freed-Wu/fzf-tab-source
 
 zinit ice depth'1'; zinit light zsh-users/zsh-autosuggestions
 zinit ice depth'1'; zinit light zsh-users/zsh-completions
@@ -288,7 +288,7 @@ zi light eza-community/eza
 
 export ENHANCD_DISABLE_DOT=1
 export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
-zinit ice lucid wait'2' depth'1' src'init.sh'; zi light babarot/enhancd
+zinit ice lucid wait'2' depth'1' src'init.sh' branch'main'; zi light babarot/enhancd
 
 export BAT_THEME="OneHalfDark"
 zi ice from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"; zi load sharkdp/bat
@@ -304,7 +304,7 @@ zi ice from'gh-r' as'command' pick='*/rg'; zi load BurntSushi/ripgrep
 zi ice lucid wait'3' depth'1' from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv'; zi light BurntSushi/xsv
 
 zi ice lucid wait'3' depth'1' from'gh-r' as'command'; zi light solidiquis/erdtree
-zinit ice lucid wait'3' depth'1'; zi light z-shell/zsh-fancy-completions
+zinit ice lucid wait'3' depth'1' branch'main'; zi light z-shell/zsh-fancy-completions
 #zi ice atinit'export ZSH_THEME="bubblified"'; zi light hohmannr/bubblified
 zi ice lucid wait'2' depth'1' from'gh' as'command' make pick"imcat"; zi light stolk/imcat
 
@@ -349,7 +349,7 @@ zi ice as'program' pick'bd' mv'bd -> bd'; zi load vigneshwaranr/bd
 zi ice as'program' pick'rename' mv'rename -> rename'; zi load ap/rename
 
 # Ctrl+R to search through your history
-zinit ice lucid wait'2' depth'1'; zi light atuinsh/atuin
+zinit ice lucid wait'2' depth'1' branch'main'; zi light atuinsh/atuin
 
 # reminder to use the alias
 zinit ice lucid wait'2' depth'1'; zi light MichaelAquilina/zsh-you-should-use
@@ -368,7 +368,7 @@ export ENHANCD_DIR_PATH_STYLE="full"
 export ENHANCD_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/enhancd"
 # Set default search depth (how far it crawls to index dirs)
 export ENHANCD_DIVE_MAX=10
-zi ice lucid wait'2' depth'1' src"init.sh"; zi load babarot/enhancd
+zi ice lucid wait'2' depth'1' src'init.sh' branch'main'; zi load babarot/enhancd
 
 #=======================================================================================
 # Custom Application Settings
