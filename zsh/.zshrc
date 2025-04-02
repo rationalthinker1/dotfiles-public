@@ -31,6 +31,7 @@ export HOST_OS="${HOST_OS}"
 export HOST_LOCATION="${HOST_LOCATION}"
 export LOCAL_CONFIG="${XDG_CONFIG_HOME}"
 export ADOTDIR="${ZDOTDIR}/antigen"
+export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
 export NVM_DIR="${XDG_CONFIG_HOME}/.nvm"
 export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
 export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
@@ -280,7 +281,7 @@ zinit ice depth'1'; zinit light zsh-users/zsh-completions
 
 export forgit_log=gl
 export FORGIT_DIFF_GIT_OPTS="-w --ignore-blank-lines"
-zinit ice lucid wait'1' depth'1'; zi light wfxr/forgit
+zinit ice lucid wait'1' depth'1' branch'main'; zi light wfxr/forgit
 
 zinit ice depth'1'; zi light zdharma-continuum/fast-syntax-highlighting
 
@@ -361,7 +362,17 @@ zinit ice lucid wait'2' depth'1'; zi light MichaelAquilina/zsh-you-should-use
 zinit ice lucid wait'2' depth'1'; zi light paulirish/git-open
 
 # Fast Node Manager installing Node 20
-zi ice wait lucid atinit'ZSH_FNM_NODE_VERSION="20"'; zi light "dominik-schwabe/zsh-fnm"
+zi ice lucid wait'1' depth'1' atinit'ZSH_FNM_NODE_VERSION="20"'; zi light "dominik-schwabe/zsh-fnm"
+
+# Set your interactive fuzzy finder (fzf is default & best)
+export ENHANCD_FILTER="fzf"
+# Use full path instead of relative paths
+export ENHANCD_DIR_PATH_STYLE="full"
+# Optional: Store enhancd data in XDG-compliant path
+export ENHANCD_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/enhancd"
+# Set default search depth (how far it crawls to index dirs)
+export ENHANCD_DIVE_MAX=10
+zi ice lucid wait'2' depth'1' src"init.sh"; zi load babarot/enhancd
 
 #=======================================================================================
 # Custom Application Settings
