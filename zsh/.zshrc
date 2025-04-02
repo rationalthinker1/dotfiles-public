@@ -1,9 +1,6 @@
 #!/usr/bin/env zsh
 # zmodload zsh/zprof # top of your .zshrc file
 
-# If compiled file exists and is newer than the source
-# [[ -s ~/.config/zsh/.zshrc.zwc && ~/.config/zsh/.zshrc.zwc -nt ~/.config/zsh/.zshrc ]] && source ~/.config/zsh/.zshrc.zwc || source ~/.config/zsh/.zshrc
-
 #=======================================================================================
 # Detect Host OS
 #=======================================================================================
@@ -421,9 +418,9 @@ fi
 
 # At the *end* of .zshrc
 # Recompile if source is newer
-# if [[ "${(%):-%N}" -nt "${(%):-%N}.zwc" ]]; then
-#   zcompile "${(%):-%N}"
-# fi
+if [[ "${(%):-%N}" -nt "${(%):-%N}.zwc" ]]; then
+  zcompile "${(%):-%N}"
+fi
 
 # If zsh is really show, enable profiling via zprof, uncomment the line below and the first line
 # zprof
