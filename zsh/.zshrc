@@ -30,7 +30,7 @@ export XDG_CACHE_HOME="${XDG_CACHE_HOME:=${HOME}/.cache}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:=${HOME}/.local/share}"
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 export ZSH="${ZDOTDIR}"
-export ZSH_CACHE_DIR="${ZSH}/cache"
+export ZSH_CACHE_DIR="${ZDOTDIR}/cache"
 export HOST_OS="${HOST_OS}"
 export HOST_LOCATION="${HOST_LOCATION}"
 export LOCAL_CONFIG="${XDG_CONFIG_HOME}"
@@ -181,12 +181,12 @@ bindkey '\eOF'    end-of-line        # gnome-terminal
 #=======================================================================================
 # Basic auto/tab complete:
 # enable completion
-autoload -Uz compinit
-if [[ -n $ZSH_CACHE_DIR ]]; then
-  compinit -d "$ZSH_CACHE_DIR/zcompdump-${HOST_OS}-${HOST_LOCATION}"
-else
-  compinit
-fi
+# autoload -Uz compinit
+# if [[ -n $ZSH_CACHE_DIR ]]; then
+#   compinit -d "$ZSH_CACHE_DIR/zcompdump-${HOST_OS}-${HOST_LOCATION}"
+# else
+#   compinit
+# fi
 autoload -Uz colors && colors
 
 #Calculator: zcalc
@@ -419,6 +419,7 @@ fi
 # At the *end* of .zshrc
 # Recompile if source is newer
 if [[ "${(%):-%N}" -nt "${(%):-%N}.zwc" ]]; then
+  echo "Recompiling ${(%):-%N}..."
   zcompile "${(%):-%N}"
 fi
 
