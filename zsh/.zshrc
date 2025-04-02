@@ -1,23 +1,30 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 # zmodload zsh/zprof # top of your .zshrc file
+
+# If compiled file exists and is newer than the source
+# [[ -s ~/.config/zsh/.zshrc.zwc && ~/.config/zsh/.zshrc.zwc -nt ~/.config/zsh/.zshrc ]] && source ~/.config/zsh/.zshrc.zwc || source ~/.config/zsh/.zshrc
 
 #=======================================================================================
 # Detect Host OS
 #=======================================================================================
-if [[ -f "/proc/sys/kernel/osrelease" ]] && grep -qi microsoft /proc/sys/kernel/osrelease; then
-    HOST_OS="wsl"
-elif [[ "${OSTYPE}" == "darwin"* ]]; then
-    HOST_OS="darwin"
-else
-    HOST_OS="linux"
-fi
+case "$OSTYPE" in
+  linux-gnu*)
+    if grep -qi microsoft /proc/sys/kernel/osrelease 2>/dev/null; then
+      HOST_OS="wsl"
+    else
+      HOST_OS="linux"
+    fi
+    ;;
+  darwin*)  HOST_OS="macos" ;;
+  cygwin* | msys*) HOST_OS="windows" ;;
+  *)        HOST_OS="unknown" ;;
+esac
 
 # Determine if running on Desktop or Server
-dpkg -l ubuntu-desktop > /dev/null 2>&1
-if [[ $? -eq 0 ]]; then
-	HOST_LOCATION="desktop"
+if [[ -n "$DISPLAY" || -n "$WAYLAND_DISPLAY" ]]; then
+  HOST_LOCATION="desktop"
 else
-	HOST_LOCATION="server"
+  HOST_LOCATION="server"
 fi
 
 # Export Key Environment Variables
@@ -177,7 +184,12 @@ bindkey '\eOF'    end-of-line        # gnome-terminal
 #=======================================================================================
 # Basic auto/tab complete:
 # enable completion
-autoload -Uz compinit && compinit
+autoload -Uz compinit
+if [[ -n $ZSH_CACHE_DIR ]]; then
+  compinit -d "$ZSH_CACHE_DIR/zcompdump-${HOST_OS}-${HOST_LOCATION}"
+else
+  compinit
+fi
 autoload -Uz colors && colors
 
 #Calculator: zcalc
@@ -406,6 +418,12 @@ fi
 
 
 #[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
+
+# At the *end* of .zshrc
+# Recompile if source is newer
+# if [[ "${(%):-%N}" -nt "${(%):-%N}.zwc" ]]; then
+#   zcompile "${(%):-%N}"
+# fi
 
 # If zsh is really show, enable profiling via zprof, uncomment the line below and the first line
 # zprof
