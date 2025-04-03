@@ -104,7 +104,10 @@ fi
 # Shell Settings
 #=======================================================================================
 # https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
-stty start undef # Fix for Vim Ctrl+Q issue
+if [[ -t 0 ]]; then
+  # Fix for Vim Ctrl+Q issue
+  stty start undef
+fi
 
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.config/zsh/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
@@ -265,30 +268,49 @@ source "${ZINIT_HOME}/zinit.zsh"
 autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
 
-zi ice depth'1'; zi light romkatv/powerlevel10k
+# Powerlevel10k theme
+zi ice depth'1'
+zi light romkatv/powerlevel10k
 
+# Core fzf from source (not just binary)
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export FZF_ALT_C_COMMAND="fd --type d"
-# FZF options for sexy dropdowns
 export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --info=inline"
-# Preview file contents on Ctrl-T
 export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-range :500 {}'"
-# Change directories with preview using exa
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
-zi ice depth'1'; zi pack"default+keys" for fzf
-zi ice lucid wait'1' depth'1'; zi light Aloxaf/fzf-tab
-zinit ice lucid wait'1' depth'1'; zinit light joshskidmore/zsh-fzf-history-search
-zi ice lucid wait'4' depth'1' branch'main'; zi light Freed-Wu/fzf-tab-source
+zi ice depth'1'
+zi light junegunn/fzf
 
-zinit ice depth'1'; zinit light zsh-users/zsh-autosuggestions
-zinit ice depth'1'; zinit light zsh-users/zsh-completions
+# fzf-tab with fancy dropdown completions
+zi ice lucid wait'1' depth'1'
+zi light Aloxaf/fzf-tab
 
+# fzf history search (Ctrl+R)
+zi ice lucid wait'1' depth'1'
+zi light joshskidmore/zsh-fzf-history-search
+
+# fuzzy matching source plugin
+zi ice lucid wait'1' depth'1' branch'main'
+zi light Freed-Wu/fzf-tab-source
+
+# Autosuggestions
+zi ice depth'1'
+zi light zsh-users/zsh-autosuggestions
+
+# Completions
+zi ice depth'1'
+zi light zsh-users/zsh-completions
+
+# Syntax highlighting
+zi ice depth'1'
+zi light zdharma-continuum/fast-syntax-highlighting
+
+# Git helper UI (forgit)
 export forgit_log=gl
 export FORGIT_DIFF_GIT_OPTS="-w --ignore-blank-lines"
-zinit ice lucid wait'1' depth'1' branch'main'; zi light wfxr/forgit
-
-zinit ice depth'1'; zi light zdharma-continuum/fast-syntax-highlighting
+zi ice lucid wait'1' depth'1' branch'main'
+zi light wfxr/forgit
 
 zi ice lucid wait'3' depth'1' from'gh-r' as'command'; zi light akavel/up
 
@@ -297,7 +319,7 @@ zi light eza-community/eza
 
 export ENHANCD_DISABLE_DOT=1
 export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
-zinit ice lucid wait'2' depth'1' src'init.sh' branch'main'; zi light babarot/enhancd
+zi ice lucid wait'2' depth'1' src'init.sh' branch'main'; zi light babarot/enhancd
 
 export BAT_THEME="OneHalfDark"
 zi ice from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"; zi load sharkdp/bat
@@ -313,17 +335,17 @@ zi ice from'gh-r' as'command' pick='*/rg'; zi load BurntSushi/ripgrep
 zi ice lucid wait'3' depth'1' from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv'; zi light BurntSushi/xsv
 
 zi ice lucid wait'3' depth'1' from'gh-r' as'command'; zi light solidiquis/erdtree
-zinit ice lucid wait'3' depth'1' branch'main'; zi light z-shell/zsh-fancy-completions
+zi ice lucid wait'3' depth'1' branch'main'; zi light z-shell/zsh-fancy-completions
 #zi ice atinit'export ZSH_THEME="bubblified"'; zi light hohmannr/bubblified
 zi ice lucid wait'2' depth'1' from'gh' as'command' make pick"imcat"; zi light stolk/imcat
 
 # type out a command that you expect to produce json on it's standard output
 # press alt + j and interactively write a jq expression
 # press enter, and the jq expression is appended to your initial command!
-zinit ice lucid wait'2' depth'1'; zi light reegnz/jq-zsh-plugin
+zi ice lucid wait'2' depth'1'; zi light reegnz/jq-zsh-plugin
 
 # A simple plugin that auto-closes, deletes and skips over matching delimiters
-zinit ice lucid wait'2' depth'1'; zi light hlissner/zsh-autopair
+zi ice lucid wait'2' depth'1'; zi light hlissner/zsh-autopair
 # zi snippet OMZP::gitfast
 # zi snippet OMZP::docker
 zi snippet OMZP::docker-compose
@@ -358,13 +380,13 @@ zi ice as'program' pick'bd' mv'bd -> bd'; zi load vigneshwaranr/bd
 zi ice as'program' pick'rename' mv'rename -> rename'; zi load ap/rename
 
 # Ctrl+R to search through your history
-zinit ice lucid wait'2' depth'1' branch'main'; zi light atuinsh/atuin
+zi ice lucid wait'2' depth'1' branch'main'; zi light atuinsh/atuin
 
 # reminder to use the alias
-zinit ice lucid wait'2' depth'1'; zi light MichaelAquilina/zsh-you-should-use
+zi ice lucid wait'2' depth'1'; zi light MichaelAquilina/zsh-you-should-use
 
 # Type git open and it opens the GitHub/GitLab/etc. page for the current repo/branch in your browser.
-zinit ice lucid wait'2' depth'1'; zi light paulirish/git-open
+zi ice lucid wait'2' depth'1'; zi light paulirish/git-open
 
 # Fast Node Manager installing Node 20
 zi ice lucid wait'1' depth'1' atinit'ZSH_FNM_NODE_VERSION="20"'; zi light dominik-schwabe/zsh-fnm
@@ -389,7 +411,11 @@ zi ice lucid wait'2' depth'1' src'init.sh' branch'main'; zi load babarot/enhancd
 [[ -f "${CARGO_HOME}/env" ]] && source "${CARGO_HOME}/env"
 
 [[ -f "${XDG_CONFIG_HOME}/fzf/fzf.zsh" ]] && source "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
-[[ -f "/usr/share/doc/fzf/examples/key-bindings.zsh" ]] && source "/usr/share/doc/fzf/examples/key-bindings.zsh"
+# Load fzf keybindings (Ctrl+T, Alt+C, Ctrl+R)
+if [[ -f "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegunn---fzf/shell/key-bindings.zsh" ]]; then
+  source "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegunn---fzf/shell/key-bindings.zsh"
+fi
+
 [[ -f "${XDG_CONFIG_HOME}/envman/load.sh" ]] && source "${XDG_CONFIG_HOME}/envman/load.sh"
 
 if  [ -x "$(command -v kitty)" ]; then
@@ -418,9 +444,11 @@ fi
 
 # At the *end* of .zshrc
 # Recompile if source is newer
-if [[ "${(%):-%N}" -nt "${(%):-%N}.zwc" ]]; then
-  echo "Recompiling ${(%):-%N}..."
-  zcompile "${(%):-%N}"
+if [[ -n "${(%):-%N}" && -r "${(%):-%N}" ]]; then
+  if [[ "${(%):-%N}" -nt "${(%):-%N}.zwc" ]]; then
+    echo "Recompiling ${(%):-%N}..."
+    zcompile "${(%):-%N}"
+  fi
 fi
 
 # If zsh is really show, enable profiling via zprof, uncomment the line below and the first line
