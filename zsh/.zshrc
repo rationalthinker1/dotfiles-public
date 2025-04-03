@@ -1,65 +1,98 @@
 #!/usr/bin/env zsh
 # zmodload zsh/zprof # top of your .zshrc file
 
-#=======================================================================================
-# Detect Host OS
-#=======================================================================================
+# ==============================================================================
+# Detect Host OS & Environment
+# ==============================================================================
+
+# 🧠 Detect operating system
 case "$OSTYPE" in
   linux-gnu*)
     if grep -qi microsoft /proc/sys/kernel/osrelease 2>/dev/null; then
       HOST_OS="wsl"
     else
       HOST_OS="linux"
-    fi
-    ;;
-  darwin*)  HOST_OS="macos" ;;
-  cygwin* | msys*) HOST_OS="windows" ;;
-  *)        HOST_OS="unknown" ;;
+    fi ;;
+  darwin*)       HOST_OS="macos" ;;
+  cygwin*|msys*) HOST_OS="windows" ;;
+  *)             HOST_OS="unknown" ;;
 esac
 
-# Determine if running on Desktop or Server
+# 🖥️ Determine if running on desktop or headless server
 if [[ -n "$DISPLAY" || -n "$WAYLAND_DISPLAY" ]]; then
   HOST_LOCATION="desktop"
 else
   HOST_LOCATION="server"
 fi
 
-# Export Key Environment Variables
+# ==============================================================================
+# Core Environment Variables
+# ==============================================================================
+
+# 📁 XDG base directories
 export XDG_CONFIG_HOME="${HOME}/.config"
-export XDG_CACHE_HOME="${XDG_CACHE_HOME:=${HOME}/.cache}"
-export XDG_DATA_HOME="${XDG_DATA_HOME:=${HOME}/.local/share}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+
+# 🧠 Shell and runtime config
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 export ZSH="${ZDOTDIR}"
 export ZSH_CACHE_DIR="${ZDOTDIR}/cache"
-export HOST_OS="${HOST_OS}"
-export HOST_LOCATION="${HOST_LOCATION}"
 export LOCAL_CONFIG="${XDG_CONFIG_HOME}"
+
+# 💻 Host environment
+export HOST_OS
+export HOST_LOCATION
+
+# 🧰 Tool-specific envs
 export ADOTDIR="${ZDOTDIR}/antigen"
 export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
 export NVM_DIR="${XDG_CONFIG_HOME}/.nvm"
 export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
 export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export VOLTA_HOME="${XDG_CONFIG_HOME}/volta"
+
+# 🖥️ Terminal & editor defaults
 export TERM="xterm-256color"
 export EDITOR="vim"
-export CODENAME=$(lsb_release -cs 2>/dev/null)
+
+# 🧪 Ubuntu version (for conditional logic)
+export CODENAME="$(lsb_release -cs 2>/dev/null)"
+
+# 🧠 OpenAI API Key (don't commit this, bro)
 export OPENAI_API_KEY="OPENAI_API_KEY_REMOVED"
-# allows commands like cat to stay in teminal after using it
+
+# 📜 Make less not clear the terminal after exit
 export LESS="-XRF"
 
+# ==============================================================================
 # Update PATH
-[[ -d "${CARGO_HOME}/bin" ]] && [[ ":$PATH:" != *":${CARGO_HOME}/bin:"* ]] && export PATH="${CARGO_HOME}/bin:$PATH"
-[[ -d "${HOME}/.local/bin" ]] && [[ ":$PATH:" != *":${HOME}/.local/bin:"* ]] && export PATH="${HOME}/.local/bin:$PATH"
-[[ -d "/usr/local/go/bin" ]] && [[ ":$PATH:" != *":/usr/local/go/bin:"* ]] && export PATH="/usr/local/go/bin:$PATH"
-[[ -d "${HOME}/.yarn/bin" ]] && [[ ":$PATH:" != *":${HOME}/.yarn/bin:"* ]] && export PATH="${HOME}/.yarn/bin:$PATH"
-[[ -d "${HOME}/.config/yarn/global/node_modules/.bin" ]] && [[ ":$PATH:" != *":${HOME}/.config/yarn/global/node_modules/.bin:"* ]] && export PATH="${HOME}/.config/yarn/global/node_modules/.bin:$PATH"
+# ==============================================================================
 
-[[ -f "${ZDOTDIR}/local.zsh" ]] && source "${ZDOTDIR}/local.zsh"
-[[ -f "${HOME}/local.zsh" ]] && source "${HOME}/local.zsh"
-[[ -f "${ZDOTDIR}/.zprofile" ]] && source "${ZDOTDIR}/.zprofile"
-[[ -f "${HOME}/.zprofile" ]] && source "${HOME}/.zprofile"
-[[ -f "${ZDOTDIR}/.bash_local" ]] && source "${ZDOTDIR}/.bash_local"
-[[ -f "${HOME}/.bash_local" ]] && source "${HOME}/.bash_local"
+# Add only if directory exists & not already in $PATH
+add_to_path_if_exists() {
+  [[ -d "$1" && ":$PATH:" != *":$1:"* ]] && export PATH="$1:$PATH"
+}
+
+add_to_path_if_exists "${CARGO_HOME}/bin"
+add_to_path_if_exists "${HOME}/.local/bin"
+add_to_path_if_exists "/usr/local/go/bin"
+add_to_path_if_exists "${HOME}/.yarn/bin"
+add_to_path_if_exists "${HOME}/.config/yarn/global/node_modules/.bin"
+
+# ==============================================================================
+# Load Local Overrides
+# ==============================================================================
+
+for file in \
+  "${ZDOTDIR}/local.zsh" \
+  "${HOME}/local.zsh" \
+  "${ZDOTDIR}/.zprofile" \
+  "${HOME}/.zprofile" \
+  "${ZDOTDIR}/.bash_local" \
+  "${HOME}/.bash_local"; do
+  [[ -f "$file" ]] && source "$file"
+done
 #=======================================================================================
 # WSL-Specific Settings
 #=======================================================================================
@@ -100,64 +133,59 @@ if [[ -d "${HOME}/android" ]]; then
     export PATH="${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${PATH}"
 fi
 
-#=======================================================================================
+# ==============================================================================
 # Shell Settings
-#=======================================================================================
-# https://stackoverflow.com/questions/21806168/vim-use-ctrl-q-for-visual-block-mode-in-vim-gnome
+# ==============================================================================
+
+# 🔒 Fix Ctrl+Q messing with terminal (e.g. Vim visual block mode)
+# See: https://stackoverflow.com/a/21806557
 if [[ -t 0 ]]; then
-  # Fix for Vim Ctrl+Q issue
   stty start undef
 fi
 
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.config/zsh/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block, everything else may go below.
+# ⚡ Powerlevel10k instant prompt (should be near top of .zshrc)
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-	source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-# History in cache directory
-HISTSIZE=10000000				# bash history will save N commands
-SAVEHIST="${HISTSIZE}"
-HISTFILESIZE="${HISTSIZE}"		# bash will remember N commands
-HISTFILE="${ZDOTDIR}"/.zsh_history
-HISTCONTROL=ignoreboth     # ingore duplicates and spaces
+# 🕓 History configuration
+HISTSIZE=10000000
+SAVEHIST=$HISTSIZE
+HISTFILESIZE=$HISTSIZE
+HISTFILE="${ZDOTDIR}/.zsh_history"
+HISTCONTROL=ignoreboth  # Ignore duplicates and space-prefixed commands
 HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
-#https://github.com/ohmyzsh/ohmyzsh/issues/5108
-WORDCHARS=''
+WORDCHARS=''  # Fix weird behavior with word movement (https://github.com/ohmyzsh/ohmyzsh/issues/5108)
 
-# reference: http://zsh.sourceforge.net/Doc/Release/Options.html
-setopt CORRECT                    # try to correct command line spelling
-setopt AUTO_CD                    # use cd by typing directory name if it's not a command
-setopt PUSHD_IGNORE_DUPS
-# unsetopt MENU_COMPLETE            # do not autoselect the first completion entry
-# unsetopt FLOWCONTROL
-setopt AUTO_MENU                  # show completion menu on succesive tab press
-setopt COMPLETE_IN_WORD
-setopt ALWAYS_TO_END
-setopt EXTENDED_GLOB
-setopt AUTO_LIST                  # automatically list choices on ambiguous completion
-setopt AUTO_PUSHD                 # make cd push the old directory onto the directory stack
-setopt INTERACTIVE_COMMENTS       # comments even in interactive shells
-setopt MULTIOS                    # implicit tees or cats when multiple redirections are attempted
-setopt NO_BEEP                    # don't beep on error
-setopt PROMPT_SUBST               # substitution of parameters inside the prompt each time the prompt is drawn
-setopt PUSHD_IGNORE_DUPS          # don't push multiple copies directory onto the directory stack
-setopt PUSHD_MINUS                # swap the meaning of cd +1 and cd -1 to the opposite
+# 📖 Zsh options (behavior tweaks)
+setopt CORRECT                    # Auto-correct misspelled commands
+setopt AUTO_CD                    # Just type folder name to cd into it
+setopt AUTO_LIST                  # Show completion options automatically
+setopt AUTO_MENU                  # Show menu on multiple tab presses
+setopt AUTO_PUSHD                 # Automatically push dirs onto directory stack
+setopt PUSHD_IGNORE_DUPS          # Avoid duplicate directories in pushd stack
+setopt PUSHD_MINUS                # Swap meaning of pushd +1 and -1
+setopt COMPLETE_IN_WORD           # Complete words in the middle
+setopt ALWAYS_TO_END              # Cursor jumps to end after completion
+setopt EXTENDED_GLOB              # Enhanced globbing (wildcards, etc.)
+setopt INTERACTIVE_COMMENTS       # Allow comments in interactive shell
+setopt MULTIOS                    # Allow tee-like behavior with pipes
+setopt NO_BEEP                    # Silence the annoying bell
+setopt PROMPT_SUBST               # Allow prompt string substitution
+setopt SHARE_HISTORY              # Share history across multiple sessions
 
-setopt BANG_HIST                  # treat the '!' character, especially during expansion
-setopt HIST_REDUCE_BLANKS         # remove superfluous blanks from history items
-setopt HIST_IGNORE_SPACE          # remove command lines from the history list when the first character on the line is a space
-setopt SHARE_HISTORY              # import new commands from the history file also in other zsh-session
-setopt HIST_EXPIRE_DUPS_FIRST     # expire duplicate entries first when trimming history
-setopt HIST_FIND_NO_DUPS          # remove older duplicate entries from history
-setopt HIST_IGNORE_DUPS           # don't record an entry that was just recorded again
-setopt HIST_IGNORE_ALL_DUPS       # if a new command line being added to the history list duplicates an older one, the older command is removed from the list
-setopt HIST_SAVE_NO_DUPS          # do not write a duplicate event to the history file
-setopt APPEND_HISTORY             # allow multiple sessions to append to one zsh command history
-setopt EXTENDED_HISTORY           # save each command's beginning timestamp and the duration to the history file
-setopt INC_APPEND_HISTORY         # write to the history file immediately, not when the shell exits
-
+# 🧠 History behavior
+setopt BANG_HIST                  # !foo expands to last "foo" command
+setopt EXTENDED_HISTORY           # Save timestamp + duration in history
+setopt INC_APPEND_HISTORY         # Append history instantly, not just on exit
+setopt APPEND_HISTORY             # Don't overwrite, just append
+setopt HIST_IGNORE_SPACE          # Don't save commands starting with space
+setopt HIST_REDUCE_BLANKS         # Collapse multiple spaces
+setopt HIST_EXPIRE_DUPS_FIRST     # Expire old dupes before new entries
+setopt HIST_FIND_NO_DUPS          # Don’t show duplicate results when searching
+setopt HIST_IGNORE_DUPS           # Don’t record if it’s the same as last
+setopt HIST_IGNORE_ALL_DUPS       # Remove all previous dups when adding new one
+setopt HIST_SAVE_NO_DUPS          # Never save duplicates to history file
 
 #=======================================================================================
 # Setting up home/end keys for keyboard
@@ -194,65 +222,68 @@ autoload -Uz colors && colors
 
 #Calculator: zcalc
 autoload -U zcalc
-
-#=======================================================================================
+# ==============================================================================
 # ZSH Settings
-#=======================================================================================
+# ==============================================================================
+
+# 📁 File & directory colors (for `ls`, `exa`, etc.)
 export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
-zstyle ':completion:*:match:*' original only
-zstyle -e ':completion:*:approximate:*' max-errors 'reply=($((($#PREFIX+$#SUFFIX)/3>7?7:($#PREFIX+$#SUFFIX)/3))numeric)'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+
+# 🔎 Completion engine behavior
 zstyle ':completion:*' completer _expand _complete _match _prefix _approximate _list _history
-zstyle ':completion:*:messages' format '%F{YELLOW}%d'$DEFAULT
-zstyle ':completion:*:warnings' format '%F{RED}No matches for:''%F{YELLOW} %d'$DEFAULT
+zstyle ':completion:*:match:*' original only
+zstyle -e ':completion:*:approximate:*' max-errors \
+  'reply=($((($#PREFIX+$#SUFFIX)/3>7?7:($#PREFIX+$#SUFFIX)/3))numeric)'
+
+# 💬 Completion display formatting
+zstyle ':completion:*:messages'     format '%F{YELLOW}%d'$DEFAULT
+zstyle ':completion:*:warnings'     format '%F{RED}No matches for:''%F{YELLOW} %d'$DEFAULT
 zstyle ':completion:*:descriptions' format '%F{YELLOW}completing %B%d%b'$DEFAULT
-zstyle ':completion:*:options' description 'yes'
-zstyle ':completion:*' matcher-list '' 'm:{[:lower:]}={[:upper:]}' '+m:{[:upper:]}={[:lower:]}'
-zstyle ':completion:*:matches' group 'yes'
-zstyle ':completion:*:options' auto-description '%d'
-zstyle ':completion:*:default' list-prompt '%S%M matches%s'
-zstyle ':completion:*' format ' %F{yellow}-- %d --%f'
-zstyle ':completion:*' group-name ''
-zstyle ':completion:*' verbose yes
-zstyle ':completion:*:functions' ignored-patterns '(_*|pre(cmd|exec))'
-zstyle ':completion:*' use-cache true
-zstyle ':completion:*' rehash true
-zstyle ':completion:*' menu select interactive
+zstyle ':completion:*:options'      description 'yes'
+zstyle ':completion:*:default'      list-prompt '%S%M matches%s'
+zstyle ':completion:*'              format ' %F{yellow}-- %d --%f'
+zstyle ':completion:*'              verbose yes
 
+# 🔁 Completion behavior
+zstyle ':completion:*:matches'      group 'yes'
+zstyle ':completion:*'              group-name ''
+zstyle ':completion:*'              use-cache true
+zstyle ':completion:*'              rehash true
+zstyle ':completion:*:functions'    ignored-patterns '(_*|pre(cmd|exec))'
+zstyle ':completion:*'              menu select interactive
+zstyle ':completion:*'              matcher-list '' \
+    'm:{[:lower:]}={[:upper:]}' \
+    '+m:{[:upper:]}={[:lower:]}'
 
-# https://ali.anari.io/posts/zinit/
+# 🚫 Sort git branches during `git checkout` completion
 zstyle ':completion:*:git-checkout:*' sort false
-# set list-colors to enable filename colorizing
-zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
-# preview directory's content with exa when completing cd
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
-# switch group using `,` and `.`
-zstyle ':fzf-tab:*' switch-group ',' '.'
 
-# https://github.com/ohmyzsh/ohmyzsh/issues/11817
+# 🐳 Legacy Docker completions (OMZ plugin compat)
 zstyle ':omz:plugins:docker' legacy-completion yes
 
-# Escape ? so you don't have to put \? or in quotes everytime
+# 🎨 FZF tab preview config
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
+zstyle ':fzf-tab:*' switch-group ',' '.'
+
+# 🔒 Escape ? without quoting
 set zle_bracketed_paste
 autoload -Uz bracketed-paste-magic url-quote-magic
 zle -N bracketed-paste bracketed-paste-magic
 zle -N self-insert url-quote-magic
 
-# Source a file in zsh when entering a directory
-# https://stackoverflow.com/questions/17051123/source-a-file-in-zsh-when-entering-a-directory
+# 🔁 Auto-source `.dirrc` when entering a directory
 load-local-conf() {
-	# check file exists, is regular file and is readable:
-	if [[ -f .dirrc && -r .dirrc ]]; then
-		source .dirrc
-	fi
+  [[ -f .dirrc && -r .dirrc ]] && source .dirrc
 }
-chpwd_functions+=( load-local-conf )
+chpwd_functions+=(load-local-conf)
 
-# If you duplicate a tab in WSL, it will open a new tab with the same directory
+# 🪟 Special case for WSL: sync working directory with Windows Terminal tabs
 if [[ "${HOST_OS}" == "wsl" ]]; then
-	keep_current_path() {
-	printf "\e]9;9;%s\e\\" "$(wslpath -w "$PWD")"
-	}
-	precmd_functions+=(keep_current_path)
+  keep_current_path() {
+    printf "\e]9;9;%s\e\\" "$(wslpath -w "$PWD")"
+  }
+  precmd_functions+=(keep_current_path)
 fi
 
 # ==============================================================================
@@ -443,36 +474,42 @@ zi snippet OMZP::extract          # Adds `extract` to unzip anything
 zi snippet OMZP::copyfile         # Copy file contents to clipboard
 zi snippet OMZP::dirhistory       # Alt+arrows to jump dirs
 zi snippet OMZP::docker-compose   # Completions for `docker-compose`
-
-#=======================================================================================
+# ==============================================================================
 # Custom Application Settings
-#=======================================================================================
+# ==============================================================================
+
+# 🗂️ broot (directory visualizer)
 [[ -f "${XDG_CONFIG_HOME}/broot/launcher/bash/br" ]] && source "${XDG_CONFIG_HOME}/broot/launcher/bash/br"
 
+# 🎨 Powerlevel10k theme config
 [[ -f "${ZDOTDIR}/.p10k.zsh" ]] && source "${ZDOTDIR}/.p10k.zsh"
 
+# 🦀 Rust environment variables
 [[ -f "${CARGO_HOME}/env" ]] && source "${CARGO_HOME}/env"
 
-[[ -f "${XDG_CONFIG_HOME}/fzf/fzf.zsh" ]] && source "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
-# Load fzf keybindings (Ctrl+T, Alt+C, Ctrl+R)
+# 🧠 FZF keybindings (Ctrl+T, Alt+C, Ctrl+R)
 if [[ -f "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegunn---fzf/shell/key-bindings.zsh" ]]; then
   source "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegunn---fzf/shell/key-bindings.zsh"
 fi
 
+# ⚡️ Envman – environment loader
 [[ -f "${XDG_CONFIG_HOME}/envman/load.sh" ]] && source "${XDG_CONFIG_HOME}/envman/load.sh"
 
-if  [ -x "$(command -v kitty)" ]; then
-	export KITTY_CONFIG_DIRECTORY="${XDG_CONFIG_HOME}/kitty"
-	kitty + complete setup zsh | source /dev/stdin
+# 🐱 Kitty terminal config + completions
+if command -v kitty &> /dev/null; then
+  export KITTY_CONFIG_DIRECTORY="${XDG_CONFIG_HOME}/kitty"
+  kitty + complete setup zsh | source /dev/stdin
 fi
 
-if  [ -x "$(command -v direnv)" ]; then
-	eval "$(direnv hook zsh)"
+# 🧬 direnv – per-project environment management
+if command -v direnv &> /dev/null; then
+  eval "$(direnv hook zsh)"
 fi
 
-if  [ -x "$(command -v doctl)" ]; then
-	source <(doctl completion zsh)
-	compdef _doctl doctl
+# ☁️ doctl – DigitalOcean CLI completion
+if command -v doctl &> /dev/null; then
+  source <(doctl completion zsh)
+  compdef _doctl doctl
 fi
 
 #=======================================================================================
