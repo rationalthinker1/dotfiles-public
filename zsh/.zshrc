@@ -255,151 +255,194 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
 	precmd_functions+=(keep_current_path)
 fi
 
-#=======================================================================================
-# ZINIT
-#=======================================================================================
-# https://wiki.zshell.dev/docs/getting_started/installation
+# ==============================================================================
+# ZINIT (ZI) Plugin Manager Setup
+# ==============================================================================
 
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
-[ ! -d $ZINIT_HOME ] && mkdir -p "$(dirname $ZINIT_HOME)"
-[ ! -d $ZINIT_HOME/.git ] && git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+[[ ! -d $ZINIT_HOME ]] && mkdir -p "$(dirname $ZINIT_HOME)"
+[[ ! -d $ZINIT_HOME/.git ]] && git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
 source "${ZINIT_HOME}/zinit.zsh"
+autoload -Uz _zinit; (( ${+_comps} )) && _comps[zinit]=_zinit
 
-autoload -Uz _zinit
-(( ${+_comps} )) && _comps[zinit]=_zinit
+# ==============================================================================
+# THEMING
+# ==============================================================================
 
-# Powerlevel10k theme
+# ⚡ Powerlevel10k - fast, beautiful prompt
 zi ice depth'1'
 zi light romkatv/powerlevel10k
 
-# Core fzf from source (not just binary)
+# ==============================================================================
+# COMPLETION / INTERACTIVE ENHANCEMENTS
+# ==============================================================================
+
+# 💡 fzf - fuzzy finder core
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export FZF_ALT_C_COMMAND="fd --type d"
 export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --info=inline"
 export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-range :500 {}'"
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
 zi ice depth'1'
 zi light junegunn/fzf
+# Force correct fzf in PATH before anything else
+export PATH="$HOME/.local/share/zinit/plugins/junegunn---fzf/bin:$PATH"
 
-# fzf-tab with fancy dropdown completions
+# 📂 fzf-tab - tab-completion UI using fzf
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
 zi ice lucid wait'1' depth'1'
 zi light Aloxaf/fzf-tab
 
-# fzf history search (Ctrl+R)
-zi ice lucid wait'1' depth'1'
-zi light joshskidmore/zsh-fzf-history-search
-
-# fuzzy matching source plugin
+# 🔍 fzf-tab-source - smarter matching in fzf-tab
 zi ice lucid wait'1' depth'1' branch'main'
 zi light Freed-Wu/fzf-tab-source
 
-# Autosuggestions
+# 🔁 fzf-history-search - interactive Ctrl+R command history
+zi ice lucid wait'1' depth'1'
+zi light joshskidmore/zsh-fzf-history-search
+
+# 🔄 zsh-autosuggestions - command suggestions while typing
 zi ice depth'1'
 zi light zsh-users/zsh-autosuggestions
 
-# Completions
+# 🔁 zsh-completions - extra completion scripts
 zi ice depth'1'
 zi light zsh-users/zsh-completions
 
-# Syntax highlighting
+# 🎨 syntax-highlighting - colorizes commands as you type
 zi ice depth'1'
 zi light zdharma-continuum/fast-syntax-highlighting
 
-# Git helper UI (forgit)
+# 🧠 atuin - shell history syncing, Ctrl+R replacement (optional)
+zi ice lucid wait'2' depth'1' branch'main'
+zi light atuinsh/atuin
+
+# 🫵 you-should-use - reminds you of aliases you forgot you had
+zi ice lucid wait'2' depth'1'
+zi light MichaelAquilina/zsh-you-should-use
+
+# ⌨️ zsh-autopair - auto-closes quotes, brackets, etc.
+zi ice lucid wait'2' depth'1'
+zi light hlissner/zsh-autopair
+
+# 🧙‍♂️ jq-zsh-plugin - type command, hit Alt+J to interactively craft a jq query
+zi ice lucid wait'2' depth'1'
+zi light reegnz/jq-zsh-plugin
+
+# 🔥 fancy completions for modern tools (like GitHub CLI)
+zi ice lucid wait'3' depth'1' branch'main'
+zi light z-shell/zsh-fancy-completions
+
+# 💻 ssh alias manager
+zi ice lucid wait'2' depth'1' from'gh'
+zi light sunlei/zsh-ssh
+
+# ==============================================================================
+# NAVIGATION & FILE MANAGEMENT TOOLS
+# ==============================================================================
+
+# 📁 enhancd - better `cd` command with history and fuzzy matching
+export ENHANCD_DISABLE_DOT=1
+export ENHANCD_FILTER="fzf"
+export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
+export ENHANCD_DIR_PATH_STYLE="full"
+export ENHANCD_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/enhancd"
+export ENHANCD_DIVE_MAX=10
+zi ice lucid wait'2' depth'1' src'init.sh' branch'main'
+zi light babarot/enhancd
+
+# 📁 bd - go back to a parent dir by name (e.g. `bd src`)
+zi ice as'program' pick'bd' mv'bd -> bd'
+zi load vigneshwaranr/bd
+
+# 📁 rename - CLI mass renamer
+zi ice as'program' pick'rename' mv'rename -> rename'
+zi load ap/rename
+
+# 📊 eza - better ls alternative
+zi ice lucid wait'0' depth'1' from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza' bpick'eza_x86_64-unknown-linux-gnu.tar.gz'
+zi light eza-community/eza
+
+# 🌲 erdtree - directory tree with size info (like `ncdu` but pretty)
+zi ice lucid wait'3' depth'1' from'gh-r' as'command'
+zi light solidiquis/erdtree
+
+# ==============================================================================
+# SEARCH / DEV TOOLS
+# ==============================================================================
+
+# 🔎 ripgrep (aka `rg`) - super fast grep
+export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME}/ripgrep/.ripgreprc"
+zi ice from'gh-r' as'command' pick='*/rg'
+zi load BurntSushi/ripgrep
+
+# 🦇 bat - better `cat`, with syntax highlighting
+export BAT_THEME="OneHalfDark"
+zi ice from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"
+zi load sharkdp/bat
+
+# 🔍 fd - better `find`
+zi ice from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"
+zi load sharkdp/fd
+
+# 🔬 xsv - analyze & manipulate CSVs from terminal
+zi ice lucid wait'3' depth'1' from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv'
+zi light BurntSushi/xsv
+
+# 📊 csvtool - pandas-powered CSV explorer in CLI
+zi ice as'program' pick'csvtool/csvtool.py' \
+  atclone'python3 -m venv venv && venv/bin/pip install pandas openpyxl' \
+  atpull'%atclone' \
+  cmd'./venv/bin/python csvtool "$@"'
+zi load maroofi/csvtool
+
+# 🧼 sd - simpler, modern `sed` replacement (e.g. `sd foo bar`)
+zi ice from'gh-r' as'command' pick'gnu'
+zi light chmln/sd
+
+# 🧠 jq - CLI JSON processor
+zi ice as'program' from'gh-r' bpick'*linux64' mv'jq* -> jq'
+zi load jqlang/jq
+
+# 💥 up - run `up` and it'll guess what command you wanted to run
+zi ice lucid wait'3' depth'1' from'gh-r' as'command'
+zi light akavel/up
+
+# 📷 imcat - display images in terminal (kitty/iterm support)
+zi ice lucid wait'2' depth'1' from'gh' as'command' make pick"imcat"
+zi light stolk/imcat
+
+# ==============================================================================
+# GIT ENHANCEMENTS
+# ==============================================================================
+
+# 🧠 forgit - interactively view logs, diffs, branches, etc.
 export forgit_log=gl
 export FORGIT_DIFF_GIT_OPTS="-w --ignore-blank-lines"
 zi ice lucid wait'1' depth'1' branch'main'
 zi light wfxr/forgit
 
-zi ice lucid wait'3' depth'1' from'gh-r' as'command'; zi light akavel/up
+# 🌐 git-open - opens GitHub/GitLab/Bitbucket page for current repo
+zi ice lucid wait'2' depth'1'
+zi light paulirish/git-open
 
-zi ice lucid wait'0' depth'1' from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza' bpick'eza_x86_64-unknown-linux-gnu.tar.gz'
-zi light eza-community/eza
+# ==============================================================================
+# NODE & LANGUAGE ENVIRONMENTS
+# ==============================================================================
 
-export ENHANCD_DISABLE_DOT=1
-export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
-zi ice lucid wait'2' depth'1' src'init.sh' branch'main'; zi light babarot/enhancd
+# 🌱 Fast Node Manager - automagic Node.js version switching
+zi ice lucid wait'1' depth'1' atinit'ZSH_FNM_NODE_VERSION="20"'
+zi light dominik-schwabe/zsh-fnm
 
-export BAT_THEME="OneHalfDark"
-zi ice from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"; zi load sharkdp/bat
+# ==============================================================================
+# OMZ SNIPPETS (one-liners from Oh-My-Zsh)
+# ==============================================================================
 
-zi ice from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"; zi load sharkdp/fd
-
-zi ice lucid lucid wait'2' depth'1' from'gh' as'command'; zi light sunlei/zsh-ssh
-
-export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME}/ripgrep/.ripgreprc"
-zi ice from'gh-r' as'command' pick='*/rg'; zi load BurntSushi/ripgrep
-
-# xsv is a command line program for indexing, slicing, analyzing, splitting and joining CSV files
-zi ice lucid wait'3' depth'1' from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv'; zi light BurntSushi/xsv
-
-zi ice lucid wait'3' depth'1' from'gh-r' as'command'; zi light solidiquis/erdtree
-zi ice lucid wait'3' depth'1' branch'main'; zi light z-shell/zsh-fancy-completions
-#zi ice atinit'export ZSH_THEME="bubblified"'; zi light hohmannr/bubblified
-zi ice lucid wait'2' depth'1' from'gh' as'command' make pick"imcat"; zi light stolk/imcat
-
-# type out a command that you expect to produce json on it's standard output
-# press alt + j and interactively write a jq expression
-# press enter, and the jq expression is appended to your initial command!
-zi ice lucid wait'2' depth'1'; zi light reegnz/jq-zsh-plugin
-
-# A simple plugin that auto-closes, deletes and skips over matching delimiters
-zi ice lucid wait'2' depth'1'; zi light hlissner/zsh-autopair
-# zi snippet OMZP::gitfast
-# zi snippet OMZP::docker
-zi snippet OMZP::docker-compose
-
-# press ESC twice to sudo previous command
-zi snippet OMZP::sudo
-
-# adds a 'extract' function to unzip zip/rar/7z/tar.gz etc...
-zi snippet OMZP::extract
-
-#copies the contents of a file in your system clipboard by using command 'copyfile <filename>'
-zi snippet OMZP::copyfile
-
-# alt+left -> Go to previous directory
-# alt+right -> Go to next directory
-# alt+up -> Go to parent directory
-# alt+down -> Go to first child directory by alphabetical order
-zi snippet OMZP::dirhistory
-
-# sed s/before/after/g -> sd before after;  sd before after file.txt -> sed -i -e 's/before/after/g' file.txt
-zi ice from'gh-r' as'command' pick'gnu'; zi light chmln/sd
-
-zi ice as'program' from'gh-r' bpick'*linux64' mv'jq* -> jq'; zi load jqlang/jq
-
-zi ice as'program' pick'csvtool/csvtool.py' \
-  atclone'python3 -m venv venv && venv/bin/pip install pandas openpyxl' \
-  atpull'%atclone' \
-  cmd'./venv/bin/python csvtool "$@"'; zi load maroofi/csvtool
-
-zi ice as'program' pick'bd' mv'bd -> bd'; zi load vigneshwaranr/bd
-
-zi ice as'program' pick'rename' mv'rename -> rename'; zi load ap/rename
-
-# Ctrl+R to search through your history
-zi ice lucid wait'2' depth'1' branch'main'; zi light atuinsh/atuin
-
-# reminder to use the alias
-zi ice lucid wait'2' depth'1'; zi light MichaelAquilina/zsh-you-should-use
-
-# Type git open and it opens the GitHub/GitLab/etc. page for the current repo/branch in your browser.
-zi ice lucid wait'2' depth'1'; zi light paulirish/git-open
-
-# Fast Node Manager installing Node 20
-zi ice lucid wait'1' depth'1' atinit'ZSH_FNM_NODE_VERSION="20"'; zi light dominik-schwabe/zsh-fnm
-
-# Set your interactive fuzzy finder (fzf is default & best)
-export ENHANCD_FILTER="fzf"
-# Use full path instead of relative paths
-export ENHANCD_DIR_PATH_STYLE="full"
-# Optional: Store enhancd data in XDG-compliant path
-export ENHANCD_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/enhancd"
-# Set default search depth (how far it crawls to index dirs)
-export ENHANCD_DIVE_MAX=10
-zi ice lucid wait'2' depth'1' src'init.sh' branch'main'; zi load babarot/enhancd
+zi snippet OMZP::sudo             # Hit ESC twice to sudo previous command
+zi snippet OMZP::extract          # Adds `extract` to unzip anything
+zi snippet OMZP::copyfile         # Copy file contents to clipboard
+zi snippet OMZP::dirhistory       # Alt+arrows to jump dirs
+zi snippet OMZP::docker-compose   # Completions for `docker-compose`
 
 #=======================================================================================
 # Custom Application Settings
