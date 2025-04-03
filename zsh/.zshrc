@@ -210,18 +210,24 @@ bindkey '\eOF'    end-of-line        # gnome-terminal
 #=======================================================================================
 # Autocompletion
 #=======================================================================================
-# Basic auto/tab complete:
-# enable completion
-# autoload -Uz compinit
-# if [[ -n $ZSH_CACHE_DIR ]]; then
-#   compinit -d "$ZSH_CACHE_DIR/zcompdump-${HOST_OS}-${HOST_LOCATION}"
-# else
-#   compinit
-# fi
+
+# 🔁 Initialize completion system with cache (safe for zshenv)
+if [[ -n "$ZSH_CACHE_DIR" ]]; then
+  mkdir -p "$ZSH_CACHE_DIR"
+  autoload -Uz compinit
+  compinit -i -d "$ZSH_CACHE_DIR/zcompdump-${HOST_OS:-default}"
+else
+  autoload -Uz compinit
+  compinit -i
+fi
 autoload -Uz colors && colors
 
 #Calculator: zcalc
 autoload -U zcalc
+
+# 📦 Enable zmv for wildcard-based file renaming (e.g., zmv '*.txt' 'prefix_#1.txt')
+autoload -Uz zmv
+
 # ==============================================================================
 # ZSH Settings
 # ==============================================================================
@@ -278,14 +284,6 @@ load-local-conf() {
 }
 chpwd_functions+=(load-local-conf)
 
-# 🪟 Special case for WSL: sync working directory with Windows Terminal tabs
-if [[ "${HOST_OS}" == "wsl" ]]; then
-  keep_current_path() {
-    printf "\e]9;9;%s\e\\" "$(wslpath -w "$PWD")"
-  }
-  precmd_functions+=(keep_current_path)
-fi
-
 # ==============================================================================
 # ZINIT (ZI) Plugin Manager Setup
 # ==============================================================================
@@ -314,10 +312,10 @@ export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export FZF_ALT_C_COMMAND="fd --type d"
 export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --info=inline"
 export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-range :500 {}'"
-zi ice depth'1'
+zi ice depth'1' atclone'./install --bin' atpull'%atclone'
 zi light junegunn/fzf
 # Force correct fzf in PATH before anything else
-export PATH="$HOME/.local/share/zinit/plugins/junegunn---fzf/bin:$PATH"
+export PATH="${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegunn---fzf/bin:$PATH"
 
 # 📂 fzf-tab - tab-completion UI using fzf
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'

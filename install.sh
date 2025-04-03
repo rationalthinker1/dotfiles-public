@@ -348,6 +348,7 @@ fi
 
 mkdir -p "${BACKUP_DIR}"
 updateFiles "${HOME}/.dotfiles/zsh/.zshrc" "${HOME}/.zshrc"
+updateFiles "${HOME}/.dotfiles/zsh/.zshenv" "${HOME}/.zshenv"
 updateFiles "${HOME}/.dotfiles/.vimrc" "${HOME}/.vimrc"
 updateFiles "${HOME}/.dotfiles/.vim" "${HOME}/.vim"
 updateFiles "${HOME}/.dotfiles/.gitconfig" "${HOME}/.gitconfig"
