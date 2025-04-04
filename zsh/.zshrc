@@ -187,9 +187,6 @@ setopt HIST_IGNORE_DUPS           # Don’t record if it’s the same as last
 setopt HIST_IGNORE_ALL_DUPS       # Remove all previous dups when adding new one
 setopt HIST_SAVE_NO_DUPS          # Never save duplicates to history file
 
-
-setopt globdots        # Include dotfiles in globs
-setopt extended_glob   # Enable extended globbing features
 #=======================================================================================
 # Setting up home/end keys for keyboard
 # https://unix.stackexchange.com/questions/20298/home-key-not-working-in-terminal
@@ -280,12 +277,6 @@ set zle_bracketed_paste
 autoload -Uz bracketed-paste-magic url-quote-magic
 zle -N bracketed-paste bracketed-paste-magic
 zle -N self-insert url-quote-magic
-
-# Make fuzzy completion
-zstyle ':completion:*' matcher-list \
-    'm:{a-z}={A-Z}' \
-    'r:|[._-]=* r:|=*' \
-    'l:|=* r:|=*'
 
 # 🔁 Auto-source `.dirrc` when entering a directory
 load-local-conf() {
@@ -484,6 +475,13 @@ zi snippet OMZP::docker-compose   # Completions for `docker-compose`
 # ==============================================================================
 # Custom Application Settings
 # ==============================================================================
+
+if [[ "$HOST_OS" == "wsl" ]] && command -v dockerd >/dev/null; then
+  if ! pgrep -x dockerd >/dev/null 2>&1; then
+    echo "🐳 Starting Docker..."
+    command -v sudo >/dev/null && sudo nohup dockerd > /dev/null 2>&1 &
+  fi
+fi
 
 # 🗂️ broot (directory visualizer)
 [[ -f "${XDG_CONFIG_HOME}/broot/launcher/bash/br" ]] && source "${XDG_CONFIG_HOME}/broot/launcher/bash/br"
