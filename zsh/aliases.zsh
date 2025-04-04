@@ -493,10 +493,10 @@ alias yb="yarn build"
 #=======================================================================================
 # Laravel Aliases and functions
 #=======================================================================================
-alias pa="docker-compose exec -e XDEBUG_SESSION=PHPSTORM php php -dxdebug.client_host=host.docker.internal artisan"
-alias pam="docker-compose exec -e XDEBUG_SESSION=PHPSTORM php php -dxdebug.client_host=host.docker.internal artisan migrate"
-alias par="docker-compose exec -e XDEBUG_SESSION=PHPSTORM php php -dxdebug.client_host=host.docker.internal artisan routes"
-alias mysqlr="docker-compose exec -it db mysql -u root -p123"
+alias pa="docker compose exec -e XDEBUG_SESSION=PHPSTORM php php -dxdebug.client_host=host.docker.internal artisan"
+alias pam="docker compose exec -e XDEBUG_SESSION=PHPSTORM php php -dxdebug.client_host=host.docker.internal artisan migrate"
+alias par="docker compose exec -e XDEBUG_SESSION=PHPSTORM php php -dxdebug.client_host=host.docker.internal artisan routes"
+alias mysqlr="docker compose exec -it db mysql -u root -p123"
 
 alias pam:r="php artisan migrate:refresh"
 alias pam:roll="php artisan migrate:rollback"
@@ -504,7 +504,7 @@ alias pam:rs="php artisan migrate:refresh --seed"
 alias pda="php artisan dumpautoload"
 alias cu="composer update"
 alias ci="composer install"
-alias cda="docker-compose -f "./docker-compose.yml" --project-directory ./ exec php composer dump-autoload -o"
+alias cda="docker compose -f "./docker-compose.yml" --project-directory ./ exec php composer dump-autoload -o"
 alias pacc="php artisan clear-compiled"
 
 #=======================================================================================
@@ -553,16 +553,16 @@ alias alog='sudo tail -f /opt/lampp/logs/*'
 #=======================================================================================
 # Docker Aliases and functions
 #=======================================================================================
-# Runs docker-compose command looking at other files
+# Runs docker compose command looking at other files
 dc() {
 	if [ -e "docker-compose.yml" ]; then
-		docker-compose "$@"
+		docker compose "$@"
 	elif [ -e "./docker/docker-compose.yml" ]; then
-		docker-compose -f "./docker/docker-compose.yml" --project-directory ./ "$@"
+		docker compose -f "./docker/docker-compose.yml" --project-directory ./ "$@"
 	fi
 }
 
-# Runs the docker-compose detached
+# Runs the docker compose detached
 dcu() {
 	if [[ -e "docker/docker.sh" ]]; then
 		./docker/docker.sh "$@"
@@ -588,7 +588,7 @@ dcp() { dc ps "$@"; }
 dexec() { docker exec -it $(dc ps -q $1) $2; }
 drexec() { docker exec --user root:root -it $(dc ps -q $1) $2; }
 
-# Run a bash shell in the specified container (with docker-compose).
+# Run a bash shell in the specified container (with docker compose).
 dceb() {
 	SCRIPT="/bin/bash"
 	if [ $# -lt 1 ]; then
@@ -601,7 +601,7 @@ dceb() {
 
 	dc exec --user "$(id -u):$(id -g)" "$1" "$SCRIPT"
 }
-# Run a bash shell in the specified container (with docker-compose).
+# Run a bash shell in the specified container (with docker compose).
 dcebr() {
 	SCRIPT="/bin/bash"
 	if [ $# -lt 1 ]; then
@@ -615,8 +615,8 @@ dcebr() {
 	dc exec --user root:root "$1" "$SCRIPT"
 }
 
-#alias dce="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec --user \"$(id -u):$(id -g)\""
-alias dce="docker-compose -f "./docker/docker-compose.yml" --project-directory ./ exec"
+#alias dce="docker compose -f "./docker/docker-compose.yml" --project-directory ./ exec --user \"$(id -u):$(id -g)\""
+alias dce="docker compose -f "./docker/docker-compose.yml" --project-directory ./ exec"
 
 # Get latest container ID
 alias dl="docker ps -l -q"
