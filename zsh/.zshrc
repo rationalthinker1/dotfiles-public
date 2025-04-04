@@ -206,28 +206,6 @@ bindkey '\e[4~'   end-of-line        # Linux console
 bindkey '\e[F'    end-of-line        # xterm
 bindkey '\eOF'    end-of-line        # gnome-terminal
 
-
-#=======================================================================================
-# Autocompletion
-#=======================================================================================
-
-# 🔁 Initialize completion system with cache (safe for zshenv)
-if [[ -n "$ZSH_CACHE_DIR" ]]; then
-  mkdir -p "$ZSH_CACHE_DIR"
-  autoload -Uz compinit
-  compinit -i -d "$ZSH_CACHE_DIR/zcompdump-${HOST_OS:-default}"
-else
-  autoload -Uz compinit
-  compinit -i
-fi
-autoload -Uz colors && colors
-
-#Calculator: zcalc
-autoload -U zcalc
-
-# 📦 Enable zmv for wildcard-based file renaming (e.g., zmv '*.txt' 'prefix_#1.txt')
-autoload -Uz zmv
-
 # ==============================================================================
 # ZSH Settings
 # ==============================================================================
@@ -467,11 +445,37 @@ zi light dominik-schwabe/zsh-fnm
 # OMZ SNIPPETS (one-liners from Oh-My-Zsh)
 # ==============================================================================
 
+zi ice wait lucid blockf
 zi snippet OMZP::sudo             # Hit ESC twice to sudo previous command
 zi snippet OMZP::extract          # Adds `extract` to unzip anything
 zi snippet OMZP::copyfile         # Copy file contents to clipboard
 zi snippet OMZP::dirhistory       # Alt+arrows to jump dirs
 zi snippet OMZP::docker-compose   # Completions for `docker-compose`
+
+#=======================================================================================
+# Autocompletion
+#=======================================================================================
+
+# 🔁 Initialize completion system with cache (safe for zshenv)
+# if [[ -n "$ZSH_CACHE_DIR" ]]; then
+#   mkdir -p "$ZSH_CACHE_DIR"
+#   autoload -Uz compinit
+#   compinit -i -d "$ZSH_CACHE_DIR/zcompdump-${HOST_OS:-default}"
+# else
+#   autoload -Uz compinit
+#   compinit -i
+# fi
+# Trigger compinit safely (delayed)
+autoload -Uz compinit
+compinit -C
+autoload -Uz colors && colors
+
+#Calculator: zcalc
+autoload -U zcalc
+
+# 📦 Enable zmv for wildcard-based file renaming (e.g., zmv '*.txt' 'prefix_#1.txt')
+autoload -Uz zmv
+
 # ==============================================================================
 # Custom Application Settings
 # ==============================================================================
