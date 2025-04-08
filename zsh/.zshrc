@@ -47,7 +47,6 @@ export HOST_LOCATION
 # 🧰 Tool-specific envs
 export ADOTDIR="${ZDOTDIR}/antigen"
 export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
-export NVM_DIR="${XDG_CONFIG_HOME}/.nvm"
 export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
 export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export VOLTA_HOME="${XDG_CONFIG_HOME}/volta"
@@ -467,8 +466,8 @@ zi snippet OMZP::docker-compose   # Completions for `docker-compose`
 #   compinit -i
 # fi
 # Trigger compinit safely (delayed)
-autoload -Uz compinit
-compinit -C
+# autoload -Uz compinit
+# compinit -C
 autoload -Uz colors && colors
 
 #Calculator: zcalc

@@ -12,11 +12,11 @@ export ZSH_CACHE_DIR="${ZDOTDIR}/cache"
 # Load Compiled or Fallback .zshrc
 # ==============================================================================
 
-if [[ -s "${ZDOTDIR}/.zshrc.zwc" && "${ZDOTDIR}/.zshrc.zwc" -nt "${ZDOTDIR}/.zshrc" ]]; then
-  source "${ZDOTDIR}/.zshrc.zwc"
-else
-  source "${ZDOTDIR}/.zshrc"
-fi
+# if [[ -s "${ZDOTDIR}/.zshrc.zwc" && "${ZDOTDIR}/.zshrc.zwc" -nt "${ZDOTDIR}/.zshrc" ]]; then
+#   source "${ZDOTDIR}/.zshrc.zwc"
+# else
+#   source "${ZDOTDIR}/.zshrc"
+# fi
 
 # ==============================================================================
 # Terminal Behavior Enhancements (only if interactive)
