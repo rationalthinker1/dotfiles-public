@@ -351,6 +351,7 @@ zi light sunlei/zsh-ssh
 # 📁 enhancd - better `cd` command with history and fuzzy matching
 export ENHANCD_DISABLE_DOT=1
 export ENHANCD_FILTER="fzf"
+export ENHANCD_COMMAND="ccd"
 export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
 export ENHANCD_DIR_PATH_STYLE="full"
 export ENHANCD_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/enhancd"
