@@ -284,7 +284,7 @@ zi light romkatv/powerlevel10k
 # ==============================================================================
 
 # 🎨 syntax-highlighting - colorizes commands as you type
-zi ice depth'1' wait'0'
+zi ice lucid depth'1' wait'0'
 zi light zdharma-continuum/fast-syntax-highlighting
 
 # 💡 fzf - fuzzy finder core
@@ -367,7 +367,7 @@ zi ice as'program' pick'rename' mv'rename -> rename'
 zi load ap/rename
 
 # 📊 eza - better ls alternative
-zi ice lucid wait'0' depth'1' from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza' bpick'eza_x86_64-unknown-linux-gnu.tar.gz'
+zi ice lucid depth'1' from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza' bpick'eza_x86_64-unknown-linux-gnu.tar.gz'
 zi light eza-community/eza
 
 # 🌲 erdtree - directory tree with size info (like `ncdu` but pretty)
