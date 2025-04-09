@@ -283,6 +283,10 @@ zi light romkatv/powerlevel10k
 # COMPLETION / INTERACTIVE ENHANCEMENTS
 # ==============================================================================
 
+# 🎨 syntax-highlighting - colorizes commands as you type
+zi ice depth'1' wait'0'
+zi light zdharma-continuum/fast-syntax-highlighting
+
 # 💡 fzf - fuzzy finder core
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
@@ -308,16 +312,12 @@ zi ice lucid wait'1' depth'1'
 zi light joshskidmore/zsh-fzf-history-search
 
 # 🔄 zsh-autosuggestions - command suggestions while typing
-zi ice depth'1'
+zi ice lucid depth'1' wait'1'
 zi light zsh-users/zsh-autosuggestions
 
 # 🔁 zsh-completions - extra completion scripts
 zi ice depth'1'
 zi light zsh-users/zsh-completions
-
-# 🎨 syntax-highlighting - colorizes commands as you type
-zi ice depth'1'
-zi light zdharma-continuum/fast-syntax-highlighting
 
 # 🧠 atuin - shell history syncing, Ctrl+R replacement (optional)
 zi ice lucid wait'2' depth'1' branch'main'
