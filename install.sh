@@ -9,7 +9,7 @@ function decho() {
 	fi
 }
 
-if [[ -f "/proc/sys/kernel/osrelease" ]] && [[ "$(< /proc/sys/kernel/osrelease)" == *microsoft* ]]; then
+if [[ -f "/proc/sys/kernel/osrelease" ]] && [[ "$(</proc/sys/kernel/osrelease)" == *microsoft* ]]; then
 	HOST_OS="wsl"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
 	HOST_OS="darwin"
@@ -18,7 +18,7 @@ else
 fi
 decho "HOST_OS $HOST_OS"
 
-dpkg -l ubuntu-desktop > /dev/null 2>&1
+dpkg -l ubuntu-desktop >/dev/null 2>&1
 if [[ $? -eq 0 || $HOST_OS == "darwin" ]]; then
 	HOST_LOCATION="desktop"
 else
@@ -44,7 +44,7 @@ export CODENAME=$(lsb_release -a 2>&1 | grep Codename | sed -E "s/Codename:\s+//
 # allows commands like cat to stay in teminal after using it
 export LESS="-XRF"
 
-ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURCE[0]}"`
+ABSOLUTE_PATH=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)/$(basename "${BASH_SOURCE[0]}")
 BASE_DIR=$(dirname ${ABSOLUTE_PATH})
 BACKUP_DIR="${HOME}/.dotfiles/backup"
 
@@ -65,7 +65,7 @@ function updateFiles() {
 	decho "dotfiles_file: ${dotfiles_file}"
 
 	# if the link is not symbolic link or if the file is a symbolic link and the target does not contain string "dotfiles"
-	if [[ ( ! -L "${current_file}" ) || ( -L "${current_file}" && (! $(readlink -f "${current_file}") =~ "dotfiles" ) ) ]]; then
+	if [[ (! -L "${current_file}") || (-L "${current_file}" && (! $(readlink -f "${current_file}") =~ "dotfiles")) ]]; then
 		echo "file ${dotfiles_file} is being setup"
 		backupFile "${current_file}"
 		createSymlink "${dotfiles_file}" "${current_file}"
@@ -112,7 +112,10 @@ function install-essential-packages() {
 	if [[ "${HOST_OS}" == "darwin" ]]; then
 		# installing homebrew
 		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-		(echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> "/Users/${USER}/.zprofile"
+		(
+			echo
+			echo 'eval "$(/opt/homebrew/bin/brew shellenv)"'
+		) >>"/Users/${USER}/.zprofile"
 		eval "$(/opt/homebrew/bin/brew shellenv)"
 
 		brew install \
@@ -144,8 +147,8 @@ function install-essential-packages() {
 			pcre2-utils \
 			rsync \
 			go
-	else 
-		# this sets the clock correctly 
+	else
+		# this sets the clock correctly
 		sudo hwclock --hctosys
 
 		sudo apt-get -y update
@@ -176,22 +179,21 @@ function install-essential-packages() {
 			rsync \
 			libncurses5-dev \
 			libncursesw5-dev \
-			pcre2-utils \
-			; do
-				echo ""
-				echo "<======================================== installing ${package} ========================================>"
-				sudo apt-get install --assume-yes --ignore-missing "${package}"
-			done
+			pcre2-utils; do
+			echo ""
+			echo "<======================================== installing ${package} ========================================>"
+			sudo apt-get install --assume-yes --ignore-missing "${package}"
+		done
 	fi
 
 	pip3 install --user pynvim
-	sudo echo $(which zsh) | sudo tee -a /etc/shells
-	sudo chsh -s $(which zsh)
+	sudo echo $(command -v zsh) | sudo tee -a /etc/shells
+	sudo chsh -s $(command -v zsh)
 	curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
 }
 
 # Installing zsh and basic packages
-if [[ ! $(zsh --version 2>/dev/null) ]]; then
+if [[ ! $(command -v zsh) ]]; then
 	decho "zsh does not exist"
 	install-essential-packages
 fi
@@ -201,15 +203,15 @@ fi
 vim_version=$(vim --version | awk 'NR==1 {print $5}')
 if [[ $(echo "$vim_version" | awk '{print ($1 < 9)}') == 1 ]]; then
 	sudo apt-get install -y \
-    build-essential \
-    libncurses5-dev \
-    libncursesw5-dev \
-    python3-dev \
-    ruby-dev \
-    lua5.3 liblua5.3-dev \
-    libperl-dev \
-    git \
-    libx11-dev libxt-dev libxpm-dev libgtk-3-dev
+		build-essential \
+		libncurses5-dev \
+		libncursesw5-dev \
+		python3-dev \
+		ruby-dev \
+		lua5.3 liblua5.3-dev \
+		libperl-dev \
+		git \
+		libx11-dev libxt-dev libxpm-dev libgtk-3-dev
 	PY3_CONFIG=$(python3-config --configdir)
 
 	git clone https://github.com/vim/vim.git
@@ -238,7 +240,7 @@ if [[ $(echo "$vim_version" | awk '{print ($1 < 9)}') == 1 ]]; then
 fi
 
 # Installing rust
-if  [[ ! -x "$(command -v cargo)" ]]; then
+if [[ ! -x "$(command -v cargo)" ]]; then
 	curl https://sh.rustup.rs -sSf | RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup" CARGO_HOME="${XDG_CONFIG_HOME}/.cargo" sh -s -- -y
 	source "${XDG_CONFIG_HOME}/.cargo/env"
 	rustup default stable
@@ -246,7 +248,7 @@ fi
 
 # Installing sd
 # sed s/before/after/g -> sd before after;  sd before after file.txt -> sed -i -e 's/before/after/g' file.txt
-if  [[ ! -x "$(command -v sd)" ]]; then
+if [[ ! -x "$(command -v sd)" ]]; then
 	cargo install sd
 fi
 
@@ -255,7 +257,7 @@ if [[ ! $(blackhosts --help 2>/dev/null) ]] && [[ $HOST_LOCATION == 'desktop' ]]
 	decho "blackhosts does not exist"
 	echo ""
 	echo "<======================================== installing blackhosts"
-	link=$(curl -s https://api.github.com/repos/Lateralus138/blackhosts/releases/latest | grep -P "browser_download_url" | grep -vE "musl" | grep "blackhosts.deb" | head -n 1 |  cut -d '"' -f 4)
+	link=$(curl -s https://api.github.com/repos/Lateralus138/blackhosts/releases/latest | grep -P "browser_download_url" | grep -vE "musl" | grep "blackhosts.deb" | head -n 1 | cut -d '"' -f 4)
 	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
 	wget -q $link -P /tmp/
 	sudo dpkg -i --force-overwrite /tmp/$download_filename
@@ -289,7 +291,7 @@ fi
 # fi
 
 # # Installing fzf
-# if [[ ! $(fzf --version 2>/dev/null) ]]; then
+# if [[ ! $(command -v fzf) ]]; then
 # 	decho "fzf does not exist"
 # 	echo ""
 # 	echo "<======================================== installing fzf"
@@ -378,3 +380,27 @@ fi
 echo ""
 echo "<======================================== installing vim plugins"
 vim -E -c PlugInstall -c qall!
+
+if [[ $HOST_OS == 'wsl' ]]; then
+	# Installing Windows Terminal config
+	echo ""
+	echo "<======================================== installing Windows Terminal config"
+	DOTFILES_DIR="$HOME/.dotfiles"
+	TERMINAL_SETTINGS_SRC="$DOTFILES_DIR/windows-terminal/settings.json"
+
+	# Get Windows username from PowerShell
+	WINDOWS_USER=$(powershell.exe '$env:UserName' | tr -d '\r')
+
+	# Construct full Windows Terminal settings path (symlink target)
+	TERMINAL_SETTINGS_DEST="/mnt/c/Users/$WINDOWS_USER/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
+
+	# Backup existing settings
+	if [ -f "$TERMINAL_SETTINGS_DEST" ]; then
+		cp "$TERMINAL_SETTINGS_DEST" "${TERMINAL_SETTINGS_DEST}.bak.$(date +%s)"
+		echo "📦 Backed up existing settings.json"
+	fi
+
+	# Create symlink
+	ln -sf "$TERMINAL_SETTINGS_SRC" "$TERMINAL_SETTINGS_DEST"
+	echo "✅ Linked settings.json from $TERMINAL_SETTINGS_SRC to $TERMINAL_SETTINGS_DEST"
+fi
