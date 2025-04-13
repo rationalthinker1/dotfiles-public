@@ -371,15 +371,15 @@ if [[ ! -d "${XDG_CONFIG_HOME}/zi" ]]; then
 fi
 updateFiles "${HOME}/.dotfiles/zi/init.zsh" "${XDG_CONFIG_HOME}/zi/init.zsh"
 
-if [[ $HOST_OS == 'wsl' ]]; then
-	WINDOWS_HOME_DIRECTORY=$(wslpath $(wslvar USERPROFILE))
-	cp "${HOME}/.dotfiles/.wslconfig" "${WINDOWS_HOME_DIRECTORY}/.wslconfig"
-fi
-
 # Installing vim plugins
 echo ""
 echo "<======================================== installing vim plugins"
 vim -E -c PlugInstall -c qall!
+
+if [[ $HOST_OS == 'wsl' ]]; then
+	WINDOWS_HOME_DIRECTORY=$(wslpath $(wslvar USERPROFILE))
+	cp "${HOME}/.dotfiles/.wslconfig" "${WINDOWS_HOME_DIRECTORY}/.wslconfig"
+fi
 
 if [[ $HOST_OS == 'wsl' ]]; then
 	# Installing Windows Terminal config
@@ -401,6 +401,6 @@ if [[ $HOST_OS == 'wsl' ]]; then
 	fi
 
 	# Create symlink
-	ln -sf "$TERMINAL_SETTINGS_SRC" "$TERMINAL_SETTINGS_DEST"
+	cp "$TERMINAL_SETTINGS_SRC" "$TERMINAL_SETTINGS_DEST"
 	echo "✅ Linked settings.json from $TERMINAL_SETTINGS_SRC to $TERMINAL_SETTINGS_DEST"
 fi
