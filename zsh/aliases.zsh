@@ -483,6 +483,7 @@ alias -g S='| sort -n'
 alias -g T='| tail'
 alias -g U='| uniq'
 alias -g X='| xsel -b'
+alias -g FF='-print0 | xargs -0 -I FILE'
 
 #=======================================================================================
 # Yarn Aliases and functions
