@@ -148,9 +148,6 @@ function install-essential-packages() {
 			rsync \
 			go
 	else
-		# this sets the clock correctly
-		sudo hwclock --hctosys
-
 		sudo apt-get -y update
 		sudo apt-get -y upgrade
 		for package in \
@@ -165,7 +162,6 @@ function install-essential-packages() {
 			python3-venv \
 			python3-dev \
 			python3-pip \
-			python-pip \
 			xclip \
 			p7zip-full \
 			unzip \
@@ -179,6 +175,7 @@ function install-essential-packages() {
 			rsync \
 			libncurses5-dev \
 			libncursesw5-dev \
+			util-linux-extra \
 			pcre2-utils; do
 			echo ""
 			echo "<======================================== installing ${package} ========================================>"
@@ -190,6 +187,8 @@ function install-essential-packages() {
 	sudo echo $(command -v zsh) | sudo tee -a /etc/shells
 	sudo chsh -s $(command -v zsh)
 	curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
+	# this sets the clock correctly
+	sudo hwclock --hctosys
 }
 
 # Installing zsh and basic packages
