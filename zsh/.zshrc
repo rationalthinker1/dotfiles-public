@@ -540,5 +540,19 @@ if [[ -n "${(%):-%N}" && -r "${(%):-%N}" ]]; then
   fi
 fi
 
+if [[ $HOST_OS == 'wsl' ]]; then
+  WINDOWS_USER=$(powershell.exe '$env:UserName' | tr -d '\r')
+  DOTFILES_DIR="$HOME/.dotfiles"
+  TERMINAL_SETTINGS_DEST="/mnt/c/Users/$WINDOWS_USER/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
+  TERMINAL_SETTINGS_SRC="$DOTFILES_DIR/windows-terminal/settings.json"
+
+  if [[ -f "$TERMINAL_SETTINGS_DEST" && -f "$TERMINAL_SETTINGS_SRC" ]]; then
+    if [[ "$TERMINAL_SETTINGS_SRC" -nt "$TERMINAL_SETTINGS_DEST" ]]; then
+      cp "$TERMINAL_SETTINGS_DEST" "${TERMINAL_SETTINGS_DEST}.bak.$(date +%s)"
+      cp "$TERMINAL_SETTINGS_SRC" "$TERMINAL_SETTINGS_DEST"
+      echo "⚡ Terminal settings updated from dotfiles."
+    fi
+  fi
+fi
 # If zsh is really show, enable profiling via zprof, uncomment the line below and the first line
 # zprof

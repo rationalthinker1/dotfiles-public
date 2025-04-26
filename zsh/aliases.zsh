@@ -702,4 +702,17 @@ if [[ $HOST_OS == "wsl" ]]; then
 
 	FIRST_PATH=$(wslpath "$(wslvar USERPROFILE)")
 	alias code="${FIRST_PATH}/AppData/Local/Programs/Microsoft\ VS\ Code/Code.exe"
+
+	copy_terminal_settings_to_dotfiles() {
+		DOTFILES_DIR="$HOME/.dotfiles"
+		WINDOWS_USER=$(powershell.exe '$env:UserName' | tr -d '\r')
+		TERMINAL_SETTINGS_DEST="/mnt/c/Users/$WINDOWS_USER/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
+  		TERMINAL_SETTINGS_SRC="$DOTFILES_DIR/windows-terminal/settings.json"
+		if [[ -f "$TERMINAL_SETTINGS_DEST" ]]; then
+			cp "$TERMINAL_SETTINGS_DEST" "$TERMINAL_SETTINGS_SRC"
+			echo "✅ Copied current terminal settings to dotfiles."
+		else
+			echo "❌ Terminal settings not found at: $TERMINAL_SETTINGS_DEST"
+		fi
+	}
 fi
