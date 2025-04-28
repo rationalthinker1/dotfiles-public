@@ -523,6 +523,9 @@ if command -v doctl &> /dev/null; then
   compdef _doctl doctl
 fi
 
+# 🐰 Bun Completion 
+[ -s "${BUN_INSTALL}/_bun" ] && source "${BUN_INSTALL}/_bun" 
+
 #=======================================================================================
 # Source aliases and functions
 #=======================================================================================
