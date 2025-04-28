@@ -79,6 +79,7 @@ add_to_path_if_exists "${HOME}/.local/bin"
 add_to_path_if_exists "/usr/local/go/bin"
 add_to_path_if_exists "${HOME}/.yarn/bin"
 add_to_path_if_exists "${HOME}/.config/yarn/global/node_modules/.bin"
+add_to_path_if_exists "${BUN_INSTALL}/bin"
 
 # ==============================================================================
 # Load Local Overrides
