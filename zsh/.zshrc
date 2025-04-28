@@ -50,6 +50,7 @@ export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
 export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
 export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export VOLTA_HOME="${XDG_CONFIG_HOME}/volta"
+export BUN_INSTALL="${XDG_CONFIG_HOME}/bun"
 
 # 🖥️ Terminal & editor defaults
 export TERM="xterm-256color"
