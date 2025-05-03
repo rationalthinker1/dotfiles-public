@@ -418,8 +418,11 @@ zi ice lucid wait'3' depth'1' from'gh-r' as'command'
 zi light akavel/up
 
 # 📷 imcat - display images in terminal (kitty/iterm support)
-zi ice lucid wait'2' depth'1' from'gh' as'command' make pick"imcat"
+zi ice lucid wait'2' depth'1' from'gh' as'command' make pick'imcat'
 zi light stolk/imcat
+
+zi ice lucid wait'2' depth'1' from'gh-r' as'program' pick'qsv'
+zi light dathere/qsv
 
 # ==============================================================================
 # GIT ENHANCEMENTS
