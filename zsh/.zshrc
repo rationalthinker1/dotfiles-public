@@ -114,6 +114,10 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
         printf "\e]9;9;%s\e\\" "$(wslpath -w "${PWD}")"
     }
     precmd_functions+=(keep_current_path)
+
+  if [ -n "$WT_SESSION" ]; then
+    printf "\033]9;9;%s\033\\" "$(pwd)"
+  fi
 fi
 
 #=======================================================================================
