@@ -620,7 +620,7 @@ dcebr() {
 }
 
 #alias dce="docker compose -f "./docker/docker-compose.yml" --project-directory ./ exec --user \"$(id -u):$(id -g)\""
-alias dce="docker compose -f "./docker/docker-compose.yml" --project-directory ./ exec"
+alias dce="dc exec"
 
 # Get latest container ID
 alias dl="docker ps -l -q"
