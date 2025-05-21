@@ -267,6 +267,9 @@ alias bd=". bd -si"
 # takes whatever you have cat previously and vims it
 alias v!='fc -e "sed -i -e \"s/cat /vim /\""'
 
+# example: tf laravel.log
+alias tf="tail -f"
+
 # Extract archives files
 function extract() {
 	if [ -f "$1" ]; then
