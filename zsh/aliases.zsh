@@ -552,7 +552,8 @@ alias nerr="cd /var/log/nginx/"
 #=======================================================================================
 alias lst='sudo /opt/lampp/lampp start'
 alias lsp='sudo /opt/lampp/lampp stop'
-alias alog='sudo tail -f /opt/lampp/logs/*'
+alias llog='tail -f /var/www/html/ecoenergy/production/storage/logs/laravel.log'
+alias nlog='tail -f /var/log/nginx/*.log'
 
 #=======================================================================================
 # Docker Aliases and functions
