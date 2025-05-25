@@ -141,21 +141,6 @@ function rg() {
 	fi
 }
 
-function bak3() {
-	if [[ "$#" -eq 0 ]]; then
-		echo "used to back up file or folder"
-		echo "usage: bak test"
-		exit 0
-	fi
-	if [[ $1 == *".bak" ]]; then
-		echo "renaming ${1%.bak}.bak to ${1%.bak}"
-		mv "${1%.bak}.bak" "${1%.bak}"
-	else
-		echo "renaming ${1} to ${1}.bak"
-		mv "${1}" "${1}.bak"
-	fi
-}
-
 function bak() {
     if [[ -z "$1" ]]; then
         echo "Error: No file or folder name provided."
@@ -179,31 +164,6 @@ function bak() {
         mv "$1.bak" "$1"
         echo "Renamed $1.bak to $1"
     fi
-}
-
-function bak2() {
-	if [[ "$#" -eq 0 ]]; then
-		echo "used to back up file or folder"
-		echo "usage: bak test"
-		exit 0
-	fi
-	if [[ $1 =~ '^([^.]*?)(\.[0-9])?\.bak$' ]]; then
-		original="${match[1]}"
-		echo "renaming ${1} back to ${original}"
-		mv "${1}" "${original}"
-	else
-		if [[ -e "${1}.bak" ]]; then
-			i=2
-			while [[ -e "${1}.$i.bak" ]]; do
-				let i++
-			done
-			echo "renaming ${1} to ${1}.$i.bak"
-			mv "${1}" "${1}.$i.bak"
-		else
-			echo "renaming ${1} to ${1}.bak"
-			mv "${1}" "${1}.bak"
-		fi
-	fi
 }
 
 function ref() {
@@ -497,10 +457,10 @@ alias yb="yarn build"
 #=======================================================================================
 # Laravel Aliases and functions
 #=======================================================================================
-alias pa="docker compose exec -e XDEBUG_SESSION=PHPSTORM php php -dxdebug.client_host=host.docker.internal artisan"
-alias pam="docker compose exec -e XDEBUG_SESSION=PHPSTORM php php -dxdebug.client_host=host.docker.internal artisan migrate"
-alias par="docker compose exec -e XDEBUG_SESSION=PHPSTORM php php -dxdebug.client_host=host.docker.internal artisan routes"
-alias mysqlr="docker compose exec -it db mysql -u root -p123"
+alias pa="dce php php -dxdebug.client_host=host.docker.internal artisan"
+alias pam="dce php php -dxdebug.client_host=host.docker.internal artisan migrate"
+alias par="dce php php -dxdebug.client_host=host.docker.internal artisan routes"
+alias mysqlr="dce -it db mysql -u root -p123"
 
 alias pam:r="php artisan migrate:refresh"
 alias pam:roll="php artisan migrate:rollback"
@@ -508,39 +468,25 @@ alias pam:rs="php artisan migrate:refresh --seed"
 alias pda="php artisan dumpautoload"
 alias cu="composer update"
 alias ci="composer install"
-alias cda="docker compose -f "./docker-compose.yml" --project-directory ./ exec php composer dump-autoload -o"
+alias cda="dce php composer dump-autoload -o"
 alias pacc="php artisan clear-compiled"
 
 #=======================================================================================
 # Nginx Aliases and functions
 #=======================================================================================
+alias html='cd /var/www/html'
+
 # common directories
 alias ncon="cd /etc/nginx/sites-enabled/"
 alias nerr="cd /var/log/nginx/"
 
 # view logs
-alias npe='tail -f /var/log/nginx/*error.log'
-alias npa='tail -f /var/log/nginx/*access.log'
+alias npe='tail -f /var/log/nginx/error*.log'
+alias npa='tail -f /var/log/nginx/access*.log'
 
 # reload nginx
-alias nrel='sudo nginx -s reload'
-#=======================================================================================
-# Apache Aliases and functions
-#=======================================================================================
-# common directories
-alias acon="cd /etc/apache2/sites-available/"
-alias aerr="cd /var/log/apache2/"
-alias html='cd /var/www/html'
+alias nrel='sudo nginx -t && sudo nginx -s reload'
 
-# view logs
-alias ape='tail -f /var/log/apache2/*error.log'
-alias apa='tail -f /var/log/apache2/*access.log'
-
-# reload apache
-alias aprel='sudo service apache2 reload'
-
-# view active virtual hosts
-alias aplist='sudo apache2ctl -S'
 #=======================================================================================
 # Node Aliases and functions
 #=======================================================================================
@@ -548,10 +494,8 @@ alias ncon="cd /etc/nginx/sites-available/"
 alias nerr="cd /var/log/nginx/"
 
 #=======================================================================================
-# Lampp Aliases and functions
+# Log Aliases and functions
 #=======================================================================================
-alias lst='sudo /opt/lampp/lampp start'
-alias lsp='sudo /opt/lampp/lampp stop'
 alias llog='tail -f /var/www/html/ecoenergy/production/storage/logs/laravel.log'
 alias nlog='tail -f /var/log/nginx/*.log'
 
@@ -566,6 +510,9 @@ dc() {
 		docker compose -f "./docker/docker-compose.yml" --project-directory ./ "$@"
 	fi
 }
+
+#alias dce="docker compose -f "./docker/docker-compose.yml" --project-directory ./ exec --user \"$(id -u):$(id -g)\""
+alias dce="dc exec -e XDEBUG_SESSION=PHPSTORM --user \"$(id -u):$(id -g)\""
 
 # Runs the docker compose detached
 dcu() {
@@ -619,9 +566,6 @@ dcebr() {
 
 	dc exec --user root:root "$1" "$SCRIPT"
 }
-
-#alias dce="docker compose -f "./docker/docker-compose.yml" --project-directory ./ exec --user \"$(id -u):$(id -g)\""
-alias dce="dc exec"
 
 # Get latest container ID
 alias dl="docker ps -l -q"
