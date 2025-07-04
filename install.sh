@@ -186,6 +186,7 @@ function install-essential-packages() {
 	pip3 install --user pynvim
 	sudo echo $(command -v zsh) | sudo tee -a /etc/shells
 	sudo chsh -s $(command -v zsh)
+	chsh -s $(command -v zsh)
 	curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
 	# this sets the clock correctly
 	sudo hwclock --hctosys
