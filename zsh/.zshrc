@@ -543,15 +543,6 @@ fi
 
 #[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
 
-# At the *end* of .zshrc
-# Recompile if source is newer
-if [[ -n "${(%):-%N}" && -r "${(%):-%N}" ]]; then
-  if [[ "${(%):-%N}" -nt "${(%):-%N}.zwc" ]]; then
-    echo "Recompiling ${(%):-%N}..."
-    zcompile "${(%):-%N}"
-  fi
-fi
-
 if [[ $HOST_OS == 'wsl' ]]; then
   WINDOWS_USER=$(powershell.exe '$env:UserName' | tr -d '\r')
   DOTFILES_DIR="$HOME/.dotfiles"
@@ -564,6 +555,15 @@ if [[ $HOST_OS == 'wsl' ]]; then
       cp "$TERMINAL_SETTINGS_SRC" "$TERMINAL_SETTINGS_DEST"
       echo "⚡ Terminal settings updated from dotfiles."
     fi
+  fi
+fi
+
+# At the *end* of .zshrc
+# Recompile if source is newer
+if [[ -n "${(%):-%N}" && -r "${(%):-%N}" ]]; then
+  if [[ "${(%):-%N}" -nt "${(%):-%N}.zwc" ]]; then
+    echo "Recompiling ${(%):-%N}..."
+    zcompile "${(%):-%N}"
   fi
 fi
 # If zsh is really show, enable profiling via zprof, uncomment the line below and the first line
