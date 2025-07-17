@@ -399,7 +399,7 @@ zi ice from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"
 zi load sharkdp/fd
 
 # 🔬 xsv - analyze & manipulate CSVs from terminal
-zi ice lucid wait'3' depth'1' from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv'
+zi ice lucid wait'3' depth'1' from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv' atpull'%atclone'
 zi light BurntSushi/xsv
 
 # 📊 csvtool - pandas-powered CSV explorer in CLI
@@ -425,7 +425,7 @@ zi light akavel/up
 zi ice lucid wait'2' depth'1' from'gh' as'command' make pick'imcat'
 zi light stolk/imcat
 
-zi ice lucid wait'2' depth'1' from'gh-r' as'program' pick'qsv'
+zi ice lucid wait'2' depth'1' as'program' pick'target/release/qsv' atclone'cargo build --release --locked --bin qsv --features "feature_capable,python,luau,apply,foreach"' atpull'%atclone'
 zi light dathere/qsv
 
 # ==============================================================================

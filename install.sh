@@ -167,6 +167,7 @@ function install-essential-packages() {
 			unzip \
 			unrar \
 			wipe \
+			cmake \
 			net-tools \
 			xsel \
 			xclip \
@@ -243,7 +244,9 @@ fi
 if [[ ! -x "$(command -v cargo)" ]]; then
 	curl https://sh.rustup.rs -sSf | RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup" CARGO_HOME="${XDG_CONFIG_HOME}/.cargo" sh -s -- -y
 	source "${XDG_CONFIG_HOME}/.cargo/env"
+	rustup install stable
 	rustup default stable
+	sudo apt install libwayland-dev pkg-config
 fi
 
 # Installing sd
@@ -324,17 +327,6 @@ if [[ ! $(which wslvar 2>/dev/null) ]] && [[ $HOST_OS == 'wsl' ]]; then
 	sudo add-apt-repository ppa:wslutilities/wslu -y
 	sudo apt update -y
 	sudo apt install -f -y wslu
-fi
-
-# Installing qsv
-if [[ ! $(which qsv 2>/dev/null) ]]; then
-	decho "qsv does not exist"
-	echo ""
-	echo "<======================================== installing qsv"
-	wget -O - https://dathere.github.io/qsv-deb-releases/qsv-deb.gpg | sudo gpg --dearmor -o /usr/share/keyrings/qsv-deb.gpg
-	echo "deb [signed-by=/usr/share/keyrings/qsv-deb.gpg] https://dathere.github.io/qsv-deb-releases ./" | sudo tee /etc/apt/sources.list.d/qsv.list
-	sudo apt update
-	sudo apt install qsv
 fi
 
 if [[ ! -f "${HOME}/.dotfiles/fonts/.installed" ]] && [[ $HOST_LOCATION == 'desktop' ]] && [[ $HOST_OS == 'linux' ]]; then
