@@ -447,7 +447,10 @@ zi light paulirish/git-open
 # ==============================================================================
 
 # 🌱 Fast Node Manager - automagic Node.js version switching
-zi ice lucid wait'1' depth'1' atinit'ZSH_FNM_NODE_VERSION="20"'
+export ZSH_FNM_NODE_VERSION="22"
+export ZSH_FNM_ENV_EXTRA_ARGS="--use-on-cd"
+export ZSH_FNM_INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/fnm"
+zi ice lucid wait'1' depth'1'
 zi light dominik-schwabe/zsh-fnm
 
 # ==============================================================================
