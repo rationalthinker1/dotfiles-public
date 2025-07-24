@@ -164,6 +164,7 @@ function install-essential-packages() {
 			python3-pip \
 			xclip \
 			p7zip-full \
+			zip \
 			unzip \
 			unrar \
 			wipe \
@@ -273,51 +274,6 @@ if [[ ! $(broot --version 2>/dev/null) ]]; then
 	echo "<======================================== installing broot"
 	cargo install --locked --features clipboard broot
 fi
-
-# # Installing fd
-# if [[ ! $(fd --version 2>/dev/null) ]] && [[ $HOST_OS == 'linux' ]]; then
-# 	decho "fd does not exist"
-# 	echo ""
-# 	echo "<======================================== installing fd"
-# 	link=$(curl -s https://api.github.com/repos/sharkdp/fd/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep -vE "musl" | grep "deb" | head -n 1 |  cut -d '"' -f 4)
-# 	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
-# 	wget -q $link -P /tmp/
-# 	sudo dpkg -i --force-overwrite /tmp/$download_filename
-# fi
-
-# # Installing eza (newer version of exa)
-# if  [[ ! -x "$(command -v eza)" ]]; then
-# 	decho "eza does not exist"
-# 	echo ""
-# 	echo "<======================================== installing eza"
-# 	cargo install eza
-# fi
-
-# # Installing fzf
-# if [[ ! $(command -v fzf) ]]; then
-# 	decho "fzf does not exist"
-# 	echo ""
-# 	echo "<======================================== installing fzf"
-# 	# link=$(curl -s https://api.github.com/repos/junegunn/fzf/releases/latest | grep -P "browser_download_url" | grep "amd64" | grep "linux" | grep -vE "musl" | grep "tar.gz" | head -n 1 |  cut -d '"' -f 4)
-# 	# download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
-# 	# wget -q $link -P /tmp/
-# 	# tar xf "/tmp/${download_filename}"
-# 	# sudo mv fzf /usr/local/bin/
-# 	rm -rf "${XDG_CONFIG_HOME}/.fzf"
-# 	git clone --depth 1 https://github.com/junegunn/fzf.git "${XDG_CONFIG_HOME}/.fzf"
-# 	"${XDG_CONFIG_HOME}/.fzf/install" --xdg --key-bindings --completion  --no-bash  --no-fish --no-update-rc
-# fi
-
-# # Installing up
-# if [[ ! $(which up 2>/dev/null) ]]; then
-# 	decho "up does not exist"
-# 	echo ""
-# 	echo "<======================================== installing up"
-# 	link=$(curl -s https://api.github.com/repos/akavel/up/releases/latest | grep -P "browser_download_url" | head -n 1 |  cut -d '"' -f 4)
-# 	download_filename=$(echo $link | rev | cut -d"/" -f1 | rev)
-# 	sudo wget -q $link -P /usr/local/bin/
-# 	sudo chmod +x /usr/local/bin/up
-# fi
 
 # Installing WSL Utils
 if [[ ! $(which wslvar 2>/dev/null) ]] && [[ $HOST_OS == 'wsl' ]]; then
