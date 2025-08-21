@@ -71,7 +71,32 @@ export LESS="-XRF"
 
 # Add only if directory exists & not already in $PATH
 add_to_path_if_exists() {
-  [[ -d "$1" && ":$PATH:" != *":$1:"* ]] && export PATH="$1:$PATH"
+  local dir="$1"
+  
+  # echo "DEBUG: Checking directory: '$dir'"
+  
+  # Check if directory exists
+  if [[ ! -d "$dir" ]]; then
+    # echo "DEBUG: Directory does not exist: '$dir'"
+    return 1
+  fi
+  
+  # echo "DEBUG: Directory exists: '$dir'"
+  
+  # Use case statement for pattern matching (handles spaces better)
+  case ":$PATH:" in
+    *":$dir:"*) 
+      # echo "DEBUG: Already in PATH: '$dir'"
+      return 0 
+      ;;
+    *) 
+      # echo "DEBUG: Adding to PATH: '$dir'"
+      export PATH="$dir:$PATH"
+      # echo "DEBUG: PATH now starts with: $(echo $PATH | cut -d: -f1-3)"
+      ;;
+  esac
+  
+  return 0
 }
 
 add_to_path_if_exists "${CARGO_HOME}/bin"
@@ -80,6 +105,12 @@ add_to_path_if_exists "/usr/local/go/bin"
 add_to_path_if_exists "${HOME}/.yarn/bin"
 add_to_path_if_exists "${HOME}/.config/yarn/global/node_modules/.bin"
 add_to_path_if_exists "${BUN_INSTALL}/bin"
+
+if [[ "$HOST_OS" == "wsl" ]]; then
+  add_to_path_if_exists "/mnt/c/Program Files/PowerShell/7"
+  add_to_path_if_exists "/mnt/c/Windows"
+  add_to_path_if_exists "/mnt/c/Windows/System32"
+fi
 
 # ==============================================================================
 # Load Local Overrides
@@ -135,7 +166,10 @@ if [[ -d "${HOME}/android" ]]; then
     export ANDROID_HOME="${HOME}/android"
     export ANDROID_SDK_ROOT="${ANDROID_HOME}"
     export WSLENV="${ANDROID_HOME}/p:${WSLENV}"
-    export PATH="${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/tools:${ANDROID_HOME}/tools/bin:${PATH}"
+    add_to_path_if_exists "${ANDROID_HOME}/cmdline-tools/latest/bin"
+    add_to_path_if_exists "${ANDROID_HOME}/platform-tools"
+    add_to_path_if_exists "${ANDROID_HOME}/tools"
+    add_to_path_if_exists "${ANDROID_HOME}/tools/bin"
 fi
 
 # ==============================================================================
@@ -302,7 +336,7 @@ export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-ran
 zi ice depth'1' atclone'./install --bin' atpull'%atclone'
 zi light junegunn/fzf
 # Force correct fzf in PATH before anything else
-export PATH="${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegunn---fzf/bin:$PATH"
+add_to_path_if_exists "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegunn---fzf/bin"
 
 # 📂 fzf-tab - tab-completion UI using fzf
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
@@ -492,10 +526,11 @@ autoload -Uz zmv
 # Custom Application Settings
 # ==============================================================================
 
-if [[ "$HOST_OS" == "wsl" ]] && command -v dockerd >/dev/null; then
-  if ! pgrep -x dockerd >/dev/null 2>&1; then
-    echo "🐳 Starting Docker..."
-    command -v sudo >/dev/null && sudo nohup dockerd > /dev/null 2>&1 &
+if [[ "$HOST_OS" == "wsl" ]] && command -v systemctl >/dev/null; then
+  if ! systemctl is-active --quiet docker 2>/dev/null; then
+    if sudo -n systemctl start docker 2>/dev/null; then
+      : # Docker started successfully
+    fi
   fi
 fi
 
@@ -546,19 +581,26 @@ fi
 
 #[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
 
+# ==============================================================================
+# WSL Windows Terminal sync (guarded)
+# ==============================================================================
 if [[ $HOST_OS == 'wsl' ]]; then
-  WINDOWS_USER=$(powershell.exe '$env:UserName' | tr -d '\r')
-  DOTFILES_DIR="$HOME/.dotfiles"
-  TERMINAL_SETTINGS_DEST="/mnt/c/Users/$WINDOWS_USER/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
-  TERMINAL_SETTINGS_SRC="$DOTFILES_DIR/windows-terminal/settings.json"
+    # Use full path to pwsh.exe instead of relying on PATH
+    PWSH_EXE="/mnt/c/Program Files/PowerShell/7/pwsh.exe"
+    
+    if [[ -x "$PWSH_EXE" ]]; then
+        WINDOWS_USER=$("$PWSH_EXE" -NoProfile -Command '$env:UserName' | tr -d '\r')
+        DOTFILES_DIR="$HOME/.dotfiles"
+        TERMINAL_SETTINGS_DEST="/mnt/c/Users/$WINDOWS_USER/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
+        TERMINAL_SETTINGS_SRC="$DOTFILES_DIR/windows-terminal/settings.json"
 
-  if [[ -f "$TERMINAL_SETTINGS_DEST" && -f "$TERMINAL_SETTINGS_SRC" ]]; then
-    if [[ "$TERMINAL_SETTINGS_SRC" -nt "$TERMINAL_SETTINGS_DEST" ]]; then
-      cp "$TERMINAL_SETTINGS_DEST" "${TERMINAL_SETTINGS_DEST}.bak.$(date +%s)"
-      cp "$TERMINAL_SETTINGS_SRC" "$TERMINAL_SETTINGS_DEST"
-      echo "⚡ Terminal settings updated from dotfiles."
+        if [[ -f "$TERMINAL_SETTINGS_DEST" && -f "$TERMINAL_SETTINGS_SRC" ]]; then
+          if [[ "$TERMINAL_SETTINGS_SRC" -nt "$TERMINAL_SETTINGS_DEST" ]]; then
+            cp "$TERMINAL_SETTINGS_DEST" "${TERMINAL_SETTINGS_DEST}.bak.$(date +%s)"
+            cp "$TERMINAL_SETTINGS_SRC" "$TERMINAL_SETTINGS_DEST"
+          fi
+        fi
     fi
-  fi
 fi
 
 # At the *end* of .zshrc
