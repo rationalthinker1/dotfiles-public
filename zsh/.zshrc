@@ -51,6 +51,7 @@ export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
 export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export VOLTA_HOME="${XDG_CONFIG_HOME}/volta"
 export BUN_INSTALL="${XDG_CONFIG_HOME}/bun"
+export PNPM_HOME="${XDG_CONFIG_HOME}/pnpm"
 
 # 🖥️ Terminal & editor defaults
 export TERM="xterm-256color"
@@ -105,6 +106,7 @@ add_to_path_if_exists "/usr/local/go/bin"
 add_to_path_if_exists "${HOME}/.yarn/bin"
 add_to_path_if_exists "${HOME}/.config/yarn/global/node_modules/.bin"
 add_to_path_if_exists "${BUN_INSTALL}/bin"
+add_to_path_if_exists "${PNPM_HOME}/bin"
 
 if [[ "$HOST_OS" == "wsl" ]]; then
   add_to_path_if_exists "/mnt/c/Program Files/PowerShell/7"
@@ -125,6 +127,7 @@ for file in \
   "${HOME}/.bash_local"; do
   [[ -f "$file" ]] && source "$file"
 done
+
 #=======================================================================================
 # WSL-Specific Settings
 #=======================================================================================
@@ -459,7 +462,8 @@ zi light akavel/up
 zi ice lucid wait'2' depth'1' from'gh' as'command' make pick'imcat'
 zi light stolk/imcat
 
-zi ice lucid wait'2' depth'1' as'program' pick'target/release/qsv' atclone'cargo build --release --locked --bin qsv --features "feature_capable,python,luau,apply,foreach"' atpull'%atclone'
+# 📊 qsv - fast CSV command line toolkit written in Rust
+zi ice lucid wait'2' depth'1' as'program' pick'target/release/qsv' atclone'cargo build --release --locked --bin qsv --features "feature_capable,python,apply,foreach"' atpull'%atclone'
 zi light dathere/qsv
 
 # ==============================================================================
@@ -611,5 +615,5 @@ if [[ -n "${(%):-%N}" && -r "${(%):-%N}" ]]; then
     zcompile "${(%):-%N}"
   fi
 fi
-# If zsh is really show, enable profiling via zprof, uncomment the line below and the first line
+# If zsh is really slow, enable profiling via zprof, uncomment the line below and the first line
 # zprof
