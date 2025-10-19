@@ -573,7 +573,10 @@ if command -v doctl &> /dev/null; then
 fi
 
 # 🐰 Bun Completion 
-[ -s "${BUN_INSTALL}/_bun" ] && source "${BUN_INSTALL}/_bun" 
+[ -s "${BUN_INSTALL}/_bun" ] && source "${BUN_INSTALL}/_bun"
+
+# VSCode Integration
+[[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
 
 #=======================================================================================
 # Source aliases and functions
