@@ -81,7 +81,7 @@ add_to_path_if_exists() {
   # echo "DEBUG: Checking directory: '$dir'"
   
   # Check if directory exists
-  if [[ ! -d "$dir" ]]; then
+  if [[ ! -d "${dir}" ]]; then
     # echo "DEBUG: Directory does not exist: '$dir'"
     return 1
   fi
@@ -89,14 +89,14 @@ add_to_path_if_exists() {
   # echo "DEBUG: Directory exists: '$dir'"
   
   # Use case statement for pattern matching (handles spaces better)
-  case ":$PATH:" in
-    *":$dir:"*) 
+  case ":${PATH}:" in
+    *":${dir}:"*)
       # echo "DEBUG: Already in PATH: '$dir'"
       return 0 
       ;;
     *) 
       # echo "DEBUG: Adding to PATH: '$dir'"
-      export PATH="$dir:$PATH"
+      export PATH="${dir}:${PATH}"
       # echo "DEBUG: PATH now starts with: $(echo $PATH | cut -d: -f1-3)"
       ;;
   esac
@@ -112,7 +112,7 @@ add_to_path_if_exists "${HOME}/.config/yarn/global/node_modules/.bin"
 add_to_path_if_exists "${BUN_INSTALL}/bin"
 add_to_path_if_exists "${PNPM_HOME}/bin"
 
-if [[ "$HOST_OS" == "wsl" ]]; then
+if [[ "${HOST_OS}" == "wsl" ]]; then
   add_to_path_if_exists "/mnt/c/Program Files/PowerShell/7"
   add_to_path_if_exists "/mnt/c/Windows"
   add_to_path_if_exists "/mnt/c/Windows/System32"
@@ -582,20 +582,13 @@ fi
 # VSCode Integration
 [[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
 
-#=======================================================================================
-# Source aliases and functions
-#=======================================================================================
-# Load AFTER sourcing other files because some export path may not be defined
-[[ -f "${ZDOTDIR}/aliases.zsh" ]] && source "${ZDOTDIR}/aliases.zsh"
-[[ -f "${HOME}/aliases.zsh" ]] && source "${HOME}/aliases.zsh"
-
 
 #[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
 
 # ==============================================================================
 # WSL Windows Terminal sync (guarded)
 # ==============================================================================
-if [[ $HOST_OS == 'wsl' ]]; then
+if [[ "${HOST_OS}" == 'wsl' ]]; then
     # Use full path to pwsh.exe instead of relying on PATH
     PWSH_EXE="/mnt/c/Program Files/PowerShell/7/pwsh.exe"
     
@@ -613,6 +606,13 @@ if [[ $HOST_OS == 'wsl' ]]; then
         fi
     fi
 fi
+
+#=======================================================================================
+# Source aliases and functions
+#=======================================================================================
+# Load AFTER sourcing other files because some export path may not be defined
+[[ -f "${ZDOTDIR}/aliases.zsh" ]] && source "${ZDOTDIR}/aliases.zsh"
+[[ -f "${HOME}/aliases.zsh" ]] && source "${HOME}/aliases.zsh"
 
 # At the *end* of .zshrc
 # Recompile if source is newer
