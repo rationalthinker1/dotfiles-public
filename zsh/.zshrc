@@ -66,6 +66,10 @@ export OPENAI_API_KEY="OPENAI_API_KEY_REMOVED"
 # 📜 Make less not clear the terminal after exit
 export LESS="-XRF"
 
+# ☁️ AWS
+export AWS_CONFIG_FILE="${XDG_CONFIG_HOME}/.aws/config"
+export AWS_SHARED_CREDENTIALS_FILE="${XDG_CONFIG_HOME}/.aws/credentials"
+
 # ==============================================================================
 # Update PATH
 # ==============================================================================

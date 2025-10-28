@@ -286,7 +286,7 @@ if [[ ! $(which wslvar 2>/dev/null) ]] && [[ $HOST_OS == 'wsl' ]]; then
 fi
 
 if [[ ! -f "${HOME}/.dotfiles/fonts/.installed" ]] && [[ $HOST_LOCATION == 'desktop' ]] && [[ $HOST_OS == 'linux' ]]; then
-	cd "${HOME}/.dotfiles"/fonts
+	cd "${HOME}/.dotfiles/fonts"
 	mkdir installations
 	unzip "*.zip" -d installations
 	source "${HOME}/.dotfiles/zsh/aliases.zsh"

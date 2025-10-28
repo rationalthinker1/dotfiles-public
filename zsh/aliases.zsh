@@ -312,9 +312,9 @@ function install-font-subdirectories() {
 
 function install-font-folder() {
 	if [[ "${HOST_OS}" == "darwin" ]]; then
-		$FONT_DIRECTORY="/Library/Fonts"
+		FONT_DIRECTORY="/Library/Fonts"
 	else
-		$FONT_DIRECTORY="/usr/share/fonts"
+		FONT_DIRECTORY="/usr/share/fonts"
 	fi
 	directory="${1}"
 	last_folder=$(basename $directory)
