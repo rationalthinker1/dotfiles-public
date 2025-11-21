@@ -304,24 +304,87 @@ function unzipd() {
 }
 
 function install-font-subdirectories() {
-	directory="${1}"
-	for subdirectory in $(find $directory -maxdepth 1 -mindepth 1 -type d); do
-		install-font-folder "${directory}/${subdirectory}"
-	done
+	local directory="${1}"
+
+	if [[ -z "$directory" ]]; then
+		echo "Error: No directory provided"
+		return 1
+	fi
+
+	if [[ ! -d "$directory" ]]; then
+		echo "Error: Directory does not exist: $directory"
+		return 1
+	fi
+
+	while IFS= read -r -d '' subdirectory; do
+		install-font-folder "$subdirectory"
+	done < <(find "$directory" -maxdepth 1 -mindepth 1 -type d -print0)
 }
 
 function install-font-folder() {
+	local directory="${1}"
+	local FONT_DIRECTORY
+	local last_folder
+	local otf_count
+	local ttf_count
+
+	if [[ -z "$directory" ]]; then
+		echo "Error: No directory provided"
+		return 1
+	fi
+
+	if [[ ! -d "$directory" ]]; then
+		echo "Error: Directory does not exist: $directory"
+		return 1
+	fi
+
 	if [[ "${HOST_OS}" == "darwin" ]]; then
 		FONT_DIRECTORY="/Library/Fonts"
 	else
 		FONT_DIRECTORY="/usr/share/fonts"
 	fi
-	directory="${1}"
-	last_folder=$(basename $directory)
-	sudo mkdir -p "${FONT_DIRECTORY}"/{true,open}type/"${last_folder}"
-	find "${directory}" -type f -name "*.otf" | xargs -I{} sudo cp {} "${FONT_DIRECTORY}"/opentype/"${last_folder}"
-	find "${directory}" -type f -name "*.ttf" | xargs -I{} sudo cp {} "${FONT_DIRECTORY}"/truetype/"${last_folder}"
-	fc-cache -f -v | grep "${last_folder}"
+
+	last_folder="$(basename "$directory")"
+
+	echo "Installing fonts from: $directory"
+
+	# Create font directories
+	if ! sudo mkdir -p "${FONT_DIRECTORY}"/{true,open}type/"${last_folder}"; then
+		echo "Error: Failed to create font directories"
+		return 1
+	fi
+
+	# Install OpenType fonts
+	otf_count=0
+	while IFS= read -r -d '' font_file; do
+		if sudo cp "$font_file" "${FONT_DIRECTORY}/opentype/${last_folder}/"; then
+			((otf_count++))
+		else
+			echo "Warning: Failed to copy $font_file"
+		fi
+	done < <(find "$directory" -maxdepth 1 -type f -name "*.otf" -print0)
+
+	# Install TrueType fonts
+	ttf_count=0
+	while IFS= read -r -d '' font_file; do
+		if sudo cp "$font_file" "${FONT_DIRECTORY}/truetype/${last_folder}/"; then
+			((ttf_count++))
+		else
+			echo "Warning: Failed to copy $font_file"
+		fi
+	done < <(find "$directory" -maxdepth 1 -type f -name "*.ttf" -print0)
+
+	# Update font cache
+	if command -v fc-cache &> /dev/null; then
+		echo "Updating font cache..."
+		if sudo fc-cache -f -v | grep -q "${last_folder}"; then
+			echo "✓ Successfully installed $otf_count OTF and $ttf_count TTF fonts from $last_folder"
+		else
+			echo "Warning: Font cache update may have failed"
+		fi
+	else
+		echo "Warning: fc-cache not found, font cache not updated"
+	fi
 }
 
 function install-font-zip() {
