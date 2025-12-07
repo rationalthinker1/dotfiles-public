@@ -57,9 +57,6 @@ export PNPM_HOME="${XDG_CONFIG_HOME}/pnpm"
 export TERM="xterm-256color"
 export EDITOR="vim"
 
-# 🧪 Ubuntu version (for conditional logic)
-export CODENAME="$(lsb_release -cs 2>/dev/null)"
-
 # 🧠 OpenAI API Key (don't commit this, bro)
 export OPENAI_API_KEY="OPENAI_API_KEY_REMOVED"
 
@@ -104,6 +101,19 @@ add_to_path_if_exists() {
   return 0
 }
 
+# Source file only if it exists and is readable
+source_if_exists() {
+  local file="$1"
+
+  # Check if file exists and is readable
+  if [[ -f "$file" && -r "$file" ]]; then
+    source "$file"
+    return 0
+  fi
+
+  return 1
+}
+
 add_to_path_if_exists "${CARGO_HOME}/bin"
 add_to_path_if_exists "${HOME}/.local/bin"
 add_to_path_if_exists "/usr/local/go/bin"
@@ -121,16 +131,12 @@ fi
 # ==============================================================================
 # Load Local Overrides
 # ==============================================================================
-
-for file in \
-  "${ZDOTDIR}/local.zsh" \
-  "${HOME}/local.zsh" \
-  "${ZDOTDIR}/.zprofile" \
-  "${HOME}/.zprofile" \
-  "${ZDOTDIR}/.bash_local" \
-  "${HOME}/.bash_local"; do
-  [[ -f "$file" ]] && source "$file"
-done
+source_if_exists "${ZDOTDIR}/local.zsh"
+source_if_exists "${HOME}/local.zsh"
+source_if_exists "${ZDOTDIR}/.zprofile"
+source_if_exists "${HOME}/.zprofile"
+source_if_exists "${ZDOTDIR}/.bash_local"
+source_if_exists "${HOME}/.bash_local"
 
 #=======================================================================================
 # WSL-Specific Settings
@@ -304,7 +310,7 @@ zle -N self-insert url-quote-magic
 
 # 🔁 Auto-source `.dirrc` when entering a directory
 load-local-conf() {
-  [[ -f .dirrc && -r .dirrc ]] && source .dirrc
+  source_if_exists .dirrc
 }
 chpwd_functions+=(load-local-conf)
 
@@ -543,21 +549,19 @@ if [[ "$HOST_OS" == "wsl" ]] && command -v systemctl >/dev/null; then
 fi
 
 # 🗂️ broot (directory visualizer)
-[[ -f "${XDG_CONFIG_HOME}/broot/launcher/bash/br" ]] && source "${XDG_CONFIG_HOME}/broot/launcher/bash/br"
+source_if_exists "${XDG_CONFIG_HOME}/broot/launcher/bash/br"
 
 # 🎨 Powerlevel10k theme config
-[[ -f "${ZDOTDIR}/.p10k.zsh" ]] && source "${ZDOTDIR}/.p10k.zsh"
+source_if_exists "${ZDOTDIR}/.p10k.zsh"
 
 # 🦀 Rust environment variables
-[[ -f "${CARGO_HOME}/env" ]] && source "${CARGO_HOME}/env"
+source_if_exists "${CARGO_HOME}/env"
 
 # 🧠 FZF keybindings (Ctrl+T, Alt+C, Ctrl+R)
-if [[ -f "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegunn---fzf/shell/key-bindings.zsh" ]]; then
-  source "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegunn---fzf/shell/key-bindings.zsh"
-fi
+source_if_exists "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegunn---fzf/shell/key-bindings.zsh"
 
 # ⚡️ Envman – environment loader
-[[ -f "${XDG_CONFIG_HOME}/envman/load.sh" ]] && source "${XDG_CONFIG_HOME}/envman/load.sh"
+source_if_exists "${XDG_CONFIG_HOME}/envman/load.sh"
 
 # 🐱 Kitty terminal config + completions
 if command -v kitty &> /dev/null; then
@@ -576,8 +580,8 @@ if command -v doctl &> /dev/null; then
   compdef _doctl doctl
 fi
 
-# 🐰 Bun Completion 
-[ -s "${BUN_INSTALL}/_bun" ] && source "${BUN_INSTALL}/_bun"
+# 🐰 Bun Completion
+source_if_exists "${BUN_INSTALL}/_bun"
 
 # VSCode Integration
 [[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
@@ -611,8 +615,8 @@ fi
 # Source aliases and functions
 #=======================================================================================
 # Load AFTER sourcing other files because some export path may not be defined
-[[ -f "${ZDOTDIR}/aliases.zsh" ]] && source "${ZDOTDIR}/aliases.zsh"
-[[ -f "${HOME}/aliases.zsh" ]] && source "${HOME}/aliases.zsh"
+source_if_exists "${ZDOTDIR}/aliases.zsh"
+source_if_exists "${HOME}/aliases.zsh"
 
 # At the *end* of .zshrc
 # Recompile if source is newer
