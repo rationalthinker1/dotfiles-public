@@ -178,10 +178,7 @@ source_if_exists "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}
 # 🕓 History configuration
 HISTSIZE=10000000
 SAVEHIST=$HISTSIZE
-HISTFILESIZE=$HISTSIZE
 HISTFILE="${ZDOTDIR}/.zsh_history"
-HISTCONTROL=ignoreboth  # Ignore duplicates and space-prefixed commands
-HISTIGNORE='&:ls:ll:la:cd:exit:clear:history:ls:[bf]g:[cb]d:b:exit:[ ]*:..'
 WORDCHARS=''  # Fix weird behavior with word movement (https://github.com/ohmyzsh/ohmyzsh/issues/5108)
 
 # 📖 Zsh options (behavior tweaks)

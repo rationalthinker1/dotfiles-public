@@ -191,7 +191,8 @@ function ref() {
 
 # Ctrl+S doesn't cause terminal to freeze
 # https://vim.fandom.com/wiki/Map_Ctrl-S_to_save_current_or_new_files
-alias vim="stty stop '' -ixoff ; vim"
+# NOTE: Handled globally by 'setopt NO_FLOW_CONTROL' in .zshrc - alias no longer needed
+# alias vim="stty stop '' -ixoff ; vim"
 
 # get top biggest files
 function fs() {
