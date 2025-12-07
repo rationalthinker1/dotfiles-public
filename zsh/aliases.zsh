@@ -10,14 +10,14 @@ alias dot="cd ~/.dotfiles"
 alias con="cd ~/.config"
 
 # if bat exists, use it instead of cat
-if [ -x "$(command -v bat)" ]; then
-	alias rcat=$(which cat)
-	alias cat=$(which bat)
+if (( $+commands[bat] )); then
+	alias rcat=${commands[cat]}
+	alias cat=${commands[bat]}
 	export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 fi
 
 ## if eza exists, use it instead of ls
-if [ -x "$(command -v eza)" ]; then
+if (( $+commands[eza] )); then
 	## Colorize the ls output ##
 	alias ls='eza --color=auto'
 
@@ -94,13 +94,13 @@ alias hiberate='sudo pm-suspend'
 
 # Show processes by name
 # example: psg bash
-alias psg='ps aux | grep -v grep | grep -i -e VSZ -e'
+alias psg='ps aux | grep -v grep | grep -i -e VSZ'
 
 # Append -c to continue the download in case of problems
 #alias wget='wget -c'
 
 # Prints out your public IP
-alias myip="curl http://ipecho.net/plain; echo"
+alias myip="curl -s https://ipecho.net/plain && echo"
 
 # Searches up history commands
 alias hgrep="history | grep"
@@ -123,13 +123,11 @@ FD_EXCLUDE_PATTERN+="}"
 
 # search for files with fdf
 function fdf() {
-	echo fd --hidden --ignore-case --follow --type f --exclude "$FD_EXCLUDE_PATTERN" $@
-	fd --hidden --ignore-case --follow --type f --exclude "$FD_EXCLUDE_PATTERN" $@
+	fd --hidden --ignore-case --follow --type f --exclude "$FD_EXCLUDE_PATTERN" "$@"
 }
 # search for directories with fdd
 function fdd() {
-	echo fd --hidden --ignore-case --follow --type d --exclude "$FD_EXCLUDE_PATTERN" $@
-	fd --hidden --ignore-case --follow --type d --exclude "$FD_EXCLUDE_PATTERN" $@
+	fd --hidden --ignore-case --follow --type d --exclude "$FD_EXCLUDE_PATTERN" "$@"
 }
 
 # pages rg output automatically
@@ -317,9 +315,14 @@ function install-font-subdirectories() {
 		return 1
 	fi
 
-	while IFS= read -r -d '' subdirectory; do
+	# Pure zsh: glob qualifiers replace find
+	# (/) = directories only, (N) = null_glob (don't error if no matches)
+	setopt local_options null_glob
+	local -a subdirs=("$directory"/*(N/))
+
+	for subdirectory in "${subdirs[@]}"; do
 		install-font-folder "$subdirectory"
-	done < <(find "$directory" -maxdepth 1 -mindepth 1 -type d -print0)
+	done
 }
 
 function install-font-folder() {
@@ -355,28 +358,37 @@ function install-font-folder() {
 		return 1
 	fi
 
-	# Install OpenType fonts
-	otf_count=0
-	while IFS= read -r -d '' font_file; do
-		if sudo cp "$font_file" "${FONT_DIRECTORY}/opentype/${last_folder}/"; then
-			((otf_count++))
-		else
-			echo "Warning: Failed to copy $font_file"
-		fi
-	done < <(find "$directory" -maxdepth 1 -type f -name "*.otf" -print0)
+	# Install fonts - Pure zsh glob magic!
+	# (.) = regular files only, (N) = null_glob (no error if no matches)
+	setopt local_options null_glob
+	local -a otf_files=("$directory"/*.otf(N.))
+	local -a ttf_files=("$directory"/*.ttf(N.))
 
-	# Install TrueType fonts
-	ttf_count=0
-	while IFS= read -r -d '' font_file; do
-		if sudo cp "$font_file" "${FONT_DIRECTORY}/truetype/${last_folder}/"; then
-			((ttf_count++))
-		else
-			echo "Warning: Failed to copy $font_file"
+	# Batch copy for performance (single cp call per type)
+	otf_count=${#otf_files}
+	if (( otf_count > 0 )); then
+		if ! sudo cp -t "${FONT_DIRECTORY}/opentype/${last_folder}/" -- "${otf_files[@]}" 2>/dev/null; then
+			# Fallback to one-by-one if batch fails
+			otf_count=0
+			for font_file in "${otf_files[@]}"; do
+				sudo cp "$font_file" "${FONT_DIRECTORY}/opentype/${last_folder}/" && ((otf_count++))
+			done
 		fi
-	done < <(find "$directory" -maxdepth 1 -type f -name "*.ttf" -print0)
+	fi
+
+	ttf_count=${#ttf_files}
+	if (( ttf_count > 0 )); then
+		if ! sudo cp -t "${FONT_DIRECTORY}/truetype/${last_folder}/" -- "${ttf_files[@]}" 2>/dev/null; then
+			# Fallback to one-by-one if batch fails
+			ttf_count=0
+			for font_file in "${ttf_files[@]}"; do
+				sudo cp "$font_file" "${FONT_DIRECTORY}/truetype/${last_folder}/" && ((ttf_count++))
+			done
+		fi
+	fi
 
 	# Update font cache
-	if command -v fc-cache &> /dev/null; then
+	if (( $+commands[fc-cache] )); then
 		echo "Updating font cache..."
 		if sudo fc-cache -f -v | grep -q "${last_folder}"; then
 			echo "✓ Successfully installed $otf_count OTF and $ttf_count TTF fonts from $last_folder"
@@ -398,10 +410,10 @@ function install-font-zip() {
 }
 
 #=======================================================================================
-# Yarn Aliases
+# Yarn Aliases (using functions to properly handle arguments)
 #=======================================================================================
-alias ya="yarn add $@"
-alias yad="yarn add -D $@"
+ya() { yarn add "$@"; }
+yad() { yarn add -D "$@"; }
 
 #=======================================================================================
 # Git Aliases and functions
@@ -420,46 +432,68 @@ alias gd="git diff --ignore-all-space --ignore-space-at-eol --ignore-space-chang
 #alias gpu='[[ -z $(git config "branch.$(git symbolic-ref --short HEAD).merge") ]] && git push -u origin $(git symbolic-ref --short HEAD) || git push'
 # alias gpuf="git push --force"
 function gp () {
-	COMMAND="git pull"
+	local -a cmd=(git pull)
 
-	PREPEND_COMMAND=""
+	# SAFE prepend: validate and parse .git_cli_prepend (no eval!)
 	if [[ -f ".git_cli_prepend" ]]; then
-		PREPEND_COMMAND=$(cat ".git_cli_prepend")
+		local prepend=$(<.git_cli_prepend)
+		# Strip whitespace
+		prepend=${prepend## ##}
+		prepend=${prepend%% ##}
+
+		# Only allow safe alphanumeric commands (no shell metacharacters)
+		if [[ $prepend =~ ^[a-zA-Z0-9_/-]+$ ]]; then
+			cmd=($prepend $cmd)
+		else
+			print -P "%F{red}⚠️  Unsafe .git_cli_prepend detected (ignored): $prepend%f" >&2
+		fi
 	fi
 
-	FINAL_COMMAND="${PREPEND_COMMAND} ${COMMAND}"
-	# echo "${FINAL_COMMAND}"
-	eval "${FINAL_COMMAND}"
+	"${cmd[@]}"
 }
 
 function gpu () {
-	COMMAND="git push"
-	REMOTE_BRANCH=$(git config "branch.$(git symbolic-ref --short HEAD).merge")
-	if [[ -z $(git config "branch.${REMOTE_BRANCH}" &> /dev/null) ]]; then
-		COMMAND="git push -u origin $(git symbolic-ref --short HEAD)"
+	local -a cmd=(git push)
+	local remote_branch=$(git config "branch.$(git symbolic-ref --short HEAD).merge" 2>/dev/null)
+
+	# Check if remote branch is set
+	if [[ -z $remote_branch ]]; then
+		cmd=(git push -u origin $(git symbolic-ref --short HEAD))
 	fi
 
-	PREPEND_COMMAND=""
+	# SAFE prepend: validate and parse .git_cli_prepend (no eval!)
 	if [[ -f ".git_cli_prepend" ]]; then
-		PREPEND_COMMAND=$(cat ".git_cli_prepend")
+		local prepend=$(<.git_cli_prepend)
+		prepend=${prepend## ##}
+		prepend=${prepend%% ##}
+
+		if [[ $prepend =~ ^[a-zA-Z0-9_/-]+$ ]]; then
+			cmd=($prepend $cmd)
+		else
+			print -P "%F{red}⚠️  Unsafe .git_cli_prepend detected (ignored): $prepend%f" >&2
+		fi
 	fi
 
-	FINAL_COMMAND="${PREPEND_COMMAND} ${COMMAND}"
-	# echo "${FINAL_COMMAND}"
-	eval "${FINAL_COMMAND}"
+	"${cmd[@]}"
 }
 
 function gpuf () {
-	COMMAND="git push --force"
+	local -a cmd=(git push --force)
 
-	PREPEND_COMMAND=""
+	# SAFE prepend: validate and parse .git_cli_prepend (no eval!)
 	if [[ -f ".git_cli_prepend" ]]; then
-		PREPEND_COMMAND=$(cat ".git_cli_prepend")
+		local prepend=$(<.git_cli_prepend)
+		prepend=${prepend## ##}
+		prepend=${prepend%% ##}
+
+		if [[ $prepend =~ ^[a-zA-Z0-9_/-]+$ ]]; then
+			cmd=($prepend $cmd)
+		else
+			print -P "%F{red}⚠️  Unsafe .git_cli_prepend detected (ignored): $prepend%f" >&2
+		fi
 	fi
 
-	FINAL_COMMAND="${PREPEND_COMMAND} ${COMMAND}"
-	# echo "${FINAL_COMMAND}"
-	eval "${FINAL_COMMAND}"
+	"${cmd[@]}"
 }
 
 git_search() {
@@ -468,7 +502,7 @@ git_search() {
 alias gse=git_search
 
 git_reset() {
-	COMMIT="HEAD"
+	local COMMIT="HEAD"
 	if [[ "$#" -eq 1 ]]; then
 		COMMIT="HEAD~$1"
 	fi
@@ -541,7 +575,9 @@ alias pacc="php artisan clear-compiled"
 alias html='cd /var/www/html'
 
 # common directories
-alias ncon="cd /etc/nginx/sites-enabled/"
+alias ncon_enabled="cd /etc/nginx/sites-enabled/"
+alias ncon_available="cd /etc/nginx/sites-available/"
+alias ncon="ncon_enabled"  # Default to enabled
 alias nerr="cd /var/log/nginx/"
 
 # view logs
@@ -554,8 +590,6 @@ alias nrel='sudo nginx -t && sudo nginx -s reload'
 #=======================================================================================
 # Node Aliases and functions
 #=======================================================================================
-alias ncon="cd /etc/nginx/sites-available/"
-alias nerr="cd /var/log/nginx/"
 
 #=======================================================================================
 # Log Aliases and functions
@@ -658,8 +692,8 @@ alias dstop='docker stop $(docker ps -a -q)'
 # Stop and Remove all containers
 alias drmf='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)'
 
-# Get IP addresses of containers
-alias dps="docker ps -q | xargs docker inspect --format '{{ .Id }} - {{ .Name }} - {{ .NetworkSettings.IPAddress }}'"
+# Get IP addresses of all running containers
+alias dpsi="docker ps -q | xargs docker inspect --format '{{ .Id }} - {{ .Name }} - {{ .NetworkSettings.IPAddress }}'"
 
 # Remove all containers
 drc() { docker rm $(docker ps -a -q); }
@@ -683,17 +717,17 @@ dexbash() {
 # Runs Docker build and tag it with the given name.
 dbt() {
 	if [ $# -lt 1 ]; then
-		echo "Usage ${FUNCNAME[0]} DIRNAME [TAGNAME ...]"
+		echo "Usage ${funcstack[1]} DIRNAME [TAGNAME ...]"
 		return 1
 	fi
 
-	ARGS="$1"
+	local -a args=("$1")
 	shift
-	if [ $# -ge 2 ]; then
-		ARGS="$ARGS -t $@"
+	if [ $# -ge 1 ]; then
+		args+=(-t "$@")
 	fi
 
-	docker build $ARGS
+	docker build "${args[@]}"
 }
 
 #=======================================================================================
@@ -728,3 +762,63 @@ if [[ $HOST_OS == "wsl" ]]; then
 		fi
 	}
 fi
+
+#=======================================================================================
+# Context-Aware Navigation
+#=======================================================================================
+
+# Smart cd with auto-environment setup
+cd() {
+  builtin cd "$@" || return
+
+  # Auto-activate Python venv
+  if [[ -d .venv/bin ]]; then
+    [[ -z "$VIRTUAL_ENV" ]] && source .venv/bin/activate
+  fi
+
+  # Show project info if README exists
+  if [[ -f README.md ]]; then
+    echo "📄 README.md present"
+  fi
+}
+
+#=======================================================================================
+# Power User Aliases (Expert Level)
+#=======================================================================================
+
+# Quick directory creation + cd
+mkcd() {
+  mkdir -p "$1" && cd "$1"
+}
+
+# Port listening checker
+alias lsp='sudo lsof -iTCP -sTCP:LISTEN -n -P'
+
+# Process killer by name with fzf
+killp() {
+  local pid
+  pid=$(ps aux | fzf | awk '{print $2}')
+  [[ -n "$pid" ]] && kill -9 "$pid"
+}
+
+# Git shortcuts (missing from current config)
+alias gaa='git add --all'
+alias gap='git add --patch'
+alias gcan='git commit --amend --no-edit'
+alias grs='git restore --staged'
+alias grbi='git rebase -i'
+alias gclean='git branch --merged | grep -v "\*" | xargs -n 1 git branch -d'
+
+# Quick systemd service management
+alias sctl='sudo systemctl'
+alias sctle='sudo systemctl enable --now'
+alias sctld='sudo systemctl disable --now'
+alias sctls='systemctl status'
+
+# Disk space analyzer (human-readable)
+alias duh='du -h --max-depth=1 | sort -hr'
+
+# Network shortcuts
+alias ports='netstat -tulanp'
+alias myip_public='curl -s https://api.ipify.org && echo'
+alias myip_local="ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v 127.0.0.1"

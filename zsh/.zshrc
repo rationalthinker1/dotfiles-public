@@ -71,16 +71,16 @@ export AWS_SHARED_CREDENTIALS_FILE="${XDG_CONFIG_HOME}/.aws/credentials"
 # Update PATH
 # ==============================================================================
 
+# Make path array automatically unique (zsh magic!)
+typeset -gU path PATH
+
 # Add only if directory exists & not already in $PATH
 add_to_path_if_exists() {
   # Fast path: check directory existence first (fail fast for non-existent dirs)
   [[ -d "$1" ]] || return 1
 
-  # Only check PATH if directory exists (avoid expensive string ops on failures)
-  case ":${PATH}:" in
-    *":$1:"*) return 0 ;;  # Already in PATH
-    *) export PATH="$1:${PATH}" ;;  # Add to PATH
-  esac
+  # Prepend to path array - typeset -U automatically deduplicates!
+  path=("$1" $path)
 }
 
 # Source file only if it exists and is readable
@@ -118,26 +118,30 @@ source_if_exists "${ZDOTDIR}/local.zsh"
 # WSL-Specific Settings
 #=======================================================================================
 if [[ "${HOST_OS}" == "wsl" ]]; then
-    # causing issues with vscode terminal, and everytime you open a new terminal, it would lauch dbus everytime
-    #if [[ "$HOST_OS" == "wsl" && -n "$DISPLAY" && -z "$DBUS_SESSION_BUS_ADDRESS" && ! -f "/tmp/dbus-session-started"  ]]; then
-    #   echo "Starting D-Bus session..."
-    #   eval "$(dbus-launch --sh-syntax)"
-    #   touch /tmp/dbus-session-started
-    #fi
     export LIBGL_ALWAYS_INDIRECT=1
-    export WSL_VERSION=$(wsl.exe -l -v | awk '/[*]/{print $NF}')
-    export IP_ADDRESS=$(ip route list default | awk '{print $3}')
-    export DISPLAY="${IP_ADDRESS}:0"
     export BROWSER="wslview"
 
+    # Cache WSL version (rarely changes - only on WSL upgrade)
+    typeset -g WSL_VERSION_CACHE="/tmp/wsl_version_${USER}"
+    if [[ ! -f "$WSL_VERSION_CACHE" ]]; then
+        wsl.exe -l -v 2>/dev/null | awk '/[*]/{print $NF}' > "$WSL_VERSION_CACHE"
+    fi
+    export WSL_VERSION=$(<"$WSL_VERSION_CACHE")
+
+    # Get IP address (changes on network change, but acceptable to cache per session)
+    export IP_ADDRESS=${${(M)${(f)"$(ip route list default 2>/dev/null)"}:#*via*}[(w)3]}
+    export DISPLAY="${IP_ADDRESS}:0"
+
+    # Cache wslpath conversions in precmd (BIG performance gain)
+    typeset -gA _wslpath_cache
     keep_current_path() {
-        printf "\e]9;9;%s\e\\" "$(wslpath -w "${PWD}")"
+        local cache_key=$PWD
+        [[ -z ${_wslpath_cache[$cache_key]} ]] && _wslpath_cache[$cache_key]=$(wslpath -w "$PWD" 2>/dev/null)
+        printf "\e]9;9;%s\e\\" "${_wslpath_cache[$cache_key]}"
     }
     precmd_functions+=(keep_current_path)
 
-  if [ -n "$WT_SESSION" ]; then
-    printf "\033]9;9;%s\033\\" "$(pwd)"
-  fi
+    [[ -n "$WT_SESSION" ]] && printf "\033]9;9;%s\033\\" "$PWD"
 fi
 
 #=======================================================================================
@@ -199,7 +203,6 @@ setopt MULTIOS                    # Allow tee-like behavior with pipes
 setopt NO_BEEP                    # Silence the annoying bell
 setopt NO_FLOW_CONTROL            # Disable Ctrl+S/Ctrl+Q flow control (frees up Ctrl+S for fwd search)
 setopt PROMPT_SUBST               # Allow prompt string substitution
-setopt SHARE_HISTORY              # Share history across multiple sessions
 setopt LONG_LIST_JOBS             # Show PID in jobs list
 setopt NOTIFY                     # Report background job status immediately
 setopt NO_HUP                     # Don't kill background jobs on shell exit
@@ -209,15 +212,14 @@ setopt NUMERIC_GLOB_SORT          # Sort globs numerically (file1, file2, file10
 # 🧠 History behavior
 setopt BANG_HIST                  # !foo expands to last "foo" command
 setopt EXTENDED_HISTORY           # Save timestamp + duration in history
-setopt INC_APPEND_HISTORY         # Append history instantly, not just on exit
-setopt APPEND_HISTORY             # Don't overwrite, just append
+setopt SHARE_HISTORY              # Share history across sessions (implies INC_APPEND_HISTORY + INC_APPEND_HISTORY_TIME)
 setopt HIST_IGNORE_SPACE          # Don't save commands starting with space
 setopt HIST_REDUCE_BLANKS         # Collapse multiple spaces
 setopt HIST_EXPIRE_DUPS_FIRST     # Expire old dupes before new entries
-setopt HIST_FIND_NO_DUPS          # Don’t show duplicate results when searching
-setopt HIST_IGNORE_DUPS           # Don’t record if it’s the same as last
-setopt HIST_IGNORE_ALL_DUPS       # Remove all previous dups when adding new one
+setopt HIST_FIND_NO_DUPS          # Don't show duplicate results when searching
+setopt HIST_IGNORE_ALL_DUPS       # Remove all previous dups when adding new one (implies HIST_IGNORE_DUPS)
 setopt HIST_SAVE_NO_DUPS          # Never save duplicates to history file
+setopt HIST_VERIFY                # Verify history expansions before execution (prevents accidental !! or !foo)
 
 #=======================================================================================
 # Setting up home/end keys for keyboard
@@ -225,6 +227,31 @@ setopt HIST_SAVE_NO_DUPS          # Never save duplicates to history file
 #=======================================================================================
 # Vi mode
 bindkey -v
+
+# ==============================================================================
+# Vi Mode Visual Indicators
+# ==============================================================================
+
+# Change cursor shape for different vi modes
+function zle-keymap-select {
+  case $KEYMAP in
+    vicmd)      echo -ne '\e[1 q' ;;  # Block cursor (NORMAL mode)
+    viins|main) echo -ne '\e[5 q' ;;  # Beam cursor (INSERT mode)
+  esac
+}
+
+function zle-line-init {
+  echo -ne '\e[5 q'  # Start with beam cursor (INSERT mode)
+}
+
+zle -N zle-keymap-select
+zle -N zle-line-init
+
+# Reset cursor on each new prompt
+function reset_cursor {
+  echo -ne '\e[5 q'
+}
+precmd_functions+=(reset_cursor)
 
 bindkey "^[[1;5C" forward-word
 bindkey "^[[1;5D" backward-word
@@ -288,9 +315,22 @@ autoload -Uz bracketed-paste-magic url-quote-magic
 zle -N bracketed-paste bracketed-paste-magic
 zle -N self-insert url-quote-magic
 
-# 🔁 Auto-source `.dirrc` when entering a directory
+# 🔁 Auto-source `.dirrc` when entering a directory (SAFE version)
 load-local-conf() {
-  source_if_exists .dirrc
+  local dirrc=.dirrc
+  [[ -f $dirrc ]] || return 0
+
+  # Only auto-load from trusted directories (HOME and its subdirectories)
+  case $PWD in
+    $HOME/*|$HOME)
+      source "$dirrc"
+      ;;
+    *)
+      # Warn about untrusted .dirrc files
+      print -P "%F{yellow}⚠️  Found .dirrc in untrusted location: %F{cyan}$PWD%f"
+      print -P "%F{yellow}Run 'source .dirrc' to load it manually%f"
+      ;;
+  esac
 }
 chpwd_functions+=(load-local-conf)
 
@@ -520,7 +560,7 @@ autoload -Uz zmv
 # Custom Application Settings
 # ==============================================================================
 
-if [[ "$HOST_OS" == "wsl" ]] && command -v systemctl >/dev/null; then
+if [[ "$HOST_OS" == "wsl" ]] && (( $+commands[systemctl] )); then
   if ! systemctl is-active --quiet docker 2>/dev/null; then
     if sudo -n systemctl start docker 2>/dev/null; then
       : # Docker started successfully
@@ -549,18 +589,24 @@ zi snippet /dev/null
 # source_if_exists "${XDG_CONFIG_HOME}/envman/load.sh"
 
 # 🐱 Kitty terminal config + completions
-if command -v kitty &> /dev/null; then
+if (( $+commands[kitty] )); then
   export KITTY_CONFIG_DIRECTORY="${XDG_CONFIG_HOME}/kitty"
-  kitty + complete setup zsh | source /dev/stdin
+
+  # Cache kitty completion (regenerate only when kitty binary changes)
+  local kitty_comp="${ZSH_CACHE_DIR}/kitty_completion.zsh"
+  if [[ ! -f "$kitty_comp" ]] || [[ "${commands[kitty]}" -nt "$kitty_comp" ]]; then
+    kitty + complete setup zsh >| "$kitty_comp"
+  fi
+  source "$kitty_comp"
 fi
 
 # 🧬 direnv – per-project environment management
-if command -v direnv &> /dev/null; then
+if (( $+commands[direnv] )); then
   eval "$(direnv hook zsh)"
 fi
 
 # ☁️ doctl – DigitalOcean CLI completion
-if command -v doctl &> /dev/null; then
+if (( $+commands[doctl] )); then
   source <(doctl completion zsh)
   compdef _doctl doctl
 fi
