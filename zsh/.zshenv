@@ -34,4 +34,5 @@ fi
 # ==============================================================================
 
 # 🦀 Load cargo env (if present)
-[[ -f "${CARGO_HOME}/env" ]] && source "${CARGO_HOME}/env"
+# NOTE: Commented out for performance - Cargo bin path is added in .zshrc via add_to_path_if_exists
+# [[ -f "${CARGO_HOME}/env" ]] && source "${CARGO_HOME}/env"

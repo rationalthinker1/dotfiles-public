@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-# zmodload zsh/zprof # top of your .zshrc file
+# zmodload zsh/zprof # top of your .zshrc file - uncomment to profile startup time
 
 # ==============================================================================
 # Detect Host OS & Environment
@@ -73,45 +73,20 @@ export AWS_SHARED_CREDENTIALS_FILE="${XDG_CONFIG_HOME}/.aws/credentials"
 
 # Add only if directory exists & not already in $PATH
 add_to_path_if_exists() {
-  local dir="$1"
-  
-  # echo "DEBUG: Checking directory: '$dir'"
-  
-  # Check if directory exists
-  if [[ ! -d "${dir}" ]]; then
-    # echo "DEBUG: Directory does not exist: '$dir'"
-    return 1
-  fi
-  
-  # echo "DEBUG: Directory exists: '$dir'"
-  
-  # Use case statement for pattern matching (handles spaces better)
+  # Fast path: check directory existence first (fail fast for non-existent dirs)
+  [[ -d "$1" ]] || return 1
+
+  # Only check PATH if directory exists (avoid expensive string ops on failures)
   case ":${PATH}:" in
-    *":${dir}:"*)
-      # echo "DEBUG: Already in PATH: '$dir'"
-      return 0 
-      ;;
-    *) 
-      # echo "DEBUG: Adding to PATH: '$dir'"
-      export PATH="${dir}:${PATH}"
-      # echo "DEBUG: PATH now starts with: $(echo $PATH | cut -d: -f1-3)"
-      ;;
+    *":$1:"*) return 0 ;;  # Already in PATH
+    *) export PATH="$1:${PATH}" ;;  # Add to PATH
   esac
-  
-  return 0
 }
 
 # Source file only if it exists and is readable
 source_if_exists() {
-  local file="$1"
-
-  # Check if file exists and is readable
-  if [[ -f "$file" && -r "$file" ]]; then
-    source "$file"
-    return 0
-  fi
-
-  return 1
+  # Single file test for minimal overhead - -f checks both existence and regular file in one syscall
+  [[ -f "$1" ]] && . "$1"
 }
 
 add_to_path_if_exists "${CARGO_HOME}/bin"
@@ -132,11 +107,12 @@ fi
 # Load Local Overrides
 # ==============================================================================
 source_if_exists "${ZDOTDIR}/local.zsh"
-source_if_exists "${HOME}/local.zsh"
-source_if_exists "${ZDOTDIR}/.zprofile"
-source_if_exists "${HOME}/.zprofile"
-source_if_exists "${ZDOTDIR}/.bash_local"
-source_if_exists "${HOME}/.bash_local"
+# NOTE: Commented out on this machine to improve startup time - uncomment if needed
+# source_if_exists "${HOME}/local.zsh"
+# source_if_exists "${ZDOTDIR}/.zprofile"
+# source_if_exists "${HOME}/.zprofile"
+# source_if_exists "${ZDOTDIR}/.bash_local"
+# source_if_exists "${HOME}/.bash_local"
 
 #=======================================================================================
 # WSL-Specific Settings
@@ -196,9 +172,8 @@ if [[ -t 0 ]]; then
 fi
 
 # ⚡ Powerlevel10k instant prompt (should be near top of .zshrc)
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
+# Use source_if_exists for consistency:
+source_if_exists "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 
 # 🕓 History configuration
 HISTSIZE=10000000
@@ -217,14 +192,22 @@ setopt AUTO_MENU                  # Show menu on multiple tab presses
 setopt AUTO_PUSHD                 # Automatically push dirs onto directory stack
 setopt PUSHD_IGNORE_DUPS          # Avoid duplicate directories in pushd stack
 setopt PUSHD_MINUS                # Swap meaning of pushd +1 and -1
+setopt PUSHD_SILENT               # Don't print directory stack after pushd/popd
 setopt COMPLETE_IN_WORD           # Complete words in the middle
 setopt ALWAYS_TO_END              # Cursor jumps to end after completion
 setopt EXTENDED_GLOB              # Enhanced globbing (wildcards, etc.)
+setopt GLOB_DOTS                  # Include hidden files in glob matches (no need for .*)
 setopt INTERACTIVE_COMMENTS       # Allow comments in interactive shell
 setopt MULTIOS                    # Allow tee-like behavior with pipes
 setopt NO_BEEP                    # Silence the annoying bell
+setopt NO_FLOW_CONTROL            # Disable Ctrl+S/Ctrl+Q flow control (frees up Ctrl+S for fwd search)
 setopt PROMPT_SUBST               # Allow prompt string substitution
 setopt SHARE_HISTORY              # Share history across multiple sessions
+setopt LONG_LIST_JOBS             # Show PID in jobs list
+setopt NOTIFY                     # Report background job status immediately
+setopt NO_HUP                     # Don't kill background jobs on shell exit
+setopt NO_CHECK_JOBS              # Don't warn about running jobs when exiting
+setopt NUMERIC_GLOB_SORT          # Sort globs numerically (file1, file2, file10 instead of file1, file10, file2)
 
 # 🧠 History behavior
 setopt BANG_HIST                  # !foo expands to last "foo" command
@@ -337,7 +320,7 @@ zi light romkatv/powerlevel10k
 # ==============================================================================
 
 # 🎨 syntax-highlighting - colorizes commands as you type
-zi ice lucid depth'1' wait'0'
+zi ice lucid depth'1'
 zi light zdharma-continuum/fast-syntax-highlighting
 
 # 💡 fzf - fuzzy finder core
@@ -365,7 +348,7 @@ zi ice lucid wait'1' depth'1'
 zi light joshskidmore/zsh-fzf-history-search
 
 # 🔄 zsh-autosuggestions - command suggestions while typing
-zi ice lucid depth'1' wait'1'
+zi ice lucid depth'1'
 zi light zsh-users/zsh-autosuggestions
 
 # 🔁 zsh-completions - extra completion scripts
@@ -377,23 +360,23 @@ zi ice lucid wait'2' depth'1' branch'main'
 zi light atuinsh/atuin
 
 # 🫵 you-should-use - reminds you of aliases you forgot you had
-zi ice lucid wait'2' depth'1'
+zi ice wait'!0' lucid depth'1'
 zi light MichaelAquilina/zsh-you-should-use
 
 # ⌨️ zsh-autopair - auto-closes quotes, brackets, etc.
-zi ice lucid wait'2' depth'1'
+zi ice lucid depth'1'
 zi light hlissner/zsh-autopair
 
 # 🧙‍♂️ jq-zsh-plugin - type command, hit Alt+J to interactively craft a jq query
-zi ice lucid wait'2' depth'1'
+zi ice wait'!0' lucid depth'1'
 zi light reegnz/jq-zsh-plugin
 
 # 🔥 fancy completions for modern tools (like GitHub CLI)
-zi ice lucid wait'3' depth'1' branch'main'
+zi ice wait'!0' lucid depth'1' branch'main'
 zi light z-shell/zsh-fancy-completions
 
 # 💻 ssh alias manager
-zi ice lucid wait'2' depth'1' from'gh'
+zi ice wait'!0' lucid depth'1' from'gh'
 zi light sunlei/zsh-ssh
 
 # ==============================================================================
@@ -412,11 +395,11 @@ zi ice lucid wait'2' depth'1' src'init.sh' branch'main'
 zi light babarot/enhancd
 
 # 📁 bd - go back to a parent dir by name (e.g. `bd src`)
-zi ice as'program' pick'bd' mv'bd -> bd'
+zi ice wait'!0' as'program' pick'bd' mv'bd -> bd'
 zi load vigneshwaranr/bd
 
 # 📁 rename - CLI mass renamer
-zi ice as'program' pick'rename' mv'rename -> rename'
+zi ice wait'!0' as'program' pick'rename' mv'rename -> rename'
 zi load ap/rename
 
 # 📊 eza - better ls alternative
@@ -424,7 +407,7 @@ zi ice lucid depth'1' from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf 
 zi light eza-community/eza
 
 # 🌲 erdtree - directory tree with size info (like `ncdu` but pretty)
-zi ice lucid wait'3' depth'1' from'gh-r' as'command'
+zi ice wait'!0' lucid depth'1' from'gh-r' as'command'
 zi light solidiquis/erdtree
 
 # ==============================================================================
@@ -446,18 +429,18 @@ zi ice from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"
 zi load sharkdp/fd
 
 # 🔬 xsv - analyze & manipulate CSVs from terminal
-zi ice lucid wait'3' depth'1' from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv' atpull'%atclone'
+zi ice wait'!0' lucid depth'1' from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv' atpull'%atclone'
 zi light BurntSushi/xsv
 
 # 📊 csvtool - pandas-powered CSV explorer in CLI
-zi ice as'program' pick'csvtool/csvtool.py' \
+zi ice wait'!0' as'program' pick'csvtool/csvtool.py' \
   atclone'python3 -m venv venv && venv/bin/pip install pandas openpyxl' \
   atpull'%atclone' \
   cmd'./venv/bin/python csvtool "$@"'
 zi load maroofi/csvtool
 
 # 🧼 sd - simpler, modern `sed` replacement (e.g. `sd foo bar`)
-zi ice from'gh-r' as'command' pick'gnu'
+zi ice wait'!0' from'gh-r' as'command' pick'gnu'
 zi light chmln/sd
 
 # 🧠 jq - CLI JSON processor
@@ -465,15 +448,15 @@ zi ice as'program' from'gh-r' bpick'*linux64' mv'jq* -> jq'
 zi load jqlang/jq
 
 # 💥 up - run `up` and it'll guess what command you wanted to run
-zi ice lucid wait'3' depth'1' from'gh-r' as'command'
+zi ice wait'!0' lucid depth'1' from'gh-r' as'command'
 zi light akavel/up
 
 # 📷 imcat - display images in terminal (kitty/iterm support)
-zi ice lucid wait'2' depth'1' from'gh' as'command' make pick'imcat'
+zi ice wait'!0' lucid depth'1' from'gh' as'command' make pick'imcat'
 zi light stolk/imcat
 
 # 📊 qsv - fast CSV command line toolkit written in Rust
-zi ice lucid wait'2' depth'1' as'program' pick'target/release/qsv' atclone'cargo build --release --locked --bin qsv --features "feature_capable,python,apply,foreach"' atpull'%atclone'
+zi ice wait'!0' lucid depth'1' as'program' pick'target/release/qsv' atclone'cargo build --release --locked --bin qsv --features "feature_capable,python,apply,foreach"' atpull'%atclone'
 zi light dathere/qsv
 
 # ==============================================================================
@@ -487,7 +470,7 @@ zi ice lucid wait'1' depth'1' branch'main'
 zi light wfxr/forgit
 
 # 🌐 git-open - opens GitHub/GitLab/Bitbucket page for current repo
-zi ice lucid wait'2' depth'1'
+zi ice wait'!0' lucid depth'1'
 zi light paulirish/git-open
 
 # ==============================================================================
@@ -549,19 +532,24 @@ if [[ "$HOST_OS" == "wsl" ]] && command -v systemctl >/dev/null; then
 fi
 
 # 🗂️ broot (directory visualizer)
-source_if_exists "${XDG_CONFIG_HOME}/broot/launcher/bash/br"
+# NOTE: Commented out - not installed on this machine
+# source_if_exists "${XDG_CONFIG_HOME}/broot/launcher/bash/br"
 
 # 🎨 Powerlevel10k theme config
 source_if_exists "${ZDOTDIR}/.p10k.zsh"
 
 # 🦀 Rust environment variables
-source_if_exists "${CARGO_HOME}/env"
+# NOTE: Removed - already handled by add_to_path_if_exists "${CARGO_HOME}/bin" at line 113
+# source_if_exists "${CARGO_HOME}/env"
 
 # 🧠 FZF keybindings (Ctrl+T, Alt+C, Ctrl+R)
-source_if_exists "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegunn---fzf/shell/key-bindings.zsh"
+# NOTE: Lazy load to improve startup time
+zi ice lucid wait'0' atload'source_if_exists "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegunn---fzf/shell/key-bindings.zsh"'
+zi snippet /dev/null
 
 # ⚡️ Envman – environment loader
-source_if_exists "${XDG_CONFIG_HOME}/envman/load.sh"
+# NOTE: Commented out - envman not installed
+# source_if_exists "${XDG_CONFIG_HOME}/envman/load.sh"
 
 # 🐱 Kitty terminal config + completions
 if command -v kitty &> /dev/null; then
@@ -579,9 +567,6 @@ if command -v doctl &> /dev/null; then
   source <(doctl completion zsh)
   compdef _doctl doctl
 fi
-
-# 🐰 Bun Completion
-source_if_exists "${BUN_INSTALL}/_bun"
 
 # VSCode Integration
 [[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
@@ -616,7 +601,8 @@ fi
 #=======================================================================================
 # Load AFTER sourcing other files because some export path may not be defined
 source_if_exists "${ZDOTDIR}/aliases.zsh"
-source_if_exists "${HOME}/aliases.zsh"
+# NOTE: Commented out - aliases.zsh not present in HOME
+# source_if_exists "${HOME}/aliases.zsh"
 
 # At the *end* of .zshrc
 # Recompile if source is newer
@@ -626,5 +612,5 @@ if [[ -n "${(%):-%N}" && -r "${(%):-%N}" ]]; then
     zcompile "${(%):-%N}"
   fi
 fi
-# If zsh is really slow, enable profiling via zprof, uncomment the line below and the first line
+# If zsh is really slow, enable profiling via zprof, uncomment the line above and line 2
 # zprof
