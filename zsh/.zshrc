@@ -1,14 +1,13 @@
 #!/usr/bin/env zsh
 # zmodload zsh/zprof # top of your .zshrc file - uncomment to profile startup time
 # 🧭 Base paths (XDG-compliant)
+# 📁 XDG base directories (XDG_CONFIG_HOME and ZDOTDIR already set in .zshenv)
 export XDG_CONFIG_HOME="${HOME}/.config"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export ZSH_CACHE_DIR="${ZDOTDIR}/cache"
-
-# 📁 XDG base directories (XDG_CONFIG_HOME and ZDOTDIR already set in .zshenv)
-export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
-export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 
 # 🧠 Shell and runtime config (ZDOTDIR and ZSH_CACHE_DIR already set in .zshenv)
 export ZSH="${ZDOTDIR}"
@@ -19,8 +18,8 @@ export LOCAL_CONFIG="${XDG_CONFIG_HOME}"
 # ==============================================================================
 # Enable instant prompt to show prompt immediately while plugins load in background
 # This MUST come before any code that produces console output or modifies the terminal
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+if [[ -r "${XDG_CACHE_HOME}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
 # ==============================================================================
@@ -178,7 +177,7 @@ fi
 # 🔒 Fix Ctrl+Q messing with terminal (e.g. Vim visual block mode)
 # See: https://stackoverflow.com/a/21806557
 if [[ -t 0 ]]; then
-  stty start undef
+  stty -ixon
 fi
 
 # 🕓 History configuration
@@ -340,7 +339,7 @@ chpwd_functions+=(load-local-conf)
 # ZINIT (ZI) Plugin Manager Setup
 # ==============================================================================
 
-ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
+ZINIT_HOME="${XDG_DATA_HOME}/zinit/zinit.git"
 [[ ! -d $ZINIT_HOME ]] && mkdir -p "$(dirname $ZINIT_HOME)"
 [[ ! -d $ZINIT_HOME/.git ]] && git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
 source "${ZINIT_HOME}/zinit.zsh"
@@ -354,7 +353,6 @@ autoload -Uz _zinit; (( ${+_comps} )) && _comps[zinit]=_zinit
 # Shows git status, command duration, exit codes, and more
 # Configure: run `p10k configure` to customize appearance
 # Disable configuration wizard on servers and non-interactive sessions
-typeset -g POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
 zi ice depth'1'
 zi light romkatv/powerlevel10k
 
@@ -375,10 +373,10 @@ export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export FZF_ALT_C_COMMAND="fd --type d"
 export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --info=inline"
 export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-range :500 {}'"
-zi ice depth'1' atclone'./install --bin' atpull'%atclone'
+zi ice lucid wait'1' depth'1' atclone'./install --bin' atpull'%atclone'
 zi light junegunn/fzf
 # Force correct fzf in PATH before anything else
-add_to_path_if_exists "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegunn---fzf/bin"
+add_to_path_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/bin"
 
 # 📂 FZF-Tab - Replaces tab completion with FZF interface
 # Usage: Press TAB for fuzzy-searchable completion menu with previews
@@ -457,7 +455,7 @@ zi light sunlei/zsh-ssh
 
 # 📁 Zoxide - Fast, smart directory jumper based on frequency
 # Usage: `z <pattern>` - jump to most-frequent matching directory
-ZO_FZF_OPTS="--bind=ctrl-z:ignore --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview=\'eza -la {2..}\'"
+_ZO_FZF_OPTS="--bind=ctrl-z:ignore --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview=\'eza -la {2..}\'"
 zinit ice lucid wait"2" as"command" from"gh-r" \
   atclone"./zoxide init zsh --cmd cd > init.zsh" \
   atpull"%atclone" src"init.zsh" nocompile'!'
@@ -596,7 +594,7 @@ zi light tj/git-extras
 # Faster than nvm, automatically switches on `cd` into projects
 export ZSH_FNM_NODE_VERSION="22"
 export ZSH_FNM_ENV_EXTRA_ARGS="--use-on-cd"
-export ZSH_FNM_INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/fnm"
+export ZSH_FNM_INSTALL_DIR="${XDG_DATA_HOME}/fnm"
 zi ice lucid wait'1' depth'1'
 zi light dominik-schwabe/zsh-fnm
 
@@ -666,7 +664,7 @@ source_if_exists "${ZDOTDIR}/.p10k.zsh"
 
 # 🧠 FZF keybindings (Ctrl+T, Alt+C, Ctrl+R)
 # NOTE: Lazy load to improve startup time
-zi ice lucid wait'0' atload'source_if_exists "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegunn---fzf/shell/key-bindings.zsh"'
+zi ice lucid wait'0' atload'source_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/shell/key-bindings.zsh"'
 zi snippet /dev/null
 
 # ⚡️ Envman – environment loader
