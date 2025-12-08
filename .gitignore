@@ -26,3 +26,5 @@ zsh/.zplug
 .aws/credentials
 *.DS_Store
 *:Zone.Identifiere
+*.zwc
+.vscode/*
