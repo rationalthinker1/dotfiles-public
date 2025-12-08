@@ -2,6 +2,15 @@
 # zmodload zsh/zprof # top of your .zshrc file - uncomment to profile startup time
 
 # ==============================================================================
+# ⚡ Powerlevel10k Instant Prompt (MUST BE NEAR TOP!)
+# ==============================================================================
+# Enable instant prompt to show prompt immediately while plugins load in background
+# This MUST come before any code that produces console output or modifies the terminal
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+# ==============================================================================
 # Detect Host OS & Environment
 # ==============================================================================
 
@@ -29,15 +38,12 @@ fi
 # Core Environment Variables
 # ==============================================================================
 
-# 📁 XDG base directories
-export XDG_CONFIG_HOME="${HOME}/.config"
+# 📁 XDG base directories (XDG_CONFIG_HOME and ZDOTDIR already set in .zshenv)
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 
-# 🧠 Shell and runtime config
-export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
+# 🧠 Shell and runtime config (ZDOTDIR and ZSH_CACHE_DIR already set in .zshenv)
 export ZSH="${ZDOTDIR}"
-export ZSH_CACHE_DIR="${ZDOTDIR}/cache"
 export LOCAL_CONFIG="${XDG_CONFIG_HOME}"
 
 # 💻 Host environment
@@ -56,9 +62,6 @@ export PNPM_HOME="${XDG_CONFIG_HOME}/pnpm"
 # 🖥️ Terminal & editor defaults
 export TERM="xterm-256color"
 export EDITOR="vim"
-
-# 🧠 OpenAI API Key (don't commit this, bro)
-export OPENAI_API_KEY="OPENAI_API_KEY_REMOVED"
 
 # 📜 Make less not clear the terminal after exit
 export LESS="-XRF"
@@ -121,14 +124,7 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
     export LIBGL_ALWAYS_INDIRECT=1
     export BROWSER="wslview"
 
-    # Cache WSL version (rarely changes - only on WSL upgrade)
-    typeset -g WSL_VERSION_CACHE="/tmp/wsl_version_${USER}"
-    if [[ ! -f "$WSL_VERSION_CACHE" ]]; then
-        wsl.exe -l -v 2>/dev/null | awk '/[*]/{print $NF}' > "$WSL_VERSION_CACHE"
-    fi
-    export WSL_VERSION=$(<"$WSL_VERSION_CACHE")
-
-    # Get IP address (changes on network change, but acceptable to cache per session)
+    # Get IP address (FAST - no WSL boundary crossing)
     export IP_ADDRESS=${${(M)${(f)"$(ip route list default 2>/dev/null)"}:#*via*}[(w)3]}
     export DISPLAY="${IP_ADDRESS}:0"
 
@@ -142,6 +138,11 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
     precmd_functions+=(keep_current_path)
 
     [[ -n "$WT_SESSION" ]] && printf "\033]9;9;%s\033\\" "$PWD"
+
+    # ASYNC: Cache Windows user profile path in background (SLOW - crosses WSL boundary)
+    {
+        export WINDOWS_USER_PROFILE=$(wslpath "$(wslvar USERPROFILE)" 2>/dev/null)
+    } &!
 fi
 
 #=======================================================================================
@@ -174,10 +175,6 @@ fi
 if [[ -t 0 ]]; then
   stty start undef
 fi
-
-# ⚡ Powerlevel10k instant prompt (should be near top of .zshrc)
-# Use source_if_exists for consistency:
-source_if_exists "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 
 # 🕓 History configuration
 HISTSIZE=10000000
@@ -348,7 +345,9 @@ autoload -Uz _zinit; (( ${+_comps} )) && _comps[zinit]=_zinit
 # THEMING
 # ==============================================================================
 
-# ⚡ Powerlevel10k - fast, beautiful prompt
+# ⚡ Powerlevel10k - Fast, customizable prompt with instant-prompt support
+# Shows git status, command duration, exit codes, and more
+# Configure: run `p10k configure` to customize appearance
 zi ice depth'1'
 zi light romkatv/powerlevel10k
 
@@ -356,11 +355,14 @@ zi light romkatv/powerlevel10k
 # COMPLETION / INTERACTIVE ENHANCEMENTS
 # ==============================================================================
 
-# 🎨 syntax-highlighting - colorizes commands as you type
+# 🎨 Fast Syntax Highlighting - Highlights commands as you type in real-time
+# Valid commands = green, invalid = red, helps catch typos before execution
 zi ice lucid depth'1'
 zi light zdharma-continuum/fast-syntax-highlighting
 
-# 💡 fzf - fuzzy finder core
+# 💡 FZF - Fuzzy finder for files, commands, history
+# Usage: Ctrl+T (files), Ctrl+R (history), Alt+C (directories)
+# Integrates with many other plugins for fuzzy search everywhere
 export FZF_DEFAULT_COMMAND="rg --files --smart-case --hidden --follow --glob '!{.git,node_modules,vendor,oh-my-zsh,antigen,build,snap/*,*.lock}'"
 export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export FZF_ALT_C_COMMAND="fd --type d"
@@ -371,48 +373,63 @@ zi light junegunn/fzf
 # Force correct fzf in PATH before anything else
 add_to_path_if_exists "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegunn---fzf/bin"
 
-# 📂 fzf-tab - tab-completion UI using fzf
+# 📂 FZF-Tab - Replaces tab completion with FZF interface
+# Usage: Press TAB for fuzzy-searchable completion menu with previews
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
 zi ice lucid wait'1' depth'1'
 zi light Aloxaf/fzf-tab
 
-# 🔍 fzf-tab-source - smarter matching in fzf-tab
+# 🔍 FZF-Tab-Source - Provides additional completion sources for fzf-tab
+# Enhances fzf-tab with better context-aware completions
 zi ice lucid wait'1' depth'1' branch'main'
 zi light Freed-Wu/fzf-tab-source
 
-# 🔁 fzf-history-search - interactive Ctrl+R command history
+# 🔁 FZF History Search - Enhanced Ctrl+R with fuzzy command history
+# Usage: Ctrl+R to search shell history with fuzzy matching
 zi ice lucid wait'1' depth'1'
 zi light joshskidmore/zsh-fzf-history-search
 
-# 🔄 zsh-autosuggestions - command suggestions while typing
+# 🔄 ZSH Autosuggestions - Fish-like command suggestions from history
+# Usage: Type command, press → (right arrow) to accept suggestion
+# Shows grayed-out suggestion based on command history as you type
 zi ice lucid depth'1'
 zi light zsh-users/zsh-autosuggestions
 
-# 🔁 zsh-completions - extra completion scripts
+# 🔁 ZSH Completions - Additional completion definitions for 1000+ commands
+# Provides tab completions for commands not covered by default ZSH
 zi ice depth'1'
 zi light zsh-users/zsh-completions
 
-# 🧠 atuin - shell history syncing, Ctrl+R replacement (optional)
+# 🧠 Atuin - Magical shell history with sync, stats, and better search
+# Usage: Ctrl+R for powerful history search, `atuin stats` for analytics
+# Stores full context (directory, duration, exit code) and syncs across machines
 zi ice lucid wait'2' depth'1' branch'main'
 zi light atuinsh/atuin
 
-# 🫵 you-should-use - reminds you of aliases you forgot you had
+# 🫵 You-Should-Use - Reminds you of existing aliases when you use full commands
+# Usage: Automatic - alerts you "Found alias gst for git status" when you type long commands
+# Helps you learn and use your aliases to save typing
 zi ice wait'!0' lucid depth'1'
 zi light MichaelAquilina/zsh-you-should-use
 
-# ⌨️ zsh-autopair - auto-closes quotes, brackets, etc.
+# ⌨️ ZSH Autopair - Auto-closes quotes, brackets, and parentheses
+# Usage: Automatic - type '(' and it adds ')', type '"' and it adds closing '"'
 zi ice lucid depth'1'
 zi light hlissner/zsh-autopair
 
-# 🧙‍♂️ jq-zsh-plugin - type command, hit Alt+J to interactively craft a jq query
+# 🧙‍♂️ JQ ZSH Plugin - Interactive jq query builder
+# Usage: Type JSON command | (press Alt+J) - opens interactive jq builder
+# Helps construct complex jq queries visually
 zi ice wait'!0' lucid depth'1'
 zi light reegnz/jq-zsh-plugin
 
-# 🔥 fancy completions for modern tools (like GitHub CLI)
+# 🔥 Fancy Completions - Enhanced completions for modern CLI tools
+# Provides smart completions for gh (GitHub CLI), docker, kubectl, etc.
 zi ice wait'!0' lucid depth'1' branch'main'
 zi light z-shell/zsh-fancy-completions
 
-# 💻 ssh alias manager
+# 💻 SSH Alias Manager - Manages SSH connection aliases
+# Usage: Creates convenient aliases for SSH hosts from ~/.ssh/config
 zi ice wait'!0' lucid depth'1' from'gh'
 zi light sunlei/zsh-ssh
 
@@ -420,10 +437,12 @@ zi light sunlei/zsh-ssh
 # NAVIGATION & FILE MANAGEMENT TOOLS
 # ==============================================================================
 
-# 📁 enhancd - better `cd` command with history and fuzzy matching
+# 📁 Enhancd - Enhanced cd with interactive directory history and fuzzy search
+# Usage: `cd` - fuzzy search through visited directories
+# Usage: `cd ..` multiple times - interactive selection of parent dirs
 export ENHANCD_DISABLE_DOT=1
 export ENHANCD_FILTER="fzf"
-export ENHANCD_COMMAND="ccd"
+export ENHANCD_COMMAND="cd"
 export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
 export ENHANCD_DIR_PATH_STYLE="full"
 export ENHANCD_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/enhancd"
@@ -431,68 +450,99 @@ export ENHANCD_DIVE_MAX=10
 zi ice lucid wait'2' depth'1' src'init.sh' branch'main'
 zi light babarot/enhancd
 
-# 📁 bd - go back to a parent dir by name (e.g. `bd src`)
+# 📁 BD - Quickly go back to a parent directory by name
+# Usage: `bd src` - jump back to /home/user/projects/src from deep subdirectory
+# Example: In /home/user/projects/src/components/ui → `bd projects` → /home/user/projects
 zi ice wait'!0' as'program' pick'bd' mv'bd -> bd'
 zi load vigneshwaranr/bd
 
-# 📁 rename - CLI mass renamer
+# 📁 Rename - Perl-based batch file renamer with regex support
+# Usage: `rename 's/\.txt$/.md/' *.txt` - rename all .txt files to .md
 zi ice wait'!0' as'program' pick'rename' mv'rename -> rename'
 zi load ap/rename
 
-# 📊 eza - better ls alternative
+# 📊 Eza - Modern ls replacement with colors, icons, and git integration
+# Usage: Already aliased to `ls`, `l`, `la`, `ll`, `tree`
+# Shows file permissions, size, git status, and uses colors automatically
 zi ice lucid depth'1' from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza' bpick'eza_x86_64-unknown-linux-gnu.tar.gz'
 zi light eza-community/eza
 
-# 🌲 erdtree - directory tree with size info (like `ncdu` but pretty)
+# 🌲 Erdtree - Modern file-tree visualization with disk usage
+# Usage: `erdtree` or `et` - shows directory tree with file sizes
+# Alternative to `tree` and `ncdu` with better visuals
 zi ice wait'!0' lucid depth'1' from'gh-r' as'command'
 zi light solidiquis/erdtree
+
+# 🔖 ZSHmarks - Directory bookmarking system
+# Usage: `bookmark <name>` - save current dir, `jump <name>` - jump to saved dir
+# `showmarks` - list all bookmarks, `deletemark <name>` - remove bookmark
+zi ice wait'!0' lucid depth'1'
+zi light jocelynmallon/zshmarks
 
 # ==============================================================================
 # SEARCH / DEV TOOLS
 # ==============================================================================
 
-# 🔎 ripgrep (aka `rg`) - super fast grep
+# 🔎 Ripgrep - Lightning-fast recursive grep with smart defaults
+# Usage: `rg "pattern"` - searches files recursively, respects .gitignore
+# Auto-pipes through less with `rg()` function in aliases.zsh
 export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME}/ripgrep/.ripgreprc"
 zi ice from'gh-r' as'command' pick='*/rg'
 zi load BurntSushi/ripgrep
 
-# 🦇 bat - better `cat`, with syntax highlighting
+# 🦇 Bat - Cat clone with syntax highlighting and git integration
+# Usage: Already aliased to `cat` - shows line numbers and syntax colors
+# Original cat available as `rcat`
 export BAT_THEME="OneHalfDark"
 zi ice from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"
 zi load sharkdp/bat
 
-# 🔍 fd - better `find`
+# 🔍 FD - Simple, fast alternative to `find`
+# Usage: `fd pattern` - finds files by name, faster than find
+# `fd -e js` - find by extension, `fd -t d` - find directories only
 zi ice from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"
 zi load sharkdp/fd
 
-# 🔬 xsv - analyze & manipulate CSVs from terminal
+# 🔬 XSV - Fast CSV command line toolkit
+# Usage: `xsv stats data.csv` - show column statistics
+# `xsv select column1,column2 data.csv` - select columns
 zi ice wait'!0' lucid depth'1' from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv' atpull'%atclone'
 zi light BurntSushi/xsv
 
-# 📊 csvtool - pandas-powered CSV explorer in CLI
+# 📊 CSVtool - Pandas-powered CSV manipulation tool
+# Usage: `csvtool filter data.csv` - interactive CSV filtering
 zi ice wait'!0' as'program' pick'csvtool/csvtool.py' \
   atclone'python3 -m venv venv && venv/bin/pip install pandas openpyxl' \
   atpull'%atclone' \
   cmd'./venv/bin/python csvtool "$@"'
 zi load maroofi/csvtool
 
-# 🧼 sd - simpler, modern `sed` replacement (e.g. `sd foo bar`)
+# 🧼 SD - Intuitive find & replace CLI (better than sed)
+# Usage: `sd before after file.txt` - simpler syntax than sed
+# `sd '\d+' '[$0]' file.txt` - regex with capture groups
 zi ice wait'!0' from'gh-r' as'command' pick'gnu'
 zi light chmln/sd
 
-# 🧠 jq - CLI JSON processor
+# 🧠 JQ - Command-line JSON processor
+# Usage: `echo '{"key":"value"}' | jq .key` - extract JSON fields
+# Works with jq-zsh-plugin for interactive query building (Alt+J)
 zi ice as'program' from'gh-r' bpick'*linux64' mv'jq* -> jq'
 zi load jqlang/jq
 
-# 💥 up - run `up` and it'll guess what command you wanted to run
+# 💥 UP - Interactive pipe builder for shell commands
+# Usage: `up` - opens visual editor to build/test pipelines interactively
+# Helps construct complex command pipelines with live preview
 zi ice wait'!0' lucid depth'1' from'gh-r' as'command'
 zi light akavel/up
 
-# 📷 imcat - display images in terminal (kitty/iterm support)
+# 📷 Imcat - Display images directly in terminal
+# Usage: `imcat image.png` - renders image in terminal (kitty/iTerm2)
 zi ice wait'!0' lucid depth'1' from'gh' as'command' make pick'imcat'
 zi light stolk/imcat
 
-# 📊 qsv - fast CSV command line toolkit written in Rust
+# 📊 QSV - Ultra-fast CSV toolkit with Python integration
+# Usage: `qsv stats data.csv` - advanced CSV statistics and operations
+# More features than xsv: SQL queries, Python expressions, etc.
 zi ice wait'!0' lucid depth'1' as'program' pick'target/release/qsv' atclone'cargo build --release --locked --bin qsv --features "feature_capable,python,apply,foreach"' atpull'%atclone'
 zi light dathere/qsv
 
@@ -500,54 +550,74 @@ zi light dathere/qsv
 # GIT ENHANCEMENTS
 # ==============================================================================
 
-# 🧠 forgit - interactively view logs, diffs, branches, etc.
+# 🧠 Forgit - Interactive git operations with FZF
+# Usage: `git log` aliased to `gl` - interactive commit browser
+# `gd` - interactive diff, `ga` - interactive add, `glo` - interactive log
 export forgit_log=gl
 export FORGIT_DIFF_GIT_OPTS="-w --ignore-blank-lines"
 zi ice lucid wait'1' depth'1' branch'main'
 zi light wfxr/forgit
 
-# 🌐 git-open - opens GitHub/GitLab/Bitbucket page for current repo
+# 🌐 Git-Open - Open current repo in browser (GitHub/GitLab/Bitbucket)
+# Usage: `git open` - opens repo URL in browser
+# `git open --issue` - opens issues page
 zi ice wait'!0' lucid depth'1'
 zi light paulirish/git-open
+
+# 🛠️ Git-Extras - Collection of 60+ git utilities
+# Usage: `git summary` - repo summary, `git effort` - show file activity
+# `git changelog` - generate changelog, `git ignore` - add to .gitignore
+# Full list: https://github.com/tj/git-extras/blob/master/Commands.md
+zi ice wait'!0' lucid depth'1' as'program' pick'$ZPFX/bin/git-*' make'PREFIX=$ZPFX' nocompile
+zi light tj/git-extras
 
 # ==============================================================================
 # NODE & LANGUAGE ENVIRONMENTS
 # ==============================================================================
 
-# 🌱 Fast Node Manager - automagic Node.js version switching
+# 🌱 ZSH-FNM - Fast Node Manager integration with auto-switching
+# Usage: Automatic - switches Node version based on .nvmrc/.node-version
+# `fnm list` - show installed versions, `fnm install 20` - install Node 20
+# Faster than nvm, automatically switches on `cd` into projects
 export ZSH_FNM_NODE_VERSION="22"
 export ZSH_FNM_ENV_EXTRA_ARGS="--use-on-cd"
 export ZSH_FNM_INSTALL_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/fnm"
 zi ice lucid wait'1' depth'1'
 zi light dominik-schwabe/zsh-fnm
 
+# 📦 Better NPM Completion - Enhanced tab completion for npm/yarn/pnpm
+# Usage: `npm install <TAB>` - shows package suggestions from npm registry
+# Works for npm, yarn, and pnpm commands
+zi ice wait'!0' lucid depth'1' as'completion'
+zi light lukechilds/zsh-better-npm-completion
+
+# 🎨 Laravel Artisan Completion - Smart completions for Laravel Artisan
+# Usage: `php artisan <TAB>` - shows available artisan commands
+# Works with Docker alias `pa` as well
+zi ice wait'!0' lucid depth'1'
+zi light jessarcher/zsh-artisan
+
+# # 🎼 Composer Completion - Tab completion for Composer commands
+# # Usage: `composer <TAB>` - shows composer commands and package names
+# zi ice wait'!0' lucid depth'1' as'completion'
+# zi snippet https://github.com/composer/composer/blob/main/res/composer-completion.zsh
+
 # ==============================================================================
-# OMZ SNIPPETS (one-liners from Oh-My-Zsh)
+# OMZ SNIPPETS (Useful one-liners from Oh-My-Zsh)
 # ==============================================================================
 
-zi ice wait lucid blockf
-zi snippet OMZP::sudo             # Hit ESC twice to sudo previous command
-zi snippet OMZP::extract          # Adds `extract` to unzip anything
-zi snippet OMZP::copyfile         # Copy file contents to clipboard
-zi snippet OMZP::dirhistory       # Alt+arrows to jump dirs
-zi snippet OMZP::docker-compose   # Completions for `docker-compose`
+zi ice wait'1' lucid blockf
+zi snippet OMZP::sudo             # Usage: Press ESC twice to prefix previous command with sudo
+zi snippet OMZP::extract          # Usage: `extract file.zip` - auto-detects and extracts any archive format
+zi snippet OMZP::copyfile         # Usage: `copyfile file.txt` - copies file contents to clipboard
+zi snippet OMZP::dirhistory       # Usage: Alt+Left/Right arrows to navigate directory history
+zi snippet OMZP::docker-compose   # Provides tab completions for docker-compose commands
 
 #=======================================================================================
 # Autocompletion
 #=======================================================================================
 
-# 🔁 Initialize completion system with cache (safe for zshenv)
-# if [[ -n "$ZSH_CACHE_DIR" ]]; then
-#   mkdir -p "$ZSH_CACHE_DIR"
-#   autoload -Uz compinit
-#   compinit -i -d "$ZSH_CACHE_DIR/zcompdump-${HOST_OS:-default}"
-# else
-#   autoload -Uz compinit
-#   compinit -i
-# fi
-# Trigger compinit safely (delayed)
-# autoload -Uz compinit
-# compinit -C
+# 🔁 Completion system handled by ZINIT
 autoload -Uz colors && colors
 
 #Calculator: zcalc

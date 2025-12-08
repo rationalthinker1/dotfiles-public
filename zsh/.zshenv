@@ -9,16 +9,6 @@ export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export ZSH_CACHE_DIR="${ZDOTDIR}/cache"
 
 # ==============================================================================
-# Load Compiled or Fallback .zshrc
-# ==============================================================================
-
-# if [[ -s "${ZDOTDIR}/.zshrc.zwc" && "${ZDOTDIR}/.zshrc.zwc" -nt "${ZDOTDIR}/.zshrc" ]]; then
-#   source "${ZDOTDIR}/.zshrc.zwc"
-# else
-#   source "${ZDOTDIR}/.zshrc"
-# fi
-
-# ==============================================================================
 # Terminal Behavior Enhancements (only if interactive)
 # ==============================================================================
 
@@ -29,10 +19,3 @@ if [[ -o interactive ]]; then
   }
 fi
 
-# ==============================================================================
-# Rust Environment
-# ==============================================================================
-
-# 🦀 Load cargo env (if present)
-# NOTE: Commented out for performance - Cargo bin path is added in .zshrc via add_to_path_if_exists
-# [[ -f "${CARGO_HOME}/env" ]] && source "${CARGO_HOME}/env"

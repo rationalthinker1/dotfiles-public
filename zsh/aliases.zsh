@@ -4,19 +4,24 @@
 alias dirzshrc="grep -nT '^#|' $HOME/.zshrc"
 alias zshrc="vim $HOME/.zshrc"
 alias rebash="source $HOME/.zshrc"
+# vpr: Edit and reload .zshrc in one command
+alias vpr='vim $HOME/.zshrc && source $HOME/.zshrc'
 
 # common directories
 alias dot="cd ~/.dotfiles"
 alias con="cd ~/.config"
 
-# if bat exists, use it instead of cat
+# 🦇 Bat: Better cat with syntax highlighting
+# Override 'cat' to use 'bat' for prettier output
+# Use 'rcat' (real cat) to access original cat command
 if (( $+commands[bat] )); then
 	alias rcat=${commands[cat]}
 	alias cat=${commands[bat]}
 	export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 fi
 
-## if eza exists, use it instead of ls
+## 📁 Eza: Modern ls replacement with colors and icons
+# Override 'ls' and related aliases to use 'eza' for better file listing
 if (( $+commands[eza] )); then
 	## Colorize the ls output ##
 	alias ls='eza --color=auto'
@@ -83,9 +88,6 @@ alias pls='sudo !!'
 # Repeat the previous command with sudo
 alias sudoi='sudo "PATH=$PATH"'
 
-# Quickly edit this script and load it
-alias vpr='vim $HOME/.zshrc && source $HOME/.zshrc'
-
 # sshfs with proper default settings
 alias sshfs='sshfs -o allow_other,uid=1000,gid=1000'
 
@@ -121,7 +123,7 @@ FD_EXCLUDE_PATTERN+=bundles,
 FD_EXCLUDE_PATTERN+=build,
 FD_EXCLUDE_PATTERN+="}"
 
-# search for files with fdf
+# 🔍 Enhanced search functions using fd
 function fdf() {
 	fd --hidden --ignore-case --follow --type f --exclude "$FD_EXCLUDE_PATTERN" "$@"
 }
@@ -130,7 +132,9 @@ function fdd() {
 	fd --hidden --ignore-case --follow --type d --exclude "$FD_EXCLUDE_PATTERN" "$@"
 }
 
-# pages rg output automatically
+# 📄 Ripgrep: Enhanced grep with automatic paging
+# Override 'rg' to automatically pipe output through less when in terminal
+# Use 'command rg' to access original ripgrep without paging
 function rg() {
 	if [ -t 1 ]; then
 		command rg -p "$@" | less -RFX
@@ -410,10 +414,44 @@ function install-font-zip() {
 }
 
 #=======================================================================================
-# Yarn Aliases (using functions to properly handle arguments)
+# Node/NPM/Yarn Enhanced Aliases
 #=======================================================================================
+
+# NPM shortcuts
+alias ni="npm install"
+alias nid="npm install --save-dev"
+alias nig="npm install -g"
+alias nrd="npm run dev"
+alias nrb="npm run build"
+alias nrs="npm run start"
+alias nrt="npm run test"
+alias nrl="npm run lint"
+alias nrf="npm run format"
+alias nci="npm ci"  # Clean install from package-lock.json
+alias ncc="npm cache clean --force"
+alias nou="npm outdated"
+alias nup="npm update"
+
+# Yarn shortcuts (enhanced from existing ya, yad)
 ya() { yarn add "$@"; }
 yad() { yarn add -D "$@"; }
+alias yi="yarn install"
+alias yag="yarn global add"
+alias yrm="yarn remove"
+alias yup="yarn upgrade"
+alias yui="yarn upgrade-interactive"  # Interactive upgrade
+alias yout="yarn outdated"
+alias ycc="yarn cache clean"
+
+# pnpm (if you use it)
+alias pi="pnpm install"
+alias pa="pnpm add"
+alias pad="pnpm add -D"
+alias pr="pnpm remove"
+
+# Quick package.json operations
+alias pkg="vim package.json"
+alias pkgj="cat package.json | jq"  # Pretty print with jq
 
 #=======================================================================================
 # Git Aliases and functions
@@ -514,6 +552,45 @@ git-clone() {
 	git clone "$@" && cd "$(basename "$1" .git)"
 }
 
+# Enhanced Git shortcuts
+alias gst="git stash"
+alias gstp="git stash pop"
+alias gstl="git stash list"
+alias gsts="git stash show -p"
+
+alias gco="git checkout"
+alias gcob="git checkout -b"
+alias gcom="git checkout master || git checkout main"
+
+alias gf="git fetch"
+alias gfa="git fetch --all"
+alias gfp="git fetch --prune"
+
+alias grh="git reset --hard"
+alias grs="git reset --soft"
+
+alias glg="git log --graph --oneline --decorate"
+alias glga="git log --graph --oneline --decorate --all"
+alias glgp="git log -p"  # Show patches
+
+alias gaa="git add --all"
+alias gap="git add --patch"
+alias gcan="git commit --amend --no-edit"
+alias grs="git restore --staged"
+
+# WIP (Work In Progress) helpers
+alias gwip="git add -A && git commit -m 'WIP' --no-verify"
+alias gunwip="git log -1 --pretty=%B | grep -q 'WIP' && git reset HEAD~1"
+
+# Conventional commits helper
+gcm() {
+    local type=$1
+    shift
+    git commit -m "${type}: $*"
+}
+# Usage: gcm feat add user authentication
+# Types: feat, fix, docs, style, refactor, test, chore
+
 #=======================================================================================
 # Suffix Aliases
 #=======================================================================================
@@ -555,19 +632,75 @@ alias yb="yarn build"
 #=======================================================================================
 # Laravel Aliases and functions
 #=======================================================================================
+# Docker-based Laravel (existing aliases)
 alias pa="dce php php -dxdebug.client_host=host.docker.internal artisan"
 alias pam="dce php php -dxdebug.client_host=host.docker.internal artisan migrate"
 alias par="dce php php -dxdebug.client_host=host.docker.internal artisan routes"
 alias mysqlr="dce -it db mysql -u root -p123"
 
+# Enhanced Artisan shortcuts (work with both Docker and native)
+alias pamf="pa migrate:fresh"
+alias pamfs="pa migrate:fresh --seed"
+alias pams="pa migrate --seed"
+alias pamr="pa migrate:rollback"
+alias pamrs="pa migrate:reset"
+alias paq="pa queue:work"
+alias paqf="pa queue:failed"
+alias paqr="pa queue:retry"
+alias pat="pa tinker"
+alias pau="pa up"
+alias pad="pa down"
+alias parl="pa route:list"
+alias parc="pa route:cache"
+alias pacc="pa config:cache"
+alias pavc="pa view:cache"
+alias pao="pa optimize"
+alias paoc="pa optimize:clear"
+
+# Testing
+alias pat:u="pa test --filter"
+alias pat:p="pa test --parallel"
+
+# Native Laravel (non-Docker)
 alias pam:r="php artisan migrate:refresh"
 alias pam:roll="php artisan migrate:rollback"
 alias pam:rs="php artisan migrate:refresh --seed"
 alias pda="php artisan dumpautoload"
+
+# Composer shortcuts
 alias cu="composer update"
 alias ci="composer install"
 alias cda="dce php composer dump-autoload -o"
-alias pacc="php artisan clear-compiled"
+alias dcomp="dce php composer"
+alias dcompi="dce php composer install"
+alias dcompu="dce php composer update"
+alias dcompd="dce php composer dump-autoload -o"
+
+# Laravel logs
+alias llog="tail -f storage/logs/laravel.log"
+alias llogl="tail -100 storage/logs/laravel.log"
+alias llogc="truncate -s 0 storage/logs/laravel.log"  # Clear log
+
+# Laravel fresh install helper
+laravel-fresh() {
+    echo "🔄 Dropping database..."
+    pa migrate:fresh
+    echo "🌱 Seeding database..."
+    pa db:seed
+    echo "🗑️  Clearing caches..."
+    pa optimize:clear
+    echo "✓ Laravel reset complete!"
+}
+
+# Quick Laravel setup
+laravel-setup() {
+    composer install
+    cp .env.example .env
+    php artisan key:generate
+    php artisan migrate
+    php artisan db:seed
+    echo "✓ Laravel project setup complete!"
+}
 
 #=======================================================================================
 # Nginx Aliases and functions
@@ -746,8 +879,8 @@ if [[ $HOST_OS == "wsl" ]]; then
 		$SUBLIME_TEXT_LOCATION "/\/\wsl.localhost\\${DISTRO}${FULL_PATH}"
 	}
 
-	FIRST_PATH=$(wslpath "$(wslvar USERPROFILE)")
-	alias code="${FIRST_PATH}/AppData/Local/Programs/Microsoft\ VS\ Code/Code.exe"
+	# Use cached Windows user profile path from .zshrc (avoids repeated wslvar calls)
+	alias code="${WINDOWS_USER_PROFILE}/AppData/Local/Programs/Microsoft\ VS\ Code/Code.exe"
 
 	copy_terminal_settings_to_dotfiles() {
 		DOTFILES_DIR="$HOME/.dotfiles"
@@ -767,7 +900,9 @@ fi
 # Context-Aware Navigation
 #=======================================================================================
 
-# Smart cd with auto-environment setup
+# 🐍 Smart cd: Automatically activates Python venv and shows README
+# Override 'cd' to provide context-aware directory changes
+# Note: May conflict with direnv - disable if using direnv
 cd() {
   builtin cd "$@" || return
 
@@ -822,3 +957,156 @@ alias duh='du -h --max-depth=1 | sort -hr'
 alias ports='netstat -tulanp'
 alias myip_public='curl -s https://api.ipify.org && echo'
 alias myip_local="ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v 127.0.0.1"
+
+#=======================================================================================
+# Development Workflow Functions
+#=======================================================================================
+
+# Kill process by port number
+killport() {
+  if [ $# -lt 1 ]; then
+    echo "Usage: killport <port>"
+    echo "Example: killport 3000"
+    return 1
+  fi
+
+  local port=$1
+  local pid=$(lsof -ti:$port)
+
+  if [[ -n "$pid" ]]; then
+    echo "🔫 Killing process $pid on port $port..."
+    kill -9 $pid
+    echo "✓ Process killed"
+  else
+    echo "❌ No process found on port $port"
+  fi
+}
+
+# Smart package manager runner - detects npm/yarn/pnpm
+run() {
+  if [ $# -lt 1 ]; then
+    echo "Usage: run <script>"
+    echo "Example: run dev"
+    return 1
+  fi
+
+  if [[ -f "yarn.lock" ]]; then
+    echo "📦 Using Yarn"
+    yarn "$@"
+  elif [[ -f "pnpm-lock.yaml" ]]; then
+    echo "📦 Using pnpm"
+    pnpm "$@"
+  elif [[ -f "package-lock.json" ]] || [[ -f "package.json" ]]; then
+    echo "📦 Using npm"
+    npm run "$@"
+  else
+    echo "❌ No package.json found"
+    return 1
+  fi
+}
+
+# Docker system cleanup - removes everything
+docker-clean() {
+  echo "🗑️  Cleaning Docker system..."
+  docker system prune -af --volumes
+  echo "✓ Docker cleanup complete"
+}
+
+# Find and replace in files (interactive with fzf)
+replace-in-files() {
+  if [ $# -lt 2 ]; then
+    echo "Usage: replace-in-files <search> <replace> [file-pattern]"
+    echo "Example: replace-in-files 'oldName' 'newName' '*.js'"
+    return 1
+  fi
+
+  local search=$1
+  local replace=$2
+  local pattern=${3:-"*"}
+
+  echo "🔍 Searching for: $search"
+  echo "📝 Replacing with: $replace"
+  echo "📁 In files matching: $pattern"
+  echo ""
+
+  # Show matches first
+  rg "$search" -l --glob "$pattern"
+
+  echo ""
+  read "confirm?Proceed with replacement? (y/n) "
+  if [[ $confirm == "y" ]]; then
+    rg "$search" -l --glob "$pattern" | xargs sed -i "s/$search/$replace/g"
+    echo "✓ Replacement complete"
+  else
+    echo "❌ Cancelled"
+  fi
+}
+
+# Quick directory size check
+dirsize() {
+  if [ $# -lt 1 ]; then
+    du -sh *
+  else
+    du -sh "$@"
+  fi
+}
+
+# Extract any archive type
+extract() {
+  if [ $# -lt 1 ]; then
+    echo "Usage: extract <file>"
+    return 1
+  fi
+
+  if [ -f "$1" ]; then
+    case "$1" in
+      *.tar.bz2)   tar xjf "$1"     ;;
+      *.tar.gz)    tar xzf "$1"     ;;
+      *.bz2)       bunzip2 "$1"     ;;
+      *.rar)       unrar x "$1"     ;;
+      *.gz)        gunzip "$1"      ;;
+      *.tar)       tar xf "$1"      ;;
+      *.tbz2)      tar xjf "$1"     ;;
+      *.tgz)       tar xzf "$1"     ;;
+      *.zip)       unzip "$1"       ;;
+      *.Z)         uncompress "$1"  ;;
+      *.7z)        7z x "$1"        ;;
+      *)           echo "❌ Cannot extract '$1' - unknown format" ;;
+    esac
+  else
+    echo "❌ File '$1' not found"
+  fi
+}
+
+# Quick HTTP server in current directory
+serve() {
+  local port=${1:-8000}
+  echo "🌐 Starting HTTP server on http://localhost:$port"
+  python3 -m http.server $port
+}
+
+# Generate random password
+genpass() {
+  local length=${1:-20}
+  openssl rand -base64 32 | tr -d "=+/" | cut -c1-$length
+}
+
+# Quick note taking
+note() {
+  local notes_dir="$HOME/notes"
+  mkdir -p "$notes_dir"
+
+  if [ $# -eq 0 ]; then
+    # Show recent notes
+    echo "📝 Recent notes:"
+    ls -lt "$notes_dir" | head -10
+  else
+    # Create new note
+    local note_file="$notes_dir/$(date +%Y-%m-%d)-$1.md"
+    echo "# $1" > "$note_file"
+    echo "" >> "$note_file"
+    echo "Date: $(date)" >> "$note_file"
+    echo "" >> "$note_file"
+    vim "$note_file"
+  fi
+}
