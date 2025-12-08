@@ -1,5 +1,18 @@
 #!/usr/bin/env zsh
 # zmodload zsh/zprof # top of your .zshrc file - uncomment to profile startup time
+# 🧭 Base paths (XDG-compliant)
+export XDG_CONFIG_HOME="${HOME}/.config"
+export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
+export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
+export ZSH_CACHE_DIR="${ZDOTDIR}/cache"
+
+# 📁 XDG base directories (XDG_CONFIG_HOME and ZDOTDIR already set in .zshenv)
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+
+# 🧠 Shell and runtime config (ZDOTDIR and ZSH_CACHE_DIR already set in .zshenv)
+export ZSH="${ZDOTDIR}"
+export LOCAL_CONFIG="${XDG_CONFIG_HOME}"
 
 # ==============================================================================
 # ⚡ Powerlevel10k Instant Prompt (MUST BE NEAR TOP!)
@@ -37,15 +50,6 @@ fi
 # ==============================================================================
 # Core Environment Variables
 # ==============================================================================
-
-# 📁 XDG base directories (XDG_CONFIG_HOME and ZDOTDIR already set in .zshenv)
-export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
-export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
-
-# 🧠 Shell and runtime config (ZDOTDIR and ZSH_CACHE_DIR already set in .zshenv)
-export ZSH="${ZDOTDIR}"
-export LOCAL_CONFIG="${XDG_CONFIG_HOME}"
-
 # 💻 Host environment
 export HOST_OS
 export HOST_LOCATION
