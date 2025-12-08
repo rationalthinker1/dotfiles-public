@@ -98,6 +98,7 @@ source_if_exists() {
 
 add_to_path_if_exists "${CARGO_HOME}/bin"
 add_to_path_if_exists "${HOME}/.local/bin"
+add_to_path_if_exists "${HOME}/.local/share"
 add_to_path_if_exists "/usr/local/go/bin"
 add_to_path_if_exists "${HOME}/.yarn/bin"
 add_to_path_if_exists "${HOME}/.config/yarn/global/node_modules/.bin"
@@ -270,7 +271,7 @@ bindkey '\eOF'    end-of-line        # gnome-terminal
 # ZSH Settings
 # ==============================================================================
 
-# 📁 File & directory colors (for `ls`, `exa`, etc.)
+# 📁 File & directory colors (for `ls`, `eza`, etc.)
 export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 
@@ -307,7 +308,7 @@ zstyle ':completion:*:git-checkout:*' sort false
 zstyle ':omz:plugins:docker' legacy-completion yes
 
 # 🎨 FZF tab preview config
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
 zstyle ':fzf-tab:*' switch-group ',' '.'
 
 # 🔒 Escape ? without quoting
@@ -381,7 +382,7 @@ add_to_path_if_exists "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/plugins/junegu
 
 # 📂 FZF-Tab - Replaces tab completion with FZF interface
 # Usage: Press TAB for fuzzy-searchable completion menu with previews
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'exa -1 --color=always $realpath'
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
 zi ice lucid wait'1' depth'1'
 zi light Aloxaf/fzf-tab
 
@@ -446,16 +447,21 @@ zi light sunlei/zsh-ssh
 # 📁 Enhancd - Enhanced cd with interactive directory history and fuzzy search
 # Usage: `cd` - fuzzy search through visited directories
 # Usage: `cd ..` multiple times - interactive selection of parent dirs
-export ENHANCD_DISABLE_DOT=1
-export ENHANCD_FILTER="fzf"
-export ENHANCD_COMMAND="cd"
-export ENHANCD_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/enhancd"
-export ENHANCD_DIR="${ENHANCD_ROOT}"
-export ENHANCD_DIR_PATH_STYLE="full"
-export ENHANCD_HOME="${ENHANCD_ROOT}"
-export ENHANCD_DIVE_MAX=10
-zi ice lucid wait'2' depth'1' src'init.sh' branch'main'
-zi light babarot/enhancd
+# export ENHANCD_DISABLE_DOT=1
+# export ENHANCD_FILTER="fzf"
+# export ENHANCD_COMMAND="cd"
+# export ENHANCD_DIR_PATH_STYLE="full"
+# export ENHANCD_DIVE_MAX=10
+# zi ice lucid wait'2' depth'1' src'init.sh' branch'main'
+# zi light babarot/enhancd
+
+# 📁 Zoxide - Fast, smart directory jumper based on frequency
+# Usage: `z <pattern>` - jump to most-frequent matching directory
+ZO_FZF_OPTS="--bind=ctrl-z:ignore --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview=\'eza -la {2..}\'"
+zinit ice lucid wait"2" as"command" from"gh-r" \
+  atclone"./zoxide init zsh --cmd cd > init.zsh" \
+  atpull"%atclone" src"init.zsh" nocompile'!'
+zinit light ajeetdsouza/zoxide
 
 # 📁 BD - Quickly go back to a parent directory by name
 # Usage: `bd src` - jump back to /home/user/projects/src from deep subdirectory
@@ -509,6 +515,8 @@ zi load sharkdp/bat
 # `fd -e js` - find by extension, `fd -t d` - find directories only
 zi ice from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"
 zi load sharkdp/fd
+
+
 
 # 🔬 XSV - Fast CSV command line toolkit
 # Usage: `xsv stats data.csv` - show column statistics

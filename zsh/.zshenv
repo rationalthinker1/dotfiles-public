@@ -18,4 +18,3 @@ if [[ -o interactive ]]; then
     print -Pn "\e]0;%n@%m: %~\a"
   }
 fi
-
