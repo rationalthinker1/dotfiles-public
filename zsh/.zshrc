@@ -393,7 +393,7 @@ zi light Freed-Wu/fzf-tab-source
 
 # 🔁 FZF History Search - Enhanced Ctrl+R with fuzzy command history
 # Usage: Ctrl+R to search shell history with fuzzy matching
-zi ice lucid wait'1' depth'1'
+zi ice lucid wait'1' lucid depth'1'
 zi light joshskidmore/zsh-fzf-history-search
 
 # 🔄 ZSH Autosuggestions - Fish-like command suggestions from history
@@ -410,13 +410,13 @@ zi light zsh-users/zsh-completions
 # 🧠 Atuin - Magical shell history with sync, stats, and better search
 # Usage: Ctrl+R for powerful history search, `atuin stats` for analytics
 # Stores full context (directory, duration, exit code) and syncs across machines
-zi ice lucid wait'2' depth'1' branch'main'
+zi ice lucid wait'2' lucid depth'1' branch'main'
 zi light atuinsh/atuin
 
 # 🫵 You-Should-Use - Reminds you of existing aliases when you use full commands
 # Usage: Automatic - alerts you "Found alias gst for git status" when you type long commands
 # Helps you learn and use your aliases to save typing
-zi ice wait'!0' lucid depth'1'
+zi ice wait'0' lucid depth'1'
 zi light MichaelAquilina/zsh-you-should-use
 
 # ⌨️ ZSH Autopair - Auto-closes quotes, brackets, and parentheses
@@ -427,17 +427,17 @@ zi light hlissner/zsh-autopair
 # 🧙‍♂️ JQ ZSH Plugin - Interactive jq query builder
 # Usage: Type JSON command | (press Alt+J) - opens interactive jq builder
 # Helps construct complex jq queries visually
-zi ice wait'!0' lucid depth'1'
+zi ice wait'0' lucid depth'1'
 zi light reegnz/jq-zsh-plugin
 
 # 🔥 Fancy Completions - Enhanced completions for modern CLI tools
 # Provides smart completions for gh (GitHub CLI), docker, kubectl, etc.
-zi ice wait'!0' lucid depth'1' branch'main'
+zi ice wait'0' lucid depth'1' branch'main'
 zi light z-shell/zsh-fancy-completions
 
 # 💻 SSH Alias Manager - Manages SSH connection aliases
 # Usage: Creates convenient aliases for SSH hosts from ~/.ssh/config
-zi ice wait'!0' lucid depth'1' from'gh'
+zi ice wait'0' lucid depth'1' from'gh'
 zi light sunlei/zsh-ssh
 
 # ==============================================================================
@@ -466,13 +466,13 @@ zinit light ajeetdsouza/zoxide
 # 📁 BD - Quickly go back to a parent directory by name
 # Usage: `bd src` - jump back to /home/user/projects/src from deep subdirectory
 # Example: In /home/user/projects/src/components/ui → `bd projects` → /home/user/projects
-zi ice wait'!0' as'program' pick'bd' mv'bd -> bd'
-zi load vigneshwaranr/bd
+zi ice wait'0' lucid as'program' pick'bd' mv'bd -> bd'
+zi light vigneshwaranr/bd
 
 # 📁 Rename - Perl-based batch file renamer with regex support
 # Usage: `rename 's/\.txt$/.md/' *.txt` - rename all .txt files to .md
-zi ice wait'!0' as'program' pick'rename' mv'rename -> rename'
-zi load ap/rename
+zi ice wait'0' lucid as'program' pick'rename' mv'rename -> rename'
+zi light ap/rename
 
 # 📊 Eza - Modern ls replacement with colors, icons, and git integration
 # Usage: Already aliased to `ls`, `l`, `la`, `ll`, `tree`
@@ -483,13 +483,13 @@ zi light eza-community/eza
 # 🌲 Erdtree - Modern file-tree visualization with disk usage
 # Usage: `erdtree` or `et` - shows directory tree with file sizes
 # Alternative to `tree` and `ncdu` with better visuals
-zi ice wait'!0' lucid depth'1' from'gh-r' as'command'
+zi ice wait'0' lucid depth'1' from'gh-r' as'command'
 zi light solidiquis/erdtree
 
 # 🔖 ZSHmarks - Directory bookmarking system
 # Usage: `bookmark <name>` - save current dir, `jump <name>` - jump to saved dir
 # `showmarks` - list all bookmarks, `deletemark <name>` - remove bookmark
-zi ice wait'!0' lucid depth'1'
+zi ice wait'0' lucid depth'1'
 zi light jocelynmallon/zshmarks
 
 # ==============================================================================
@@ -501,64 +501,64 @@ zi light jocelynmallon/zshmarks
 # Auto-pipes through less with `rg()` function in aliases.zsh
 export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME}/ripgrep/.ripgreprc"
 zi ice from'gh-r' as'command' pick='*/rg'
-zi load BurntSushi/ripgrep
+zi light BurntSushi/ripgrep
 
 # 🦇 Bat - Cat clone with syntax highlighting and git integration
 # Usage: Already aliased to `cat` - shows line numbers and syntax colors
 # Original cat available as `rcat`
 export BAT_THEME="OneHalfDark"
 zi ice from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"
-zi load sharkdp/bat
+zi light sharkdp/bat
 
 # 🔍 FD - Simple, fast alternative to `find`
 # Usage: `fd pattern` - finds files by name, faster than find
 # `fd -e js` - find by extension, `fd -t d` - find directories only
 zi ice from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"
-zi load sharkdp/fd
+zi light sharkdp/fd
 
 
 
 # 🔬 XSV - Fast CSV command line toolkit
 # Usage: `xsv stats data.csv` - show column statistics
 # `xsv select column1,column2 data.csv` - select columns
-zi ice wait'!0' lucid depth'1' from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv' atpull'%atclone'
+zi ice wait'0' lucid depth'1' from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv' atpull'%atclone'
 zi light BurntSushi/xsv
 
 # 📊 CSVtool - Pandas-powered CSV manipulation tool
 # Usage: `csvtool filter data.csv` - interactive CSV filtering
-zi ice wait'!0' as'program' pick'csvtool/csvtool.py' \
+zi ice wait'0' lucid as'program' pick'csvtool/csvtool.py' \
   atclone'python3 -m venv venv && venv/bin/pip install pandas openpyxl' \
   atpull'%atclone' \
   cmd'./venv/bin/python csvtool "$@"'
-zi load maroofi/csvtool
+zi light maroofi/csvtool
 
 # 🧼 SD - Intuitive find & replace CLI (better than sed)
 # Usage: `sd before after file.txt` - simpler syntax than sed
 # `sd '\d+' '[$0]' file.txt` - regex with capture groups
-zi ice wait'!0' from'gh-r' as'command' pick'gnu'
+zi ice wait'0' lucid from'gh-r' as'command' pick'gnu'
 zi light chmln/sd
 
 # 🧠 JQ - Command-line JSON processor
 # Usage: `echo '{"key":"value"}' | jq .key` - extract JSON fields
 # Works with jq-zsh-plugin for interactive query building (Alt+J)
 zi ice as'program' from'gh-r' bpick'*linux64' mv'jq* -> jq'
-zi load jqlang/jq
+zi light jqlang/jq
 
 # 💥 UP - Interactive pipe builder for shell commands
 # Usage: `up` - opens visual editor to build/test pipelines interactively
 # Helps construct complex command pipelines with live preview
-zi ice wait'!0' lucid depth'1' from'gh-r' as'command'
+zi ice wait'0' lucid depth'1' from'gh-r' as'command'
 zi light akavel/up
 
 # 📷 Imcat - Display images directly in terminal
 # Usage: `imcat image.png` - renders image in terminal (kitty/iTerm2)
-zi ice wait'!0' lucid depth'1' from'gh' as'command' make pick'imcat'
+zi ice wait'0' lucid depth'1' from'gh' as'command' make pick'imcat'
 zi light stolk/imcat
 
 # 📊 QSV - Ultra-fast CSV toolkit with Python integration
 # Usage: `qsv stats data.csv` - advanced CSV statistics and operations
 # More features than xsv: SQL queries, Python expressions, etc.
-zi ice wait'!0' lucid depth'1' as'program' pick'target/release/qsv' atclone'cargo build --release --locked --bin qsv --features "feature_capable,python,apply,foreach"' atpull'%atclone'
+zi ice wait'0' lucid depth'1' as'program' pick'target/release/qsv' atclone'cargo build --release --locked --bin qsv --features "feature_capable,python,apply,foreach"' atpull'%atclone'
 zi light dathere/qsv
 
 # ==============================================================================
@@ -576,14 +576,14 @@ zi light wfxr/forgit
 # 🌐 Git-Open - Open current repo in browser (GitHub/GitLab/Bitbucket)
 # Usage: `git open` - opens repo URL in browser
 # `git open --issue` - opens issues page
-zi ice wait'!0' lucid depth'1'
+zi ice wait'0' lucid depth'1'
 zi light paulirish/git-open
 
 # 🛠️ Git-Extras - Collection of 60+ git utilities
 # Usage: `git summary` - repo summary, `git effort` - show file activity
 # `git changelog` - generate changelog, `git ignore` - add to .gitignore
 # Full list: https://github.com/tj/git-extras/blob/master/Commands.md
-zi ice wait'!0' lucid depth'1' as'program' pick'$ZPFX/bin/git-*' make'PREFIX=$ZPFX' nocompile
+zi ice wait'0' lucid depth'1' as'program' pick'$ZPFX/bin/git-*' make'PREFIX=$ZPFX' nocompile
 zi light tj/git-extras
 
 # ==============================================================================
@@ -603,18 +603,18 @@ zi light dominik-schwabe/zsh-fnm
 # 📦 Better NPM Completion - Enhanced tab completion for npm/yarn/pnpm
 # Usage: `npm install <TAB>` - shows package suggestions from npm registry
 # Works for npm, yarn, and pnpm commands
-zi ice wait'!0' lucid depth'1' as'completion'
+zi ice wait'0' lucid depth'1' as'completion'
 zi light lukechilds/zsh-better-npm-completion
 
 # 🎨 Laravel Artisan Completion - Smart completions for Laravel Artisan
 # Usage: `php artisan <TAB>` - shows available artisan commands
 # Works with Docker alias `pa` as well
-zi ice wait'!0' lucid depth'1'
+zi ice wait'0' lucid depth'1'
 zi light jessarcher/zsh-artisan
 
 # # 🎼 Composer Completion - Tab completion for Composer commands
 # # Usage: `composer <TAB>` - shows composer commands and package names
-# zi ice wait'!0' lucid depth'1' as'completion'
+# zi ice wait'0' lucid depth'1' as'completion'
 # zi snippet https://github.com/composer/composer/blob/main/res/composer-completion.zsh
 
 # ==============================================================================
