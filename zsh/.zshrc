@@ -348,6 +348,8 @@ autoload -Uz _zinit; (( ${+_comps} )) && _comps[zinit]=_zinit
 # ⚡ Powerlevel10k - Fast, customizable prompt with instant-prompt support
 # Shows git status, command duration, exit codes, and more
 # Configure: run `p10k configure` to customize appearance
+# Disable configuration wizard on servers and non-interactive sessions
+typeset -g POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
 zi ice depth'1'
 zi light romkatv/powerlevel10k
 
@@ -443,9 +445,10 @@ zi light sunlei/zsh-ssh
 export ENHANCD_DISABLE_DOT=1
 export ENHANCD_FILTER="fzf"
 export ENHANCD_COMMAND="cd"
-export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
+export ENHANCD_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/enhancd"
+export ENHANCD_DIR="${ENHANCD_ROOT}"
 export ENHANCD_DIR_PATH_STYLE="full"
-export ENHANCD_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/enhancd"
+export ENHANCD_HOME="${ENHANCD_ROOT}"
 export ENHANCD_DIVE_MAX=10
 zi ice lucid wait'2' depth'1' src'init.sh' branch'main'
 zi light babarot/enhancd
