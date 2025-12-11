@@ -1,0 +1,33 @@
+FROM ubuntu:24.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+# Install common dependencies to speed up tests via layer caching
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    git \
+    sudo \
+    locales \
+    tzdata \
+    ca-certificates \
+    && locale-gen en_US.UTF-8 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set locale
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
+
+# Use existing ubuntu user (UID 1000) with sudo privileges (passwordless)
+# UID 1000 matches most host users for seamless bind mounts
+RUN echo 'ubuntu ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+# Set up working directory
+WORKDIR /home/ubuntu
+
+# Switch to ubuntu user
+USER ubuntu
