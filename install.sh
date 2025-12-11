@@ -50,13 +50,12 @@ readonly -a LINUX_PACKAGES=(
 	# Tier 1: Development libraries (Python/Node/Rust dependencies)
 	libssl-dev libcurl4-openssl-dev zlib1g-dev libffi-dev libreadline-dev
 	# Tier 1: Essential utilities
-	man-db less openssh-client
+	man-db less openssh-client software-properties-common
 	# Tier 2: Debugging & development helpers
 	strace gdb lsb-release shellcheck tree
 )
 
 readonly -a CARGO_PACKAGES=(
-	sd
 	"broot --locked --features clipboard"
 )
 
@@ -110,7 +109,8 @@ log_section() {
 
 # Unified debug logging (replaces decho)
 log_debug() {
-	[[ "${DEBUG}" ]] && log "DEBUG" "$@"
+	[[ -n "${DEBUG:-}" ]] && log "DEBUG" "$@"
+	return 0
 }
 
 # Fault-tolerant download helper with retry logic (user priority: reliability over speed)
@@ -230,13 +230,12 @@ version_ge() {
 	done
 
 	for ((i=0; i<${#ver1_arr[@]}; i++)); do
-		if [[ -z ${ver2_arr[i]} ]]; then
-			ver2_arr[i]=0
-		fi
-		if ((10#${ver1_arr[i]} > 10#${ver2_arr[i]})); then
+		# Use default value expansion to avoid unbound variable error
+		local v2="${ver2_arr[i]:-0}"
+		if ((10#${ver1_arr[i]} > 10#${v2})); then
 			return 0
 		fi
-		if ((10#${ver1_arr[i]} < 10#${ver2_arr[i]})); then
+		if ((10#${ver1_arr[i]} < 10#${v2})); then
 			return 1
 		fi
 	done
@@ -296,7 +295,7 @@ install_packages() {
 
 	case "$manager" in
 		apt)
-			sudo apt-get install -y --ignore-missing "${packages[@]}"
+			sudo apt-get install -y "${packages[@]}"
 			;;
 		brew)
 			brew install "${packages[@]}"
@@ -307,7 +306,9 @@ install_packages() {
 			done
 			;;
 		pip3)
-			pip3 install --user "${packages[@]}"
+			# Ubuntu 24.04+ has PEP 668 externally-managed environment protection
+			# Use --break-system-packages flag to bypass it
+			pip3 install --user --break-system-packages "${packages[@]}"
 			;;
 		*)
 			log_error "Unknown package manager: $manager"
@@ -739,9 +740,15 @@ install_cargo_package() {
 
 # Install WSL utilities
 install_wslu() {
+	log_info "Installing latest wslu from PPA..."
+
+	# Add PPA for latest version (PPA has 4.1.3 vs Ubuntu's 3.2.3)
+	# Note: software-properties-common (provides add-apt-repository) is in LINUX_PACKAGES
 	sudo add-apt-repository ppa:wslutilities/wslu -y
-	sudo apt update -y
-	sudo apt install -f -y wslu
+	sudo apt-get update -y
+	sudo apt-get install -y wslu
+
+	log_info "wslu installed successfully"
 }
 
 # Expert-level blackhosts installer (demonstrates elegant abstraction)
@@ -876,20 +883,22 @@ install_dotfile_links() {
 
 # Setup WSL Windows home directory with validation
 setup_wsl_windows_home() {
-	validate_command wslvar || { log_warn "wslvar not found, skipping Windows home setup"; return 0; }
-
+	# Try to get Windows profile - this will fail in Docker/non-WSL environments
 	local windows_profile
 	windows_profile=$(wslvar USERPROFILE 2>&1) || {
-		log_error "Failed to get USERPROFILE: $windows_profile"
-		return 1
+		log_warn "Failed to get USERPROFILE (not in real WSL environment), skipping Windows home setup"
+		return 0
 	}
 
-	[[ -z "$windows_profile" ]] && { log_error "Empty USERPROFILE"; return 1; }
+	[[ -z "$windows_profile" ]] && {
+		log_warn "Empty USERPROFILE, skipping Windows home setup"
+		return 0
+	}
 
 	local windows_home
 	windows_home=$(wslpath "$windows_profile" 2>&1) || {
-		log_error "Failed to convert path: $windows_home"
-		return 1
+		log_warn "Failed to convert path (not in real WSL environment), skipping Windows home setup"
+		return 0
 	}
 
 	log_info "Windows home: $windows_home"
@@ -903,7 +912,10 @@ setup_wsl_windows_home() {
 
 # Setup Windows Terminal configuration
 setup_windows_terminal() {
-	validate_command powershell.exe || { log_warn "powershell.exe not found"; return 0; }
+	if ! command -v powershell.exe &>/dev/null; then
+		log_warn "powershell.exe not found, skipping Windows Terminal setup"
+		return 0
+	fi
 
 	local windows_user
 	windows_user=$(powershell.exe '$env:UserName' 2>&1 | tr -d '\r\n')

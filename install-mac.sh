@@ -124,7 +124,6 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 			powerline-go \
 			fontconfig \
 			python3 \
-			jq \
 			csvkit \
 			xclip \
 			htop \
@@ -133,14 +132,8 @@ if [[ ! $(zsh --version 2>/dev/null) ]]; then
 			unzip \
 			xsel \
 			xclip \
-			bat \
-			ripgrep \
 			glances \
 			ctags \
-			fd \
-			fzf \
-			up \
-			eza \
 			broot \
 			go
 fi
