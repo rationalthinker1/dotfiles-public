@@ -28,3 +28,4 @@ zsh/.zplug
 *:Zone.Identifiere
 *.zwc
 .vscode/*
+zsh/cache/*
