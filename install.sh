@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
 
-# Strict error handling for production-grade install script
-set -euo pipefail  # Exit on error, undefined vars, pipe failures
+set -euo pipefail
 
-#=======================================================================================
-# Logging System
-#=======================================================================================
-# Set DEBUG from environment or default to empty
 : "${DEBUG:=}"
 
 #=======================================================================================
-# Configuration Constants
+# Configuration
 #=======================================================================================
 readonly DOWNLOAD_RETRIES=3
 readonly DOWNLOAD_RETRY_DELAY=5
@@ -26,7 +21,7 @@ readonly BACKUP_DIR="${DOTFILES_ROOT}/backup"
 readonly FONTS_DIR="${DOTFILES_ROOT}/fonts"
 
 #=======================================================================================
-# Declarative Package Definitions
+# Package Definitions
 #=======================================================================================
 readonly -a DARWIN_PACKAGES=(
 	git grep wget curl zsh powerline-go fontconfig python3
@@ -99,7 +94,6 @@ log_info() { log "INFO" "$@"; }
 log_warn() { log "WARN" "$@"; }
 log_error() { log "ERROR" "$@" >&2; }
 
-# Log with decorative header (replaces hardcoded echo decorations)
 log_section() {
 	local msg="$1"
 	log_info "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -107,13 +101,11 @@ log_section() {
 	log_info "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
-# Unified debug logging (replaces decho)
 log_debug() {
 	[[ -n "${DEBUG:-}" ]] && log "DEBUG" "$@"
 	return 0
 }
 
-# Fault-tolerant download helper with retry logic (user priority: reliability over speed)
 download_with_retry() {
 	local url="$1"
 	local output="${2:--}"  # Default to stdout if not specified
@@ -149,11 +141,9 @@ download_with_retry() {
 trap 'log_error "Script failed at line $LINENO. Command: $BASH_COMMAND"; exit 1' ERR
 
 #=======================================================================================
-# Expert-Level Helper Functions (Reusable Abstractions)
+# Helper Functions
 #=======================================================================================
 
-# Validate command exists, optionally install package
-# Usage: validate_command <cmd> [package_name] [installer_func]
 validate_command() {
 	local cmd="$1"
 	local pkg="${2:-$1}"
@@ -172,8 +162,6 @@ validate_command() {
 	fi
 }
 
-# Safe source with existence check
-# Usage: safe_source <file> [required]
 safe_source() {
 	local file="$1"
 	local required="${2:-false}"
@@ -189,29 +177,11 @@ safe_source() {
 	return 0
 }
 
-# Ensure directory exists with proper permissions
-# Usage: ensure_dir <path> [mode]
 ensure_dir() {
 	local dir="$1"
-	local mode="${2:-0755}"
-
-	if [[ ! -d "$dir" ]]; then
-		mkdir -p "$dir" || { log_error "Failed to create directory: $dir"; return 1; }
-		chmod "$mode" "$dir"
-		log_info "Created directory: $dir"
-	fi
-	return 0
-}
-
-# Extract version number from command output
-# Usage: extract_version <command> <awk_field>
-extract_version() {
-	local cmd="$1"
-	local field="${2:-5}"
-	local version
-
-	version=$("$cmd" --version 2>/dev/null | awk -v f="$field" 'NR==1 {print $f}')
-	echo "${version%%.*}"  # Return major version
+	[[ -d "$dir" ]] && return 0
+	mkdir -p "$dir" || { log_error "Failed to create directory: $dir"; return 1; }
+	log_info "Created directory: $dir"
 }
 
 # Compare version numbers (supports major.minor.patch)
@@ -348,40 +318,12 @@ github_release_url() {
 install_deb_from_url() {
 	local url="$1"
 	local pkg_name="$2"
-	local filename="${url##*/}"
-	local temp_deb="/tmp/$filename"
-
-	# Trap-based cleanup (expert pattern)
-	local cleanup_done=0
-	_cleanup_deb() {
-		[[ $cleanup_done -eq 0 && -f "$temp_deb" ]] && rm -f "$temp_deb" && cleanup_done=1
-	}
-	trap _cleanup_deb RETURN
+	local temp_deb="/tmp/${url##*/}"
 
 	download_with_retry "$url" "$temp_deb" || return 1
 	sudo dpkg -i --force-overwrite "$temp_deb" || { log_error "Failed to install $pkg_name"; return 1; }
+	rm -f "$temp_deb"
 	log_info "$pkg_name installed successfully"
-}
-
-# Install package from GitHub releases (expert abstraction pattern)
-# Usage: install_github_release <repo> <asset_pattern> [exclude_pattern] <pkg_name>
-install_github_release() {
-	local repo="$1"
-	local asset_pattern="$2"
-	local exclude_pattern="${3:-}"
-	local pkg_name="${4:-${repo##*/}}"
-
-	# Guard clause: check if already installed
-	command -v "$pkg_name" &>/dev/null && {
-		log_info "$pkg_name already installed"
-		return 0
-	}
-
-	log_info "Installing $pkg_name from GitHub..."
-
-	local url
-	url=$(github_release_url "$repo" "$asset_pattern" "$exclude_pattern") || return 1
-	install_deb_from_url "$url" "$pkg_name"
 }
 
 #=======================================================================================
@@ -411,13 +353,9 @@ detect_location() {
 
 # Get distribution codename (portable)
 get_codename() {
-	if [[ -f /etc/os-release ]]; then
-		grep -oP '(?<=VERSION_CODENAME=).*' /etc/os-release 2>/dev/null || echo "unknown"
-	elif command -v lsb_release &>/dev/null; then
-		lsb_release -cs 2>/dev/null || echo "unknown"
-	else
+	grep -oP '(?<=VERSION_CODENAME=).*' /etc/os-release 2>/dev/null || \
+		lsb_release -cs 2>/dev/null || \
 		echo "unknown"
-	fi
 }
 
 #=======================================================================================
@@ -486,57 +424,40 @@ function updateFiles() {
 	return 0
 }
 
-function createSymlink() {
+createSymlink() {
 	local source="${1}"
 	local target="${2}"
 
 	if [[ ! -L "${source}" ]]; then
-		log_debug "FUNCTION createSymlink"
-		log_debug "source: ${source}"
-		log_debug "target: ${target}"
-		log_debug ""
-		# In DEBUG mode, skip file operations (dry-run mode)
 		if [[ ! "${DEBUG}" ]]; then
 			ln -nfs "${source}" "${target}"
+			log_info "Created symlink: ${target} -> ${source}"
 		else
-			log "DEBUG" "Would create symlink: ${source} -> ${target}"
+			log_debug "Would create symlink: ${source} -> ${target}"
 		fi
-		echo ""
-		echo "<======================================== link created: ${target} ========================================>"
 	fi
 }
 
-function backupFile() {
+backupFile() {
 	local file_path="${1}"
-	local filename
-	filename=$(basename "${file_path}")
 
-	log_debug "FUNCTION backupFile"
-	log_debug "file_path: ${file_path}"
-	log_debug "filename: ${filename}"
-	log_debug ""
+	[[ ! -f "${file_path}" && ! -d "${file_path}" ]] && return 0
 
-	if [[ ! -f "${file_path}" && ! -d "${file_path}" ]]; then
-		log_debug "${file_path} does not exist" && return 0
-	fi
-
-	# In DEBUG mode, skip file operations (dry-run mode)
 	if [[ ! "${DEBUG}" ]]; then
 		if rsync -avzhL --quiet "${file_path}" "${BACKUP_DIR}/"; then
 			rm -rf "${file_path}"
+			log_info "Backed up: $(basename "${file_path}")"
 		else
-			log_error "backupFile: Failed to backup ${file_path}, not removing original"
+			log_error "Failed to backup ${file_path}, not removing original"
 			return 1
 		fi
 	else
-		log "DEBUG" "Would backup: ${file_path} -> ${BACKUP_DIR}/"
+		log_debug "Would backup: ${file_path} -> ${BACKUP_DIR}/"
 	fi
-	echo ""
-	echo "<======================================== backed up ${filename} to ${BACKUP_DIR} ========================================>"
 }
 
 #=======================================================================================
-# Installation Functions (Modular Design)
+# Installation Functions
 #=======================================================================================
 
 # Install Homebrew on macOS (idempotent)
@@ -606,63 +527,45 @@ install_essential_packages() {
 	log_info "Essential packages installed"
 }
 
-# Installing zsh and basic packages
-if [[ ! $(command -v zsh) ]]; then
-	log_debug "zsh does not exist"
-	install_essential_packages
-fi
-
-# Install Vim dependencies (modular approach)
-install_vim_dependencies() {
-	local -r DEPS=(
-		build-essential libncurses5-dev libncursesw5-dev
-		python3-dev ruby-dev lua5.3 liblua5.3-dev libperl-dev
-		git libx11-dev libxt-dev libxpm-dev libgtk-3-dev
-	)
-
-	sudo apt-get install -y "${DEPS[@]}"
-}
-
-# Configure Vim build (expert abstraction)
-configure_vim_build() {
-	local py3_config="$1"
-	local -r FEATURES=(
-		"--with-features=huge"
-		"--enable-multibyte"
-		"--enable-rubyinterp=yes"
-		"--enable-python3interp=yes"
-		"--enable-perlinterp=yes"
-		"--enable-luainterp=yes"
-		"--enable-cscope"
-		"--enable-fail-if-missing"
-		"--disable-gui"
-		"--without-x"
-		"--prefix=/usr/local"
-		"--with-tlib=ncurses"
-	)
-
-	./configure "${FEATURES[@]}" --with-python3-config-dir="$py3_config"
-}
-
 # Build and install Vim from source
 install_vim_from_source() {
 	log_section "Building Vim ${VIM_MIN_VERSION}+ from source"
 
-	# Validate dependencies with expert helper
 	validate_command python3-config python3-dev || return 1
 
 	local py3_config
 	py3_config=$(python3-config --configdir 2>&1)
 	[[ -d "$py3_config" ]] || { log_error "Invalid python3-config: $py3_config"; return 1; }
 
-	install_vim_dependencies
+	# Install dependencies
+	local -r DEPS=(
+		build-essential libncurses5-dev libncursesw5-dev
+		python3-dev ruby-dev lua5.3 liblua5.3-dev libperl-dev
+		git libx11-dev libxt-dev libxpm-dev libgtk-3-dev
+	)
+	install_packages apt "${DEPS[@]}"
 
-	# Clone and build in isolated scope (prevents directory pollution)
+	# Clone and build
 	{
 		git clone --depth=1 https://github.com/vim/vim.git || return 1
 		cd vim/src || return 1
 
-		configure_vim_build "$py3_config"
+		local -r FEATURES=(
+			"--with-features=huge"
+			"--enable-multibyte"
+			"--enable-rubyinterp=yes"
+			"--enable-python3interp=yes"
+			"--enable-perlinterp=yes"
+			"--enable-luainterp=yes"
+			"--enable-cscope"
+			"--enable-fail-if-missing"
+			"--disable-gui"
+			"--without-x"
+			"--prefix=/usr/local"
+			"--with-tlib=ncurses"
+		)
+
+		./configure "${FEATURES[@]}" --with-python3-config-dir="$py3_config"
 		with_spinner "Compiling Vim" make -j"$(nproc)"
 		sudo make install
 
@@ -732,12 +635,6 @@ install_rust() {
 	log_info "Rust toolchain installed"
 }
 
-# Install cargo package (abstraction for cargo install)
-install_cargo_package() {
-	local pkg="$1"
-	cargo install $pkg  # Note: $pkg may contain flags
-}
-
 # Install WSL utilities
 install_wslu() {
 	log_info "Installing latest wslu from PPA..."
@@ -751,22 +648,17 @@ install_wslu() {
 	log_info "wslu installed successfully"
 }
 
-# Expert-level blackhosts installer (demonstrates elegant abstraction)
 install_blackhosts() {
-	# Guard clauses (fail fast pattern)
 	command -v blackhosts &>/dev/null && { log_info "blackhosts already installed"; return 0; }
 
 	log_info "Installing blackhosts..."
 
-	# Use reusable GitHub helper
 	local url
 	url=$(github_release_url "Lateralus138/blackhosts" "blackhosts.deb" "musl") || return 1
-
-	# Use reusable .deb installer
 	install_deb_from_url "$url" "blackhosts"
 }
 
-# Install all development tools (orchestration function)
+# Install all development tools
 install_development_tools() {
 	log_section "Installing development tools"
 
@@ -778,7 +670,7 @@ install_development_tools() {
 	ensure_tool cargo install_rust
 	for pkg in "${CARGO_PACKAGES[@]}"; do
 		local cmd="${pkg%% *}"  # Extract command name
-		ensure_tool "$cmd" "install_cargo_package '$pkg'"
+		ensure_tool "$cmd" "install_packages cargo '$pkg'"
 	done
 
 	# Platform-specific tools
@@ -823,15 +715,9 @@ install_fonts() {
 }
 
 #=======================================================================================
-# Dotfile Symlink Management (Data-Driven)
+# Dotfile Symlink Management
 #=======================================================================================
 
-# Ensure directory exists (helper)
-ensure_dir() {
-	[[ -d "$1" ]] || mkdir -p "$1"
-}
-
-# Update dotfile symlink (improved from updateFiles)
 update_dotfile_link() {
 	local source="$1"
 	local target="$2"
@@ -943,7 +829,6 @@ setup_windows_terminal() {
 	log_info "✓ Windows Terminal configured"
 }
 
-# Setup WSL environment (orchestration function)
 setup_wsl_environment() {
 	[[ $HOST_OS != 'wsl' ]] && return 0
 
@@ -954,27 +839,26 @@ setup_wsl_environment() {
 }
 
 #=======================================================================================
-# Main Installation Flow (Expert Orchestration)
+# Main Installation Flow
 #=======================================================================================
 
 main() {
 	log_section "Starting dotfiles installation"
 	log_info "OS: $HOST_OS | Location: $HOST_LOCATION | Codename: $CODENAME"
 
-	# Phase 1: Install development tools
+	# Install zsh and essential packages first
+	if ! command -v zsh &>/dev/null; then
+		log_info "Installing zsh and essential packages"
+		install_essential_packages
+	fi
+
 	install_development_tools
-
-	# Phase 2: Install fonts
 	install_fonts
-
-	# Phase 3: Install dotfile symlinks
 	install_dotfile_links
 
-	# Phase 4: Install Vim plugins
 	log_section "Installing Vim plugins"
 	vim -E -c PlugInstall -c qall! 2>/dev/null || log_warn "Vim plugin installation failed"
 
-	# Phase 5: Setup WSL environment
 	setup_wsl_environment
 
 	log_section "Installation complete!"
