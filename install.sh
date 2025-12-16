@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+# Strict error handling for production-grade install script
+set -euo pipefail  # Exit on error, undefined vars, pipe failures
 
+#=======================================================================================
+# Logging System
+#=======================================================================================
+# Set DEBUG from environment or default to empty
 : "${DEBUG:=}"
 
 #=======================================================================================
@@ -94,6 +99,7 @@ log_info() { log "INFO" "$@"; }
 log_warn() { log "WARN" "$@"; }
 log_error() { log "ERROR" "$@" >&2; }
 
+# Log with decorative header
 log_section() {
 	local msg="$1"
 	log_info "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -144,6 +150,8 @@ trap 'log_error "Script failed at line $LINENO. Command: $BASH_COMMAND"; exit 1'
 # Helper Functions
 #=======================================================================================
 
+# Validate command exists, optionally install package
+# Usage: validate_command <cmd> [package_name] [installer_func]
 validate_command() {
 	local cmd="$1"
 	local pkg="${2:-$1}"
@@ -162,6 +170,8 @@ validate_command() {
 	fi
 }
 
+# Safe source with existence check
+# Usage: safe_source <file> [required]
 safe_source() {
 	local file="$1"
 	local required="${2:-false}"
@@ -177,6 +187,8 @@ safe_source() {
 	return 0
 }
 
+# Ensure directory exists with proper permissions
+# Usage: ensure_dir <path> [mode]
 ensure_dir() {
 	local dir="$1"
 	[[ -d "$dir" ]] && return 0
@@ -353,9 +365,13 @@ detect_location() {
 
 # Get distribution codename (portable)
 get_codename() {
-	grep -oP '(?<=VERSION_CODENAME=).*' /etc/os-release 2>/dev/null || \
-		lsb_release -cs 2>/dev/null || \
+	if [[ -f /etc/os-release ]]; then
+		grep -oP '(?<=VERSION_CODENAME=).*' /etc/os-release 2>/dev/null || echo "unknown"
+	elif command -v lsb_release &>/dev/null; then
+		lsb_release -cs 2>/dev/null || echo "unknown"
+	else
 		echo "unknown"
+	fi
 }
 
 #=======================================================================================
