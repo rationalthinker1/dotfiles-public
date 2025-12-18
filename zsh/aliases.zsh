@@ -1113,3 +1113,35 @@ note() {
     vim "$note_file"
   fi
 }
+
+#=======================================================================================
+# Modern CLI Tool Aliases
+#=======================================================================================
+
+# Update all package managers
+alias update-all='zi update --all && rustup update && sudo apt-get update && sudo apt-get upgrade -y'
+alias update-zi='zi update --all'
+
+# Lazygit/Lazydocker TUIs
+alias lg='lazygit'
+alias lzd='lazydocker'
+
+# System monitoring (override htop/top with bottom)
+alias htop='btm'
+alias top='btm'
+
+# Disk usage (modern alternatives)
+alias df='duf'
+alias ncdu='dust'
+
+# Process viewer
+alias pps='procs'  # Use pps for procs, keep ps as fallback
+
+# DNS lookup
+alias dog='dog'  # Modern dig
+
+# Benchmarking
+alias bench='hyperfine'
+
+# Code statistics
+alias cloc='tokei'

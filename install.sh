@@ -12,7 +12,7 @@ readonly FONTS_DIR="${DOTFILES_ROOT}/fonts"
 
 # Package definitions
 readonly -a DARWIN_PACKAGES=(
-	git grep wget curl zsh powerline-go fontconfig python3
+	git grep wget curl zsh fontconfig python3
 	csvkit xclip htop p7zip rename unzip xsel
 	glances ctags up broot pcre2-utils rsync go
 	coreutils gnu-sed  # GNU versions of macOS BSD tools
