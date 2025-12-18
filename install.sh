@@ -1,43 +1,23 @@
 #!/usr/bin/env bash
 
-# Strict error handling for production-grade install script
-set -euo pipefail  # Exit on error, undefined vars, pipe failures
-
-#=======================================================================================
-# Logging System
-#=======================================================================================
-# Set DEBUG from environment or default to empty
-: "${DEBUG:=}"
+set -euo pipefail
 
 #=======================================================================================
 # Configuration
 #=======================================================================================
-readonly DOWNLOAD_RETRIES=3
-readonly DOWNLOAD_RETRY_DELAY=5
-readonly CURL_TIMEOUT=10
-readonly SPINNER_SLEEP=0.1
-readonly SPINNER_FRAMES='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
 readonly VIM_MIN_VERSION="9"
-readonly WINDOWS_TERMINAL_PKG="Microsoft.WindowsTerminal_8wekyb3d8bbwe"
-
-# Path constants
 readonly DOTFILES_ROOT="${HOME}/.dotfiles"
 readonly BACKUP_DIR="${DOTFILES_ROOT}/backup"
 readonly FONTS_DIR="${DOTFILES_ROOT}/fonts"
 
-#=======================================================================================
-# Package Definitions
-#=======================================================================================
+# Package definitions
 readonly -a DARWIN_PACKAGES=(
 	git grep wget curl zsh powerline-go fontconfig python3
 	csvkit xclip htop p7zip rename unzip xsel
 	glances ctags up broot pcre2-utils rsync go
-	# GNU tools (macOS has BSD versions)
-	coreutils gnu-sed
-	# Build dependencies
-	autoconf automake libtool pkg-config
-	# Libraries
-	openssl@3
+	coreutils gnu-sed  # GNU versions of macOS BSD tools
+	autoconf automake libtool pkg-config  # Build dependencies
+	openssl@3  # Library dependencies
 )
 
 readonly -a LINUX_PACKAGES=(
@@ -45,21 +25,13 @@ readonly -a LINUX_PACKAGES=(
 	python3-venv python3-dev python3-pip xclip p7zip-full zip unzip
 	unrar wipe cmake net-tools xsel exuberant-ctags golang-go rsync
 	libncurses5-dev libncursesw5-dev util-linux-extra pcre2-utils jq
-	# Tier 1: Critical build tools (NOT in build-essential)
-	autoconf automake libtool pkg-config
-	# Tier 1: Development libraries (Python/Node/Rust dependencies)
-	libssl-dev libcurl4-openssl-dev zlib1g-dev libffi-dev libreadline-dev
-	# Tier 1: Essential utilities
-	man-db less openssh-client software-properties-common
-	# Tier 2: Debugging & development helpers
-	strace gdb lsb-release shellcheck tree
+	autoconf automake libtool pkg-config  # Build dependencies
+	libssl-dev libcurl4-openssl-dev zlib1g-dev libffi-dev libreadline-dev  # Development libraries
+	man-db less openssh-client software-properties-common  # Essential utilities
+	strace gdb lsb-release shellcheck tree  # Debugging & development tools
 )
 
-readonly -a CARGO_PACKAGES=(
-	"broot --locked --features clipboard"
-)
-
-# Symlink mappings: [source_relative_path]=destination
+# Symlink mappings
 declare -A DOTFILE_LINKS=(
 	[zsh/.zshrc]="${HOME}/.zshrc"
 	[zsh/.zshenv]="${HOME}/.zshenv"
@@ -79,313 +51,36 @@ declare -A DOTFILE_LINKS=(
 	[rc.sh]="${HOME}/.ssh/rc"
 	[zi/init.zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/zi/init.zsh"
 )
-readonly DOTFILE_LINKS
 
-# Logging functions with timestamps
-LOG_FILE="${HOME}/.dotfiles/install.log"
-mkdir -p "$(dirname "$LOG_FILE")"
-
-log() {
-	local level="$1"
-	shift
-	local msg="$*"
-	# Use bash built-in printf for timestamp (no subprocess spawn)
-	local timestamp
-	printf -v timestamp '%(%Y-%m-%d %H:%M:%S)T' -1
-	echo "[$timestamp] [$level] $msg" | tee -a "$LOG_FILE"
-}
-
-log_info() { log "INFO" "$@"; }
-log_warn() { log "WARN" "$@"; }
-log_error() { log "ERROR" "$@" >&2; }
-
-# Log with decorative header
-log_section() {
-	local msg="$1"
-	log_info "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	log_info "  $msg"
-	log_info "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-}
-
-log_debug() {
-	[[ -n "${DEBUG:-}" ]] && log "DEBUG" "$@"
-	return 0
-}
-
-download_with_retry() {
-	local url="$1"
-	local output="${2:--}"  # Default to stdout if not specified
-	local attempt=1
-
-	while [[ $attempt -le $DOWNLOAD_RETRIES ]]; do
-		log_info "Downloading $url (attempt $attempt/$DOWNLOAD_RETRIES)"
-
-		if [[ "$output" == "-" ]]; then
-			# Output to stdout
-			if curl -fsSL --connect-timeout "$CURL_TIMEOUT" --retry 2 "$url"; then
-				return 0
-			fi
-		else
-			# Output to file
-			if curl -fsSL --connect-timeout "$CURL_TIMEOUT" --retry 2 -o "$output" "$url"; then
-				return 0
-			fi
-		fi
-
-		if [[ $attempt -lt $DOWNLOAD_RETRIES ]]; then
-			log_warn "Download failed, retrying in ${DOWNLOAD_RETRY_DELAY}s..."
-			sleep "$DOWNLOAD_RETRY_DELAY"
-		fi
-		((attempt++))
-	done
-
-	log_error "Failed to download $url after $DOWNLOAD_RETRIES attempts"
-	return 1
-}
-
-# Trap errors AFTER log functions are defined
-trap 'log_error "Script failed at line $LINENO. Command: $BASH_COMMAND"; exit 1' ERR
 
 #=======================================================================================
-# Helper Functions
+# Environment Detection & Initialization
 #=======================================================================================
 
-# Validate command exists, optionally install package
-# Usage: validate_command <cmd> [package_name] [installer_func]
-validate_command() {
-	local cmd="$1"
-	local pkg="${2:-$1}"
-	local installer="${3:-}"
+# Detect operating system
+if [[ -f "/proc/sys/kernel/osrelease" ]] && [[ "$(</proc/sys/kernel/osrelease)" == *microsoft* ]]; then
+	HOST_OS="wsl"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+	HOST_OS="darwin"
+else
+	HOST_OS="linux"
+fi
 
-	if command -v "$cmd" &>/dev/null; then
-		return 0
-	fi
+# Detect location (desktop vs server)
+if [[ "$HOST_OS" == "darwin" ]] || (command -v dpkg-query &>/dev/null && dpkg-query -W -f='${Status}' ubuntu-desktop 2>/dev/null | grep -q "install ok installed"); then
+	HOST_LOCATION="desktop"
+else
+	HOST_LOCATION="server"
+fi
 
-	if [[ -n "$installer" ]]; then
-		log_warn "$cmd not found, attempting to install..."
-		"$installer" || { log_error "Failed to install $pkg"; return 1; }
-	else
-		log_error "$cmd not found and no installer provided"
-		return 1
-	fi
-}
-
-# Safe source with existence check
-# Usage: safe_source <file> [required]
-safe_source() {
-	local file="$1"
-	local required="${2:-false}"
-
-	if [[ -f "$file" ]]; then
-		# shellcheck disable=SC1090
-		source "$file"
-		return 0
-	elif [[ "$required" == "true" ]]; then
-		log_error "Required file not found: $file"
-		return 1
-	fi
-	return 0
-}
-
-# Ensure directory exists with proper permissions
-# Usage: ensure_dir <path> [mode]
-ensure_dir() {
-	local dir="$1"
-	[[ -d "$dir" ]] && return 0
-	mkdir -p "$dir" || { log_error "Failed to create directory: $dir"; return 1; }
-	log_info "Created directory: $dir"
-}
-
-# Compare version numbers (supports major.minor.patch)
-# Usage: version_ge <version1> <version2>
-version_ge() {
-	local ver1="$1"
-	local ver2="$2"
-
-	# Convert to comparable format
-	local IFS=.
-	local i ver1_arr=($ver1) ver2_arr=($ver2)
-
-	# Fill empty positions with zeros
-	for ((i=${#ver1_arr[@]}; i<${#ver2_arr[@]}; i++)); do
-		ver1_arr[i]=0
-	done
-
-	for ((i=0; i<${#ver1_arr[@]}; i++)); do
-		# Use default value expansion to avoid unbound variable error
-		local v2="${ver2_arr[i]:-0}"
-		if ((10#${ver1_arr[i]} > 10#${v2})); then
-			return 0
-		fi
-		if ((10#${ver1_arr[i]} < 10#${v2})); then
-			return 1
-		fi
-	done
-	return 0
-}
-
-# Execute function with spinner (visual feedback for long operations)
-# Usage: with_spinner "message" function_name [args...]
-# Design: Runs command in background, displays animated spinner while waiting
-with_spinner() {
-	local msg="$1"
-	shift
-
-	# Check if stdout is a terminal (not redirected to file/pipe)
-	if [[ -t 1 ]]; then
-		local i=0
-
-		# Run command in background, suppress all output
-		# "$@" expands to all remaining arguments (the actual command to run)
-		"$@" &>/dev/null &
-		local pid=$!
-
-		# Animation loop: while background process is still running
-		while kill -0 "$pid" 2>/dev/null; do
-			# Cycle through spinner frames using modulo arithmetic
-			# ${#SPINNER_FRAMES} = length of spinner string
-			i=$(((i + 1) % ${#SPINNER_FRAMES}))
-
-			# \r returns cursor to line start (overwrites previous frame)
-			# ${SPINNER_FRAMES:$i:1} extracts single character at position i
-			printf "\r%s %s" "${SPINNER_FRAMES:$i:1}" "$msg"
-
-			# Small sleep to control animation speed (prevents CPU spin)
-			sleep "$SPINNER_SLEEP"
-		done
-
-		# Wait for background process to finish and capture exit code
-		wait "$pid"
-		local ret=$?
-
-		# Replace spinner with checkmark and newline (final state)
-		printf "\r✓ %s\n" "$msg"
-		return $ret
-	else
-		# Non-interactive mode: run command directly without spinner
-		# (e.g., when output is redirected or running in CI/CD)
-		"$@"
-	fi
-}
-
-# Declarative package installer (supports apt, brew, cargo, pip)
-# Usage: install_packages <manager> package1 package2 ...
-install_packages() {
-	local manager="$1"
-	shift
-	local -a packages=("$@")
-
-	case "$manager" in
-		apt)
-			sudo apt-get install -y "${packages[@]}"
-			;;
-		brew)
-			brew install "${packages[@]}"
-			;;
-		cargo)
-			for pkg in "${packages[@]}"; do
-				cargo install "$pkg" || log_warn "Failed to install cargo package: $pkg"
-			done
-			;;
-		pip3)
-			# Ubuntu 24.04+ has PEP 668 externally-managed environment protection
-			# Use --break-system-packages flag to bypass it
-			pip3 install --user --break-system-packages "${packages[@]}"
-			;;
-		*)
-			log_error "Unknown package manager: $manager"
-			return 1
-			;;
-	esac
-}
-
-# Fetch GitHub release asset URL (expert pattern for API interactions)
-# Usage: github_release_url <repo> <asset_pattern> [exclude_pattern]
-github_release_url() {
-	local repo="$1"
-	local asset_pattern="$2"
-	local exclude_pattern="${3:-}"
-	local release_json url
-
-	# Fetch with retry
-	release_json=$(download_with_retry "https://api.github.com/repos/$repo/releases/latest") || return 1
-
-	# Build jq filter dynamically
-	local jq_filter='.assets[] | select(.name | contains("'"$asset_pattern"'")'
-	[[ -n "$exclude_pattern" ]] && jq_filter+=' and (contains("'"$exclude_pattern"'") | not)'
-	jq_filter+=') | .browser_download_url'
-
-	url=$(echo "$release_json" | jq -r "$jq_filter" | head -n 1)
-
-	if [[ -z "$url" ]]; then
-		log_error "No matching asset found for: $asset_pattern"
-		return 1
-	fi
-
-	echo "$url"
-}
-
-# Install .deb package from URL with cleanup (reusable pattern)
-# Usage: install_deb_from_url <url> <package_name>
-install_deb_from_url() {
-	local url="$1"
-	local pkg_name="$2"
-	local temp_deb="/tmp/${url##*/}"
-
-	download_with_retry "$url" "$temp_deb" || return 1
-	sudo dpkg -i --force-overwrite "$temp_deb" || { log_error "Failed to install $pkg_name"; return 1; }
-	rm -f "$temp_deb"
-	log_info "$pkg_name installed successfully"
-}
-
-#=======================================================================================
-# Environment Detection Functions
-#=======================================================================================
-
-# Detect operating system (expert abstraction)
-detect_os() {
-	if [[ -f "/proc/sys/kernel/osrelease" ]] && [[ "$(</proc/sys/kernel/osrelease)" == *microsoft* ]]; then
-		echo "wsl"
-	elif [[ "$OSTYPE" == "darwin"* ]]; then
-		echo "darwin"
-	else
-		echo "linux"
-	fi
-}
-
-# Detect environment type
-detect_location() {
-	local os="$1"
-	if dpkg -l ubuntu-desktop &>/dev/null 2>&1 || [[ "$os" == "darwin" ]]; then
-		echo "desktop"
-	else
-		echo "server"
-	fi
-}
-
-# Get distribution codename (portable)
-get_codename() {
-	if [[ -f /etc/os-release ]]; then
-		grep -oP '(?<=VERSION_CODENAME=).*' /etc/os-release 2>/dev/null || echo "unknown"
-	elif command -v lsb_release &>/dev/null; then
-		lsb_release -cs 2>/dev/null || echo "unknown"
-	else
-		echo "unknown"
-	fi
-}
-
-#=======================================================================================
-# Environment Initialization
-#=======================================================================================
-
-# Initialize environment detection
-HOST_OS=$(detect_os)
-HOST_LOCATION=$(detect_location "$HOST_OS")
-CODENAME=$(get_codename)
-
-log_debug "HOST_OS: $HOST_OS"
-log_debug "HOST_LOCATION: $HOST_LOCATION"
-log_debug "CODENAME: $CODENAME"
+# Get distribution codename (portable, no GNU grep -P)
+if [[ -f /etc/os-release ]]; then
+	CODENAME=$(grep '^VERSION_CODENAME=' /etc/os-release 2>/dev/null | cut -d= -f2 || echo "unknown")
+elif command -v lsb_release &>/dev/null; then
+	CODENAME=$(lsb_release -cs 2>/dev/null || echo "unknown")
+else
+	CODENAME="unknown"
+fi
 
 # Export environment variables
 export HOST_OS HOST_LOCATION CODENAME
@@ -401,485 +96,409 @@ export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
 export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export TERM=xterm-256color
 export EDITOR=vim
-export LESS="-XRF"  # Allows commands like cat to stay in terminal after using it
+export LESS="-XRF"
 
-# Script location variables
-ABSOLUTE_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")
-BASE_DIR=$(dirname "${ABSOLUTE_PATH}")
-
-# Use expert helper for safe sourcing
-safe_source "${XDG_CONFIG_HOME}/zsh/.zprofile"
-safe_source "${HOME}/.zprofile"
-
-function updateFiles() {
-	local dotfiles_file="${1}"
-	local current_file="${2}"
-	local link_target
-
-	log_debug "FUNCTION updateFiles"
-	log_debug "current_file: ${current_file}"
-	log_debug "dotfiles_file: ${dotfiles_file}"
-
-	# if the link is not symbolic link or if the file is a symbolic link and the target does not contain string "dotfiles"
-	if [[ ! -L "${current_file}" ]]; then
-		echo "file ${dotfiles_file} is being setup"
-		backupFile "${current_file}"
-		createSymlink "${dotfiles_file}" "${current_file}"
-		return 0
-	elif [[ -L "${current_file}" ]]; then
-		link_target=$(readlink -f "${current_file}")
-		if [[ ! "${link_target}" =~ dotfiles ]]; then
-			echo "file ${dotfiles_file} is being setup"
-			backupFile "${current_file}"
-			createSymlink "${dotfiles_file}" "${current_file}"
-			return 0
-		fi
-	fi
-
-	log_debug "file ${current_file} does not need to be updated"
-	return 0
-}
-
-createSymlink() {
-	local source="${1}"
-	local target="${2}"
-
-	if [[ ! -L "${source}" ]]; then
-		if [[ ! "${DEBUG}" ]]; then
-			ln -nfs "${source}" "${target}"
-			log_info "Created symlink: ${target} -> ${source}"
-		else
-			log_debug "Would create symlink: ${source} -> ${target}"
-		fi
-	fi
-}
-
-backupFile() {
-	local file_path="${1}"
-
-	[[ ! -f "${file_path}" && ! -d "${file_path}" ]] && return 0
-
-	if [[ ! "${DEBUG}" ]]; then
-		if rsync -avzhL --quiet "${file_path}" "${BACKUP_DIR}/"; then
-			rm -rf "${file_path}"
-			log_info "Backed up: $(basename "${file_path}")"
-		else
-			log_error "Failed to backup ${file_path}, not removing original"
-			return 1
-		fi
-	else
-		log_debug "Would backup: ${file_path} -> ${BACKUP_DIR}/"
-	fi
-}
+# Source profiles if they exist (allow failures to not break script)
+[[ -f "${XDG_CONFIG_HOME}/zsh/.zprofile" ]] && source "${XDG_CONFIG_HOME}/zsh/.zprofile" || true
+[[ -f "${HOME}/.zprofile" ]] && source "${HOME}/.zprofile" || true
 
 #=======================================================================================
-# Installation Functions
+# Main Installation
 #=======================================================================================
 
-# Install Homebrew on macOS (idempotent)
-install_homebrew() {
-	command -v brew &>/dev/null && { log_info "Homebrew already installed"; return 0; }
+# Validate that dotfiles directory exists
+if [[ ! -d "$DOTFILES_ROOT" ]]; then
+	echo "ERROR: $DOTFILES_ROOT does not exist"
+	echo "Please clone your dotfiles repository first"
+	exit 1
+fi
 
-	log_section "Installing Homebrew"
-	/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Starting dotfiles installation"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "OS: $HOST_OS | Location: $HOST_LOCATION | Codename: $CODENAME"
+echo
 
-	# Add to shell profile
-	{
-		echo
-		echo 'eval "$(/opt/homebrew/bin/brew shellenv)"'
-	} >>"/Users/${USER}/.zprofile"
+#---------------------------------------------------------------------------------------
+# Install essential packages
+# Skipped if zsh is already installed (indicates packages are present)
+#---------------------------------------------------------------------------------------
+if ! command -v zsh &>/dev/null; then
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	echo "  Installing essential packages"
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-	eval "$(/opt/homebrew/bin/brew shellenv)"
-	log_info "Homebrew installed successfully"
-}
-
-# Configure zsh as default shell (idempotent)
-configure_default_shell() {
-	local zsh_path
-	zsh_path=$(command -v zsh)
-
-	# Add to /etc/shells if not present
-	if ! grep -qxF "$zsh_path" /etc/shells 2>/dev/null; then
-		echo "$zsh_path" | sudo tee -a /etc/shells >/dev/null
-		log_info "Added $zsh_path to /etc/shells"
-	else
-		log_info "$zsh_path already in /etc/shells"
-	fi
-
-	# Change shell for root and user
-	sudo chsh -s "$zsh_path" 2>/dev/null || true
-	chsh -s "$zsh_path" 2>/dev/null || true
-	log_info "Default shell configured to zsh"
-}
-
-# Install essential packages based on platform
-install_essential_packages() {
 	if [[ "${HOST_OS}" == "darwin" ]]; then
-		install_homebrew
-		with_spinner "Installing Darwin packages" install_packages brew "${DARWIN_PACKAGES[@]}"
+		# Install Homebrew
+		if ! command -v brew &>/dev/null; then
+			echo "Installing Homebrew..."
+			/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+			{
+				echo
+				echo 'eval "$(/opt/homebrew/bin/brew shellenv)"'
+			} >>"${HOME}/.zprofile"
+			eval "$(/opt/homebrew/bin/brew shellenv)"
+		else
+			echo "✓ Homebrew already installed"
+		fi
+
+		echo "Installing packages..."
+		if ! brew install "${DARWIN_PACKAGES[@]}"; then
+			echo "WARNING: Some Homebrew packages failed to install"
+			echo "You may need to install them manually: brew install ${DARWIN_PACKAGES[*]}"
+		fi
 	else
-		sudo apt-get -y update
-		sudo apt-get -y upgrade
-		with_spinner "Installing Linux packages" install_packages apt "${LINUX_PACKAGES[@]}"
+		# Configure for non-interactive installation (prevents tzdata and other prompts)
+		export DEBIAN_FRONTEND=noninteractive
+		export TZ=America/New_York
+
+		if ! sudo apt-get -y update; then
+			echo "ERROR: Failed to update package lists"
+			exit 1
+		fi
+
+		sudo apt-get -y upgrade || echo "WARNING: Package upgrade had issues"
+
+		if ! sudo apt-get install -y "${LINUX_PACKAGES[@]}"; then
+			echo "WARNING: Some packages failed to install"
+			echo "Attempting to continue, but some features may not work"
+		fi
 	fi
 
-	# Python packages
-	install_packages pip3 pynvim
+	# Install pynvim (Python package for Vim)
+	if ! python3 -c "import pynvim" 2>/dev/null; then
+		# Try system package first
+		if [[ "${HOST_OS}" != "darwin" ]]; then
+			if sudo apt-get install -y python3-pynvim 2>/dev/null; then
+				echo "✓ Installed pynvim from system packages"
+			else
+				# Fall back to pipx
+				if ! command -v pipx &>/dev/null; then
+					if [[ "${HOST_OS}" == "darwin" ]]; then
+						brew install pipx
+					else
+						sudo apt-get install -y pipx || pip3 install --user pipx
+					fi
+					pipx ensurepath
+				fi
+				pipx install pynvim || echo "WARNING: Failed to install pynvim"
+			fi
+		else
+			# macOS: use pip3 with --user
+			pip3 install --user pynvim || echo "WARNING: Failed to install pynvim"
+		fi
+	else
+		echo "✓ pynvim already installed"
+	fi
 
 	# Configure zsh as default shell
-	configure_default_shell
+	zsh_path=$(command -v zsh)
+	if ! grep -qxF "${zsh_path}" /etc/shells 2>/dev/null; then
+		echo "${zsh_path}" | sudo tee -a /etc/shells >/dev/null
+	fi
+	sudo chsh -s "${zsh_path}" 2>/dev/null || true
+	chsh -s "${zsh_path}" 2>/dev/null || true
+	echo "✓ Default shell set to zsh"
 
 	# Install zplug
 	if [[ ! -d "${HOME}/.zplug" ]]; then
-		log_info "Installing zplug..."
-		curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
+		echo "Installing zplug..."
+		curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh || true
 	fi
 
-	# Set clock correctly (Linux only)
+	# Set clock (Linux only)
 	if [[ "${HOST_OS}" != "darwin" ]]; then
-		sudo hwclock --hctosys 2>/dev/null || log_warn "Failed to sync hardware clock"
+		sudo hwclock --hctosys 2>/dev/null || true
+	fi
+fi
+
+#---------------------------------------------------------------------------------------
+# Install Vim 9+
+#---------------------------------------------------------------------------------------
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Checking Vim version"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+need_vim_install=false
+
+if ! command -v vim &>/dev/null; then
+	need_vim_install=true
+else
+	current_version="$(vim --version 2>/dev/null | awk 'NR==1 {print $5}')"
+	major_version="${current_version%%.*}"
+
+	if [[ ! "$major_version" =~ ^[0-9]+$ ]]; then
+		echo "WARNING: Cannot parse vim version '$current_version', rebuilding"
+		need_vim_install=true
+	elif (( major_version < VIM_MIN_VERSION )); then
+		echo "Vim $current_version outdated, upgrading to ${VIM_MIN_VERSION}+"
+		need_vim_install=true
+	else
+		echo "✓ Vim $current_version meets requirements (>= $VIM_MIN_VERSION)"
+	fi
+fi
+
+if [[ "$need_vim_install" == "true" ]]; then
+	echo "Building Vim ${VIM_MIN_VERSION}+ from source..."
+
+	if ! command -v python3-config &>/dev/null; then
+		echo "ERROR: python3-dev not found"
+		echo "Install it with: sudo apt-get install python3-dev"
+		exit 1
 	fi
 
-	log_info "Essential packages installed"
-}
+	py3_config="$(python3-config --configdir 2>&1)"
+	if [[ ! -d "${py3_config}" ]]; then
+		echo "ERROR: Invalid python3-config: ${py3_config}"
+		exit 1
+	fi
 
-# Build and install Vim from source
-install_vim_from_source() {
-	log_section "Building Vim ${VIM_MIN_VERSION}+ from source"
-
-	validate_command python3-config python3-dev || return 1
-
-	local py3_config
-	py3_config=$(python3-config --configdir 2>&1)
-	[[ -d "$py3_config" ]] || { log_error "Invalid python3-config: $py3_config"; return 1; }
+	# Cleanup function for failed builds
+	cleanup_vim() {
+		[[ -d vim ]] && rm -rf vim
+	}
+	trap cleanup_vim EXIT
 
 	# Install dependencies
-	local -r DEPS=(
-		build-essential libncurses5-dev libncursesw5-dev
-		python3-dev ruby-dev lua5.3 liblua5.3-dev libperl-dev
+	sudo apt-get install -y \
+		build-essential libncurses5-dev libncursesw5-dev \
+		python3-dev ruby-dev lua5.3 liblua5.3-dev libperl-dev \
 		git libx11-dev libxt-dev libxpm-dev libgtk-3-dev
-	)
-	install_packages apt "${DEPS[@]}"
 
 	# Clone and build
-	{
-		git clone --depth=1 https://github.com/vim/vim.git || return 1
-		cd vim/src || return 1
+	git clone --depth=1 https://github.com/vim/vim.git
+	cd vim/src
 
-		local -r FEATURES=(
-			"--with-features=huge"
-			"--enable-multibyte"
-			"--enable-rubyinterp=yes"
-			"--enable-python3interp=yes"
-			"--enable-perlinterp=yes"
-			"--enable-luainterp=yes"
-			"--enable-cscope"
-			"--enable-fail-if-missing"
-			"--disable-gui"
-			"--without-x"
-			"--prefix=/usr/local"
-			"--with-tlib=ncurses"
-		)
+	./configure \
+		--with-features=huge \
+		--enable-multibyte \
+		--enable-rubyinterp=yes \
+		--enable-python3interp=yes \
+		--enable-perlinterp=yes \
+		--enable-luainterp=yes \
+		--enable-cscope \
+		--enable-fail-if-missing \
+		--disable-gui \
+		--without-x \
+		--prefix=/usr/local \
+		--with-tlib=ncurses \
+		--with-python3-config-dir="${py3_config}"
 
-		./configure "${FEATURES[@]}" --with-python3-config-dir="$py3_config"
-		with_spinner "Compiling Vim" make -j"$(nproc)"
-		sudo make install
+	make -j"$(nproc)"
+	sudo make install
 
-		cd ../..
-		rm -rf vim
-	}
+	cd ../..
+	rm -rf vim
+	trap - EXIT  # Remove trap on success
+	echo "✓ Vim ${VIM_MIN_VERSION}+ installed"
+fi
 
-	log_info "Vim ${VIM_MIN_VERSION}+ installed successfully"
-}
+#---------------------------------------------------------------------------------------
+# Install Rust toolchain
+#---------------------------------------------------------------------------------------
+if ! command -v cargo &>/dev/null; then
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	echo "  Installing Rust toolchain"
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Ensure Vim version meets requirements (intelligent version management)
-ensure_vim_version() {
-	if ! command -v vim &>/dev/null; then
-		install_vim_from_source
-		return $?
+	# Download rustup installer
+	temp_rustup="/tmp/rustup-init-$$.sh"
+	if ! curl https://sh.rustup.rs -sSf -o "$temp_rustup"; then
+		echo "ERROR: Failed to download rustup installer"
+		rm -f "$temp_rustup"
+		exit 1
 	fi
 
-	local current_version
-	current_version=$(vim --version 2>/dev/null | awk 'NR==1 {print $5}')
+	# Run installer
+	if ! RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup" \
+	     CARGO_HOME="${XDG_CONFIG_HOME}/.cargo" \
+	     sh "$temp_rustup" -y; then
+		echo "ERROR: Rust installation failed"
+		rm -f "$temp_rustup"
+		exit 1
+	fi
+	rm -f "$temp_rustup"
 
-	# Validate version format
-	if [[ ! "$current_version" =~ ^[0-9]+\. ]]; then
-		log_warn "Cannot parse vim version '$current_version', rebuilding"
-		install_vim_from_source
-		return $?
+	# Source cargo environment
+	if [[ -f "${XDG_CONFIG_HOME}/.cargo/env" ]]; then
+		source "${XDG_CONFIG_HOME}/.cargo/env"
+	else
+		echo "ERROR: Cargo environment file not found"
+		exit 1
 	fi
 
-	# Use expert version comparison helper
-	if version_ge "$current_version" "$VIM_MIN_VERSION"; then
-		log_info "Vim $current_version meets requirements (>= $VIM_MIN_VERSION)"
-		return 0
+	# Verify cargo is now available
+	if ! command -v cargo &>/dev/null; then
+		echo "ERROR: Cargo not found after Rust installation"
+		exit 1
 	fi
 
-	log_info "Vim $current_version outdated, upgrading to ${VIM_MIN_VERSION}+"
-	install_vim_from_source
-}
-
-#=======================================================================================
-# Tool Installation (Declarative Pattern)
-#=======================================================================================
-
-# Ensure command exists, install if missing (expert abstraction)
-ensure_tool() {
-	local cmd="$1"
-	local installer="$2"
-
-	command -v "$cmd" &>/dev/null && return 0
-
-	log_info "$cmd not found, installing..."
-	eval "$installer"
-}
-
-# Install Rust toolchain (idempotent)
-install_rust() {
-	curl https://sh.rustup.rs -sSf | \
-		RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup" \
-		CARGO_HOME="${XDG_CONFIG_HOME}/.cargo" \
-		sh -s -- -y
-
-	safe_source "${XDG_CONFIG_HOME}/.cargo/env"
-	rustup install stable
-	rustup default stable
+	rustup install stable || echo "WARNING: Failed to install stable toolchain"
+	rustup default stable || echo "WARNING: Failed to set default toolchain"
 
 	# Install Wayland dependencies (Linux only)
-	[[ "${HOST_OS}" == "linux" ]] && sudo apt install -y libwayland-dev pkg-config 2>/dev/null || true
+	if [[ "${HOST_OS}" == "linux" ]]; then
+		sudo apt install -y libwayland-dev pkg-config 2>/dev/null || true
+	fi
 
-	log_info "Rust toolchain installed"
-}
+	echo "✓ Rust toolchain installed"
+else
+	echo "✓ Rust already installed (cargo found)"
+fi
 
-# Install WSL utilities
-install_wslu() {
-	log_info "Installing latest wslu from PPA..."
+#---------------------------------------------------------------------------------------
+# Install cargo packages
+#---------------------------------------------------------------------------------------
+if ! command -v broot &>/dev/null; then
+	echo "Installing broot..."
+	cargo install broot --locked --features clipboard
+fi
 
-	# Add PPA for latest version (PPA has 4.1.3 vs Ubuntu's 3.2.3)
-	# Note: software-properties-common (provides add-apt-repository) is in LINUX_PACKAGES
+#---------------------------------------------------------------------------------------
+# Install platform-specific tools
+#---------------------------------------------------------------------------------------
+if [[ "$HOST_LOCATION" == "desktop" && "$HOST_OS" == "linux" ]]; then
+	if ! command -v blackhosts &>/dev/null; then
+		echo "Installing blackhosts..."
+		# Find latest .deb release (excluding musl builds)
+		url="$(curl -fsSL https://api.github.com/repos/Lateralus138/blackhosts/releases/latest | \
+			jq -r '.assets[] | select(.name | contains("blackhosts.deb") and (contains("musl") | not)) | .browser_download_url' | \
+			head -n 1)"
+
+		if [[ -n "$url" ]]; then
+			temp_deb="/tmp/${url##*/}"
+			curl -fsSL -o "$temp_deb" "$url"
+			sudo dpkg -i --force-overwrite "$temp_deb"
+			rm -f "$temp_deb"
+			echo "✓ blackhosts installed"
+		fi
+	else
+		echo "✓ blackhosts already installed"
+	fi
+fi
+
+if [[ "$HOST_OS" == "wsl" ]] && ! command -v wslvar &>/dev/null; then
+	echo "Installing wslu from PPA..."
 	sudo add-apt-repository ppa:wslutilities/wslu -y
 	sudo apt-get update -y
 	sudo apt-get install -y wslu
+fi
 
-	log_info "wslu installed successfully"
-}
+#---------------------------------------------------------------------------------------
+# Install fonts (desktop Linux only)
+#---------------------------------------------------------------------------------------
+if [[ "$HOST_LOCATION" == "desktop" && "$HOST_OS" == "linux" ]]; then
+	if [[ ! -f "${FONTS_DIR}/.installed" ]]; then
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+		echo "  Installing fonts"
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-install_blackhosts() {
-	command -v blackhosts &>/dev/null && { log_info "blackhosts already installed"; return 0; }
+		install_dir="${FONTS_DIR}/installations"
+		mkdir -p "$install_dir"
 
-	log_info "Installing blackhosts..."
+		# Extract all font archives
+		for zipfile in "${FONTS_DIR}"/*.zip; do
+			[[ -f "$zipfile" ]] && unzip -q "$zipfile" -d "$install_dir"
+		done
 
-	local url
-	url=$(github_release_url "Lateralus138/blackhosts" "blackhosts.deb" "musl") || return 1
-	install_deb_from_url "$url" "blackhosts"
-}
+		# Install fonts (source aliases with error handling)
+		if [[ -f "${DOTFILES_ROOT}/zsh/aliases.zsh" ]]; then
+			source "${DOTFILES_ROOT}/zsh/aliases.zsh" || true
+			if command -v install-font-subdirectories &>/dev/null; then
+				install-font-subdirectories "$install_dir"
+			fi
+		fi
 
-# Install all development tools
-install_development_tools() {
-	log_section "Installing development tools"
-
-	# Core tools
-	ensure_tool zsh install_essential_packages
-	ensure_vim_version
-
-	# Rust and cargo tools
-	ensure_tool cargo install_rust
-	for pkg in "${CARGO_PACKAGES[@]}"; do
-		local cmd="${pkg%% *}"  # Extract command name
-		ensure_tool "$cmd" "install_packages cargo '$pkg'"
-	done
-
-	# Platform-specific tools
-	[[ $HOST_LOCATION == 'desktop' && $HOST_OS == 'linux' ]] && install_blackhosts
-	[[ $HOST_OS == 'wsl' ]] && ensure_tool wslvar install_wslu
-
-	log_info "Development tools installed"
-}
-
-#=======================================================================================
-# Font Installation
-#=======================================================================================
-
-# Install fonts (desktop Linux only, idempotent)
-install_fonts() {
-	[[ $HOST_LOCATION != 'desktop' || $HOST_OS != 'linux' ]] && return 0
-	[[ -f "${FONTS_DIR}/.installed" ]] && { log_info "Fonts already installed"; return 0; }
-
-	log_section "Installing fonts"
-
-	local install_dir="${FONTS_DIR}/installations"
-	mkdir -p "$install_dir"
-
-	# Extract all font archives
-	for zipfile in "${FONTS_DIR}"/*.zip; do
-		[[ -f "$zipfile" ]] && unzip -q "$zipfile" -d "$install_dir"
-	done
-
-	# Install fonts (requires aliases.zsh function)
-	safe_source "${DOTFILES_ROOT}/zsh/aliases.zsh" true
-	if command -v install-font-subdirectories &>/dev/null; then
-		install-font-subdirectories "$install_dir"
+		rm -rf "$install_dir"
+		touch "${FONTS_DIR}/.installed"
+		echo "✓ Fonts installed"
 	else
-		log_warn "install-font-subdirectories not found, skipping font installation"
+		echo "✓ Fonts already installed"
+	fi
+fi
+
+#---------------------------------------------------------------------------------------
+# Create dotfile symlinks
+#---------------------------------------------------------------------------------------
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Installing dotfile symlinks"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+mkdir -p "$BACKUP_DIR"
+mkdir -p "${XDG_CONFIG_HOME}/zi"
+
+for source_path in "${!DOTFILE_LINKS[@]}"; do
+	source="${DOTFILES_ROOT}/${source_path}"
+	target="${DOTFILE_LINKS[$source_path]}"
+
+	# Ensure parent directory exists
+	mkdir -p "$(dirname "$target")"
+
+	# Backup if target exists and is not a dotfiles symlink
+	if [[ -e "$target" ]]; then
+		if [[ ! -L "$target" ]] || [[ ! "$(readlink -f "$target" 2>/dev/null)" =~ dotfiles ]]; then
+			if [[ -f "$target" || -d "$target" ]]; then
+				rsync -a "$target" "${BACKUP_DIR}/" 2>/dev/null || true
+				rm -rf "$target"
+			fi
+		fi
 	fi
 
-	# Cleanup and mark as installed
-	rm -rf "$install_dir"
-	touch "${FONTS_DIR}/.installed"
+	# Create symlink
+	ln -sf "$source" "$target"
+done
 
-	log_info "Fonts installed successfully"
-}
+echo "✓ Dotfile symlinks installed"
 
-#=======================================================================================
-# Dotfile Symlink Management
-#=======================================================================================
+#---------------------------------------------------------------------------------------
+# Install Vim plugins
+#---------------------------------------------------------------------------------------
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Installing Vim plugins"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+vim -E -c PlugInstall -c qall! 2>/dev/null || echo "WARNING: Vim plugin installation failed"
 
-update_dotfile_link() {
-	local source="$1"
-	local target="$2"
+#---------------------------------------------------------------------------------------
+# Configure WSL environment
+#---------------------------------------------------------------------------------------
+if [[ "$HOST_OS" == "wsl" ]]; then
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	echo "  Configuring WSL environment"
+	echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-	# If target doesn't exist or isn't a symlink, set it up
-	if [[ ! -L "$target" ]]; then
-		log_debug "Setting up: $target -> $source"
-		backupFile "$target"
-		createSymlink "$source" "$target"
-		return 0
+	# Setup Windows home
+	if windows_profile="$(wslvar USERPROFILE 2>&1)"; then
+		if windows_home="$(wslpath "$windows_profile" 2>&1)"; then
+			echo "Windows home: $windows_home"
+			if [[ -f "${DOTFILES_ROOT}/.wslconfig" ]]; then
+				cp "${DOTFILES_ROOT}/.wslconfig" "${windows_home}/.wslconfig"
+				echo "✓ Copied .wslconfig"
+			fi
+		fi
 	fi
 
-	# If symlink exists but doesn't point to dotfiles, update it
-	local link_target
-	link_target=$(readlink -f "$target" 2>/dev/null || echo "")
-	if [[ ! "$link_target" =~ dotfiles ]]; then
-		log_debug "Updating non-dotfiles symlink: $target"
-		backupFile "$target"
-		createSymlink "$source" "$target"
-		return 0
+	# Setup Windows Terminal
+	if command -v powershell.exe &>/dev/null; then
+		windows_user="$(powershell.exe '$env:UserName' 2>&1 | tr -d '\r\n')"
+
+		if [[ -n "$windows_user" && ! "$windows_user" =~ ^[Ee]rror ]]; then
+			settings_src="${DOTFILES_ROOT}/windows-terminal/settings.json"
+			settings_dest="/mnt/c/Users/$windows_user/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
+
+			if [[ -f "$settings_src" ]]; then
+				if [[ -f "$settings_dest" ]]; then
+					cp "$settings_dest" "${settings_dest}.bak.$(date +%s)"
+				fi
+				cp "$settings_src" "$settings_dest"
+				echo "✓ Windows Terminal configured"
+			fi
+		fi
 	fi
+fi
 
-	log_debug "Symlink already correct: $target"
-}
-
-# Install all dotfile symlinks (data-driven approach)
-install_dotfile_links() {
-	log_section "Installing dotfile symlinks"
-
-	ensure_dir "$BACKUP_DIR"
-	ensure_dir "${XDG_CONFIG_HOME}/zi"
-
-	for source_path in "${!DOTFILE_LINKS[@]}"; do
-		local source="${DOTFILES_ROOT}/${source_path}"
-		local target="${DOTFILE_LINKS[$source_path]}"
-
-		# Ensure parent directory exists
-		ensure_dir "$(dirname "$target")"
-
-		update_dotfile_link "$source" "$target"
-	done
-
-	log_info "Dotfile symlinks installed successfully"
-}
-
-#=======================================================================================
-# WSL Configuration (Unified)
-#=======================================================================================
-
-# Setup WSL Windows home directory with validation
-setup_wsl_windows_home() {
-	# Try to get Windows profile - this will fail in Docker/non-WSL environments
-	local windows_profile
-	windows_profile=$(wslvar USERPROFILE 2>&1) || {
-		log_warn "Failed to get USERPROFILE (not in real WSL environment), skipping Windows home setup"
-		return 0
-	}
-
-	[[ -z "$windows_profile" ]] && {
-		log_warn "Empty USERPROFILE, skipping Windows home setup"
-		return 0
-	}
-
-	local windows_home
-	windows_home=$(wslpath "$windows_profile" 2>&1) || {
-		log_warn "Failed to convert path (not in real WSL environment), skipping Windows home setup"
-		return 0
-	}
-
-	log_info "Windows home: $windows_home"
-
-	# Copy WSL config if it exists
-	[[ -f "${DOTFILES_ROOT}/.wslconfig" ]] && {
-		cp "${DOTFILES_ROOT}/.wslconfig" "${windows_home}/.wslconfig"
-		log_info "✓ Copied .wslconfig"
-	}
-}
-
-# Setup Windows Terminal configuration
-setup_windows_terminal() {
-	if ! command -v powershell.exe &>/dev/null; then
-		log_warn "powershell.exe not found, skipping Windows Terminal setup"
-		return 0
-	fi
-
-	local windows_user
-	windows_user=$(powershell.exe '$env:UserName' 2>&1 | tr -d '\r\n')
-
-	[[ -z "$windows_user" || "$windows_user" =~ ^[Ee]rror ]] && {
-		log_error "Failed to get Windows username: $windows_user"
-		return 1
-	}
-
-	log_info "Windows user: $windows_user"
-
-	# Construct paths using constant
-	local settings_src="${DOTFILES_ROOT}/windows-terminal/settings.json"
-	local settings_dest="/mnt/c/Users/$windows_user/AppData/Local/Packages/${WINDOWS_TERMINAL_PKG}/LocalState/settings.json"
-
-	[[ ! -f "$settings_src" ]] && { log_warn "Source not found: $settings_src"; return 0; }
-
-	# Backup existing settings
-	if [[ -f "$settings_dest" ]]; then
-		cp "$settings_dest" "${settings_dest}.bak.$(date +%s)"
-		log_info "✓ Backed up existing settings.json"
-	fi
-
-	cp "$settings_src" "$settings_dest"
-	log_info "✓ Windows Terminal configured"
-}
-
-setup_wsl_environment() {
-	[[ $HOST_OS != 'wsl' ]] && return 0
-
-	log_section "Configuring WSL environment"
-
-	setup_wsl_windows_home
-	setup_windows_terminal
-}
-
-#=======================================================================================
-# Main Installation Flow
-#=======================================================================================
-
-main() {
-	log_section "Starting dotfiles installation"
-	log_info "OS: $HOST_OS | Location: $HOST_LOCATION | Codename: $CODENAME"
-
-	# Install zsh and essential packages first
-	if ! command -v zsh &>/dev/null; then
-		log_info "Installing zsh and essential packages"
-		install_essential_packages
-	fi
-
-	install_development_tools
-	install_fonts
-	install_dotfile_links
-
-	log_section "Installing Vim plugins"
-	vim -E -c PlugInstall -c qall! 2>/dev/null || log_warn "Vim plugin installation failed"
-
-	setup_wsl_environment
-
-	log_section "Installation complete!"
-	log_info "Log file: $LOG_FILE"
-}
-
-# Run main function
-main "$@"
+#---------------------------------------------------------------------------------------
+# Done!
+#---------------------------------------------------------------------------------------
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Installation complete!"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
