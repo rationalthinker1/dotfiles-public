@@ -373,7 +373,7 @@ export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export FZF_ALT_C_COMMAND="fd --type d"
 export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --info=inline"
 export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-range :500 {}'"
-zi ice lucid wait'1' depth'1' atclone'./install --bin' atpull'%atclone'
+zi ice lucid wait'0' depth'1' atclone'./install --bin' atpull'%atclone'
 zi light junegunn/fzf
 # Force correct fzf in PATH before anything else
 add_to_path_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/bin"
@@ -404,12 +404,6 @@ zi light zsh-users/zsh-autosuggestions
 # Provides tab completions for commands not covered by default ZSH
 zi ice depth'1'
 zi light zsh-users/zsh-completions
-
-# 🧠 Atuin - Magical shell history with sync, stats, and better search
-# Usage: Ctrl+R for powerful history search, `atuin stats` for analytics
-# Stores full context (directory, duration, exit code) and syncs across machines
-zi ice lucid wait'2' lucid depth'1' branch'main'
-zi light atuinsh/atuin
 
 # 🫵 You-Should-Use - Reminds you of existing aliases when you use full commands
 # Usage: Automatic - alerts you "Found alias gst for git status" when you type long commands
@@ -514,8 +508,6 @@ zi light sharkdp/bat
 zi ice from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"
 zi light sharkdp/fd
 
-
-
 # 🔬 XSV - Fast CSV command line toolkit
 # Usage: `xsv stats data.csv` - show column statistics
 # `xsv select column1,column2 data.csv` - select columns
@@ -558,6 +550,62 @@ zi light stolk/imcat
 # More features than xsv: SQL queries, Python expressions, etc.
 zi ice wait'0' lucid depth'1' as'program' pick'target/release/qsv' atclone'cargo build --release --locked --bin qsv --features "feature_capable,python,apply,foreach"' atpull'%atclone'
 zi light dathere/qsv
+
+# ==============================================================================
+# ADDITIONAL MODERN CLI TOOLS
+# ==============================================================================
+
+# 🔍 GitHub CLI - Essential for git-heavy workflow
+zi ice wait'0' lucid from'gh-r' as'command' bpick'*linux_amd64.tar.gz' pick'*/bin/gh'
+zi light cli/cli
+
+# 🧠 Atuin - Magical shell history with sync, stats, and better search
+# Usage: Ctrl+R for powerful history search, `atuin stats` for analytics
+# Stores full context (directory, duration, exit code) and syncs across machines
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-musl.tar.gz' pick'*/atuin' \
+  atclone'chmod +x */atuin && ./*/atuin init zsh > init.zsh' atpull'%atclone' src'init.zsh'
+zi light atuinsh/atuin
+
+# 📊 Bottom - Modern system monitor
+zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/btm'
+zi light ClementTsang/bottom
+
+# 🔥 Tokei - Fast code statistics
+zi ice wait'0' lucid from'gh' as'program' pick'target/release/tokei' \
+  atclone'cargo build --release --locked' atpull'%atclone'
+zi light XAMPPRocky/tokei
+
+# ⚡ Hyperfine - Command benchmarking
+zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/hyperfine'
+zi light sharkdp/hyperfine
+
+# 🎨 Delta - Better git diffs with syntax highlighting
+zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/delta'
+zi light dandavison/delta
+
+# 📁 Duf - Modern df alternative
+zi ice wait'0' lucid from'gh-r' as'command' bpick'*linux_x86_64.tar.gz' pick'*/duf'
+zi light muesli/duf
+
+# 🐶 Dog - Modern dig alternative
+zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.zip' pick'*/bin/dog'
+zi light ogham/dog
+
+# 🦎 Lazygit - TUI for git
+zi ice wait'0' lucid from'gh-r' as'command' bpick'*Linux_x86_64.tar.gz' pick'lazygit'
+zi light jesseduffield/lazygit
+
+# 🐳 Lazydocker - TUI for docker
+zi ice wait'0' lucid from'gh-r' as'command' bpick'*Linux_x86_64.tar.gz' pick'lazydocker'
+zi light jesseduffield/lazydocker
+
+# 🔧 Procs - Modern ps alternative
+zi ice wait'0' lucid from'gh-r' as'command' bpick'*linux.zip' pick'procs'
+zi light dalance/procs
+
+# 📦 Dust - Modern du alternative
+zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/dust'
+zi light bootandy/dust
 
 # ==============================================================================
 # GIT ENHANCEMENTS
