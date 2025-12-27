@@ -74,6 +74,7 @@
 	# previewed images are too off.
 	#
 	# true_colors: false
+	true_colors: true
 
 	###############################################################
 	# Icons

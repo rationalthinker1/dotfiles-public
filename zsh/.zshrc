@@ -100,7 +100,7 @@ add_to_path_if_exists "${HOME}/.local/bin"
 add_to_path_if_exists "${HOME}/.local/share"
 add_to_path_if_exists "/usr/local/go/bin"
 add_to_path_if_exists "${HOME}/.yarn/bin"
-add_to_path_if_exists "${HOME}/.config/yarn/global/node_modules/.bin"
+add_to_path_if_exists "${XDG_CONFIG_HOME}/yarn/global/node_modules/.bin"
 add_to_path_if_exists "${BUN_INSTALL}/bin"
 add_to_path_if_exists "${PNPM_HOME}/bin"
 
@@ -691,17 +691,17 @@ autoload -Uz zmv
 # Custom Application Settings
 # ==============================================================================
 
+# Auto-start Docker on WSL if not running
 if [[ "$HOST_OS" == "wsl" ]] && (( $+commands[systemctl] )); then
   if ! systemctl is-active --quiet docker 2>/dev/null; then
-    if sudo -n systemctl start docker 2>/dev/null; then
-      : # Docker started successfully
-    fi
+    # Start Docker without password prompt (requires sudoers NOPASSWD for systemctl)
+    sudo -n systemctl start docker 2>/dev/null && echo "✓ Docker started" || true
   fi
 fi
 
 # 🗂️ broot (directory visualizer)
-# NOTE: Commented out - not installed on this machine
-# source_if_exists "${XDG_CONFIG_HOME}/broot/launcher/bash/br"
+source_if_exists "${XDG_CONFIG_HOME}/broot/launcher/bash/br"
+
 
 # 🎨 Powerlevel10k theme config
 source_if_exists "${ZDOTDIR}/.p10k.zsh"
@@ -742,6 +742,57 @@ if (( $+commands[doctl] )); then
   compdef _doctl doctl
 fi
 
+# 🦀 Rust toolchain completions (cargo, rustup)
+# Uncomment to enable cargo and rustup tab completions
+# if (( $+commands[rustup] )); then
+#   # Cache rustup completions (regenerate only when rustup changes)
+#   local rustup_comp="${ZSH_CACHE_DIR}/rustup_completion.zsh"
+#   if [[ ! -f "$rustup_comp" ]] || [[ "${commands[rustup]}" -nt "$rustup_comp" ]]; then
+#     rustup completions zsh cargo >| "${ZSH_CACHE_DIR}/cargo_completion.zsh"
+#     rustup completions zsh rustup >| "$rustup_comp"
+#   fi
+#   source "${ZSH_CACHE_DIR}/cargo_completion.zsh"
+#   source "$rustup_comp"
+# fi
+
+# 📁 broot – File navigator completion
+# Uncomment to enable broot tab completions
+# if (( $+commands[broot] )); then
+#   # broot already generates completions via 'broot --install'
+#   # Completions are typically auto-installed to ~/.config/broot/launcher/bash/br
+#   # If missing, run: broot --install
+# fi
+
+# 🦇 bat – Better cat completion
+# Uncomment to enable bat tab completions
+# if (( $+commands[bat] )); then
+#   # Cache bat completion (regenerate only when bat binary changes)
+#   local bat_comp="${ZSH_CACHE_DIR}/bat_completion.zsh"
+#   if [[ ! -f "$bat_comp" ]] || [[ "${commands[bat]}" -nt "$bat_comp" ]]; then
+#     bat --generate-completion-script zsh >| "$bat_comp" 2>/dev/null
+#   fi
+#   [[ -f "$bat_comp" ]] && source "$bat_comp"
+# fi
+
+# 🔍 fd – Modern find completion
+# Uncomment to enable fd tab completions
+# if (( $+commands[fd] )); then
+#   # fd completions are usually provided by the package manager or zinit
+#   # If missing, generate with: fd --gen-completions zsh > _fd
+# fi
+
+# 🔎 ripgrep (rg) – Fast grep completion
+# Uncomment to enable ripgrep tab completions
+# if (( $+commands[rg] )); then
+#   # Cache rg completion (regenerate only when rg binary changes)
+#   local rg_comp="${ZSH_CACHE_DIR}/rg_completion.zsh"
+#   if [[ ! -f "$rg_comp" ]] || [[ "${commands[rg]}" -nt "$rg_comp" ]]; then
+#     rg --generate=complete-zsh >| "$rg_comp" 2>/dev/null
+#   fi
+#   [[ -f "$rg_comp" ]] && source "$rg_comp"
+# fi
+
+
 # VSCode Integration
 [[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
 
@@ -775,8 +826,6 @@ fi
 #=======================================================================================
 # Load AFTER sourcing other files because some export path may not be defined
 source_if_exists "${ZDOTDIR}/aliases.zsh"
-# NOTE: Commented out - aliases.zsh not present in HOME
-# source_if_exists "${HOME}/aliases.zsh"
 
 # At the *end* of .zshrc
 # Recompile if source is newer
@@ -788,3 +837,4 @@ if [[ -n "${(%):-%N}" && -r "${(%):-%N}" ]]; then
 fi
 # If zsh is really slow, enable profiling via zprof, uncomment the line above and line 2
 # zprof
+
