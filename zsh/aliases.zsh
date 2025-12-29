@@ -5,7 +5,7 @@ alias dirzshrc="grep -nT '^#|' $HOME/.zshrc"
 alias zshrc="vim $HOME/.zshrc"
 alias rebash="source $HOME/.zshrc"
 # vpr: Edit and reload .zshrc in one command
-alias vpr='vim $HOME/.zshrc && source $HOME/.zshrc'
+alias vpr="vim $HOME/.zshrc && source $HOME/.zshrc"
 
 # common directories
 alias dot="cd ~/.dotfiles"
@@ -152,40 +152,40 @@ fi
 alias h="history"
 
 ## get rid of command not found ##
-alias cd..='cd ..'
+alias cd..="builtin cd .."
 
 ## a quick way to get out of current directory ##
-alias ..='cd ..'
-alias ...='cd ../../'
-alias ....='cd ../../../'
-alias .....='cd ../../../../'
-alias .4='cd ../../../../'
-alias .5='cd ../../../../..'
-alias r='cd /'
+alias ..="builtin cd .."
+alias ...="builtin cd ../../"
+alias ....="builtin cd ../../../"
+alias .....="builtin cd ../../../../"
+alias .4="builtin cd ../../../../"
+alias .5="builtin cd ../../../../.."
+alias r="builtin cd /"
 
 ## Colorize the grep command output for ease of use (good for log files)##
-alias grep='grep --color=auto'
-alias egrep='egrep --color=auto'
-alias fgrep='fgrep --color=auto'
+alias grep="grep --color=auto"
+alias egrep="egrep --color=auto"
+alias fgrep="fgrep --color=auto"
 
 # Create parent dirs if they don't exist
-alias mkdir='mkdir -pv'
+alias mkdir="mkdir -pv"
 
 # Repeat the previous command with sudo
-alias pls='sudo !!'
+alias pls="sudo !!"
 
 # Repeat the previous command with sudo
-alias sudoi='sudo "PATH=$PATH"'
+alias sudoi="sudo \"PATH=\$PATH\""
 
 # sshfs with proper default settings
-alias sshfs='sshfs -o allow_other,uid=1000,gid=1000'
+alias sshfs="sshfs -o allow_other,uid=1000,gid=1000"
 
 # Hiberate
-alias hiberate='sudo pm-suspend'
+alias hiberate="sudo pm-suspend"
 
 # Show processes by name
 # example: psg bash
-alias psg='ps aux | grep -v grep | grep -i -e VSZ'
+alias psg="ps aux | grep -v grep | grep -i -e VSZ"
 
 # Append -c to continue the download in case of problems
 #alias wget='wget -c'
@@ -317,7 +317,7 @@ function wcsv() {
 alias bd=". bd -si"
 
 # takes whatever you have cat previously and vims it
-alias v!='fc -e "sed -i -e \"s/cat /vim /\""'
+alias v!="fc -e \"sed -i -e \\\"s/cat /vim /\\\"\""
 
 # example: tf laravel.log
 alias tf="tail -f"
@@ -348,12 +348,12 @@ function extract() {
 #=======================================================================================
 # Installing, updating or removing applications aliases and functions
 #=======================================================================================
-alias addrepo='sudo add-apt-repository -y'
-alias install='sudo apt-get install -y '
-alias remove='sudo apt-get remove'
-alias update='sudo apt-get update -y'
-alias upgrade='sudo apt-get update && sudo apt-get upgrade'
-alias dist-upgrade='sudo apt-get update && sudo apt-get dist-upgrade'
+alias addrepo="sudo add-apt-repository -y"
+alias install="sudo apt-get install -y "
+alias remove="sudo apt-get remove"
+alias update="sudo apt-get update -y"
+alias upgrade="sudo apt-get update && sudo apt-get upgrade"
+alias dist-upgrade="sudo apt-get update && sudo apt-get dist-upgrade"
 
 function apt-install() {
 	for application in "$@"; do
@@ -683,34 +683,34 @@ gcm() {
 #=======================================================================================
 # Suffix Aliases
 #=======================================================================================
-alias -s git='git-clone'
+alias -s git="git-clone"
 alias -s txt=$EDITOR
 alias -s cond=$EDITOR
 alias -s log=$EDITOR
 alias -s vim=$=$EDITOR
 alias -s deb="sudo dpkg -i"
-alias -s {c,py,cpp,r,rb,go,js,jsx,ts,java,sql,hs,md}='vim'
-alias -s {xml,json,toml,yaml,yml,ini,conf,log}='vim'
-alias -s {gz,tgz,zip,lzh,bz2,tbz,Z,tar,arj,xz,7z}='extract'
+alias -s {c,py,cpp,r,rb,go,js,jsx,ts,java,sql,hs,md}="vim"
+alias -s {xml,json,toml,yaml,yml,ini,conf,log}="vim"
+alias -s {gz,tgz,zip,lzh,bz2,tbz,Z,tar,arj,xz,7z}="extract"
 
 #=======================================================================================
 # Global Aliases
 #=======================================================================================
-alias -g A='| a'
-alias -g B='| bcat'
-alias -g C='| wc -l'
-alias -g D='| dump'
-alias -g G='| grep'
-alias -g F='| fzf'
-alias -g H='| head'
-alias -g J='| jq'
-alias -g L='| less'
-alias -g P='| $PAGER'
-alias -g S='| sort -n'
-alias -g T='| tail'
-alias -g U='| uniq'
-alias -g X='| xsel -b'
-alias -g FF='-print0 | xargs -0 -I FILE'
+alias -g A="| a"
+alias -g B="| bcat"
+alias -g C="| wc -l"
+alias -g D="| dump"
+alias -g G="| grep"
+alias -g F="| fzf"
+alias -g H="| head"
+alias -g J="| jq"
+alias -g L="| less"
+alias -g P="| $PAGER"
+alias -g S="| sort -n"
+alias -g T="| tail"
+alias -g U="| uniq"
+alias -g X="| xsel -b"
+alias -g FF="-print0 | xargs -0 -I FILE"
 
 #=======================================================================================
 # Yarn Aliases and functions
@@ -794,7 +794,7 @@ laravel-setup() {
 #=======================================================================================
 # Nginx Aliases and functions
 #=======================================================================================
-alias html='cd /var/www/html'
+alias html="cd /var/www/html"
 
 # common directories
 alias ncon_enabled="cd /etc/nginx/sites-enabled/"
@@ -803,11 +803,11 @@ alias ncon="ncon_enabled"  # Default to enabled
 alias nerr="cd /var/log/nginx/"
 
 # view logs
-alias npe='tail -f /var/log/nginx/error*.log'
-alias npa='tail -f /var/log/nginx/access*.log'
+alias npe="tail -f /var/log/nginx/error*.log"
+alias npa="tail -f /var/log/nginx/access*.log"
 
 # reload nginx
-alias nrel='sudo nginx -t && sudo nginx -s reload'
+alias nrel="sudo nginx -t && sudo nginx -s reload"
 
 #=======================================================================================
 # Node Aliases and functions
@@ -816,8 +816,8 @@ alias nrel='sudo nginx -t && sudo nginx -s reload'
 #=======================================================================================
 # Log Aliases and functions
 #=======================================================================================
-alias llog='tail -f /var/www/html/ecoenergy/production/storage/logs/laravel.log'
-alias nlog='tail -f /var/log/nginx/*.log'
+alias llog="tail -f /var/www/html/ecoenergy/production/storage/logs/laravel.log"
+alias nlog="tail -f /var/log/nginx/*.log"
 
 #=======================================================================================
 # Docker Aliases and functions
@@ -909,10 +909,10 @@ alias dkd="docker run -d -P"
 alias dki="docker run -i -t -P"
 
 # Stop all containers
-alias dstop='docker stop $(docker ps -a -q)'
+alias dstop="docker stop $(docker ps -a -q)"
 
 # Stop and Remove all containers
-alias drmf='docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)'
+alias drmf="docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)"
 
 # Get IP addresses of all running containers
 alias dpsi="docker ps -q | xargs docker inspect --format '{{ .Id }} - {{ .Name }} - {{ .NetworkSettings.IPAddress }}'"
@@ -1019,7 +1019,7 @@ mkcd() {
 }
 
 # Port listening checker
-alias lsp='sudo lsof -iTCP -sTCP:LISTEN -n -P'
+alias lsp="sudo lsof -iTCP -sTCP:LISTEN -n -P"
 
 # Process killer by name with fzf
 killp() {
@@ -1029,25 +1029,25 @@ killp() {
 }
 
 # Git shortcuts (missing from current config)
-alias gaa='git add --all'
-alias gap='git add --patch'
-alias gcan='git commit --amend --no-edit'
-alias grs='git restore --staged'
-alias grbi='git rebase -i'
-alias gclean='git branch --merged | grep -v "\*" | xargs -n 1 git branch -d'
+alias gaa="git add --all"
+alias gap="git add --patch"
+alias gcan="git commit --amend --no-edit"
+alias grs="git restore --staged"
+alias grbi="git rebase -i"
+alias gclean="git branch --merged | grep -v "\*" | xargs -n 1 git branch -d"
 
 # Quick systemd service management
-alias sctl='sudo systemctl'
-alias sctle='sudo systemctl enable --now'
-alias sctld='sudo systemctl disable --now'
-alias sctls='systemctl status'
+alias sctl="sudo systemctl"
+alias sctle="sudo systemctl enable --now"
+alias sctld="sudo systemctl disable --now"
+alias sctls="systemctl status"
 
 # Disk space analyzer (human-readable)
-alias duh='du -h --max-depth=1 | sort -hr'
+alias duh="du -h --max-depth=1 | sort -hr"
 
 # Network shortcuts
-alias ports='netstat -tulanp'
-alias myip_public='curl -s https://api.ipify.org && echo'
+alias ports="netstat -tulanp"
+alias myip_public="curl -s https://api.ipify.org && echo"
 alias myip_local="ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v 127.0.0.1"
 
 #=======================================================================================
@@ -1208,29 +1208,29 @@ note() {
 #=======================================================================================
 
 # Update all package managers
-alias update-all='zi update --all && rustup update && sudo apt-get update && sudo apt-get upgrade -y'
-alias update-zi='zi update --all'
+alias update-all="zi update --all && rustup update && sudo apt-get update && sudo apt-get upgrade -y"
+alias update-zi="zi update --all"
 
 # Lazygit/Lazydocker TUIs
-alias lg='lazygit'
-alias lzd='lazydocker'
+alias lg="lazygit"
+alias lzd="lazydocker"
 
 # System monitoring (override htop/top with bottom)
-alias htop='btm'
-alias top='btm'
+alias htop="btm"
+alias top="btm"
 
 # Disk usage (modern alternatives)
-alias df='duf'
-alias ncdu='dust'
+alias df="duf"
+alias ncdu="dust"
 
 # Process viewer
-alias pps='procs'  # Use pps for procs, keep ps as fallback
+alias pps="procs"  # Use pps for procs, keep ps as fallback
 
 # DNS lookup
-alias dog='dog'  # Modern dig
+alias dog="dog"  # Modern dig
 
 # Benchmarking
-alias bench='hyperfine'
+alias bench="hyperfine"
 
 # Code statistics
-alias cloc='tokei'
+alias cloc="tokei"
