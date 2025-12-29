@@ -192,12 +192,6 @@ if ! command -v zsh &>/dev/null; then
     chsh -s "${zsh_path}" 2>/dev/null || true
     echo "✓ Default shell set to zsh"
     
-    # Install zplug
-    if [[ ! -d "${HOME}/.zplug" ]]; then
-        echo "Installing zplug..."
-        curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh || true
-    fi
-    
     # Set clock (Linux only)
     if [[ "${HOST_OS}" != "darwin" ]]; then
         sudo hwclock --hctosys 2>/dev/null || true

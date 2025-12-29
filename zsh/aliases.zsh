@@ -20,6 +20,95 @@ if (( $+commands[bat] )); then
 	export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 fi
 
+# 🔍 FZF + Zoxide: Enhanced cd with enhancd-style features
+# cd (no args) - fuzzy select from zoxide history (if available) or recent dirs
+# cd .. - fuzzy select parent directories
+# cd . - fuzzy select subdirectories
+# cd - - fuzzy select recent directories (last 10)
+# cd <path> - normal cd or fuzzy match from history if not exists
+cd() {
+	if [[ $# -eq 0 ]]; then
+		# No args: show zoxide directory history or fall back to common directories
+		local dir
+		if command -v zoxide &>/dev/null; then
+			# echo "🔍 Fuzzy selecting from zoxide directory history..."
+			dir=$(zoxide query -l | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
+		else
+			# Fallback: find directories from common locations
+			# echo "🔍 Fuzzy selecting from common directories..."
+			dir=$(fd --type d --max-depth 3 --hidden --exclude .git --exclude .cache --exclude node_modules . ~ 2>/dev/null | fzf --height=40% --inline-info --reverse --preview='eza -la {}')
+		fi
+		[[ -n "$dir" ]] && builtin cd "$dir"
+	elif [[ "$1" == ".." ]]; then
+		# cd .. : show all parent directories
+		local parents=()
+		local current="$PWD"
+		while [[ "$current" != "/" ]]; do
+			current=$(dirname "$current")
+			parents+=("$current")
+		done
+		if [[ ${#parents[@]} -gt 0 ]]; then
+			local dir
+			dir=$(printf '%s\n' "${parents[@]}" | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
+			[[ -n "$dir" ]] && builtin cd "$dir"
+		fi
+	elif [[ "$1" == "." ]]; then
+		# cd . : show all subdirectories recursively
+		local dir
+		if command -v fd &>/dev/null; then
+			dir=$(fd --type d --hidden --exclude .git --exclude node_modules --exclude .cache | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
+		else
+			dir=$(find . -type d -name .git -prune -o -name node_modules -prune -o -type d -print 2>/dev/null | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
+		fi
+		[[ -n "$dir" ]] && builtin cd "$dir"
+	elif [[ "$1" == "-" ]]; then
+		# cd - : show last 10 directories from zoxide or recent dirs from history
+		local dir
+		if command -v zoxide &>/dev/null; then
+			dir=$(zoxide query -l | head -10 | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
+		else
+			# Fallback: extract directories from shell history
+			dir=$(fc -l -10 | grep -oP '(?<=cd )[^ ]+' | sed "s|^~|$HOME|" | sort -u | fzf --height=40% --inline-info --reverse --preview='eza -la {}')
+		fi
+		[[ -n "$dir" ]] && builtin cd "$dir"
+	else
+		# cd <path>: try normal cd, if fails try fuzzy match from zoxide
+		if [[ -d "$1" ]]; then
+			builtin cd "$@"
+		else
+			if command -v zoxide &>/dev/null; then
+				local matches
+				matches=$(zoxide query -l | grep -i "$1")
+				if [[ -n "$matches" ]]; then
+					local dir
+					dir=$(echo "$matches" | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
+					[[ -n "$dir" ]] && builtin cd "$dir"
+				else
+					builtin cd "$@"
+				fi
+			else
+				builtin cd "$@"
+			fi
+		fi
+	fi
+}
+
+# 🔍 FZF + Vim: Fuzzy find and edit files with preview using zoxide
+kkk() {
+	local dir
+	if command -v zoxide &>/dev/null; then
+		dir=$(zoxide query -l | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
+	else
+		# Fallback: find directories from common locations
+		dir=$(fd --type d --max-depth 3 --hidden --exclude .git --exclude node_modules . ~ 2>/dev/null | fzf --height=40% --inline-info --reverse --preview='eza -la {}')
+	fi
+	if [[ -n "$dir" ]]; then
+		local file
+		file=$(cd "$dir" && fzf --preview="bat --color=always {}")
+		[[ -n "$file" ]] && vim "$dir/$file"
+	fi
+}
+
 ## 📁 Eza: Modern ls replacement with colors and icons
 # Override 'ls' and related aliases to use 'eza' for better file listing
 if (( $+commands[eza] )); then
