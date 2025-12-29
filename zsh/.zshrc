@@ -449,9 +449,9 @@ zi light sunlei/zsh-ssh
 
 # 📁 Zoxide - Fast, smart directory jumper based on frequency
 # Usage: `z <pattern>` - jump to most-frequent matching directory
-_ZO_FZF_OPTS="--bind=ctrl-z:ignore --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview=\'eza -la {2..}\'"
-zinit ice lucid wait"2" as"command" from"gh-r" \
-  atclone"./zoxide init zsh --cmd cd > init.zsh" \
+_ZO_FZF_OPTS="--bind=ctrl-z:ignore --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {2..}'"
+zinit ice lucid as"command" from"gh-r" \
+  atclone"./zoxide init zsh --cmd z > init.zsh" \
   atpull"%atclone" src"init.zsh" nocompile'!'
 zinit light ajeetdsouza/zoxide
 
@@ -578,6 +578,10 @@ zi light XAMPPRocky/tokei
 # ⚡ Hyperfine - Command benchmarking
 zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/hyperfine'
 zi light sharkdp/hyperfine
+
+# 🧼 Dust - Fast Rust-based alternative to du
+zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/dust'
+zi light bootandy/dust
 
 # 🎨 Delta - Better git diffs with syntax highlighting
 zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/delta'
