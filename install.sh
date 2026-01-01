@@ -19,6 +19,7 @@ readonly -a DARWIN_PACKAGES=(
     autoconf automake libtool pkg-config  # Build dependencies
     openssl@3  # Library dependencies
     pipx  # Python application installer
+    pass gnupg pinentry-mac  # Secret management
 )
 
 readonly -a LINUX_PACKAGES=(
@@ -31,6 +32,7 @@ readonly -a LINUX_PACKAGES=(
     man-db less openssh-client software-properties-common  # Essential utilities
     strace gdb lsb-release shellcheck tree  # Debugging & development tools
     pipx  # Python application installer
+    pass gnupg2 pinentry-curses  # Secret management
 )
 
 # Symlink mappings
