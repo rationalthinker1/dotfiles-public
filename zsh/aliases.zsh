@@ -1,11 +1,17 @@
-#!/usr/bin/env zsh 
+#!/usr/bin/env zsh
 
 ## zshrc Related ##
-alias dirzshrc="grep -nT '^#|' ${HOME}/.zshrc"
-alias zshrc="vim ${HOME}/.zshrc"
-alias rebash="source ${HOME}/.zshrc"
+
+# Reload ZSH configuration
+reload_zsh() {
+    source "${ZDOTDIR}/.zshrc"
+}
+alias rebash="reload_zsh"
+
+alias dirzshrc="grep -nT '^#|' \"${HOME}/.zshrc\""
+alias zshrc="vim \"${HOME}/.zshrc\""
 # vpr: Edit and reload .zshrc in one command
-alias vpr="vim ${HOME}/.zshrc && source ${HOME}/.zshrc"
+alias vpr="vim \"${ZDOTDIR}/.zshrc\" && reload_zsh"
 # common directories
 alias dot="cd ~/.dotfiles"
 alias con="cd ~/.config"
@@ -26,10 +32,13 @@ fi
 # cd - - fuzzy select recent directories (last 10)
 # cd <path> - normal cd or fuzzy match from history if not exists
 cd() {
+	# Only override cd in interactive shells; use builtin for scripts
+	[[ -o interactive ]] || { builtin cd "$@"; return; }
+
 	if [[ $# -eq 0 ]]; then
 		# No args: show zoxide directory history or fall back to common directories
 		local dir
-		if command -v zoxide &>/dev/null; then
+		if (( $+commands[zoxide] )); then
 			# echo "🔍 Fuzzy selecting from zoxide directory history..."
 			dir=$(zoxide query -l | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
 		else
@@ -43,7 +52,7 @@ cd() {
 		local parents=()
 		local current="$PWD"
 		while [[ "$current" != "/" ]]; do
-			current=$(dirname "$current")
+			current="${current:h}"
 			parents+=("$current")
 		done
 		if [[ ${#parents[@]} -gt 0 ]]; then
@@ -54,7 +63,7 @@ cd() {
 	elif [[ "$1" == "." ]]; then
 		# cd . : show all subdirectories recursively
 		local dir
-		if command -v fd &>/dev/null; then
+		if (( $+commands[fd] )); then
 			dir=$(fd --type d --hidden --exclude .git --exclude node_modules --exclude .cache | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
 		else
 			dir=$(find . -type d -name .git -prune -o -name node_modules -prune -o -type d -print 2>/dev/null | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
@@ -63,7 +72,7 @@ cd() {
 	elif [[ "$1" == "-" ]]; then
 		# cd - : show last 10 directories from zoxide or recent dirs from history
 		local dir
-		if command -v zoxide &>/dev/null; then
+		if (( $+commands[zoxide] )); then
 			dir=$(zoxide query -l | head -10 | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
 		else
 			# Fallback: extract directories from shell history using ZSH-native parameter expansion
@@ -79,7 +88,7 @@ cd() {
 		if [[ -d "$1" ]]; then
 			builtin cd "$@"
 		else
-			if command -v zoxide &>/dev/null; then
+			if (( $+commands[zoxide] )); then
 				local matches
 				matches=$(zoxide query -l | grep -i "$1")
 				if [[ -n "$matches" ]]; then
@@ -97,8 +106,8 @@ cd() {
 }
 
 # 🧭 Yazi: Change directory based on project config
-function y() {
-	if ! command -v yazi &>/dev/null; then
+y() {
+	if ! (( $+commands[yazi] )); then
 		echo "Error: requires 'yazi' to be installed." >&2
 		return 1
 	fi
@@ -112,7 +121,7 @@ function y() {
 # 🔍 FZF + Vim: Fuzzy find and edit files with preview using zoxide
 kkk() {
 	local dir
-	if command -v zoxide &>/dev/null; then
+	if (( $+commands[zoxide] )); then
 		dir=$(zoxide query -l | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
 	else
 		# Fallback: find directories from common locations
@@ -151,9 +160,6 @@ if (( $+commands[eza] )); then
 	# Show only directories
 	alias ld="eza --color=auto --long --header --group --all --group-directories-first --only-dirs"
 else
-	## Colorize the ls output ##
-	#alias ls='ls --color=auto'
-
 	## Use a long listing format ##
 	alias l="ls --color=auto -lh --group-directories-first"       # List all, with human readable filesizes
 	alias ll="ls --color=auto -lah --group-directories-first"     # List all, with human readable filesizes
@@ -229,26 +235,26 @@ FD_EXCLUDE_PATTERN+=build,
 FD_EXCLUDE_PATTERN+="}"
 
 # 🔍 Enhanced search functions using fd
-function fdf() {
+fdf() {
 	fd --hidden --ignore-case --follow --type f --exclude "${FD_EXCLUDE_PATTERN}" "$@"
 }
 # search for directories with fdd
-function fdd() {
+fdd() {
 	fd --hidden --ignore-case --follow --type d --exclude "${FD_EXCLUDE_PATTERN}" "$@"
 }
 
 # 📄 Ripgrep: Enhanced grep with automatic paging
 # Override 'rg' to automatically pipe output through less when in terminal
 # Use 'command rg' to access original ripgrep without paging
-function rg() {
-	if [ -t 1 ]; then
+rg() {
+	if [[ -t 1 ]]; then
 		command rg -p "$@" | less -RFX
 	else
 		command rg "$@"
 	fi
 }
 
-function bak() {
+bak() {
     if [[ -z "$1" ]]; then
         echo "Error: No file or folder name provided."
         return 1
@@ -273,7 +279,7 @@ function bak() {
     fi
 }
 
-function ref() {
+ref() {
 	if [[ "$#" -eq 0 ]]; then
 		cat "${ZDOTDIR}/reference.zsh"
 	else
@@ -290,38 +296,28 @@ function ref() {
 	fi
 }
 
-#alias ref="cat ~/.config/zsh/reference.zsh"
-
 # look at the size of the sub-directories level 1
 # Uncommented and created function below
-#alias ds="du -chd 1 | sort -h"
-
-# Ctrl+S doesn't cause terminal to freeze
-# https://vim.fandom.com/wiki/Map_Ctrl-S_to_save_current_or_new_files
-# NOTE: Handled globally by 'setopt NO_FLOW_CONTROL' in .zshrc - alias no longer needed
-# alias vim="stty stop '' -ixoff ; vim"
 
 # get top biggest files
-function fs() {
+fs() {
 	LIMIT=${1:-50}
 	sudo du --count-links --all --human-readable --exclude /media 2>/dev/null | grep -v -e '^.*K[[:space:]]' | sort -r -n | head "-n${LIMIT}"
 }
 
 # get top biggest directories
-function ds() {
+ds() {
 	LIMIT=${1:-51}
 	sudo du --human-readable --max-depth=1 --exclude /media 2>/dev/null | sort -r -h | head "-n$((${LIMIT} + 1))"
 }
-# So that vim shortcuts can work
-#alias vim="stty stop '' -ixoff ; vim"
 
 # Search current directory (SCD) in grep recursively
-function scd() {
+scd() {
 	grep -ir "$@" ./
 }
 
 # wgets portion of a line. Default is 10 lines
-function wcsv() {
+wcsv() {
 	#wget http://riptide-reflection.s3.amazonaws.com/export_2_.csv -qO - | head -10
 	LIMIT=${2:-10}
 	wget "$1" -qO - | head "-${LIMIT}"
@@ -338,9 +334,7 @@ alias v!="fc -e \"sed -i -e \\\"s/cat /vim /\\\"\""
 # example: tf laravel.log
 alias tf="tail -f"
 
-#=======================================================================================
 # Installing, updating or removing applications aliases and functions
-#=======================================================================================
 alias addrepo="sudo add-apt-repository -y"
 alias install="sudo apt-get install -y "
 alias remove="sudo apt-get remove"
@@ -348,24 +342,24 @@ alias update="sudo apt-get update -y"
 alias upgrade="sudo apt-get update && sudo apt-get upgrade"
 alias dist-upgrade="sudo apt-get update && sudo apt-get dist-upgrade"
 
-function apt-install() {
+apt-install() {
 	for application in "$@"; do
 		sudo apt-get install -f -y "${application}"
 	done
 }
 
-function apt-update() {
+apt-update() {
 	sudo apt-get -y update
 }
 
-function add-repo() {
+add-repo() {
 	for repository in "$@"; do
 		sudo add-apt-repository -y "${repository}"
 	done
 }
 
 # simple-install ppa:numix/ppa numix-gtk-theme numix-icon-theme-circle
-function simple-install() {
+simple-install() {
 	repository=$1
 
 	# Add the repository
@@ -381,14 +375,14 @@ function simple-install() {
 	done
 }
 
-function unzipd() {
+unzipd() {
 	filename="${1}"
 	directory="${filename%.zip}"
 	directory="${directory##*/}"
 	unzip "${filename}" -d "${directory}"
 }
 
-function install-font-subdirectories() {
+install-font-subdirectories() {
 	local directory="${1}"
 
 	if [[ -z "$directory" ]]; then
@@ -411,7 +405,7 @@ function install-font-subdirectories() {
 	done
 }
 
-function install-font-folder() {
+install-font-folder() {
 	local directory="${1}"
 	local FONT_DIRECTORY
 	local last_folder
@@ -434,7 +428,7 @@ function install-font-folder() {
 		FONT_DIRECTORY="/usr/share/fonts"
 	fi
 
-	last_folder="$(basename "$directory")"
+	last_folder="${directory:t}"
 
 	echo "Installing fonts from: $directory"
 
@@ -486,7 +480,7 @@ function install-font-folder() {
 	fi
 }
 
-function install-font-zip() {
+install-font-zip() {
 	filename="${1}"
 	directory="${filename%.zip}"
 	directory="${directory##*/}"
@@ -535,23 +529,15 @@ alias pr="pnpm remove"
 alias pkg="vim package.json"
 alias pkgj="cat package.json | jq"  # Pretty print with jq
 
-#=======================================================================================
 # Git Aliases and functions
-#=======================================================================================
-function c { git checkout "$@"; }
-function b { git branch "$@"; }
+c() { git checkout "$@"; }
+b() { git branch "$@"; }
 alias gcam="git commit -a --amend"
 alias gc="git commit -am"
 alias gs="git status"
 alias gd="git diff --ignore-all-space --ignore-space-at-eol --ignore-space-change --ignore-blank-lines"
-#alias dc="git diff --cached"
-#alias dv="git diff | vim -"
-#alias gl="git log"
-#alias gp="git pull"
-#alias gpu="git push"
-#alias gpu='[[ -z $(git config "branch.$(git symbolic-ref --short HEAD).merge") ]] && git push -u origin $(git symbolic-ref --short HEAD) || git push'
-# alias gpuf="git push --force"
-function gp () {
+
+gp() {
 	local -a cmd=(git pull)
 
 	# SAFE prepend: validate and parse .git_cli_prepend (no eval!)
@@ -572,7 +558,7 @@ function gp () {
 	"${cmd[@]}"
 }
 
-function gpu () {
+gpu() {
 	local -a cmd=(git push)
 	local remote_branch=$(git config "branch.$(git symbolic-ref --short HEAD).merge" 2>/dev/null)
 
@@ -597,7 +583,7 @@ function gpu () {
 	"${cmd[@]}"
 }
 
-function gpuf () {
+gpuf() {
 	local -a cmd=(git push --force)
 
 	# SAFE prepend: validate and parse .git_cli_prepend (no eval!)
@@ -616,6 +602,9 @@ function gpuf () {
 	"${cmd[@]}"
 }
 
+# Search git history for pattern across all commits
+# Usage: git_search "pattern"
+# Example: git_search "API_KEY"
 git_search() {
 	git rev-list --all | GIT_PAGER=cat xargs git grep "${@}"
 }
@@ -631,7 +620,7 @@ git_reset() {
 alias gre=git_reset
 
 git-clone() {
-	git clone "$@" && cd "$(basename "$1" .git)"
+	git clone "$@" && cd "${${1:t}%.git}"
 }
 
 # Enhanced Git shortcuts
@@ -817,11 +806,22 @@ alias nlog="tail -f /var/log/nginx/*.log"
 #=======================================================================================
 # Runs docker compose command looking at other files
 dc() {
-	if [ -e "docker-compose.yml" ]; then
-		docker compose "$@"
-	elif [ -e "./docker/docker-compose.yml" ]; then
-		docker compose -f "./docker/docker-compose.yml" --project-directory ./ "$@"
-	fi
+    if [[ -e "docker-compose.yml" ]]; then
+        docker compose "$@"
+    elif [[ -e "compose.yaml" ]]; then
+        docker compose "$@"
+    elif [[ -e "compose.yml" ]]; then
+        docker compose "$@"
+    elif [[ -e "./docker/docker-compose.yml" ]]; then
+        docker compose -f "./docker/docker-compose.yml" --project-directory ./ "$@"
+    elif [[ -e "./docker/compose.yaml" ]]; then
+        docker compose -f "./docker/compose.yaml" --project-directory ./ "$@"
+    elif [[ -e "./docker/compose.yml" ]]; then
+        docker compose -f "./docker/compose.yml" --project-directory ./ "$@"
+    else
+        echo "No docker compose file found"
+        return 1
+    fi
 }
 
 alias dce="docker compose -f \"./docker/docker-compose.yml\" --project-directory ./ exec --user $(id -u):$(id -g)"
@@ -849,10 +849,18 @@ dclo() { dc logs -tf; }
 dcp() { dc ps "$@"; }
 
 # Execute command in Docker Compose service
+# Usage: dexec <service> <command>
+# Example: dexec php bash
 dexec() { docker exec -it $(dc ps -q $1) $2; }
+
+# Execute command as root in Docker Compose service
+# Usage: drexec <service> <command>
+# Example: drexec php apt-get update
 drexec() { docker exec --user root:root -it $(dc ps -q $1) $2; }
 
-# Run a bash shell in the specified container (with docker compose).
+# Run bash shell in Docker Compose service
+# Usage: dceb <service> [script]
+# Example: dceb php /bin/bash
 dceb() {
 	SCRIPT="/bin/bash"
 	if [ $# -lt 1 ]; then
@@ -865,7 +873,10 @@ dceb() {
 
 	dc exec --user "$(id -u):$(id -g)" "$1" "$SCRIPT"
 }
-# Run a bash shell in the specified container (with docker compose).
+
+# Run bash shell as root in Docker Compose service
+# Usage: dcebr <service> [script]
+# Example: dcebr php /bin/bash
 dcebr() {
 	SCRIPT="/bin/bash"
 	if [ $# -lt 1 ]; then
@@ -1101,7 +1112,9 @@ docker-clean() {
   echo "✓ Docker cleanup complete"
 }
 
-# Find and replace in files (interactive with fzf)
+# Find and replace text in files with confirmation
+# Usage: replace-in-files <search> <replace> [file-pattern]
+# Example: replace-in-files "oldName" "newName" "*.js"
 replace-in-files() {
   if [ $# -lt 2 ]; then
     echo "Usage: replace-in-files <search> <replace> [file-pattern]"
@@ -1142,29 +1155,35 @@ dirsize() {
 
 # Extract any archive type
 extract() {
-  if [ $# -lt 1 ]; then
-    echo "Usage: extract <file>"
-    return 1
-  fi
+    if [[ $# -lt 1 ]]; then
+        echo "Usage: extract <file>"
+        return 1
+    fi
 
-  if [ -f "$1" ]; then
-    case "$1" in
-      *.tar.bz2)   tar xjf "$1"     ;;
-      *.tar.gz)    tar xzf "$1"     ;;
-      *.bz2)       bunzip2 "$1"     ;;
-      *.rar)       unrar x "$1"     ;;
-      *.gz)        gunzip "$1"      ;;
-      *.tar)       tar xf "$1"      ;;
-      *.tbz2)      tar xjf "$1"     ;;
-      *.tgz)       tar xzf "$1"     ;;
-      *.zip)       unzip "$1"       ;;
-      *.Z)         uncompress "$1"  ;;
-      *.7z)        7z x "$1"        ;;
-      *)           echo "❌ Cannot extract '$1' - unknown format" ;;
-    esac
-  else
-    echo "❌ File '$1' not found"
-  fi
+    if [[ -f "${1}" ]]; then
+        case "${1}" in
+            *.tar.bz2)   tar xjf "${1}"     ;;
+            *.tar.gz)    tar xzf "${1}"     ;;
+            *.tar.xz)    tar xJf "${1}"     ;;
+            *.tar.zst)   tar --zstd -xf "${1}" 2>/dev/null || zstd -d "${1}" | tar xf - ;;
+            *.tar.lz4)   lz4 -d "${1}" | tar xf - ;;
+            *.bz2)       bunzip2 "${1}"     ;;
+            *.rar)       unrar x "${1}"     ;;
+            *.gz)        gunzip "${1}"      ;;
+            *.tar)       tar xf "${1}"      ;;
+            *.tbz2)      tar xjf "${1}"     ;;
+            *.tgz)       tar xzf "${1}"     ;;
+            *.zip)       unzip "${1}"       ;;
+            *.Z)         uncompress "${1}"  ;;
+            *.7z)        7z x "${1}"        ;;
+            *.xz)        unxz "${1}"        ;;
+            *.zst)       unzstd "${1}"      ;;
+            *.lz4)       unlz4 "${1}"       ;;
+            *)           echo "Cannot extract '${1}' - unknown format" ;;
+        esac
+    else
+        echo "File '${1}' not found"
+    fi
 }
 
 # Quick HTTP server in current directory

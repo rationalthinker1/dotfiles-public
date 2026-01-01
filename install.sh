@@ -39,6 +39,9 @@ readonly -a LINUX_PACKAGES=(
 declare -A DOTFILE_LINKS=(
     [zsh/.zshrc]="${HOME}/.zshrc"
     [zsh/.zshenv]="${HOME}/.zshenv"
+    [zsh/.zprofile]="${HOME}/.zprofile"
+    [zsh/.zlogin]="${HOME}/.zlogin"
+    [zsh/.zlogout]="${HOME}/.zlogout"
     [.vimrc]="${HOME}/.vimrc"
     [.vim]="${HOME}/.vim"
     [.gitconfig]="${HOME}/.gitconfig"
@@ -61,33 +64,37 @@ declare -A DOTFILE_LINKS=(
 # Environment Detection & Initialization
 #=======================================================================================
 
-# Detect operating system
-if [[ -f "/proc/sys/kernel/osrelease" ]] && [[ "$(</proc/sys/kernel/osrelease)" == *microsoft* ]]; then
-    HOST_OS="wsl"
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
-    HOST_OS="darwin"
+# Source centralized POSIX-compatible OS detection
+# Shared with .zshrc for consistency
+if [[ -f "${DOTFILES_ROOT}/zsh/functions/detect_os.sh" ]]; then
+    source "${DOTFILES_ROOT}/zsh/functions/detect_os.sh"
 else
-    HOST_OS="linux"
-fi
+    # Fallback if detect_os.sh doesn't exist yet (first-time bootstrap)
+    echo "WARNING: detect_os.sh not found, using inline detection"
+    case "${OSTYPE}" in
+        linux-gnu*)
+            if [[ -f /proc/sys/kernel/osrelease ]] && grep -qi microsoft /proc/sys/kernel/osrelease 2>/dev/null; then
+                HOST_OS="wsl"
+            else
+                HOST_OS="linux"
+            fi
+            ;;
+        darwin*)
+            HOST_OS="darwin"
+            ;;
+        *)
+            HOST_OS="linux"
+            ;;
+    esac
 
-# Detect location (desktop vs server)
-if [[ "$HOST_OS" == "darwin" ]] || (command -v dpkg-query &>/dev/null && dpkg-query -W -f='${Status}' ubuntu-desktop 2>/dev/null | grep -q "install ok installed"); then
-    HOST_LOCATION="desktop"
-else
-    HOST_LOCATION="server"
-fi
+    if [[ "${HOST_OS}" == "darwin" ]] || (command -v dpkg-query &>/dev/null && dpkg-query -W -f='${Status}' ubuntu-desktop 2>/dev/null | grep -q "install ok installed"); then
+        HOST_LOCATION="desktop"
+    else
+        HOST_LOCATION="server"
+    fi
 
-# Get distribution codename (portable, no GNU grep -P)
-if [[ -f /etc/os-release ]]; then
-    CODENAME=$(grep '^VERSION_CODENAME=' /etc/os-release 2>/dev/null | cut -d= -f2 || echo "unknown")
-    elif command -v lsb_release &>/dev/null; then
-    CODENAME=$(lsb_release -cs 2>/dev/null || echo "unknown")
-else
-    CODENAME="unknown"
+    export HOST_OS HOST_LOCATION
 fi
-
-# Export environment variables
-export HOST_OS HOST_LOCATION CODENAME
 export LOCAL_CONFIG="${HOME}/.config"
 export XDG_CONFIG_HOME="${HOME}/.config"
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
@@ -120,104 +127,91 @@ fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Starting dotfiles installation"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "OS: $HOST_OS | Location: $HOST_LOCATION | Codename: $CODENAME"
+echo "OS: $HOST_OS | Location: $HOST_LOCATION"
 echo
 
-#---------------------------------------------------------------------------------------
-# Install essential packages
-# Now idempotent - installs missing packages even if some are present
-#---------------------------------------------------------------------------------------
-install_packages=false
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Installing essential packages"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Check if any critical packages are missing
-for pkg in zsh git curl; do
-    if ! command -v "${pkg}" &>/dev/null; then
-        install_packages=true
-        break
+if [[ "${HOST_OS}" == "darwin" ]]; then
+    # Install Homebrew if needed
+    if ! command -v brew &>/dev/null; then
+        echo "Installing Homebrew..."
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+        # Detect Homebrew installation path
+        if [[ -x "/opt/homebrew/bin/brew" ]]; then
+            brew_prefix="/opt/homebrew"
+        elif [[ -x "/usr/local/bin/brew" ]]; then
+            brew_prefix="/usr/local"
+        else
+            brew_prefix="/opt/homebrew"
+        fi
+
+        {
+            echo
+            echo "eval \"\$(${brew_prefix}/bin/brew shellenv)\""
+        } >>"${HOME}/.zprofile"
+        eval "$(${brew_prefix}/bin/brew shellenv)"
     fi
-done
 
-if [[ "${install_packages}" == "true" ]]; then
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  Installing essential packages"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    # Install packages individually
+    for pkg in "${DARWIN_PACKAGES[@]}"; do
+        if ! brew list "${pkg}" &>/dev/null; then
+            echo "Installing ${pkg}..."
+            brew install "${pkg}" || echo "WARNING: Failed to install ${pkg}"
+        else
+            echo "✓ ${pkg} already installed"
+        fi
+    done
+else
+    # Linux package installation
+    export DEBIAN_FRONTEND=noninteractive
+    export TZ=America/New_York
 
+    sudo apt-get -y update || { echo "ERROR: apt-get update failed"; exit 1; }
+    sudo apt-get -y upgrade || echo "WARNING: Package upgrade had issues"
+
+    # Install packages individually
+    for pkg in "${LINUX_PACKAGES[@]}"; do
+        if ! dpkg -l | grep -q "^ii  ${pkg}"; then
+            echo "Installing ${pkg}..."
+            sudo apt-get install -y "${pkg}" || echo "WARNING: Failed to install ${pkg}"
+        else
+            echo "✓ ${pkg} already installed"
+        fi
+    done
+fi
+
+# Install pynvim (Python package for Vim)
+# python3-pynvim is in LINUX_PACKAGES, but verify it's available
+if ! python3 -c "import pynvim" 2>/dev/null; then
     if [[ "${HOST_OS}" == "darwin" ]]; then
-        # Install Homebrew
-        if ! command -v brew &>/dev/null; then
-            echo "Installing Homebrew..."
-            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-            # Detect Homebrew installation path (Apple Silicon vs Intel)
-            if [[ -x "/opt/homebrew/bin/brew" ]]; then
-                brew_prefix="/opt/homebrew"
-            elif [[ -x "/usr/local/bin/brew" ]]; then
-                brew_prefix="/usr/local"
-            else
-                brew_prefix="/opt/homebrew"  # Default fallback
-            fi
-
-            {
-                echo
-                echo "eval \"\$(${brew_prefix}/bin/brew shellenv)\""
-            } >>"${HOME}/.zprofile"
-            eval "$(${brew_prefix}/bin/brew shellenv)"
-        else
-            echo "✓ Homebrew already installed"
-        fi
-        
-        echo "Installing packages..."
-        if ! brew install "${DARWIN_PACKAGES[@]}"; then
-            echo "WARNING: Some Homebrew packages failed to install"
-            echo "You may need to install them manually: brew install ${DARWIN_PACKAGES[*]}"
-        fi
+        # macOS: use pip3 with --user (no system package available)
+        pip3 install --user pynvim || echo "WARNING: Failed to install pynvim"
     else
-        # Configure for non-interactive installation (prevents tzdata and other prompts)
-        export DEBIAN_FRONTEND=noninteractive
-        export TZ=America/New_York
-        
-        if ! sudo apt-get -y update; then
-            echo "ERROR: Failed to update package lists"
-            exit 1
-        fi
-        
-        sudo apt-get -y upgrade || echo "WARNING: Package upgrade had issues"
-        
-        if ! sudo apt-get install -y "${LINUX_PACKAGES[@]}"; then
-            echo "WARNING: Some packages failed to install"
-            echo "Attempting to continue, but some features may not work"
-        fi
+        # Linux: should already be installed from LINUX_PACKAGES (python3-pynvim)
+        # If not, fall back to pipx (should be installed from LINUX_PACKAGES)
+        pipx ensurepath
+        pipx install pynvim || echo "WARNING: Failed to install pynvim via pipx"
     fi
-    
-    # Install pynvim (Python package for Vim)
-    # python3-pynvim is in LINUX_PACKAGES, but verify it's available
-    if ! python3 -c "import pynvim" 2>/dev/null; then
-        if [[ "${HOST_OS}" == "darwin" ]]; then
-            # macOS: use pip3 with --user (no system package available)
-            pip3 install --user pynvim || echo "WARNING: Failed to install pynvim"
-        else
-            # Linux: should already be installed from LINUX_PACKAGES (python3-pynvim)
-            # If not, fall back to pipx (should be installed from LINUX_PACKAGES)
-            pipx ensurepath
-            pipx install pynvim || echo "WARNING: Failed to install pynvim via pipx"
-        fi
-    else
-        echo "✓ pynvim already installed"
-    fi
-    
-    # Configure zsh as default shell
-    zsh_path=$(command -v zsh)
-    if ! grep -qxF "${zsh_path}" /etc/shells 2>/dev/null; then
-        echo "${zsh_path}" | sudo tee -a /etc/shells >/dev/null
-    fi
-    sudo chsh -s "${zsh_path}" 2>/dev/null || true
-    chsh -s "${zsh_path}" 2>/dev/null || true
-    echo "✓ Default shell set to zsh"
-    
-    # Set clock (Linux only)
-    if [[ "${HOST_OS}" != "darwin" ]]; then
-        sudo hwclock --hctosys 2>/dev/null || true
-    fi
+else
+    echo "✓ pynvim already installed"
+fi
+
+# Configure zsh as default shell
+zsh_path=$(command -v zsh)
+if ! grep -qxF "${zsh_path}" /etc/shells 2>/dev/null; then
+    echo "${zsh_path}" | sudo tee -a /etc/shells >/dev/null
+fi
+sudo chsh -s "${zsh_path}" 2>/dev/null || true
+chsh -s "${zsh_path}" 2>/dev/null || true
+echo "✓ Default shell set to zsh"
+
+# Set clock (Linux only)
+if [[ "${HOST_OS}" != "darwin" ]]; then
+    sudo hwclock --hctosys 2>/dev/null || true
 fi
 
 #---------------------------------------------------------------------------------------
