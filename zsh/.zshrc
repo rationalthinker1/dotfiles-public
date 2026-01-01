@@ -1,4 +1,28 @@
 #!/usr/bin/env zsh
+# ==============================================================================
+# .zshrc - Interactive Shell Configuration
+# ==============================================================================
+# This file runs for INTERACTIVE shells only (not scripts)
+#
+# LOAD ORDER:
+#   1. .zshenv     (environment variables - already loaded)
+#   2. .zprofile   (login shells only - already loaded if login shell)
+#   3. .zshrc      ← YOU ARE HERE (interactive config)
+#   4. .zlogin     (after .zshrc in login shells)
+#
+# USE THIS FILE FOR:
+# - Aliases and functions
+# - Shell options (setopt)
+# - Key bindings
+# - Prompt configuration
+# - Plugin loading
+# - Completions
+#
+# DO NOT PUT HERE:
+# - Environment variables (→ .zshenv)
+# - PATH modifications (→ .zshenv)
+# ==============================================================================
+
 # zmodload zsh/zprof # top of your .zshrc file - uncomment to profile startup time
 # 🧭 Base paths (XDG-compliant)
 # 📁 XDG base directories (XDG_CONFIG_HOME and ZDOTDIR already set in .zshenv)
@@ -22,29 +46,29 @@ if [[ -r "${XDG_CACHE_HOME}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
+
+# Add only if directory exists & not already in $PATH
+add_to_path_if_exists() {
+  # Fast path: check directory existence first (fail fast for non-existent dirs)
+  [[ -d "${1}" ]] || return 1
+
+  # Prepend to path array - typeset -U automatically deduplicates!
+  path=("${1}" $path)
+}
+
+# Source file only if it exists and is readable
+source_if_exists() {
+  # Single file test for minimal overhead - -f checks both existence and regular file in one syscall
+  [[ -f "${1}" ]] && . "${1}"
+}
+
 # ==============================================================================
 # Detect Host OS & Environment
 # ==============================================================================
 
-# 🧠 Detect operating system
-case "$OSTYPE" in
-  linux-gnu*)
-    if grep -qi microsoft /proc/sys/kernel/osrelease 2>/dev/null; then
-      HOST_OS="wsl"
-    else
-      HOST_OS="linux"
-    fi ;;
-  darwin*)       HOST_OS="macos" ;;
-  cygwin*|msys*) HOST_OS="windows" ;;
-  *)             HOST_OS="unknown" ;;
-esac
-
-# 🖥️ Determine if running on desktop or headless server
-if [[ -n "$DISPLAY" || -n "$WAYLAND_DISPLAY" ]]; then
-  HOST_LOCATION="desktop"
-else
-  HOST_LOCATION="server"
-fi
+# Source centralized POSIX-compatible OS detection
+# Shared with install.sh for consistency
+source_if_exists "${ZDOTDIR}/functions/detect_os.sh"
 
 # ==============================================================================
 # Core Environment Variables
@@ -80,20 +104,6 @@ export AWS_SHARED_CREDENTIALS_FILE="${XDG_CONFIG_HOME}/.aws/credentials"
 # Make path array automatically unique (zsh magic!)
 typeset -gU path PATH
 
-# Add only if directory exists & not already in $PATH
-add_to_path_if_exists() {
-  # Fast path: check directory existence first (fail fast for non-existent dirs)
-  [[ -d "$1" ]] || return 1
-
-  # Prepend to path array - typeset -U automatically deduplicates!
-  path=("$1" $path)
-}
-
-# Source file only if it exists and is readable
-source_if_exists() {
-  # Single file test for minimal overhead - -f checks both existence and regular file in one syscall
-  [[ -f "$1" ]] && . "$1"
-}
 
 add_to_path_if_exists "${CARGO_HOME}/bin"
 add_to_path_if_exists "${HOME}/.local/bin"
@@ -118,7 +128,7 @@ source_if_exists "${ZDOTDIR}/local.zsh"
 # ==============================================================================
 # Secret Management with pass
 # ==============================================================================
-if command -v pass &>/dev/null; then
+if (( $+commands[pass] )); then
     # Set password store location (XDG-compliant)
     export PASSWORD_STORE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/password-store"
 
@@ -221,7 +231,7 @@ if [[ "${HOST_LOCATION}" == "desktop" && -d "${HOME}/android" ]]; then
     done
 
     # Fallback: use update-alternatives on Debian/Ubuntu
-    if [[ -z "$JAVA_HOME" ]] && command -v update-java-alternatives &>/dev/null; then
+    if [[ -z "${JAVA_HOME}" ]] && (( $+commands[update-java-alternatives] )); then
         export JAVA_HOME="$(update-java-alternatives -l 2>/dev/null | awk 'NR==1 {print $3}')"
     fi
 
@@ -744,7 +754,7 @@ zi light jessarcher/zsh-artisan
 
 zi ice wait'1' lucid blockf
 zi snippet OMZP::sudo             # Usage: Press ESC twice to prefix previous command with sudo
-zi snippet OMZP::extract          # Usage: `extract file.zip` - auto-detects and extracts any archive format
+# OMZP::extract removed - using custom extract() function from aliases.zsh
 zi snippet OMZP::copyfile         # Usage: `copyfile file.txt` - copies file contents to clipboard
 zi snippet OMZP::dirhistory       # Usage: Alt+Left/Right arrows to navigate directory history
 zi snippet OMZP::docker-compose   # Provides tab completions for docker-compose commands
@@ -912,20 +922,19 @@ fi
 # Load AFTER sourcing other files because some export path may not be defined
 source_if_exists "${ZDOTDIR}/aliases.zsh"
 
-# Compile aliases.zsh if source is newer
-if [[ "${ZDOTDIR}/aliases.zsh" -nt "${ZDOTDIR}/aliases.zsh.zwc" ]]; then
-  echo "Recompiling aliases.zsh..."
-  zcompile "${ZDOTDIR}/aliases.zsh"
-fi
+# Compile configuration files for faster loading
+compile_if_needed() {
+    local source_file="${1}"
+    [[ ! -f "${source_file}" ]] && return
+    [[ "${source_file}" -nt "${source_file}.zwc" ]] && zcompile "${source_file}"
+}
 
-# At the *end* of .zshrc
-# Recompile if source is newer
-if [[ -n "${(%):-%N}" && -r "${(%):-%N}" ]]; then
-  if [[ "${(%):-%N}" -nt "${(%):-%N}.zwc" ]]; then
-    echo "Recompiling ${(%):-%N}..."
-    zcompile "${(%):-%N}"
-  fi
-fi
+compile_if_needed "${ZDOTDIR}/.zshenv"
+compile_if_needed "${ZDOTDIR}/.zshrc"
+compile_if_needed "${ZDOTDIR}/aliases.zsh"
+compile_if_needed "${ZDOTDIR}/.p10k.zsh"
+compile_if_needed "${ZDOTDIR}/local.zsh"
+
 # If zsh is really slow, enable profiling via zprof, uncomment the line above and line 2
 # zprof
 
