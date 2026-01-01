@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh 
 
 ## zshrc Related ##
 alias dirzshrc="grep -nT '^#|' ${HOME}/.zshrc"
@@ -66,11 +66,11 @@ cd() {
 		if command -v zoxide &>/dev/null; then
 			dir=$(zoxide query -l | head -10 | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
 		else
-			# Fallback: extract directories from shell history
-			if [[ "$HOST_OS" == "macos" ]]; then
-				dir=$(fc -l -10 | sed -n 's/.*cd \([^ ]*\).*/\1/p' | sed "s|^~|$HOME|" | sort -u | fzf --height=40% --inline-info --reverse --preview='eza -la {}')
-			else
-				dir=$(fc -l -10 | grep -oP '(?<=cd )[^ ]+' | sed "s|^~|$HOME|" | sort -u | fzf --height=40% --inline-info --reverse --preview='eza -la {}')
+			# Fallback: extract directories from shell history using ZSH-native parameter expansion
+			# Extract 'cd <path>' commands, remove 'cd ' prefix, expand ~, deduplicate
+			local -a recent_dirs=(${${${(M)${(f)"$(fc -l -10)"}:#*cd *}##* cd }/#\~/${HOME}})
+			if (( ${#recent_dirs[@]} > 0 )); then
+				dir=$(printf '%s\n' "${recent_dirs[@]}" | sort -u | fzf --height=40% --inline-info --reverse --preview='eza -la {}')
 			fi
 		fi
 		[[ -n "$dir" ]] && builtin cd "$dir"
@@ -255,7 +255,7 @@ function bak() {
     fi
 
     if [[ ! -e "$1" && ! -e "$1.bak" ]]; then
-        echo "Error: Neither $1 nor $1.bak exists."
+        echo "Error: Neither ${1} nor ${1}.bak exists."
         return 1
     fi
 
@@ -263,19 +263,19 @@ function bak() {
         mv "$1" "$1.tmp"
         mv "$1.bak" "$1"
         mv "$1.tmp" "$1.bak"
-        echo "Swapped $1 and $1.bak"
+        echo "Swapped ${1} and ${1}.bak"
     elif [[ -e "$1" ]]; then
         mv "$1" "$1.bak"
-        echo "Renamed $1 to $1.bak"
+        echo "Renamed ${1} to ${1}.bak"
     elif [[ -e "$1.bak" ]]; then
         mv "$1.bak" "$1"
-        echo "Renamed $1.bak to $1"
+        echo "Renamed ${1}.bak to ${1}"
     fi
 }
 
 function ref() {
 	if [[ "$#" -eq 0 ]]; then
-		cat ${ZDOTDIR}/reference.zsh
+		cat "${ZDOTDIR}/reference.zsh"
 	else
 		name="${1}"
 		folder="${ZDOTDIR}/references"
@@ -617,7 +617,7 @@ function gpuf () {
 }
 
 git_search() {
-	git rev-list --all | GIT_PAGER=cat xargs git grep '"${@}"'
+	git rev-list --all | GIT_PAGER=cat xargs git grep "${@}"
 }
 alias gse=git_search
 
@@ -960,8 +960,15 @@ if [[ $HOST_OS == "wsl" ]]; then
 		$SUBLIME_TEXT_LOCATION "/\/\wsl.localhost\\${DISTRO}${FULL_PATH}"
 	}
 
-	# Use cached Windows user profile path from .zshrc (avoids repeated wslvar calls)
-	alias code="${WINDOWS_USER_PROFILE}/AppData/Local/Programs/Microsoft\ VS\ Code/Code.exe"
+	# VS Code launcher with fallback for async WINDOWS_USER_PROFILE loading
+	code() {
+		local code_exe="${WINDOWS_USER_PROFILE:-/mnt/c/Users/${USER}}/AppData/Local/Programs/Microsoft VS Code/Code.exe"
+		if [[ ! -x "${code_exe}" ]]; then
+			echo "Error: VS Code not found at ${code_exe}" >&2
+			return 1
+		fi
+		"${code_exe}" "$@"
+	}
 
 	copy_terminal_settings_to_dotfiles() {
 		DOTFILES_DIR="${HOME}/.dotfiles"

@@ -7,5 +7,4 @@
 # 🧭 Base paths (XDG-compliant)
 export XDG_CONFIG_HOME="${HOME}/.config"
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
-export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export ZSH_CACHE_DIR="${ZDOTDIR}/cache"
