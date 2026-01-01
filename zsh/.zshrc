@@ -114,12 +114,6 @@ fi
 # Load Local Overrides
 # ==============================================================================
 source_if_exists "${ZDOTDIR}/local.zsh"
-# NOTE: Commented out on this machine to improve startup time - uncomment if needed
-# source_if_exists "${HOME}/local.zsh"
-# source_if_exists "${ZDOTDIR}/.zprofile"
-# source_if_exists "${HOME}/.zprofile"
-# source_if_exists "${ZDOTDIR}/.bash_local"
-# source_if_exists "${HOME}/.bash_local"
 
 #=======================================================================================
 # WSL-Specific Settings
@@ -551,6 +545,9 @@ zi light stolk/imcat
 zi ice wait'0' lucid depth'1' as'program' pick'target/release/qsv' atclone'cargo build --release --locked --bin qsv --features "feature_capable,python,apply,foreach"' atpull'%atclone'
 zi light dathere/qsv
 
+zi ice wait'0' lucid depth'1' as'program' pick'target/release/*' atclone'cargo build --release --locked' atpull'%atclone'
+zi light sxyazi/yazi
+
 # ==============================================================================
 # ADDITIONAL MODERN CLI TOOLS
 # ==============================================================================
@@ -606,10 +603,6 @@ zi light jesseduffield/lazydocker
 # 🔧 Procs - Modern ps alternative
 zi ice wait'0' lucid from'gh-r' as'command' bpick'*linux.zip' pick'procs'
 zi light dalance/procs
-
-# 📦 Dust - Modern du alternative
-zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/dust'
-zi light bootandy/dust
 
 # ==============================================================================
 # GIT ENHANCEMENTS
@@ -804,25 +797,35 @@ fi
 #[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
 
 # ==============================================================================
-# WSL Windows Terminal sync (guarded)
+# WSL Windows Terminal sync (manual function)
 # ==============================================================================
 if [[ "${HOST_OS}" == 'wsl' ]]; then
-    # Use full path to pwsh.exe instead of relying on PATH
-    PWSH_EXE="/mnt/c/Program Files/PowerShell/7/pwsh.exe"
-    
+  sync_wt_settings() {
+    local PWSH_EXE="/mnt/c/Program Files/PowerShell/7/pwsh.exe"
+
     if [[ -x "$PWSH_EXE" ]]; then
-        WINDOWS_USER=$("$PWSH_EXE" -NoProfile -Command '$env:UserName' | tr -d '\r')
-        DOTFILES_DIR="$HOME/.dotfiles"
-        TERMINAL_SETTINGS_DEST="/mnt/c/Users/$WINDOWS_USER/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
-        TERMINAL_SETTINGS_SRC="$DOTFILES_DIR/windows-terminal/settings.json"
+        local WINDOWS_USER=$("$PWSH_EXE" -NoProfile -Command '$env:UserName' | tr -d '\r')
+        local DOTFILES_DIR="$HOME/.dotfiles"
+        local TERMINAL_SETTINGS_DEST="/mnt/c/Users/$WINDOWS_USER/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
+        local TERMINAL_SETTINGS_SRC="$DOTFILES_DIR/windows-terminal/settings.json"
 
         if [[ -f "$TERMINAL_SETTINGS_DEST" && -f "$TERMINAL_SETTINGS_SRC" ]]; then
           if [[ "$TERMINAL_SETTINGS_SRC" -nt "$TERMINAL_SETTINGS_DEST" ]]; then
             cp "$TERMINAL_SETTINGS_DEST" "${TERMINAL_SETTINGS_DEST}.bak.$(date +%s)"
             cp "$TERMINAL_SETTINGS_SRC" "$TERMINAL_SETTINGS_DEST"
+            echo "✓ Windows Terminal settings synced"
+          else
+            echo "⚠ Windows Terminal settings already up to date"
           fi
+        else
+          echo "✗ Could not find settings files"
         fi
+    else
+      echo "✗ PowerShell not found at $PWSH_EXE"
     fi
+  }
+
+  alias update-wt-settings='sync_wt_settings'
 fi
 
 #=======================================================================================
@@ -830,6 +833,12 @@ fi
 #=======================================================================================
 # Load AFTER sourcing other files because some export path may not be defined
 source_if_exists "${ZDOTDIR}/aliases.zsh"
+
+# Compile aliases.zsh if source is newer
+if [[ "${ZDOTDIR}/aliases.zsh" -nt "${ZDOTDIR}/aliases.zsh.zwc" ]]; then
+  echo "Recompiling aliases.zsh..."
+  zcompile "${ZDOTDIR}/aliases.zsh"
+fi
 
 # At the *end* of .zshrc
 # Recompile if source is newer

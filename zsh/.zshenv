@@ -14,7 +14,8 @@ export ZSH_CACHE_DIR="${ZDOTDIR}/cache"
 
 # 🪟 Set terminal title on each prompt
 if [[ -o interactive ]]; then
-  precmd() {
+  _set_terminal_title() {
     print -Pn "\e]0;%n@%m: %~\a"
   }
+  precmd_functions+=(_set_terminal_title)
 fi

@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 
 ## zshrc Related ##
-alias dirzshrc="grep -nT '^#|' $HOME/.zshrc"
-alias zshrc="vim $HOME/.zshrc"
-alias rebash="source $HOME/.zshrc"
+alias dirzshrc="grep -nT '^#|' ${HOME}/.zshrc"
+alias zshrc="vim ${HOME}/.zshrc"
+alias rebash="source ${HOME}/.zshrc"
 # vpr: Edit and reload .zshrc in one command
-alias vpr="vim $HOME/.zshrc && source $HOME/.zshrc"
-
+alias vpr="vim ${HOME}/.zshrc && source ${HOME}/.zshrc"
 # common directories
 alias dot="cd ~/.dotfiles"
 alias con="cd ~/.config"
@@ -68,7 +67,11 @@ cd() {
 			dir=$(zoxide query -l | head -10 | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
 		else
 			# Fallback: extract directories from shell history
-			dir=$(fc -l -10 | grep -oP '(?<=cd )[^ ]+' | sed "s|^~|$HOME|" | sort -u | fzf --height=40% --inline-info --reverse --preview='eza -la {}')
+			if [[ "$HOST_OS" == "macos" ]]; then
+				dir=$(fc -l -10 | sed -n 's/.*cd \([^ ]*\).*/\1/p' | sed "s|^~|$HOME|" | sort -u | fzf --height=40% --inline-info --reverse --preview='eza -la {}')
+			else
+				dir=$(fc -l -10 | grep -oP '(?<=cd )[^ ]+' | sed "s|^~|$HOME|" | sort -u | fzf --height=40% --inline-info --reverse --preview='eza -la {}')
+			fi
 		fi
 		[[ -n "$dir" ]] && builtin cd "$dir"
 	else
@@ -91,6 +94,19 @@ cd() {
 			fi
 		fi
 	fi
+}
+
+# 🧭 Yazi: Change directory based on project config
+function y() {
+	if ! command -v yazi &>/dev/null; then
+		echo "Error: requires 'yazi' to be installed." >&2
+		return 1
+	fi
+	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+	command yazi "$@" --cwd-file="$tmp"
+	IFS= read -r -d '' cwd < "$tmp"
+	[ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
+	rm -f -- "$tmp"
 }
 
 # 🔍 FZF + Vim: Fuzzy find and edit files with preview using zoxide
@@ -214,11 +230,11 @@ FD_EXCLUDE_PATTERN+="}"
 
 # 🔍 Enhanced search functions using fd
 function fdf() {
-	fd --hidden --ignore-case --follow --type f --exclude "$FD_EXCLUDE_PATTERN" "$@"
+	fd --hidden --ignore-case --follow --type f --exclude "${FD_EXCLUDE_PATTERN}" "$@"
 }
 # search for directories with fdd
 function fdd() {
-	fd --hidden --ignore-case --follow --type d --exclude "$FD_EXCLUDE_PATTERN" "$@"
+	fd --hidden --ignore-case --follow --type d --exclude "${FD_EXCLUDE_PATTERN}" "$@"
 }
 
 # 📄 Ripgrep: Enhanced grep with automatic paging
@@ -264,13 +280,13 @@ function ref() {
 		name="${1}"
 		folder="${ZDOTDIR}/references"
 		file="${folder}/${name}.zsh"
-		if [[ ! -d $folder ]]; then
-			mkdir -p $folder
+		if [[ ! -d "${folder}" ]]; then
+			mkdir -p "${folder}"
 		fi
-		if [[ ! -f $file ]]; then
-			touch $file
+		if [[ ! -f "${file}" ]]; then
+			touch "${file}"
 		fi
-		vim $file
+		vim "${file}"
 	fi
 }
 
@@ -684,10 +700,10 @@ gcm() {
 # Suffix Aliases
 #=======================================================================================
 alias -s git="git-clone"
-alias -s txt=$EDITOR
-alias -s cond=$EDITOR
-alias -s log=$EDITOR
-alias -s vim=$=$EDITOR
+alias -s txt="${EDITOR}"
+alias -s cond="${EDITOR}"
+alias -s log="${EDITOR}"
+alias -s vim="${EDITOR}"
 alias -s deb="sudo dpkg -i"
 alias -s {c,py,cpp,r,rb,go,js,jsx,ts,java,sql,hs,md}="vim"
 alias -s {xml,json,toml,yaml,yml,ini,conf,log}="vim"
@@ -705,7 +721,7 @@ alias -g F="| fzf"
 alias -g H="| head"
 alias -g J="| jq"
 alias -g L="| less"
-alias -g P="| $PAGER"
+alias -g P="| ${PAGER}"
 alias -g S="| sort -n"
 alias -g T="| tail"
 alias -g U="| uniq"
@@ -831,8 +847,8 @@ dc() {
 	fi
 }
 
-#alias dce="docker compose -f "./docker/docker-compose.yml" --project-directory ./ exec --user \"$(id -u):$(id -g)\""
-alias dce="dc exec -e XDEBUG_SESSION=PHPSTORM --user \"$(id -u):$(id -g)\""
+#alias dce="docker compose -f \"./docker/docker-compose.yml\" --project-directory ./ exec --user $(id -u):$(id -g)"
+dce() { dc exec -e XDEBUG_SESSION=PHPSTORM --user "$(id -u):$(id -g)" "$@"; }
 
 # Runs the docker compose detached
 dcu() {
@@ -909,10 +925,10 @@ alias dkd="docker run -d -P"
 alias dki="docker run -i -t -P"
 
 # Stop all containers
-alias dstop="docker stop $(docker ps -a -q)"
+dstop() { docker stop $(docker ps -a -q); }
 
 # Stop and Remove all containers
-alias drmf="docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)"
+drmf() { docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); }
 
 # Get IP addresses of all running containers
 alias dpsi="docker ps -q | xargs docker inspect --format '{{ .Id }} - {{ .Name }} - {{ .NetworkSettings.IPAddress }}'"
@@ -964,7 +980,7 @@ if [[ $HOST_OS == "wsl" ]]; then
 		fi
 
 		FILE=$1
-		FULL_PATH=$(readlink -f $FILE)
+		FULL_PATH=$(readlink -f "${FILE}")
 		$SUBLIME_TEXT_LOCATION "/\/\wsl.localhost\\${DISTRO}${FULL_PATH}"
 	}
 
@@ -972,15 +988,15 @@ if [[ $HOST_OS == "wsl" ]]; then
 	alias code="${WINDOWS_USER_PROFILE}/AppData/Local/Programs/Microsoft\ VS\ Code/Code.exe"
 
 	copy_terminal_settings_to_dotfiles() {
-		DOTFILES_DIR="$HOME/.dotfiles"
+		DOTFILES_DIR="${HOME}/.dotfiles"
 		WINDOWS_USER=$(powershell.exe '$env:UserName' | tr -d '\r')
-		TERMINAL_SETTINGS_DEST="/mnt/c/Users/$WINDOWS_USER/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
-  		TERMINAL_SETTINGS_SRC="$DOTFILES_DIR/windows-terminal/settings.json"
-		if [[ -f "$TERMINAL_SETTINGS_DEST" ]]; then
-			cp "$TERMINAL_SETTINGS_DEST" "$TERMINAL_SETTINGS_SRC"
+		TERMINAL_SETTINGS_DEST="/mnt/c/Users/${WINDOWS_USER}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
+  		TERMINAL_SETTINGS_SRC="${DOTFILES_DIR}/windows-terminal/settings.json"
+		if [[ -f "${TERMINAL_SETTINGS_DEST}" ]]; then
+			cp "${TERMINAL_SETTINGS_DEST}" "${TERMINAL_SETTINGS_SRC}"
 			echo "✅ Copied current terminal settings to dotfiles."
 		else
-			echo "❌ Terminal settings not found at: $TERMINAL_SETTINGS_DEST"
+			echo "❌ Terminal settings not found at: ${TERMINAL_SETTINGS_DEST}"
 		fi
 	}
 fi
@@ -1034,7 +1050,7 @@ alias gap="git add --patch"
 alias gcan="git commit --amend --no-edit"
 alias grs="git restore --staged"
 alias grbi="git rebase -i"
-alias gclean="git branch --merged | grep -v "\*" | xargs -n 1 git branch -d"
+gclean() { git branch --merged | grep -v "\*" | xargs -n 1 git branch -d; }
 
 # Quick systemd service management
 alias sctl="sudo systemctl"
@@ -1048,7 +1064,13 @@ alias duh="du -h --max-depth=1 | sort -hr"
 # Network shortcuts
 alias ports="netstat -tulanp"
 alias myip_public="curl -s https://api.ipify.org && echo"
-alias myip_local="ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v 127.0.0.1"
+
+# macOS uses BSD grep, Linux uses GNU grep
+if [[ "$HOST_OS" == "macos" ]]; then
+  alias myip_local="ifconfig | grep 'inet ' | grep -v 127.0.0.1 | awk '{print \$2}'"
+else
+  alias myip_local="ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v 127.0.0.1"
+fi
 
 #=======================================================================================
 # Development Workflow Functions
@@ -1062,15 +1084,15 @@ killport() {
     return 1
   fi
 
-  local port=$1
-  local pid=$(lsof -ti:$port)
+  local port="${1}"
+  local pid=$(lsof -ti:"${port}")
 
-  if [[ -n "$pid" ]]; then
-    echo "🔫 Killing process $pid on port $port..."
-    kill -9 $pid
+  if [[ -n "${pid}" ]]; then
+    echo "🔫 Killing process ${pid} on port ${port}..."
+    kill -9 "${pid}"
     echo "✓ Process killed"
   else
-    echo "❌ No process found on port $port"
+    echo "❌ No process found on port ${port}"
   fi
 }
 
@@ -1112,22 +1134,22 @@ replace-in-files() {
     return 1
   fi
 
-  local search=$1
-  local replace=$2
-  local pattern=${3:-"*"}
+  local search="${1}"
+  local replace="${2}"
+  local pattern="${3:-*}"
 
-  echo "🔍 Searching for: $search"
-  echo "📝 Replacing with: $replace"
-  echo "📁 In files matching: $pattern"
+  echo "🔍 Searching for: ${search}"
+  echo "📝 Replacing with: ${replace}"
+  echo "📁 In files matching: ${pattern}"
   echo ""
 
   # Show matches first
-  rg "$search" -l --glob "$pattern"
+  rg "${search}" -l --glob "${pattern}"
 
   echo ""
   read "confirm?Proceed with replacement? (y/n) "
-  if [[ $confirm == "y" ]]; then
-    rg "$search" -l --glob "$pattern" | xargs sed -i "s/$search/$replace/g"
+  if [[ "${confirm}" == "y" ]]; then
+    rg "${search}" -l --glob "${pattern}" | xargs sed -i "s/${search}/${replace}/g"
     echo "✓ Replacement complete"
   else
     echo "❌ Cancelled"
@@ -1172,34 +1194,34 @@ extract() {
 
 # Quick HTTP server in current directory
 serve() {
-  local port=${1:-8000}
-  echo "🌐 Starting HTTP server on http://localhost:$port"
-  python3 -m http.server $port
+  local port="${1:-8000}"
+  echo "🌐 Starting HTTP server on http://localhost:${port}"
+  python3 -m http.server "${port}"
 }
 
 # Generate random password
 genpass() {
-  local length=${1:-20}
-  openssl rand -base64 32 | tr -d "=+/" | cut -c1-$length
+  local length="${1:-20}"
+  openssl rand -base64 32 | tr -d "=+/" | cut -c1-"${length}"
 }
 
 # Quick note taking
 note() {
-  local notes_dir="$HOME/notes"
-  mkdir -p "$notes_dir"
+  local notes_dir="${HOME}/notes"
+  mkdir -p "${notes_dir}"
 
   if [ $# -eq 0 ]; then
     # Show recent notes
     echo "📝 Recent notes:"
-    ls -lt "$notes_dir" | head -10
+    ls -lt "${notes_dir}" | head -10
   else
     # Create new note
-    local note_file="$notes_dir/$(date +%Y-%m-%d)-$1.md"
-    echo "# $1" > "$note_file"
-    echo "" >> "$note_file"
-    echo "Date: $(date)" >> "$note_file"
-    echo "" >> "$note_file"
-    vim "$note_file"
+    local note_file="${notes_dir}/$(date +%Y-%m-%d)-${1}.md"
+    echo "# ${1}" > "${note_file}"
+    echo "" >> "${note_file}"
+    echo "Date: $(date)" >> "${note_file}"
+    echo "" >> "${note_file}"
+    vim "${note_file}"
   fi
 }
 
