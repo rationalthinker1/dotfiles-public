@@ -115,6 +115,29 @@ fi
 # ==============================================================================
 source_if_exists "${ZDOTDIR}/local.zsh"
 
+# ==============================================================================
+# Secret Management with pass
+# ==============================================================================
+if command -v pass &>/dev/null; then
+    # Set password store location (XDG-compliant)
+    export PASSWORD_STORE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/password-store"
+
+    # Helper function to safely load secrets
+    load_secret() {
+        local secret_path="$1"
+        local env_var="$2"
+
+        if pass show "$secret_path" &>/dev/null; then
+            export "$env_var"="$(pass show "$secret_path")"
+        fi
+    }
+
+    # Load API keys from pass (if configured)
+    # Uncomment and configure after running: pass init <gpg-key-id>
+    # load_secret "openai/api_key" "OPENAI_API_KEY"
+    # load_secret "github/token" "GITHUB_TOKEN"
+fi
+
 #=======================================================================================
 # WSL-Specific Settings
 #=======================================================================================
@@ -126,14 +149,43 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
     export IP_ADDRESS=${${(M)${(f)"$(ip route list default 2>/dev/null)"}:#*via*}[(w)3]}
     export DISPLAY="${IP_ADDRESS}:0"
 
-    # Cache wslpath conversions in precmd (BIG performance gain)
+    # Cache wslpath conversions with persistent cache (BIG performance gain)
     typeset -gA _wslpath_cache
+    _wslpath_cache_file="${ZSH_CACHE_DIR}/wslpath_cache"
+
+    # Load cache from disk on startup
+    if [[ -f "$_wslpath_cache_file" ]]; then
+        source "$_wslpath_cache_file" 2>/dev/null
+    fi
+
     keep_current_path() {
         local cache_key=$PWD
-        [[ -z ${_wslpath_cache[$cache_key]} ]] && _wslpath_cache[$cache_key]=$(wslpath -w "$PWD" 2>/dev/null)
+
+        # Check in-memory cache first
+        if [[ -z ${_wslpath_cache[$cache_key]} ]]; then
+            # Not cached - compute and save
+            _wslpath_cache[$cache_key]=$(wslpath -w "$PWD" 2>/dev/null)
+
+            # Persist to disk (async to avoid blocking)
+            {
+                echo "_wslpath_cache[${(q)cache_key}]=${(q)_wslpath_cache[$cache_key]}" \
+                    >> "$_wslpath_cache_file"
+            } &!
+        fi
+
         printf "\e]9;9;%s\e\\" "${_wslpath_cache[$cache_key]}"
     }
     precmd_functions+=(keep_current_path)
+
+    # Cleanup old cache entries on shell exit (keep last 100 dirs)
+    cleanup_wslpath_cache() {
+        if [[ -f "$_wslpath_cache_file" ]] && (( $(wc -l < "$_wslpath_cache_file") > 100 )); then
+            tail -100 "$_wslpath_cache_file" > "${_wslpath_cache_file}.tmp"
+            mv "${_wslpath_cache_file}.tmp" "$_wslpath_cache_file"
+        fi
+    }
+    # Run cleanup in background on exit
+    trap cleanup_wslpath_cache EXIT
 
     [[ -n "$WT_SESSION" ]] && printf "\033]9;9;%s\033\\" "$PWD"
 
@@ -154,14 +206,32 @@ fi
 # Android Development Environment
 #=======================================================================================
 if [[ -d "${HOME}/android" ]]; then
-    export JAVA_HOME="/usr/lib/jvm/jdk-17"
-    export ANDROID_HOME="${HOME}/android"
-    export ANDROID_SDK_ROOT="${ANDROID_HOME}"
-    export WSLENV="${ANDROID_HOME}/p:${WSLENV}"
-    add_to_path_if_exists "${ANDROID_HOME}/cmdline-tools/latest/bin"
-    add_to_path_if_exists "${ANDROID_HOME}/platform-tools"
-    add_to_path_if_exists "${ANDROID_HOME}/tools"
-    add_to_path_if_exists "${ANDROID_HOME}/tools/bin"
+    # Dynamically find Java installation (prefer newer versions)
+    for jdk_version in 21 17 11 8; do
+        jdk_path="/usr/lib/jvm/jdk-${jdk_version}"
+        if [[ -d "$jdk_path" ]]; then
+            export JAVA_HOME="$jdk_path"
+            break
+        fi
+    done
+
+    # Fallback: use update-alternatives on Debian/Ubuntu
+    if [[ -z "$JAVA_HOME" ]] && command -v update-java-alternatives &>/dev/null; then
+        export JAVA_HOME="$(update-java-alternatives -l 2>/dev/null | awk 'NR==1 {print $3}')"
+    fi
+
+    # Only set Android paths if Java was found
+    if [[ -n "$JAVA_HOME" && -d "$JAVA_HOME" ]]; then
+        export ANDROID_HOME="${HOME}/android"
+        export ANDROID_SDK_ROOT="${ANDROID_HOME}"
+        export WSLENV="${ANDROID_HOME}/p:${WSLENV}"
+        add_to_path_if_exists "${ANDROID_HOME}/cmdline-tools/latest/bin"
+        add_to_path_if_exists "${ANDROID_HOME}/platform-tools"
+        add_to_path_if_exists "${ANDROID_HOME}/tools"
+        add_to_path_if_exists "${ANDROID_HOME}/tools/bin"
+    else
+        echo "WARNING: Android directory exists but no JDK found" >&2
+    fi
 fi
 
 # ==============================================================================
@@ -247,6 +317,12 @@ function reset_cursor {
   echo -ne '\e[5 q'
 }
 precmd_functions+=(reset_cursor)
+
+# 🪟 Set terminal title on each prompt
+_set_terminal_title() {
+  print -Pn "\e]0;%n@%m: %~\a"
+}
+precmd_functions+=(_set_terminal_title)
 
 bindkey "^[[1;5C" forward-word
 bindkey "^[[1;5D" backward-word
@@ -356,7 +432,7 @@ zi light romkatv/powerlevel10k
 
 # 🎨 Fast Syntax Highlighting - Highlights commands as you type in real-time
 # Valid commands = green, invalid = red, helps catch typos before execution
-zi ice lucid depth'1'
+zi ice lucid wait'0a' depth'1'
 zi light zdharma-continuum/fast-syntax-highlighting
 
 # 💡 FZF - Fuzzy finder for files, commands, history
@@ -391,7 +467,7 @@ zi light joshskidmore/zsh-fzf-history-search
 # 🔄 ZSH Autosuggestions - Fish-like command suggestions from history
 # Usage: Type command, press → (right arrow) to accept suggestion
 # Shows grayed-out suggestion based on command history as you type
-zi ice lucid depth'1'
+zi ice lucid wait'0b' depth'1'
 zi light zsh-users/zsh-autosuggestions
 
 # 🔁 ZSH Completions - Additional completion definitions for 1000+ commands

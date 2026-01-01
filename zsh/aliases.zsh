@@ -338,29 +338,6 @@ alias v!="fc -e \"sed -i -e \\\"s/cat /vim /\\\"\""
 # example: tf laravel.log
 alias tf="tail -f"
 
-# Extract archives files
-function extract() {
-	if [ -f "$1" ]; then
-		case "$1" in
-		*.tar.bz2) tar xvjf "$1" ;;
-		*.tar.xz) tar xvJf "$1" ;;
-		*.tar.gz) tar xvzf "$1" ;;
-		*.bz2) bunzip2 "$1" ;;
-		*.rar) unrar x "$1" ;;
-		*.gz) gunzip "$1" ;;
-		*.tar) tar xvf "$1" ;;
-		*.tbz2) tar xvjf "$1" ;;
-		*.tgz) tar xvzf "$1" ;;
-		*.zip) unzip "$1" ;;
-		*.Z) uncompress "$1" ;;
-		*.7z) 7z x "$1" ;;
-		*) echo "'$1' cannot be extracted via >extract<" ;;
-		esac
-	else
-		echo "'$1' is not a valid file!"
-	fi
-}
-
 #=======================================================================================
 # Installing, updating or removing applications aliases and functions
 #=======================================================================================
@@ -847,8 +824,7 @@ dc() {
 	fi
 }
 
-#alias dce="docker compose -f \"./docker/docker-compose.yml\" --project-directory ./ exec --user $(id -u):$(id -g)"
-dce() { dc exec -e XDEBUG_SESSION=PHPSTORM --user "$(id -u):$(id -g)" "$@"; }
+alias dce="docker compose -f \"./docker/docker-compose.yml\" --project-directory ./ exec --user $(id -u):$(id -g)"
 
 # Runs the docker compose detached
 dcu() {
@@ -1043,14 +1019,6 @@ killp() {
   pid=$(ps aux | fzf | awk '{print $2}')
   [[ -n "$pid" ]] && kill -9 "$pid"
 }
-
-# Git shortcuts (missing from current config)
-alias gaa="git add --all"
-alias gap="git add --patch"
-alias gcan="git commit --amend --no-edit"
-alias grs="git restore --staged"
-alias grbi="git rebase -i"
-gclean() { git branch --merged | grep -v "\*" | xargs -n 1 git branch -d; }
 
 # Quick systemd service management
 alias sctl="sudo systemctl"
