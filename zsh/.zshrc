@@ -147,6 +147,10 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
 
     # Get IP address (FAST - no WSL boundary crossing)
     export IP_ADDRESS=${${(M)${(f)"$(ip route list default 2>/dev/null)"}:#*via*}[(w)3]}
+    # Validate IP address format, fallback to localhost if invalid
+    if [[ ! "${IP_ADDRESS}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        IP_ADDRESS="127.0.0.1"
+    fi
     export DISPLAY="${IP_ADDRESS}:0"
 
     # Cache wslpath conversions with persistent cache (BIG performance gain)
@@ -205,7 +209,8 @@ fi
 #=======================================================================================
 # Android Development Environment
 #=======================================================================================
-if [[ -d "${HOME}/android" ]]; then
+# Only load on desktop environments to avoid unnecessary JDK search on servers
+if [[ "${HOST_LOCATION}" == "desktop" && -d "${HOME}/android" ]]; then
     # Dynamically find Java installation (prefer newer versions)
     for jdk_version in 21 17 11 8; do
         jdk_path="/usr/lib/jvm/jdk-${jdk_version}"
@@ -443,10 +448,9 @@ export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export FZF_ALT_C_COMMAND="fd --type d"
 export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --info=inline"
 export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-range :500 {}'"
-zi ice lucid wait'0' depth'1' atclone'./install --bin' atpull'%atclone'
+zi ice lucid wait'0' depth'1' atclone'./install --bin' atpull'%atclone' \
+  atload'add_to_path_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/bin"'
 zi light junegunn/fzf
-# Force correct fzf in PATH before anything else
-add_to_path_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/bin"
 
 # 📂 FZF-Tab - Replaces tab completion with FZF interface
 # Usage: Press TAB for fuzzy-searchable completion menu with previews
@@ -459,10 +463,8 @@ zi light Aloxaf/fzf-tab
 zi ice lucid wait'1' depth'1' branch'main'
 zi light Freed-Wu/fzf-tab-source
 
-# 🔁 FZF History Search - Enhanced Ctrl+R with fuzzy command history
-# Usage: Ctrl+R to search shell history with fuzzy matching
-zi ice lucid wait'1' lucid depth'1'
-zi light joshskidmore/zsh-fzf-history-search
+# NOTE: FZF history search removed - atuin (line 639) provides superior history management
+# with sync, stats, and SQLite backend. Use Ctrl+R for atuin's enhanced search.
 
 # 🔄 ZSH Autosuggestions - Fish-like command suggestions from history
 # Usage: Type command, press → (right arrow) to accept suggestion

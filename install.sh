@@ -125,23 +125,43 @@ echo
 
 #---------------------------------------------------------------------------------------
 # Install essential packages
-# Skipped if zsh is already installed (indicates packages are present)
+# Now idempotent - installs missing packages even if some are present
 #---------------------------------------------------------------------------------------
-if ! command -v zsh &>/dev/null; then
+install_packages=false
+
+# Check if any critical packages are missing
+for pkg in zsh git curl; do
+    if ! command -v "${pkg}" &>/dev/null; then
+        install_packages=true
+        break
+    fi
+done
+
+if [[ "${install_packages}" == "true" ]]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "  Installing essential packages"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
+
     if [[ "${HOST_OS}" == "darwin" ]]; then
         # Install Homebrew
         if ! command -v brew &>/dev/null; then
             echo "Installing Homebrew..."
             /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+            # Detect Homebrew installation path (Apple Silicon vs Intel)
+            if [[ -x "/opt/homebrew/bin/brew" ]]; then
+                brew_prefix="/opt/homebrew"
+            elif [[ -x "/usr/local/bin/brew" ]]; then
+                brew_prefix="/usr/local"
+            else
+                brew_prefix="/opt/homebrew"  # Default fallback
+            fi
+
             {
                 echo
-                echo 'eval "$(/opt/homebrew/bin/brew shellenv)"'
+                echo "eval \"\$(${brew_prefix}/bin/brew shellenv)\""
             } >>"${HOME}/.zprofile"
-            eval "$(/opt/homebrew/bin/brew shellenv)"
+            eval "$(${brew_prefix}/bin/brew shellenv)"
         else
             echo "✓ Homebrew already installed"
         fi
@@ -216,7 +236,7 @@ else
     major_version="${current_version%%.*}"
     
     if [[ ! "$major_version" =~ ^[0-9]+$ ]]; then
-        echo "WARNING: Cannot parse vim version '$current_version', rebuilding"
+        echo "WARNING: Cannot parse vim version ${current_version}, rebuilding"
         need_vim_install=true
         elif (( major_version < VIM_MIN_VERSION )); then
         echo "Vim $current_version outdated, upgrading to ${VIM_MIN_VERSION}+"
@@ -251,9 +271,24 @@ if [[ "$need_vim_install" == "true" ]]; then
     # (build-essential, libncurses*, python3-dev, git already in LINUX_PACKAGES)
     sudo apt-get install -y \
     ruby-dev lua5.3 liblua5.3-dev libperl-dev
-    
-    # Clone and build
-    git clone --depth=1 https://github.com/vim/vim.git
+
+    # Clone with retry logic
+    max_retries=3
+    retry_count=0
+    while (( retry_count < max_retries )); do
+        if git clone --depth=1 https://github.com/vim/vim.git; then
+            break
+        fi
+        ((retry_count++))
+        if (( retry_count < max_retries )); then
+            echo "Clone failed, retrying (${retry_count}/${max_retries})..."
+            sleep 2
+        else
+            echo "ERROR: Failed to clone Vim repository after ${max_retries} attempts"
+            exit 1
+        fi
+    done
+
     cd vim/src
     
     ./configure \
@@ -270,8 +305,11 @@ if [[ "$need_vim_install" == "true" ]]; then
     --prefix=/usr/local \
     --with-tlib=ncurses \
     --with-python3-config-dir="${py3_config}"
-    
-    make -j"$(nproc)"
+
+    # Cap parallel jobs to avoid OOM on low-memory systems (e.g., 1GB VPS)
+    nproc_count=$(nproc)
+    max_jobs=$((nproc_count < 4 ? nproc_count : 4))
+    make -j"${max_jobs}"
     sudo make install
     
     cd ../..
@@ -417,10 +455,13 @@ for source_path in "${!DOTFILE_LINKS[@]}"; do
     # Ensure parent directory exists
     mkdir -p "$(dirname "$target")"
     
-    # Backup if target exists and is not a dotfiles symlink
+    # Backup if target exists and is not a symlink to THIS dotfiles repo
     if [[ -e "$target" ]]; then
-        if [[ ! -L "$target" ]] || [[ ! "$(readlink -f "$target" 2>/dev/null)" =~ dotfiles ]]; then
+        resolved_path="$(readlink -f "$target" 2>/dev/null || echo "")"
+        # Only skip if symlink points to our dotfiles directory
+        if [[ ! -L "$target" ]] || [[ "${resolved_path}" != "${DOTFILES_ROOT}"/* ]]; then
             if [[ -f "$target" || -d "$target" ]]; then
+                echo "  Backing up existing: ${target}"
                 rsync -a "$target" "${BACKUP_DIR}/" 2>/dev/null || true
                 rm -rf "$target"
             fi
