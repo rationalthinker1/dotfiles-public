@@ -44,13 +44,11 @@ alias dot="cd ~/.dotfiles"
 alias con="cd ~/.config"
 
 # 🦇 Bat: Better cat with syntax highlighting
-# Override 'cat' to use 'bat' for prettier output
+# Override 'cat' to use 'bat' for prettier output (function for lazy-loading)
 # Use 'rcat' (real cat) to access original cat command
-if (( $+commands[bat] )); then
-	alias rcat=${commands[cat]}
-	alias cat=${commands[bat]}
-	export MANPAGER="sh -c 'col -bx | bat -l man -p'"
-fi
+alias rcat=${commands[cat]}
+cat() { bat "$@"; }
+export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 
 # 🔍 FZF + Zoxide: Enhanced cd with enhancd-style features
 # cd (no args) - fuzzy select from zoxide history (if available) or recent dirs
@@ -162,40 +160,29 @@ function kkk() {
 }
 
 ## 📁 Eza: Modern ls replacement with colors and icons
-# Override 'ls' and related aliases to use 'eza' for better file listing
-if (( $+commands[eza] )); then
-	## Colorize the ls output ##
-	alias ls='eza --color=auto'
+# Override 'ls' and related commands to use 'eza' (functions for lazy-loading)
+## Colorize the ls output ##
+ls() { eza --color=auto "$@"; }
 
-	## Use a long listing format ##
-	# List with human readable filesizes
-	alias l="eza --color=auto --long --header --group --group-directories-first"
-	# List all, with human readable filesizes
-	alias ll="eza --color=auto --long --header --group --all --group-directories-first"
-	# Same as above, but ordered by size
-	alias ls="eza --color=auto --long --header --group --all --group-directories-first --sort size"
-	# Same as above, but ordered by date
-	alias lt="eza --color=auto --long --header --group --all --group-directories-first --reverse --sort oldest"
-	# Show tree level 2
-	alias llt="eza --color=auto --long --header --group --all --group-directories-first --tree --level=2"
-	# Show tree level 3
-	alias lllt="eza --color=auto --long --header --group --all --group-directories-first --tree --level=3"
-	# Show tree level 4
-	alias llllt="eza --color=auto --long --header --group --all --group-directories-first --tree --level=4"
-	# Show hidden files ##
-	alias l.="eza --color=auto --long --header --group --all --group-directories-first --list-dirs .*"
-	# Show only directories
-	alias ld="eza --color=auto --long --header --group --all --group-directories-first --only-dirs"
-else
-	## Use a long listing format ##
-	alias l="ls --color=auto -lh --group-directories-first"       # List all, with human readable filesizes
-	alias ll="ls --color=auto -lah --group-directories-first"     # List all, with human readable filesizes
-	alias lt="ls --color=auto -lahFtr --group-directories-first" # Same as above, but ordered by date
-	alias ls="ls --color=auto -lahFSr --group-directories-first" # Same as above, but ordered by size
-
-	## Show hidden files ##
-	alias l.='ls -d .* --color=auto'
-fi
+## Use a long listing format ##
+# List with human readable filesizes
+l() { eza --color=auto --long --header --group --group-directories-first "$@"; }
+# List all, with human readable filesizes
+ll() { eza --color=auto --long --header --group --all --group-directories-first "$@"; }
+# Same as above, but ordered by size
+lls() { eza --color=auto --long --header --group --all --group-directories-first --sort size "$@"; }
+# Same as above, but ordered by date
+lt() { eza --color=auto --long --header --group --all --group-directories-first --reverse --sort oldest "$@"; }
+# Show tree level 2
+llt() { eza --color=auto --long --header --group --all --group-directories-first --tree --level=2 "$@"; }
+# Show tree level 3
+lllt() { eza --color=auto --long --header --group --all --group-directories-first --tree --level=3 "$@"; }
+# Show tree level 4
+llllt() { eza --color=auto --long --header --group --all --group-directories-first --tree --level=4 "$@"; }
+# Show hidden files ##
+l.() { eza --color=auto --long --header --group --all --group-directories-first --list-dirs .* "$@"; }
+# Show only directories
+ld() { eza --color=auto --long --header --group --all --group-directories-first --only-dirs "$@"; }
 
 ## show history on h
 alias h="history"
@@ -1319,26 +1306,26 @@ function note() {
 alias update-all="zi update --all && rustup update && sudo apt-get update && sudo apt-get upgrade -y"
 alias update-zi="zi update --all"
 
-# Lazygit/Lazydocker TUIs
-alias lg="lazygit"
-alias lzd="lazydocker"
+# Lazygit/Lazydocker TUIs - functions for lazy-loading
+lg() { lazygit "$@"; }
+lzd() { lazydocker "$@"; }
 
-# System monitoring (override htop/top with bottom)
-alias htop="btm"
-alias top="btm"
+# System monitoring (override htop/top with bottom) - functions for lazy-loading
+htop() { btm "$@"; }
+top() { btm "$@"; }
 
-# Disk usage (modern alternatives)
-alias df="duf"
-alias ncdu="dust"
+# Disk usage (modern alternatives) - functions for lazy-loading
+df() { duf "$@"; }
+ncdu() { dust "$@"; }
 
-# Process viewer
-alias pps="procs"  # Use pps for procs, keep ps as fallback
+# Process viewer - function for lazy-loading
+pps() { procs "$@"; }  # Use pps for procs, keep ps as fallback
 
-# DNS lookup
-alias dog="dog"  # Modern dig
+# DNS lookup - function for lazy-loading
+dog() { command dog "$@"; }  # Modern dig
 
-# Benchmarking
-alias bench="hyperfine"
+# Benchmarking - function for lazy-loading
+bench() { hyperfine "$@"; }
 
-# Code statistics
-alias cloc="tokei"
+# Code statistics - function for lazy-loading
+cloc() { tokei "$@"; }
