@@ -47,10 +47,11 @@ if [[ -r "${XDG_CACHE_HOME}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
 fi
 
 
-# Add only if directory exists & not already in $PATH
+# Add to PATH without checking directory existence (optimized for WSL startup speed)
+# Non-existent dirs in PATH are harmless - shell handles them fine
 function add_to_path_if_exists() {
-  # Fast path: check directory existence first (fail fast for non-existent dirs)
-  [[ -d "${1}" ]] || return 1
+  # Directory existence check removed for performance (was 20% of startup time in WSL)
+  # [[ -d "${1}" ]] || return 1
 
   # Prepend to path array - typeset -U automatically deduplicates!
   path=("${1}" $path)
@@ -155,56 +156,77 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
     export LIBGL_ALWAYS_INDIRECT=1
     export BROWSER="wslview"
 
-    # Get IP address (FAST - no WSL boundary crossing)
-    export IP_ADDRESS=${${(M)${(f)"$(ip route list default 2>/dev/null)"}:#*via*}[(w)3]}
-    # Validate IP address format, fallback to localhost if invalid
-    if [[ ! "${IP_ADDRESS}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        IP_ADDRESS="127.0.0.1"
-    fi
-    export DISPLAY="${IP_ADDRESS}:0"
+    # IP address detection disabled - not needed (was 749ms when cache stale)
+    # If you need X11 forwarding, uncomment this section
+    # _ip_cache_file="${ZSH_CACHE_DIR}/wsl_ip_cache"
+    # if [[ -f "$_ip_cache_file" ]] && [[ $(( $(date +%s) - $(stat -c %Y "$_ip_cache_file" 2>/dev/null || echo 0) )) -lt 3600 ]]; then
+    #     # Cache is fresh (< 1 hour old), read from file
+    #     read -r IP_ADDRESS < "$_ip_cache_file"
+    # else
+    #     # Cache is stale or missing, refresh it
+    #     IP_ADDRESS=${${(M)${(f)"$(ip route list default 2>/dev/null)"}:#*via*}[(w)3]}
+    #     # Simple validation: check if it starts with a digit (faster than full regex)
+    #     if [[ "$IP_ADDRESS" =~ ^[0-9] ]]; then
+    #         echo "$IP_ADDRESS" > "$_ip_cache_file"
+    #     else
+    #         IP_ADDRESS="127.0.0.1"
+    #     fi
+    # fi
+    # export IP_ADDRESS
+    # export DISPLAY="${IP_ADDRESS}:0"
 
-    # Cache wslpath conversions with persistent cache (BIG performance gain)
+    # Optimized wslpath cache: lazy-load only when needed
     typeset -gA _wslpath_cache
     _wslpath_cache_file="${ZSH_CACHE_DIR}/wslpath_cache"
+    _wslpath_cache_loaded=0
 
-    # Load cache from disk on startup
-    if [[ -f "$_wslpath_cache_file" ]]; then
-        source "$_wslpath_cache_file" 2>/dev/null
-    fi
+    # function keep_current_path() {
+    #     local cache_key=$PWD
 
-    function keep_current_path() {
-        local cache_key=$PWD
+    #     # Lazy-load cache on first use
+    #     if (( ! _wslpath_cache_loaded )) && [[ -f "$_wslpath_cache_file" ]]; then
+    #         source "$_wslpath_cache_file" 2>/dev/null
+    #         _wslpath_cache_loaded=1
+    #     fi
 
-        # Check in-memory cache first
-        if [[ -z ${_wslpath_cache[$cache_key]} ]]; then
-            # Not cached - compute and save
-            _wslpath_cache[$cache_key]=$(wslpath -w "$PWD" 2>/dev/null)
+    #     # Check in-memory cache first
+    #     if [[ -z ${_wslpath_cache[$cache_key]} ]]; then
+    #         # Not cached - compute and save
+    #         _wslpath_cache[$cache_key]=$(wslpath -w "$PWD" 2>/dev/null)
 
-            # Persist to disk (async to avoid blocking)
-            {
-                echo "_wslpath_cache[${(q)cache_key}]=${(q)_wslpath_cache[$cache_key]}" \
-                    >> "$_wslpath_cache_file"
-            } &!
-        fi
+    #         # Persist to disk (async to avoid blocking)
+    #         {
+    #             echo "_wslpath_cache[${(q)cache_key}]=${(q)_wslpath_cache[$cache_key]}" \
+    #                 >> "$_wslpath_cache_file"
+    #         } &!
+    #     fi
 
-        printf "\e]9;9;%s\e\\" "${_wslpath_cache[$cache_key]}"
-    }
-    precmd_functions+=(keep_current_path)
+    #     printf "\e]9;9;%s\e\\" "${_wslpath_cache[$cache_key]}"
+    # }
+    # precmd_functions+=(keep_current_path)
 
-    # Cleanup old cache entries on shell exit (keep last 100 dirs)
+    # Optimized cleanup: only check periodically (every 10th shell exit)
     cleanup_wslpath_cache() {
-        if [[ -f "$_wslpath_cache_file" ]] && (( $(wc -l < "$_wslpath_cache_file") > 100 )); then
-            tail -100 "$_wslpath_cache_file" > "${_wslpath_cache_file}.tmp"
-            mv "${_wslpath_cache_file}.tmp" "$_wslpath_cache_file"
+        # Only run cleanup 10% of the time to reduce overhead
+        if (( RANDOM % 10 == 0 )) && [[ -f "$_wslpath_cache_file" ]]; then
+            # Use stat instead of wc for faster size check
+            local file_size=$(stat -c %s "$_wslpath_cache_file" 2>/dev/null || echo 0)
+            # If file > 10KB, trim it (approximate check, faster than line count)
+            if (( file_size > 10240 )); then
+                tail -100 "$_wslpath_cache_file" > "${_wslpath_cache_file}.tmp" 2>/dev/null
+                mv "${_wslpath_cache_file}.tmp" "$_wslpath_cache_file" 2>/dev/null
+            fi
         fi
     }
     # Run cleanup in background on exit
     trap cleanup_wslpath_cache EXIT
 
+    # WT_SESSION: Sync current directory with Windows Terminal UI
+    # Enables "duplicate tab", proper tab titles, and "open in directory" features
     [[ -n "$WT_SESSION" ]] && printf "\033]9;9;%s\033\\" "$PWD"
 
     # Cache Windows user profile path (SLOW - crosses WSL boundary)
-    export WINDOWS_USER_PROFILE=$(wslpath "$(wslvar USERPROFILE)" 2>/dev/null)
+    # export WINDOWS_USER_PROFILE=$(wslpath "$(wslvar USERPROFILE)" 2>/dev/null)
 fi
 
 #=======================================================================================
@@ -644,7 +666,7 @@ zi light zsh-users/zsh-completions
 # 🫵 You-Should-Use - Reminds you of existing aliases when you use full commands
 # Usage: Automatic - alerts you "Found alias gst for git status" when you type long commands
 # Helps you learn and use your aliases to save typing
-zi ice wait'0' lucid depth'1'
+zi ice wait'2' lucid depth'1'
 zi light MichaelAquilina/zsh-you-should-use
 
 # ⌨️ ZSH Autopair - Auto-closes quotes, brackets, and parentheses
@@ -655,7 +677,7 @@ zi light hlissner/zsh-autopair
 # 🧙‍♂️ JQ ZSH Plugin - Interactive jq query builder
 # Usage: Type JSON command | (press Alt+J) - opens interactive jq builder
 # Helps construct complex jq queries visually
-zi ice wait'0' lucid depth'1'
+zi ice wait'2' lucid depth'1'
 zi light reegnz/jq-zsh-plugin
 
 # 🔥 Fancy Completions - Enhanced completions for modern CLI tools
@@ -665,7 +687,7 @@ zi light z-shell/zsh-fancy-completions
 
 # 💻 SSH Alias Manager - Manages SSH connection aliases
 # Usage: Creates convenient aliases for SSH hosts from ~/.ssh/config
-zi ice wait'0' lucid depth'1' from'gh'
+zi ice wait'2' lucid depth'1' from'gh'
 zi light sunlei/zsh-ssh
 
 # ==============================================================================
@@ -696,12 +718,12 @@ zinit light ajeetdsouza/zoxide
 # 📁 BD - Quickly go back to a parent directory by name
 # Usage: `bd src` - jump back to /home/user/projects/src from deep subdirectory
 # Example: In /home/user/projects/src/components/ui → `bd projects` → /home/user/projects
-zi ice wait'0' lucid as'program' pick'bd' mv'bd -> bd'
+zi ice wait'2' lucid as'program' pick'bd' mv'bd -> bd'
 zi light vigneshwaranr/bd
 
 # 📁 Rename - Perl-based batch file renamer with regex support
 # Usage: `rename 's/\.txt$/.md/' *.txt` - rename all .txt files to .md
-zi ice wait'0' lucid as'program' pick'rename' mv'rename -> rename'
+zi ice wait'2' lucid as'program' pick'rename' mv'rename -> rename'
 zi light ap/rename
 
 # 📊 Eza - Modern ls replacement with colors, icons, and git integration
@@ -730,20 +752,20 @@ zi light jocelynmallon/zshmarks
 # Usage: `rg "pattern"` - searches files recursively, respects .gitignore
 # Auto-pipes through less with `rg()` function in aliases.zsh
 export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME}/ripgrep/.ripgreprc"
-zi ice from'gh-r' as'command' pick='*/rg'
+zi ice wait'2' lucid from'gh-r' as'command' pick='*/rg'
 zi light BurntSushi/ripgrep
 
 # 🦇 Bat - Cat clone with syntax highlighting and git integration
 # Usage: Already aliased to `cat` - shows line numbers and syntax colors
 # Original cat available as `rcat`
 export BAT_THEME="OneHalfDark"
-zi ice from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"
+zi ice wait'2' lucid from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"
 zi light sharkdp/bat
 
 # 🔍 FD - Simple, fast alternative to `find`
 # Usage: `fd pattern` - finds files by name, faster than find
 # `fd -e js` - find by extension, `fd -t d` - find directories only
-zi ice from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"
+zi ice wait'2' lucid from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"
 zi light sharkdp/fd
 
 # 🔬 XSV - Fast CSV command line toolkit
@@ -763,13 +785,13 @@ zi light maroofi/csvtool
 # 🧼 SD - Intuitive find & replace CLI (better than sed)
 # Usage: `sd before after file.txt` - simpler syntax than sed
 # `sd '\d+' '[$0]' file.txt` - regex with capture groups
-zi ice wait'0' lucid from'gh-r' as'command' pick'gnu'
+zi ice wait'2' lucid from'gh-r' as'command' pick'gnu'
 zi light chmln/sd
 
 # 🧠 JQ - Command-line JSON processor
 # Usage: `echo '{"key":"value"}' | jq .key` - extract JSON fields
 # Works with jq-zsh-plugin for interactive query building (Alt+J)
-zi ice as'program' from'gh-r' bpick'*linux64' mv'jq* -> jq'
+zi ice wait'2' lucid as'program' from'gh-r' bpick'*linux64' mv'jq* -> jq'
 zi light jqlang/jq
 
 # 💥 UP - Interactive pipe builder for shell commands
@@ -789,7 +811,7 @@ zi light stolk/imcat
 zi ice wait'2' lucid depth'1' as'program' pick'target/release/qsv' atclone'cargo build --release --locked --bin qsv --features "feature_capable,python,apply,foreach"' atpull'%atclone'
 zi light dathere/qsv
 
-zi ice wait'0' lucid depth'1' as'program' pick'target/release/*' atclone'cargo build --release --locked' atpull'%atclone'
+zi ice wait'2' lucid depth'1' as'program' pick'target/release/*' atclone'cargo build --release --locked' atpull'%atclone'
 zi light sxyazi/yazi
 
 # ==============================================================================
@@ -797,7 +819,7 @@ zi light sxyazi/yazi
 # ==============================================================================
 
 # 🔍 GitHub CLI - Essential for git-heavy workflow
-zi ice wait'0' lucid from'gh-r' as'command' bpick'*linux_amd64.tar.gz' pick'*/bin/gh'
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*linux_amd64.tar.gz' pick'*/bin/gh'
 zi light cli/cli
 
 # 🧠 Atuin - Magical shell history with sync, stats, and better search
@@ -808,7 +830,7 @@ zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-musl.tar
 zi light atuinsh/atuin
 
 # 📊 Bottom - Modern system monitor
-zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/btm'
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/btm'
 zi light ClementTsang/bottom
 
 # 🔥 Tokei - Fast code statistics
@@ -821,15 +843,16 @@ zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.
 zi light sharkdp/hyperfine
 
 # 🧼 Dust - Fast Rust-based alternative to du
-zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/dust'
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/dust'
 zi light bootandy/dust
 
 # 🎨 Delta - Better git diffs with syntax highlighting
-zi ice lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/delta'
+# Don't get wait more than 0, otherwise git diff stops working
+zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/delta'
 zi light dandavison/delta
 
 # 📁 Duf - Modern df alternative
-zi ice wait'0' lucid from'gh-r' as'command' bpick'*linux_x86_64.tar.gz' pick'*/duf'
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*linux_x86_64.tar.gz' pick'*/duf'
 zi light muesli/duf
 
 # 🐶 Dog - Modern dig alternative
@@ -837,15 +860,15 @@ zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.zip'
 zi light ogham/dog
 
 # 🦎 Lazygit - TUI for git
-zi ice wait'0' lucid from'gh-r' as'command' bpick'*Linux_x86_64.tar.gz' pick'lazygit'
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*Linux_x86_64.tar.gz' pick'lazygit'
 zi light jesseduffield/lazygit
 
 # 🐳 Lazydocker - TUI for docker
-zi ice wait'0' lucid from'gh-r' as'command' bpick'*Linux_x86_64.tar.gz' pick'lazydocker'
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*Linux_x86_64.tar.gz' pick'lazydocker'
 zi light jesseduffield/lazydocker
 
 # 🔧 Procs - Modern ps alternative
-zi ice wait'0' lucid from'gh-r' as'command' bpick'*linux.zip' pick'procs'
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*linux.zip' pick'procs'
 zi light dalance/procs
 
 # ==============================================================================
