@@ -1046,15 +1046,15 @@ if [[ $HOST_OS == "wsl" ]]; then
 	# Open file in Windows Sublime Text from WSL
 	# Usage: subl <file>
 	function subl() {
-		DISTRO="Ubuntu"
-		SUBLIME_TEXT_LOCATION="/mnt/c/Program Files/Sublime Text/subl.exe"
+		local SUBLIME_TEXT_LOCATION="/mnt/c/Program Files/Sublime Text/subl.exe"
 		if [[ ! -f "$SUBLIME_TEXT_LOCATION" ]]; then
 			SUBLIME_TEXT_LOCATION="/mnt/c/Program Files/Sublime Text 3/subl.exe"
 		fi
 
-		FILE=$1
-		FULL_PATH=$(readlink -f "${FILE}")
-		$SUBLIME_TEXT_LOCATION "/\/\wsl.localhost\\${DISTRO}${FULL_PATH}"
+		local FILE=$1
+		local FULL_PATH=$(readlink -f "${FILE}")
+		local WIN_PATH=$(wslpath -m "$FULL_PATH")
+		"$SUBLIME_TEXT_LOCATION" "$WIN_PATH"
 	}
 
 	# Open file/directory in Windows VS Code from WSL
@@ -1105,7 +1105,7 @@ function _context_aware_chpwd() {
 }
 
 # Add to chpwd_functions array (runs after every directory change)
-autoload -U add-zsh-hook
+autoload -Uz add-zsh-hook
 add-zsh-hook chpwd _context_aware_chpwd
 
 # =======================================================================================

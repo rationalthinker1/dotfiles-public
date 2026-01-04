@@ -175,7 +175,7 @@ else
 
     # Install packages individually
     for pkg in "${LINUX_PACKAGES[@]}"; do
-        if ! dpkg -l | grep -q "^ii  ${pkg}"; then
+        if ! dpkg-query -W -f='${Package}\n' 2>/dev/null | grep -xq "${pkg}"; then
             echo "Installing ${pkg}..."
             sudo apt-get install -y "${pkg}" || echo "WARNING: Failed to install ${pkg}"
         else
@@ -194,7 +194,10 @@ if ! python3 -c "import pynvim" 2>/dev/null; then
         # Linux: should already be installed from LINUX_PACKAGES (python3-pynvim)
         # If not, fall back to pipx (should be installed from LINUX_PACKAGES)
         pipx ensurepath
-        pipx install pynvim || echo "WARNING: Failed to install pynvim via pipx"
+        if ! pipx install pynvim; then
+            echo "ERROR: pynvim is required for Vim plugins"
+            exit 1
+        fi
     fi
 else
     echo "✓ pynvim already installed"
@@ -463,7 +466,7 @@ for source_path in "${!DOTFILE_LINKS[@]}"; do
     fi
     
     # Create symlink
-    ln -sf "$source" "$target"
+    ln -nfs "$source" "$target"
 done
 
 echo "✓ Dotfile symlinks installed"
