@@ -308,6 +308,9 @@ setopt HIST_VERIFY                # Verify history expansions before execution (
 # Vi mode
 bindkey -v
 
+# Reduce ESC delay to 10ms for faster vi mode switching (default: 400ms)
+export KEYTIMEOUT=1
+
 # ==============================================================================
 # Vi Mode Visual Indicators
 # ==============================================================================
@@ -318,14 +321,21 @@ function zle-keymap-select {
     vicmd)      echo -ne '\e[1 q' ;;  # Block cursor (NORMAL mode)
     viins|main) echo -ne '\e[5 q' ;;  # Beam cursor (INSERT mode)
   esac
+  zle reset-prompt
 }
 
 function zle-line-init {
   echo -ne '\e[5 q'  # Start with beam cursor (INSERT mode)
+  zle -K viins       # Start in insert mode
+}
+
+function zle-line-finish {
+  echo -ne '\e[1 q'  # Block cursor when command finishes
 }
 
 zle -N zle-keymap-select
 zle -N zle-line-init
+zle -N zle-line-finish
 
 # Reset cursor on each new prompt
 function reset_cursor {
@@ -339,17 +349,111 @@ function _set_terminal_title() {
 }
 precmd_functions+=(_set_terminal_title)
 
-bindkey "^[[1;5C" forward-word
-bindkey "^[[1;5D" backward-word
-bindkey '^w'	  backward-kill-word
-bindkey '\e[1~'   beginning-of-line  # Linux console
-bindkey '\e[H'    beginning-of-line  # xterm
-bindkey '\eOH'    beginning-of-line  # gnome-terminal
-bindkey '\e[2~'   overwrite-mode     # Linux console, xterm, gnome-terminal
-bindkey '\e[3~'   delete-char        # Linux console, xterm, gnome-terminal
-bindkey '\e[4~'   end-of-line        # Linux console
-bindkey '\e[F'    end-of-line        # xterm
-bindkey '\eOF'    end-of-line        # gnome-terminal
+# ==============================================================================
+# Enhanced Keybindings (Vi mode with Emacs conveniences)
+# ==============================================================================
+
+# ⌨️ Ctrl-based navigation (works in both insert and normal mode)
+bindkey '^a' beginning-of-line        # Ctrl+A: Go to beginning of line
+bindkey '^e' end-of-line              # Ctrl+E: Go to end of line
+bindkey '^u' backward-kill-line       # Ctrl+U: Delete to start of line
+bindkey '^k' kill-line                # Ctrl+K: Delete to end of line
+bindkey '^w' backward-kill-word       # Ctrl+W: Delete word backward
+bindkey '^y' yank                     # Ctrl+Y: Paste (yank)
+bindkey '^b' backward-char            # Ctrl+B: Move backward one char
+bindkey '^f' forward-char             # Ctrl+F: Move forward one char
+bindkey '^d' delete-char-or-list      # Ctrl+D: Delete char or show completions
+bindkey '^h' backward-delete-char     # Ctrl+H: Backspace
+
+# ⌨️ Word movement (Ctrl+Arrow keys and Alt+Arrow keys)
+bindkey "^[[1;5C" forward-word        # Ctrl+Right: Forward word
+bindkey "^[[1;5D" backward-word       # Ctrl+Left: Backward word
+bindkey "^[[1;3C" forward-word        # Alt+Right: Forward word
+bindkey "^[[1;3D" backward-word       # Alt+Left: Backward word
+
+# ⌨️ Home/End keys (multiple terminal types)
+bindkey '\e[1~'   beginning-of-line   # Linux console
+bindkey '\e[H'    beginning-of-line   # xterm
+bindkey '\eOH'    beginning-of-line   # gnome-terminal
+bindkey '\e[4~'   end-of-line         # Linux console
+bindkey '\e[F'    end-of-line         # xterm
+bindkey '\eOF'    end-of-line         # gnome-terminal
+
+# ⌨️ Other useful keys
+bindkey '\e[2~'   overwrite-mode      # Insert
+bindkey '\e[3~'   delete-char         # Delete
+bindkey '\e[5~'   up-line-or-history  # Page Up
+bindkey '\e[6~'   down-line-or-history # Page Down
+
+# ==============================================================================
+# Smart History Search (Up/Down arrows search by prefix)
+# ==============================================================================
+autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+
+bindkey '^[[A' up-line-or-beginning-search     # Up arrow
+bindkey '^[[B' down-line-or-beginning-search   # Down arrow
+bindkey '^P' up-line-or-beginning-search       # Ctrl+P (vi-style)
+bindkey '^N' down-line-or-beginning-search     # Ctrl+N (vi-style)
+
+# Vi mode: k/j also search by prefix
+bindkey -M vicmd 'k' up-line-or-beginning-search
+bindkey -M vicmd 'j' down-line-or-beginning-search
+
+# ==============================================================================
+# Edit Command Line in $EDITOR (Ctrl+X Ctrl+E or v in vi normal mode)
+# ==============================================================================
+autoload -Uz edit-command-line
+zle -N edit-command-line
+bindkey '^x^e' edit-command-line      # Ctrl+X Ctrl+E: Open in $EDITOR
+bindkey -M vicmd 'v' edit-command-line # v in normal mode: Open in $EDITOR
+
+# ==============================================================================
+# Vi Mode Enhancements
+# ==============================================================================
+
+# Better undo/redo
+bindkey -M vicmd 'u' undo
+bindkey -M vicmd '^r' redo
+
+# Increment/decrement numbers (like vim's Ctrl+A/X)
+autoload -Uz incarg
+zle -N incarg
+bindkey -M vicmd '^a' incarg
+
+# Text objects improvement (ci", ci', ci(, etc. work better)
+autoload -Uz select-quoted select-bracketed surround
+zle -N select-quoted
+zle -N select-bracketed
+zle -N delete-surround surround
+zle -N add-surround surround
+zle -N change-surround surround
+
+# Bind text objects for vi mode
+for m in visual viopp; do
+  for c in {a,i}${(s..)^:-\'\"\`\|,./:;=+@}; do
+    bindkey -M $m $c select-quoted
+  done
+  for c in {a,i}${(s..)^:-'()[]{}<>bB'}; do
+    bindkey -M $m $c select-bracketed
+  done
+done
+
+# Surround operations (like vim-surround)
+bindkey -M vicmd 'cs' change-surround
+bindkey -M vicmd 'ds' delete-surround
+bindkey -M vicmd 'ys' add-surround
+bindkey -M visual 'S' add-surround
+
+# ==============================================================================
+# Incremental Search Improvements
+# ==============================================================================
+
+# Ctrl+R: Reverse incremental search (override atuin if needed)
+# bindkey '^r' history-incremental-search-backward
+# bindkey -M vicmd '/' history-incremental-search-backward
+# bindkey -M vicmd '?' history-incremental-search-forward
 
 # ==============================================================================
 # ZSH Settings
@@ -366,24 +470,23 @@ zstyle -e ':completion:*:approximate:*' max-errors \
   'reply=($((($#PREFIX+$#SUFFIX)/3>7?7:($#PREFIX+$#SUFFIX)/3))numeric)'
 
 # 💬 Completion display formatting
-zstyle ':completion:*:messages'     format '%F{YELLOW}%d'$DEFAULT
-zstyle ':completion:*:warnings'     format '%F{RED}No matches for:''%F{YELLOW} %d'$DEFAULT
-zstyle ':completion:*:descriptions' format '%F{YELLOW}completing %B%d%b'$DEFAULT
+zstyle ':completion:*:messages'     format '%F{yellow}-- %d --%f'
+zstyle ':completion:*:warnings'     format '%F{red}⚠ No matches for: %F{yellow}%d%f'
+zstyle ':completion:*:descriptions' format '%F{blue}completing %B%d%b%f'
+zstyle ':completion:*:corrections'  format '%F{green}%d (errors: %e)%f'
 zstyle ':completion:*:options'      description 'yes'
 zstyle ':completion:*:default'      list-prompt '%S%M matches%s'
-zstyle ':completion:*'              format ' %F{yellow}-- %d --%f'
 zstyle ':completion:*'              verbose yes
 
 # 🔁 Completion behavior
 zstyle ':completion:*:matches'      group 'yes'
 zstyle ':completion:*'              group-name ''
 zstyle ':completion:*'              use-cache true
+zstyle ':completion:*'              cache-path "${ZSH_CACHE_DIR}/zcompcache"
 zstyle ':completion:*'              rehash true
 zstyle ':completion:*:functions'    ignored-patterns '(_*|pre(cmd|exec))'
 zstyle ':completion:*'              menu select interactive
-zstyle ':completion:*'              matcher-list '' \
-    'm:{[:lower:]}={[:upper:]}' \
-    '+m:{[:upper:]}={[:lower:]}'
+zstyle ':completion:*'              matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
 
 # 🚫 Sort git branches during `git checkout` completion
 zstyle ':completion:*:git-checkout:*' sort false
@@ -393,7 +496,51 @@ zstyle ':omz:plugins:docker' legacy-completion yes
 
 # 🎨 FZF tab preview config
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
+zstyle ':fzf-tab:complete:ls:*' fzf-preview 'eza -1 --color=always $realpath'
+zstyle ':fzf-tab:complete:eza:*' fzf-preview 'eza -1 --color=always $realpath'
+zstyle ':fzf-tab:complete:kill:argument-rest' fzf-preview 'ps aux | grep -v grep | grep -i $word'
+zstyle ':fzf-tab:complete:kill:argument-rest' fzf-flags '--preview-window=down:3:wrap'
+zstyle ':fzf-tab:complete:kill:*' fzf-preview '[[ $group == "[process ID]" ]] && ps aux | grep $word'
+zstyle ':fzf-tab:complete:git-(add|diff|restore):*' fzf-preview 'git diff --color=always $word'
+zstyle ':fzf-tab:complete:git-log:*' fzf-preview 'git log --color=always $word'
+zstyle ':fzf-tab:complete:git-show:*' fzf-preview 'git show --color=always $word'
 zstyle ':fzf-tab:*' switch-group ',' '.'
+zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
+
+# 🔧 Kill command completions (process list)
+zstyle ':completion:*:*:kill:*:processes' list-colors '=(#b) #([0-9]#)*=0=01;31'
+zstyle ':completion:*:*:kill:*' menu yes select
+zstyle ':completion:*:*:kill:*' force-list always
+zstyle ':completion:*:*:kill:*' insert-ids single
+
+# 📂 CD improvements (parent directory completion, recent dirs)
+zstyle ':completion:*:*:cd:*' tag-order local-directories directory-stack path-directories
+zstyle ':completion:*:*:cd:*:directory-stack' menu yes select
+zstyle ':completion:*:-tilde-:*' group-order 'named-directories' 'path-directories' 'users' 'expand'
+
+# 📋 Man page completions (section numbers)
+zstyle ':completion:*:manuals' separate-sections true
+zstyle ':completion:*:manuals.*' insert-sections true
+
+# 🔍 Ignore completion for commands we don't have
+zstyle ':completion:*:functions' ignored-patterns '(_*|pre(cmd|exec))'
+zstyle ':completion:*:*:*:users' ignored-patterns \
+    adm amanda apache avahi beaglidx bin cacti canna clamav daemon \
+    dbus distcache dovecot fax ftp games gdm gkrellmd gopher \
+    hacluster haldaemon halt hsqldb ident junkbust ldap lp mail \
+    mailman mailnull mldonkey mysql nagios named netdump news nfsnobody \
+    nobody nscd ntp nut nx openvpn operator pcap postfix postgres privoxy \
+    pulse pvm quagga radvd rpc rpcuser rpm shutdown squid sshd sync uucp \
+    vcsa xfs '_*'
+
+# 🎯 Hostname completion from known hosts
+zstyle ':completion:*:hosts' hosts \
+    ${${${${(f)"$(cat {/etc/ssh/ssh_,~/.ssh/}known_hosts(|2)(N) 2>/dev/null)"}%%[#| ]*}//,/ }//\]:[0-9]*/ }
+
+# 📦 Speed up completion for large repositories
+zstyle ':completion:*:git-checkout:*' sort false
+zstyle ':completion:*:descriptions' format '[%d]'
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 
 # 🔒 Escape ? without quoting
 set zle_bracketed_paste
