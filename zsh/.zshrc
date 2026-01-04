@@ -203,18 +203,14 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
 
     [[ -n "$WT_SESSION" ]] && printf "\033]9;9;%s\033\\" "$PWD"
 
-    # ASYNC: Cache Windows user profile path in background (SLOW - crosses WSL boundary)
-    {
-        export WINDOWS_USER_PROFILE=$(wslpath "$(wslvar USERPROFILE)" 2>/dev/null)
-    } &!
+    # Cache Windows user profile path (SLOW - crosses WSL boundary)
+    export WINDOWS_USER_PROFILE=$(wslpath "$(wslvar USERPROFILE)" 2>/dev/null)
 fi
 
 #=======================================================================================
 # macOS-Specific Settings
 #=======================================================================================
-if [[ "${HOST_OS}" == "darwin" ]]; then
-    launchctl setenv HOST_OS darwin
-fi
+# Note: launchctl configuration is in .zprofile (login-only)
 
 #=======================================================================================
 # Android Development Environment
@@ -316,30 +312,38 @@ export KEYTIMEOUT=1
 # ==============================================================================
 
 # Change cursor shape for different vi modes
-function zle-keymap-select {
-  case $KEYMAP in
-    vicmd)      echo -ne '\e[1 q' ;;  # Block cursor (NORMAL mode)
-    viins|main) echo -ne '\e[5 q' ;;  # Beam cursor (INSERT mode)
-  esac
-  zle reset-prompt
-}
+# Skip cursor changes in tmux (can cause glitches in some terminals)
+if [[ -z "$TMUX" ]]; then
+  function zle-keymap-select() {
+    case $KEYMAP in
+      vicmd)      echo -ne '\e[1 q' ;;  # Block cursor (NORMAL mode)
+      viins|main) echo -ne '\e[5 q' ;;  # Beam cursor (INSERT mode)
+    esac
+    zle reset-prompt
+  }
 
-function zle-line-init {
-  echo -ne '\e[5 q'  # Start with beam cursor (INSERT mode)
-  zle -K viins       # Start in insert mode
-}
+  function zle-line-init() {
+    echo -ne '\e[5 q'  # Start with beam cursor (INSERT mode)
+    zle -K viins       # Start in insert mode
+  }
 
-function zle-line-finish {
-  echo -ne '\e[1 q'  # Block cursor when command finishes
-}
+  function zle-line-finish() {
+    echo -ne '\e[1 q'  # Block cursor when command finishes
+  }
+else
+  # Simpler setup for tmux (no cursor shape changes)
+  function zle-line-init() {
+    zle -K viins       # Start in insert mode
+  }
+fi
 
 zle -N zle-keymap-select
 zle -N zle-line-init
 zle -N zle-line-finish
 
-# Reset cursor on each new prompt
-function reset_cursor {
-  echo -ne '\e[5 q'
+# Reset cursor on each new prompt (skip in tmux)
+function reset_cursor() {
+  [[ -z "$TMUX" ]] && echo -ne '\e[5 q'
 }
 precmd_functions+=(reset_cursor)
 
@@ -450,7 +454,8 @@ bindkey -M visual 'S' add-surround
 # Incremental Search Improvements
 # ==============================================================================
 
-# Ctrl+R: Reverse incremental search (override atuin if needed)
+# Ctrl+R: Reverse incremental search - DISABLED (overridden by atuin plugin at line 797)
+# atuin provides superior history search with sync, stats, and SQLite backend
 # bindkey '^r' history-incremental-search-backward
 # bindkey -M vicmd '/' history-incremental-search-backward
 # bindkey -M vicmd '?' history-incremental-search-forward
@@ -487,6 +492,9 @@ zstyle ':completion:*'              rehash true
 zstyle ':completion:*:functions'    ignored-patterns '(_*|pre(cmd|exec))'
 zstyle ':completion:*'              menu select interactive
 zstyle ':completion:*'              matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+zstyle ':completion:*'              accept-exact '*(N)'        # Faster exact matches
+zstyle ':completion:*'              squeeze-slashes true       # Cleanup paths (foo//bar -> foo/bar)
+zstyle ':completion:*:*:*:*:processes' command "ps -u $USER -o pid,user,comm -w -w"  # Better process completion
 
 # 🚫 Sort git branches during `git checkout` completion
 zstyle ':completion:*:git-checkout:*' sort false
@@ -540,7 +548,6 @@ zstyle ':completion:*:hosts' hosts \
 # 📦 Speed up completion for large repositories
 zstyle ':completion:*:git-checkout:*' sort false
 zstyle ':completion:*:descriptions' format '[%d]'
-zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
 
 # 🔒 Escape ? without quoting
 set zle_bracketed_paste
@@ -665,7 +672,9 @@ zi light sunlei/zsh-ssh
 # NAVIGATION & FILE MANAGEMENT TOOLS
 # ==============================================================================
 
-# 📁 Enhancd - Enhanced cd with interactive directory history and fuzzy search
+# 📁 Enhancd - DISABLED in favor of custom cd() function (aliases.zsh:61)
+# Reason: Custom implementation provides better fzf integration with zoxide
+# and more control over directory selection UX
 # Usage: `cd` - fuzzy search through visited directories
 # Usage: `cd ..` multiple times - interactive selection of parent dirs
 # export ENHANCD_DISABLE_DOT=1
