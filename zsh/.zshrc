@@ -900,15 +900,22 @@ zi light tj/git-extras
 # NODE & LANGUAGE ENVIRONMENTS
 # ==============================================================================
 
+# 344 ms - dominik-schwabe/zsh-fnm
 # 🌱 ZSH-FNM - Fast Node Manager integration with auto-switching
 # Usage: Automatic - switches Node version based on .nvmrc/.node-version
 # `fnm list` - show installed versions, `fnm install 20` - install Node 20
 # Faster than nvm, automatically switches on `cd` into projects
-export ZSH_FNM_NODE_VERSION="22"
-export ZSH_FNM_ENV_EXTRA_ARGS="--use-on-cd"
-export ZSH_FNM_INSTALL_DIR="${XDG_DATA_HOME}/fnm"
-zi ice lucid wait'1' depth'1'
-zi light dominik-schwabe/zsh-fnm
+# export ZSH_FNM_NODE_VERSION="22"
+# export ZSH_FNM_ENV_EXTRA_ARGS="--use-on-cd"
+# export ZSH_FNM_INSTALL_DIR="${XDG_DATA_HOME}/fnm"
+# zi ice lucid wait'1' depth'1'
+# zi light dominik-schwabe/zsh-fnm
+
+export ASDF_DATA_DIR="${XDG_CONFIG_HOME}/asdf"
+export ASDF_DIR="${ASDF_DATA_DIR}"
+export ASDF_CONFIG_FILE="${ASDF_DATA_DIR}/.asdfrc"
+zi ice wait'2' lucid from'gh-r' as'command' pick'asdf'
+zi light asdf-vm/asdf
 
 # 📦 Better NPM Completion - Enhanced tab completion for npm/yarn/pnpm
 # Usage: `npm install <TAB>` - shows package suggestions from npm registry
@@ -936,7 +943,8 @@ zi snippet OMZP::sudo             # Usage: Press ESC twice to prefix previous co
 # OMZP::extract removed - using custom extract() function from aliases.zsh
 zi snippet OMZP::copyfile         # Usage: `copyfile file.txt` - copies file contents to clipboard
 zi snippet OMZP::dirhistory       # Usage: Alt+Left/Right arrows to navigate directory history
-zi snippet OMZP::docker-compose   # Provides tab completions for docker-compose commands
+# 581 ms - OMZP::docker-compose
+# # zi snippet OMZP::docker-compose   # DISABLED: Very slow (581ms) - Replaced with cached native completions
 
 #=======================================================================================
 # Autocompletion
@@ -996,15 +1004,20 @@ if (( $+commands[kitty] )); then
 fi
 
 # 🧬 direnv – per-project environment management
-if (( $+commands[direnv] )); then
-  eval "$(direnv hook zsh)"
-fi
+# if (( $+commands[direnv] )); then
+#  eval "$(direnv hook zsh)"
+# fi
 
 # ☁️ doctl – DigitalOcean CLI completion
-if (( $+commands[doctl] )); then
-  source <(doctl completion zsh)
-  compdef _doctl doctl
-fi
+# if (( $+commands[doctl] )); then
+#   # Cache doctl completion (regenerate only when doctl binary changes)
+#   local doctl_comp="${ZSH_CACHE_DIR}/doctl_completion.zsh"
+#   if [[ ! -f "$doctl_comp" ]] || [[ "${commands[doctl]}" -nt "$doctl_comp" ]]; then
+#     doctl completion zsh >| "$doctl_comp"
+#   fi
+#   source "$doctl_comp"
+#   compdef _doctl doctl
+# fi
 
 # 🦀 Rust toolchain completions (cargo, rustup)
 # Uncomment to enable cargo and rustup tab completions
