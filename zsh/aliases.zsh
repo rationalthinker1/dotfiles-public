@@ -1,9 +1,36 @@
 #!/usr/bin/env zsh
+# ==============================================================================
+# aliases.zsh - Functions and Aliases
+# ==============================================================================
+# Central repository for all custom aliases, functions, and command enhancements
+#
+# Sourced by: .zshrc (line 923)
+#
+# SECTIONS:
+# - ZSH Configuration (reload, navigation)
+# - Modern CLI Tools (bat, eza, ripgrep, fzf)
+# - Git Workflow (smart commits, prepend support)
+# - Docker Management (compose, exec, cleanup)
+# - Development Tools (npm, yarn, laravel)
+# - System Utilities (processes, networking, compression)
+# ==============================================================================
 
-## zshrc Related ##
+# ==============================================================================
+# Configuration Constants
+# ==============================================================================
+readonly DEFAULT_FS_LIMIT=50        # Default limit for fs() function
+readonly DEFAULT_DS_LIMIT=50        # Default limit for ds() function
+readonly DEFAULT_WCSV_LIMIT=10      # Default limit for wcsv() function
+readonly WSLPATH_CACHE_MAX_ENTRIES=100  # Max WSL path cache entries
+
+# ==============================================================================
+# ZSH Configuration
+# ==============================================================================
 
 # Reload ZSH configuration
-reload_zsh() {
+# Usage: reload_zsh
+# Reloads .zshrc without restarting the shell
+function reload_zsh() {
     source "${ZDOTDIR}/.zshrc"
 }
 alias rebash="reload_zsh"
@@ -31,7 +58,7 @@ fi
 # cd . - fuzzy select subdirectories
 # cd - - fuzzy select recent directories (last 10)
 # cd <path> - normal cd or fuzzy match from history if not exists
-cd() {
+function cd() {
 	# Only override cd in interactive shells; use builtin for scripts
 	[[ -o interactive ]] || { builtin cd "$@"; return; }
 
@@ -106,7 +133,7 @@ cd() {
 }
 
 # 🧭 Yazi: Change directory based on project config
-y() {
+function y() {
 	if ! (( $+commands[yazi] )); then
 		echo "Error: requires 'yazi' to be installed." >&2
 		return 1
@@ -119,7 +146,7 @@ y() {
 }
 
 # 🔍 FZF + Vim: Fuzzy find and edit files with preview using zoxide
-kkk() {
+function kkk() {
 	local dir
 	if (( $+commands[zoxide] )); then
 		dir=$(zoxide query -l | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
@@ -220,33 +247,40 @@ alias hgrep="history | grep"
 
 alias br=broot
 
-FD_EXCLUDE_PATTERN="{"
-FD_EXCLUDE_PATTERN+=.cargo,
-FD_EXCLUDE_PATTERN+=node_modules,
-FD_EXCLUDE_PATTERN+=.git,
-FD_EXCLUDE_PATTERN+=.cache,
-FD_EXCLUDE_PATTERN+=cache,
-FD_EXCLUDE_PATTERN+=vendor,
-FD_EXCLUDE_PATTERN+=tmp,
-FD_EXCLUDE_PATTERN+=.npm,
-FD_EXCLUDE_PATTERN+=*.bak,
-FD_EXCLUDE_PATTERN+=bundles,
-FD_EXCLUDE_PATTERN+=build,
-FD_EXCLUDE_PATTERN+="}"
+# Define fd exclusion patterns with fallback (in case .zshenv didn't load)
+if [[ -z "${FD_EXCLUDE_PATTERN}" ]]; then
+    FD_EXCLUDE_PATTERN="{"
+    FD_EXCLUDE_PATTERN+=.cargo,
+    FD_EXCLUDE_PATTERN+=node_modules,
+    FD_EXCLUDE_PATTERN+=.git,
+    FD_EXCLUDE_PATTERN+=.cache,
+    FD_EXCLUDE_PATTERN+=cache,
+    FD_EXCLUDE_PATTERN+=vendor,
+    FD_EXCLUDE_PATTERN+=tmp,
+    FD_EXCLUDE_PATTERN+=.npm,
+    FD_EXCLUDE_PATTERN+="*.bak,"
+    FD_EXCLUDE_PATTERN+=bundles,
+    FD_EXCLUDE_PATTERN+=build,
+    FD_EXCLUDE_PATTERN+="}"
+fi
 
-# 🔍 Enhanced search functions using fd
-fdf() {
+# Find files with fd (enhanced find for files)
+# Usage: fdf <pattern>
+# Example: fdf "*.js"
+function fdf() {
 	fd --hidden --ignore-case --follow --type f --exclude "${FD_EXCLUDE_PATTERN}" "$@"
 }
-# search for directories with fdd
-fdd() {
+# Find directories with fd (enhanced find for directories)
+# Usage: fdd <pattern>
+# Example: fdd "node_modules"
+function fdd() {
 	fd --hidden --ignore-case --follow --type d --exclude "${FD_EXCLUDE_PATTERN}" "$@"
 }
 
 # 📄 Ripgrep: Enhanced grep with automatic paging
 # Override 'rg' to automatically pipe output through less when in terminal
 # Use 'command rg' to access original ripgrep without paging
-rg() {
+function rg() {
 	if [[ -t 1 ]]; then
 		command rg -p "$@" | less -RFX
 	else
@@ -254,7 +288,10 @@ rg() {
 	fi
 }
 
-bak() {
+# Swap file with its .bak version, or create .bak if doesn't exist
+# Usage: bak <file>
+# Example: bak config.txt
+function bak() {
     if [[ -z "$1" ]]; then
         echo "Error: No file or folder name provided."
         return 1
@@ -279,7 +316,10 @@ bak() {
     fi
 }
 
-ref() {
+# Create or edit reference files in ZDOTDIR/references
+# Usage: ref [name]
+# Example: ref git-commands
+function ref() {
 	if [[ "$#" -eq 0 ]]; then
 		cat "${ZDOTDIR}/reference.zsh"
 	else
@@ -299,29 +339,37 @@ ref() {
 # look at the size of the sub-directories level 1
 # Uncommented and created function below
 
-# get top biggest files
-fs() {
-	LIMIT=${1:-50}
-	sudo du --count-links --all --human-readable --exclude /media 2>/dev/null | grep -v -e '^.*K[[:space:]]' | sort -r -n | head "-n${LIMIT}"
+# Get top biggest files in the filesystem
+# Usage: fs [limit]
+# Example: fs 20
+function fs() {
+	local limit=${1:-$DEFAULT_FS_LIMIT}
+	sudo du --count-links --all --human-readable --exclude /media 2>/dev/null | grep -v -e '^.*K[[:space:]]' | sort -r -n | head "-n${limit}"
 }
 
-# get top biggest directories
-ds() {
-	LIMIT=${1:-51}
-	sudo du --human-readable --max-depth=1 --exclude /media 2>/dev/null | sort -r -h | head "-n$((${LIMIT} + 1))"
+# Get top biggest directories
+# Usage: ds [limit]
+# Example: ds 20
+function ds() {
+	local limit=${1:-$DEFAULT_DS_LIMIT}
+	sudo du --human-readable --max-depth=1 --exclude /media 2>/dev/null | sort -r -h | head "-n$((${limit} + 1))"
 }
 
-# Search current directory (SCD) in grep recursively
-scd() {
+# Search current directory recursively with grep
+# Usage: scd <pattern>
+# Example: scd "TODO"
+function scd() {
 	grep -ir "$@" ./
 }
 
-# wgets portion of a line. Default is 10 lines
-wcsv() {
+# Download and preview first N lines of a file
+# Usage: wcsv <url> [limit]
+# Example: wcsv "https://example.com/data.csv" 20
+function wcsv() {
 	#wget http://riptide-reflection.s3.amazonaws.com/export_2_.csv -qO - | head -10
-	LIMIT=${2:-10}
-	wget "$1" -qO - | head "-${LIMIT}"
-	#echo "wget $1 -qO - | head -${LIMIT}"
+	local limit=${2:-$DEFAULT_WCSV_LIMIT}
+	wget "$1" -qO - | head "-${limit}"
+	#echo "wget $1 -qO - | head -${limit}"
 }
 
 # https://github.com/vigneshwaranr/bd
@@ -342,24 +390,32 @@ alias update="sudo apt-get update -y"
 alias upgrade="sudo apt-get update && sudo apt-get upgrade"
 alias dist-upgrade="sudo apt-get update && sudo apt-get dist-upgrade"
 
-apt-install() {
+# Install multiple apt packages
+# Usage: apt-install <package1> [package2...]
+# Example: apt-install vim git curl
+function apt-install() {
 	for application in "$@"; do
 		sudo apt-get install -f -y "${application}"
 	done
 }
 
-apt-update() {
+# Update apt package list
+# Usage: apt-update
+function apt-update() {
 	sudo apt-get -y update
 }
 
-add-repo() {
+# Add multiple apt repositories
+# Usage: add-repo <repo1> [repo2...]
+# Example: add-repo ppa:deadsnakes/ppa
+function add-repo() {
 	for repository in "$@"; do
 		sudo add-apt-repository -y "${repository}"
 	done
 }
 
 # simple-install ppa:numix/ppa numix-gtk-theme numix-icon-theme-circle
-simple-install() {
+function simple-install() {
 	repository=$1
 
 	# Add the repository
@@ -375,14 +431,20 @@ simple-install() {
 	done
 }
 
-unzipd() {
+# Unzip file into directory named after the file
+# Usage: unzipd <file.zip>
+# Example: unzipd archive.zip
+function unzipd() {
 	filename="${1}"
 	directory="${filename%.zip}"
 	directory="${directory##*/}"
 	unzip "${filename}" -d "${directory}"
 }
 
-install-font-subdirectories() {
+# Install fonts from all subdirectories of a directory
+# Usage: install-font-subdirectories <directory>
+# Example: install-font-subdirectories ~/Downloads/fonts
+function install-font-subdirectories() {
 	local directory="${1}"
 
 	if [[ -z "$directory" ]]; then
@@ -405,7 +467,10 @@ install-font-subdirectories() {
 	done
 }
 
-install-font-folder() {
+# Install .ttf and .otf fonts from a directory
+# Usage: install-font-folder <directory>
+# Example: install-font-folder ~/Downloads/FiraCode
+function install-font-folder() {
 	local directory="${1}"
 	local FONT_DIRECTORY
 	local last_folder
@@ -480,7 +545,10 @@ install-font-folder() {
 	fi
 }
 
-install-font-zip() {
+# Unzip and install fonts from a zip file
+# Usage: install-font-zip <file.zip>
+# Example: install-font-zip FiraCode.zip
+function install-font-zip() {
 	filename="${1}"
 	directory="${filename%.zip}"
 	directory="${directory##*/}"
@@ -489,9 +557,9 @@ install-font-zip() {
 	rm -rf "./${directory}"
 }
 
-#=======================================================================================
+# =======================================================================================
 # Node/NPM/Yarn Enhanced Aliases
-#=======================================================================================
+# =======================================================================================
 
 # NPM shortcuts
 alias ni="npm install"
@@ -509,8 +577,12 @@ alias nou="npm outdated"
 alias nup="npm update"
 
 # Yarn shortcuts (enhanced from existing ya, yad)
-ya() { yarn add "$@"; }
-yad() { yarn add -D "$@"; }
+# Add yarn package
+# Usage: ya <package>
+function ya() { yarn add "$@"; }
+# Add yarn dev dependency
+# Usage: yad <package>
+function yad() { yarn add -D "$@"; }
 alias yi="yarn install"
 alias yag="yarn global add"
 alias yrm="yarn remove"
@@ -530,15 +602,21 @@ alias pkg="vim package.json"
 alias pkgj="cat package.json | jq"  # Pretty print with jq
 
 # Git Aliases and functions
-c() { git checkout "$@"; }
-b() { git branch "$@"; }
+# Quick git checkout
+# Usage: c <branch>
+function c() { git checkout "$@"; }
+# Quick git branch
+# Usage: b [branch-name]
+function b() { git branch "$@"; }
 alias gcam="git commit -a --amend"
 alias gc="git commit -am"
 alias gs="git status"
 alias gd="git diff --ignore-all-space --ignore-space-at-eol --ignore-space-change --ignore-blank-lines"
 
-gp() {
-	local -a cmd=(git pull)
+# Internal helper: validate and apply .git_cli_prepend safely
+# Usage: _validate_and_apply_git_prepend <git command args...>
+function _validate_and_apply_git_prepend() {
+	local -a cmd=("$@")
 
 	# SAFE prepend: validate and parse .git_cli_prepend (no eval!)
 	if [[ -f ".git_cli_prepend" ]]; then
@@ -558,59 +636,43 @@ gp() {
 	"${cmd[@]}"
 }
 
-gpu() {
-	local -a cmd=(git push)
+# Git pull with .git_cli_prepend support
+# Usage: gp
+function gp() {
+	_validate_and_apply_git_prepend git pull
+}
+
+# Git push with auto-upstream and .git_cli_prepend support
+# Usage: gpu
+function gpu() {
 	local remote_branch=$(git config "branch.$(git symbolic-ref --short HEAD).merge" 2>/dev/null)
 
 	# Check if remote branch is set
 	if [[ -z $remote_branch ]]; then
-		cmd=(git push -u origin $(git symbolic-ref --short HEAD))
+		_validate_and_apply_git_prepend git push -u origin $(git symbolic-ref --short HEAD)
+	else
+		_validate_and_apply_git_prepend git push
 	fi
-
-	# SAFE prepend: validate and parse .git_cli_prepend (no eval!)
-	if [[ -f ".git_cli_prepend" ]]; then
-		local prepend=$(<.git_cli_prepend)
-		prepend=${prepend## ##}
-		prepend=${prepend%% ##}
-
-		if [[ $prepend =~ ^[a-zA-Z0-9_/-]+$ ]]; then
-			cmd=($prepend $cmd)
-		else
-			print -P "%F{red}⚠️  Unsafe .git_cli_prepend detected (ignored): $prepend%f" >&2
-		fi
-	fi
-
-	"${cmd[@]}"
 }
 
-gpuf() {
-	local -a cmd=(git push --force)
-
-	# SAFE prepend: validate and parse .git_cli_prepend (no eval!)
-	if [[ -f ".git_cli_prepend" ]]; then
-		local prepend=$(<.git_cli_prepend)
-		prepend=${prepend## ##}
-		prepend=${prepend%% ##}
-
-		if [[ $prepend =~ ^[a-zA-Z0-9_/-]+$ ]]; then
-			cmd=($prepend $cmd)
-		else
-			print -P "%F{red}⚠️  Unsafe .git_cli_prepend detected (ignored): $prepend%f" >&2
-		fi
-	fi
-
-	"${cmd[@]}"
+# Git force push with .git_cli_prepend support
+# Usage: gpuf
+function gpuf() {
+	_validate_and_apply_git_prepend git push --force
 }
 
 # Search git history for pattern across all commits
 # Usage: git_search "pattern"
 # Example: git_search "API_KEY"
-git_search() {
+function git_search() {
 	git rev-list --all | GIT_PAGER=cat xargs git grep "${@}"
 }
 alias gse=git_search
 
-git_reset() {
+# Reset git to a previous commit
+# Usage: git_reset [n]
+# Example: git_reset 2  (resets to HEAD~2)
+function git_reset() {
 	local COMMIT="HEAD"
 	if [[ "$#" -eq 1 ]]; then
 		COMMIT="HEAD~$1"
@@ -619,7 +681,10 @@ git_reset() {
 }
 alias gre=git_reset
 
-git-clone() {
+# Clone git repo and cd into it
+# Usage: git-clone <repo-url>
+# Example: git-clone https://github.com/user/repo.git
+function git-clone() {
 	git clone "$@" && cd "${${1:t}%.git}"
 }
 
@@ -654,7 +719,7 @@ alias gwip="git add -A && git commit -m 'WIP' --no-verify"
 alias gunwip="git log -1 --pretty=%B | grep -q 'WIP' && git reset HEAD~1"
 
 # Conventional commits helper
-gcm() {
+function gcm() {
     local type=$1
     shift
     git commit -m "${type}: $*"
@@ -662,9 +727,9 @@ gcm() {
 # Usage: gcm feat add user authentication
 # Types: feat, fix, docs, style, refactor, test, chore
 
-#=======================================================================================
+# =======================================================================================
 # Suffix Aliases
-#=======================================================================================
+# =======================================================================================
 alias -s git="git-clone"
 alias -s txt="${EDITOR}"
 alias -s cond="${EDITOR}"
@@ -675,9 +740,9 @@ alias -s {c,py,cpp,r,rb,go,js,jsx,ts,java,sql,hs,md}="vim"
 alias -s {xml,json,toml,yaml,yml,ini,conf,log}="vim"
 alias -s {gz,tgz,zip,lzh,bz2,tbz,Z,tar,arj,xz,7z}="extract"
 
-#=======================================================================================
+# =======================================================================================
 # Global Aliases
-#=======================================================================================
+# =======================================================================================
 alias -g A="| a"
 alias -g B="| bcat"
 alias -g C="| wc -l"
@@ -694,15 +759,15 @@ alias -g U="| uniq"
 alias -g X="| xsel -b"
 alias -g FF="-print0 | xargs -0 -I FILE"
 
-#=======================================================================================
+# =======================================================================================
 # Yarn Aliases and functions
-#=======================================================================================
+# =======================================================================================
 alias yd="yarn dev"
 alias yb="yarn build"
 
-#=======================================================================================
+# =======================================================================================
 # Laravel Aliases and functions
-#=======================================================================================
+# =======================================================================================
 # Docker-based Laravel (existing aliases)
 alias pa="dce php php -dxdebug.client_host=host.docker.internal artisan"
 alias pam="dce php php -dxdebug.client_host=host.docker.internal artisan migrate"
@@ -753,7 +818,7 @@ alias llogl="tail -100 storage/logs/laravel.log"
 alias llogc="truncate -s 0 storage/logs/laravel.log"  # Clear log
 
 # Laravel fresh install helper
-laravel-fresh() {
+function laravel-fresh() {
     echo "🔄 Dropping database..."
     pa migrate:fresh
     echo "🌱 Seeding database..."
@@ -764,7 +829,7 @@ laravel-fresh() {
 }
 
 # Quick Laravel setup
-laravel-setup() {
+function laravel-setup() {
     composer install
     cp .env.example .env
     php artisan key:generate
@@ -773,9 +838,9 @@ laravel-setup() {
     echo "✓ Laravel project setup complete!"
 }
 
-#=======================================================================================
+# =======================================================================================
 # Nginx Aliases and functions
-#=======================================================================================
+# =======================================================================================
 alias html="cd /var/www/html"
 
 # common directories
@@ -791,43 +856,50 @@ alias npa="tail -f /var/log/nginx/access*.log"
 # reload nginx
 alias nrel="sudo nginx -t && sudo nginx -s reload"
 
-#=======================================================================================
+# =======================================================================================
 # Node Aliases and functions
-#=======================================================================================
+# =======================================================================================
 
-#=======================================================================================
+# =======================================================================================
 # Log Aliases and functions
-#=======================================================================================
+# =======================================================================================
 alias llog="tail -f /var/www/html/ecoenergy/production/storage/logs/laravel.log"
 alias nlog="tail -f /var/log/nginx/*.log"
 
-#=======================================================================================
+# =======================================================================================
 # Docker Aliases and functions
-#=======================================================================================
+# =======================================================================================
 # Runs docker compose command looking at other files
-dc() {
-    if [[ -e "docker-compose.yml" ]]; then
-        docker compose "$@"
-    elif [[ -e "compose.yaml" ]]; then
-        docker compose "$@"
-    elif [[ -e "compose.yml" ]]; then
-        docker compose "$@"
-    elif [[ -e "./docker/docker-compose.yml" ]]; then
-        docker compose -f "./docker/docker-compose.yml" --project-directory ./ "$@"
-    elif [[ -e "./docker/compose.yaml" ]]; then
-        docker compose -f "./docker/compose.yaml" --project-directory ./ "$@"
-    elif [[ -e "./docker/compose.yml" ]]; then
-        docker compose -f "./docker/compose.yml" --project-directory ./ "$@"
-    else
-        echo "No docker compose file found"
-        return 1
-    fi
+function dc() {
+    local -a compose_files=(
+        "docker-compose.yml"
+        "compose.yaml"
+        "compose.yml"
+        "./docker/docker-compose.yml"
+        "./docker/compose.yaml"
+        "./docker/compose.yml"
+    )
+
+    for file in "${compose_files[@]}"; do
+        if [[ -e "$file" ]]; then
+            if [[ "$file" == ./docker/* ]]; then
+                docker compose -f "$file" --project-directory ./ "$@"
+            else
+                docker compose "$@"
+            fi
+            return
+        fi
+    done
+
+    echo "No docker compose file found"
+    return 1
 }
 
 alias dce="docker compose -f \"./docker/docker-compose.yml\" --project-directory ./ exec --user $(id -u):$(id -g)"
 
-# Runs the docker compose detached
-dcu() {
+# Run docker compose in detached mode (looks for docker.sh first)
+# Usage: dcu [args...]
+function dcu() {
 	if [[ -e "docker/docker.sh" ]]; then
 		./docker/docker.sh "$@"
 	elif [ -e "docker.sh" ]; then
@@ -837,57 +909,60 @@ dcu() {
 	fi
 }
 
-# Get the ip addresses of the dockers
-dcip() { docker inspect --format '{{$e := . }}{{with .NetworkSettings}} {{$e.Name}}
+# Get IP addresses of all docker compose containers
+# Usage: dcip
+function dcip() { docker inspect --format '{{$e := . }}{{with .NetworkSettings}} {{$e.Name}}
 {{range $index, $net := .Networks}}{{$index}} IP:{{.IPAddress}}; Gateway:{{.Gateway}}
 {{end}}{{end}}' $(dcp -q); }
 
-# Get the log of the docker compose
-dclo() { dc logs -tf; }
+# Follow docker compose logs
+# Usage: dclo
+function dclo() { dc logs -tf; }
 
-# Get process included stop container
-dcp() { dc ps "$@"; }
+# List docker compose processes
+# Usage: dcp [args...]
+function dcp() { dc ps "$@"; }
 
 # Execute command in Docker Compose service
 # Usage: dexec <service> <command>
 # Example: dexec php bash
-dexec() { docker exec -it $(dc ps -q $1) $2; }
+function dexec() { docker exec -it $(dc ps -q $1) $2; }
 
 # Execute command as root in Docker Compose service
 # Usage: drexec <service> <command>
 # Example: drexec php apt-get update
-drexec() { docker exec --user root:root -it $(dc ps -q $1) $2; }
+function drexec() { docker exec --user root:root -it $(dc ps -q $1) $2; }
 
 # Run bash shell in Docker Compose service
 # Usage: dceb <service> [script]
 # Example: dceb php /bin/bash
-dceb() {
-	SCRIPT="/bin/bash"
+function dceb() {
+	local script="/bin/bash"
 	if [ $# -lt 1 ]; then
 		echo "Usage: ${FUNCNAME[0]} CONTAINER_ID"
 		return 1
 	fi
 	if [ -n "$2" ]; then
-		SCRIPT="$2"
+		script="$2"
 	fi
 
-	dc exec --user "$(id -u):$(id -g)" "$1" "$SCRIPT"
+	dc exec --user "$(id -u):$(id -g)" "$1" "$script"
 }
 
 # Run bash shell as root in Docker Compose service
 # Usage: dcebr <service> [script]
 # Example: dcebr php /bin/bash
-dcebr() {
-	SCRIPT="/bin/bash"
+function dcebr() {
+	local script="/bin/bash"
 	if [ $# -lt 1 ]; then
 		echo "Usage: ${FUNCNAME[0]} CONTAINER_ID"
 		return 1
 	fi
 	if [ -n "$2" ]; then
-		SCRIPT="$2"
+		script="$2"
 	fi
 
-	dc exec --user root:root "$1" "$SCRIPT"
+	dc exec --user root:root "$1" "$script"
 }
 
 # Get latest container ID
@@ -911,26 +986,33 @@ alias dkd="docker run -d -P"
 # Run interactive container, e.g., $dki base /bin/bash
 alias dki="docker run -i -t -P"
 
-# Stop all containers
-dstop() { docker stop $(docker ps -a -q); }
+# Stop all Docker containers
+# Usage: dstop
+function dstop() { docker stop $(docker ps -a -q); }
 
-# Stop and Remove all containers
-drmf() { docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); }
+# Stop and remove all Docker containers
+# Usage: drmf
+function drmf() { docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); }
 
 # Get IP addresses of all running containers
 alias dpsi="docker ps -q | xargs docker inspect --format '{{ .Id }} - {{ .Name }} - {{ .NetworkSettings.IPAddress }}'"
 
-# Remove all containers
-drc() { docker rm $(docker ps -a -q); }
+# Remove all Docker containers
+# Usage: drc
+function drc() { docker rm $(docker ps -a -q); }
 
 # Remove all images
 #dri() { docker rmi $(docker images -q); }
 
-# Dockerfile build, e.g., $dbu tcnksm/test
-dbu() { docker build -t=$1 .; }
+# Build Docker image with tag
+# Usage: dbu <tag-name>
+# Example: dbu myapp:latest
+function dbu() { docker build -t=$1 .; }
 
-# Run a bash shell in the specified container.
-dexbash() {
+# Run bash shell in Docker container as current user
+# Usage: dexbash <container-id>
+# Example: dexbash abc123
+function dexbash() {
 	if [ $# -ne 1 ]; then
 		echo "Usage: ${FUNCNAME[0]} CONTAINER_ID"
 		return 1
@@ -939,8 +1021,10 @@ dexbash() {
 	docker exec -it --user "$(id -u):$(id -g)" "$1" /bin/bash
 }
 
-# Runs Docker build and tag it with the given name.
-dbt() {
+# Build Docker image from directory with optional tags
+# Usage: dbt <dirname> [tag1...]
+# Example: dbt ./app myapp:v1.0
+function dbt() {
 	if [ $# -lt 1 ]; then
 		echo "Usage ${funcstack[1]} DIRNAME [TAGNAME ...]"
 		return 1
@@ -955,11 +1039,13 @@ dbt() {
 	docker build "${args[@]}"
 }
 
-#=======================================================================================
+# =======================================================================================
 # WSL Aliases and functions
-#=======================================================================================
+# =======================================================================================
 if [[ $HOST_OS == "wsl" ]]; then
-	subl() {
+	# Open file in Windows Sublime Text from WSL
+	# Usage: subl <file>
+	function subl() {
 		DISTRO="Ubuntu"
 		SUBLIME_TEXT_LOCATION="/mnt/c/Program Files/Sublime Text/subl.exe"
 		if [[ ! -f "$SUBLIME_TEXT_LOCATION" ]]; then
@@ -971,8 +1057,9 @@ if [[ $HOST_OS == "wsl" ]]; then
 		$SUBLIME_TEXT_LOCATION "/\/\wsl.localhost\\${DISTRO}${FULL_PATH}"
 	}
 
-	# VS Code launcher with fallback for async WINDOWS_USER_PROFILE loading
-	code() {
+	# Open file/directory in Windows VS Code from WSL
+	# Usage: code [file or directory]
+	function code() {
 		local code_exe="${WINDOWS_USER_PROFILE:-/mnt/c/Users/${USER}}/AppData/Local/Programs/Microsoft VS Code/Code.exe"
 		if [[ ! -x "${code_exe}" ]]; then
 			echo "Error: VS Code not found at ${code_exe}" >&2
@@ -981,7 +1068,9 @@ if [[ $HOST_OS == "wsl" ]]; then
 		"${code_exe}" "$@"
 	}
 
-	copy_terminal_settings_to_dotfiles() {
+# Copy Windows Terminal settings to dotfiles
+	# Usage: copy-terminal-settings-to-dotfiles
+	function copy-terminal-settings-to-dotfiles() {
 		DOTFILES_DIR="${HOME}/.dotfiles"
 		WINDOWS_USER=$(powershell.exe '$env:UserName' | tr -d '\r')
 		TERMINAL_SETTINGS_DEST="/mnt/c/Users/${WINDOWS_USER}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
@@ -995,15 +1084,15 @@ if [[ $HOST_OS == "wsl" ]]; then
 	}
 fi
 
-#=======================================================================================
+# =======================================================================================
 # Context-Aware Navigation
-#=======================================================================================
+# =======================================================================================
 
 # 🐍 Smart directory context hook - Works with Enhancd
 # Automatically activates Python venv and shows README after cd
 # This uses chpwd hook instead of overriding cd, so it works with Enhancd
 # Note: May conflict with direnv - disable if using direnv
-_context_aware_chpwd() {
+function _context_aware_chpwd() {
   # Auto-activate Python venv
   if [[ -d .venv/bin ]]; then
     [[ -z "$VIRTUAL_ENV" ]] && source .venv/bin/activate
@@ -1019,20 +1108,23 @@ _context_aware_chpwd() {
 autoload -U add-zsh-hook
 add-zsh-hook chpwd _context_aware_chpwd
 
-#=======================================================================================
+# =======================================================================================
 # Power User Aliases (Expert Level)
-#=======================================================================================
+# =======================================================================================
 
-# Quick directory creation + cd
-mkcd() {
+# Create directory and cd into it
+# Usage: mkcd <directory>
+# Example: mkcd ~/projects/newproject
+function mkcd() {
   mkdir -p "$1" && cd "$1"
 }
 
 # Port listening checker
 alias lsp="sudo lsof -iTCP -sTCP:LISTEN -n -P"
 
-# Process killer by name with fzf
-killp() {
+# Kill process interactively with fzf
+# Usage: killp
+function killp() {
   local pid
   pid=$(ps aux | fzf | awk '{print $2}')
   [[ -n "$pid" ]] && kill -9 "$pid"
@@ -1058,12 +1150,12 @@ else
   alias myip_local="ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v 127.0.0.1"
 fi
 
-#=======================================================================================
+# =======================================================================================
 # Development Workflow Functions
-#=======================================================================================
+# =======================================================================================
 
 # Kill process by port number
-killport() {
+function killport() {
   if [ $# -lt 1 ]; then
     echo "Usage: killport <port>"
     echo "Example: killport 3000"
@@ -1083,7 +1175,7 @@ killport() {
 }
 
 # Smart package manager runner - detects npm/yarn/pnpm
-run() {
+function run() {
   if [ $# -lt 1 ]; then
     echo "Usage: run <script>"
     echo "Example: run dev"
@@ -1106,7 +1198,7 @@ run() {
 }
 
 # Docker system cleanup - removes everything
-docker-clean() {
+function docker-clean() {
   echo "🗑️  Cleaning Docker system..."
   docker system prune -af --volumes
   echo "✓ Docker cleanup complete"
@@ -1115,7 +1207,7 @@ docker-clean() {
 # Find and replace text in files with confirmation
 # Usage: replace-in-files <search> <replace> [file-pattern]
 # Example: replace-in-files "oldName" "newName" "*.js"
-replace-in-files() {
+function replace-in-files() {
   if [ $# -lt 2 ]; then
     echo "Usage: replace-in-files <search> <replace> [file-pattern]"
     echo "Example: replace-in-files 'oldName' 'newName' '*.js'"
@@ -1145,7 +1237,7 @@ replace-in-files() {
 }
 
 # Quick directory size check
-dirsize() {
+function dirsize() {
   if [ $# -lt 1 ]; then
     du -sh *
   else
@@ -1154,7 +1246,7 @@ dirsize() {
 }
 
 # Extract any archive type
-extract() {
+function extract() {
     if [[ $# -lt 1 ]]; then
         echo "Usage: extract <file>"
         return 1
@@ -1187,20 +1279,20 @@ extract() {
 }
 
 # Quick HTTP server in current directory
-serve() {
+function serve() {
   local port="${1:-8000}"
   echo "🌐 Starting HTTP server on http://localhost:${port}"
   python3 -m http.server "${port}"
 }
 
 # Generate random password
-genpass() {
+function genpass() {
   local length="${1:-20}"
   openssl rand -base64 32 | tr -d "=+/" | cut -c1-"${length}"
 }
 
 # Quick note taking
-note() {
+function note() {
   local notes_dir="${HOME}/notes"
   mkdir -p "${notes_dir}"
 
@@ -1219,9 +1311,9 @@ note() {
   fi
 }
 
-#=======================================================================================
+# =======================================================================================
 # Modern CLI Tool Aliases
-#=======================================================================================
+# =======================================================================================
 
 # Update all package managers
 alias update-all="zi update --all && rustup update && sudo apt-get update && sudo apt-get upgrade -y"
