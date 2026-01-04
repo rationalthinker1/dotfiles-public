@@ -48,7 +48,7 @@ fi
 
 
 # Add only if directory exists & not already in $PATH
-add_to_path_if_exists() {
+function add_to_path_if_exists() {
   # Fast path: check directory existence first (fail fast for non-existent dirs)
   [[ -d "${1}" ]] || return 1
 
@@ -57,7 +57,7 @@ add_to_path_if_exists() {
 }
 
 # Source file only if it exists and is readable
-source_if_exists() {
+function source_if_exists() {
   # Single file test for minimal overhead - -f checks both existence and regular file in one syscall
   [[ -f "${1}" ]] && . "${1}"
 }
@@ -133,7 +133,7 @@ if (( $+commands[pass] )); then
     export PASSWORD_STORE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/password-store"
 
     # Helper function to safely load secrets
-    load_secret() {
+    function load_secret() {
         local secret_path="$1"
         local env_var="$2"
 
@@ -172,7 +172,7 @@ if [[ "${HOST_OS}" == "wsl" ]]; then
         source "$_wslpath_cache_file" 2>/dev/null
     fi
 
-    keep_current_path() {
+    function keep_current_path() {
         local cache_key=$PWD
 
         # Check in-memory cache first
@@ -334,7 +334,7 @@ function reset_cursor {
 precmd_functions+=(reset_cursor)
 
 # 🪟 Set terminal title on each prompt
-_set_terminal_title() {
+function _set_terminal_title() {
   print -Pn "\e]0;%n@%m: %~\a"
 }
 precmd_functions+=(_set_terminal_title)
@@ -402,7 +402,7 @@ zle -N bracketed-paste bracketed-paste-magic
 zle -N self-insert url-quote-magic
 
 # 🔁 Auto-source `.dirrc` when entering a directory (SAFE version)
-load-local-conf() {
+function load-local-conf() {
   local dirrc=.dirrc
   [[ -f $dirrc ]] || return 0
 
@@ -593,12 +593,12 @@ zi light sharkdp/fd
 # 🔬 XSV - Fast CSV command line toolkit
 # Usage: `xsv stats data.csv` - show column statistics
 # `xsv select column1,column2 data.csv` - select columns
-zi ice wait'0' lucid depth'1' from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv' atpull'%atclone'
+zi ice wait'2' lucid depth'1' from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv' atpull'%atclone'
 zi light BurntSushi/xsv
 
 # 📊 CSVtool - Pandas-powered CSV manipulation tool
 # Usage: `csvtool filter data.csv` - interactive CSV filtering
-zi ice wait'0' lucid as'program' pick'csvtool/csvtool.py' \
+zi ice wait'2' lucid as'program' pick='csvtool/csvtool.py' \
   atclone'python3 -m venv venv && venv/bin/pip install pandas openpyxl' \
   atpull'%atclone' \
   cmd'./venv/bin/python csvtool "$@"'
@@ -619,18 +619,18 @@ zi light jqlang/jq
 # 💥 UP - Interactive pipe builder for shell commands
 # Usage: `up` - opens visual editor to build/test pipelines interactively
 # Helps construct complex command pipelines with live preview
-zi ice wait'0' lucid depth'1' from'gh-r' as'command'
+zi ice wait'2' lucid depth'1' from'gh-r' as'command'
 zi light akavel/up
 
 # 📷 Imcat - Display images directly in terminal
 # Usage: `imcat image.png` - renders image in terminal (kitty/iTerm2)
-zi ice wait'0' lucid depth'1' from'gh' as'command' make pick'imcat'
+zi ice wait'2' lucid depth'1' from'gh' as'command' make pick'imcat'
 zi light stolk/imcat
 
 # 📊 QSV - Ultra-fast CSV toolkit with Python integration
 # Usage: `qsv stats data.csv` - advanced CSV statistics and operations
 # More features than xsv: SQL queries, Python expressions, etc.
-zi ice wait'0' lucid depth'1' as'program' pick'target/release/qsv' atclone'cargo build --release --locked --bin qsv --features "feature_capable,python,apply,foreach"' atpull'%atclone'
+zi ice wait'2' lucid depth'1' as'program' pick'target/release/qsv' atclone'cargo build --release --locked --bin qsv --features "feature_capable,python,apply,foreach"' atpull'%atclone'
 zi light dathere/qsv
 
 zi ice wait'0' lucid depth'1' as'program' pick'target/release/*' atclone'cargo build --release --locked' atpull'%atclone'
@@ -656,12 +656,12 @@ zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.
 zi light ClementTsang/bottom
 
 # 🔥 Tokei - Fast code statistics
-zi ice wait'0' lucid from'gh' as'program' pick'target/release/tokei' \
+zi ice wait'2' lucid from'gh' as'program' pick'target/release/tokei' \
   atclone'cargo build --release --locked' atpull'%atclone'
 zi light XAMPPRocky/tokei
 
 # ⚡ Hyperfine - Command benchmarking
-zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/hyperfine'
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/hyperfine'
 zi light sharkdp/hyperfine
 
 # 🧼 Dust - Fast Rust-based alternative to du
@@ -669,7 +669,7 @@ zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.
 zi light bootandy/dust
 
 # 🎨 Delta - Better git diffs with syntax highlighting
-zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/delta'
+zi ice lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/delta'
 zi light dandavison/delta
 
 # 📁 Duf - Modern df alternative
@@ -677,7 +677,7 @@ zi ice wait'0' lucid from'gh-r' as'command' bpick'*linux_x86_64.tar.gz' pick'*/d
 zi light muesli/duf
 
 # 🐶 Dog - Modern dig alternative
-zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.zip' pick'*/bin/dog'
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.zip' pick'*/bin/dog'
 zi light ogham/dog
 
 # 🦎 Lazygit - TUI for git
@@ -923,7 +923,7 @@ fi
 source_if_exists "${ZDOTDIR}/aliases.zsh"
 
 # Compile configuration files for faster loading
-compile_if_needed() {
+function compile_if_needed() {
     local source_file="${1}"
     [[ ! -f "${source_file}" ]] && return
     [[ "${source_file}" -nt "${source_file}.zwc" ]] && zcompile "${source_file}"
