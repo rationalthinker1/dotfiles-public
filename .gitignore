@@ -29,3 +29,5 @@ zsh/.zplug
 *.zwc
 .vscode/*
 zsh/cache/*
+*.backup
+*.old

@@ -44,7 +44,7 @@ detect_os() {
     # Desktop if: macOS, or has DISPLAY, or has ubuntu-desktop package
     if [ "${HOST_OS}" = "darwin" ]; then
         HOST_LOCATION="desktop"
-    elif [ -n "${DISPLAY}" ] || [ -n "${WAYLAND_DISPLAY}" ]; then
+    elif [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
         HOST_LOCATION="desktop"
     elif command -v dpkg-query >/dev/null 2>&1 && \
          dpkg-query -W -f='${Status}' ubuntu-desktop 2>/dev/null | grep -q "install ok installed"; then
