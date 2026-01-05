@@ -86,6 +86,9 @@ export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export VOLTA_HOME="${XDG_CONFIG_HOME}/volta"
 export BUN_INSTALL="${XDG_CONFIG_HOME}/bun"
 export PNPM_HOME="${XDG_CONFIG_HOME}/pnpm"
+export ASDF_DATA_DIR="${XDG_CONFIG_HOME}/asdf"
+export ASDF_DIR="${ASDF_DATA_DIR}"
+export ASDF_CONFIG_FILE="${ASDF_DATA_DIR}/.asdfrc"
 
 # 🖥️ Terminal & editor defaults
 export TERM="xterm-256color"
@@ -911,11 +914,6 @@ zi light tj/git-extras
 # zi ice lucid wait'1' depth'1'
 # zi light dominik-schwabe/zsh-fnm
 
-export ASDF_DATA_DIR="${XDG_CONFIG_HOME}/asdf"
-export ASDF_DIR="${ASDF_DATA_DIR}"
-export ASDF_CONFIG_FILE="${ASDF_DATA_DIR}/.asdfrc"
-zi ice wait'2' lucid from'gh-r' as'command' pick'asdf'
-zi light asdf-vm/asdf
 
 # 📦 Better NPM Completion - Enhanced tab completion for npm/yarn/pnpm
 # Usage: `npm install <TAB>` - shows package suggestions from npm registry
@@ -973,7 +971,6 @@ fi
 
 # 🗂️ broot (directory visualizer)
 source_if_exists "${XDG_CONFIG_HOME}/broot/launcher/bash/br"
-
 
 # 🎨 Powerlevel10k theme config
 source_if_exists "${ZDOTDIR}/.p10k.zsh"
@@ -1069,12 +1066,15 @@ fi
 #   [[ -f "$rg_comp" ]] && source "$rg_comp"
 # fi
 
-
 # VSCode Integration
 [[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
 
-
 #[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
+
+# asdf (Another System Definition Facility) - version manager
+# v0.16.0+ is a Go binary (installed via install.sh), just add to PATH
+add_to_path_if_exists "${ASDF_DATA_DIR}/bin"
+add_to_path_if_exists "${ASDF_DATA_DIR}/shims"
 
 # ==============================================================================
 # WSL Windows Terminal sync (manual function)
@@ -1107,7 +1107,6 @@ if [[ "${HOST_OS}" == 'wsl' ]]; then
 
   alias update-wt-settings='sync_wt_settings'
 fi
-
 #=======================================================================================
 # Source aliases and functions
 #=======================================================================================
