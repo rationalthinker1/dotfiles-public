@@ -1,6 +1,7 @@
-python 3.14.2t --home
-vim 9.1.2050 --home
-rust 1.92.0 --home
-golang 1.25.5 --home
-nodejs lts --home
-broot 1.54.0 --home
+python 3.14.2t
+vim 9.1.2050
+rust 1.92.0
+golang 1.25.5
+nodejs lts
+broot 1.54.0
+uv 0.9.21

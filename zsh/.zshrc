@@ -158,78 +158,6 @@ fi
 if [[ "${HOST_OS}" == "wsl" ]]; then
     export LIBGL_ALWAYS_INDIRECT=1
     export BROWSER="wslview"
-
-    # IP address detection disabled - not needed (was 749ms when cache stale)
-    # If you need X11 forwarding, uncomment this section
-    # _ip_cache_file="${ZSH_CACHE_DIR}/wsl_ip_cache"
-    # if [[ -f "$_ip_cache_file" ]] && [[ $(( $(date +%s) - $(stat -c %Y "$_ip_cache_file" 2>/dev/null || echo 0) )) -lt 3600 ]]; then
-    #     # Cache is fresh (< 1 hour old), read from file
-    #     read -r IP_ADDRESS < "$_ip_cache_file"
-    # else
-    #     # Cache is stale or missing, refresh it
-    #     IP_ADDRESS=${${(M)${(f)"$(ip route list default 2>/dev/null)"}:#*via*}[(w)3]}
-    #     # Simple validation: check if it starts with a digit (faster than full regex)
-    #     if [[ "$IP_ADDRESS" =~ ^[0-9] ]]; then
-    #         echo "$IP_ADDRESS" > "$_ip_cache_file"
-    #     else
-    #         IP_ADDRESS="127.0.0.1"
-    #     fi
-    # fi
-    # export IP_ADDRESS
-    # export DISPLAY="${IP_ADDRESS}:0"
-
-    # Optimized wslpath cache: lazy-load only when needed
-    typeset -gA _wslpath_cache
-    _wslpath_cache_file="${ZSH_CACHE_DIR}/wslpath_cache"
-    _wslpath_cache_loaded=0
-
-    # function keep_current_path() {
-    #     local cache_key=$PWD
-
-    #     # Lazy-load cache on first use
-    #     if (( ! _wslpath_cache_loaded )) && [[ -f "$_wslpath_cache_file" ]]; then
-    #         source "$_wslpath_cache_file" 2>/dev/null
-    #         _wslpath_cache_loaded=1
-    #     fi
-
-    #     # Check in-memory cache first
-    #     if [[ -z ${_wslpath_cache[$cache_key]} ]]; then
-    #         # Not cached - compute and save
-    #         _wslpath_cache[$cache_key]=$(wslpath -w "$PWD" 2>/dev/null)
-
-    #         # Persist to disk (async to avoid blocking)
-    #         {
-    #             echo "_wslpath_cache[${(q)cache_key}]=${(q)_wslpath_cache[$cache_key]}" \
-    #                 >> "$_wslpath_cache_file"
-    #         } &!
-    #     fi
-
-    #     printf "\e]9;9;%s\e\\" "${_wslpath_cache[$cache_key]}"
-    # }
-    # precmd_functions+=(keep_current_path)
-
-    # Optimized cleanup: only check periodically (every 10th shell exit)
-    cleanup_wslpath_cache() {
-        # Only run cleanup 10% of the time to reduce overhead
-        if (( RANDOM % 10 == 0 )) && [[ -f "$_wslpath_cache_file" ]]; then
-            # Use stat instead of wc for faster size check
-            local file_size=$(stat -c %s "$_wslpath_cache_file" 2>/dev/null || echo 0)
-            # If file > 10KB, trim it (approximate check, faster than line count)
-            if (( file_size > 10240 )); then
-                tail -100 "$_wslpath_cache_file" > "${_wslpath_cache_file}.tmp" 2>/dev/null
-                mv "${_wslpath_cache_file}.tmp" "$_wslpath_cache_file" 2>/dev/null
-            fi
-        fi
-    }
-    # Run cleanup in background on exit
-    trap cleanup_wslpath_cache EXIT
-
-    # WT_SESSION: Sync current directory with Windows Terminal UI
-    # Enables "duplicate tab", proper tab titles, and "open in directory" features
-    [[ -n "$WT_SESSION" ]] && printf "\033]9;9;%s\033\\" "$PWD"
-
-    # Cache Windows user profile path (SLOW - crosses WSL boundary)
-    # export WINDOWS_USER_PROFILE=$(wslpath "$(wslvar USERPROFILE)" 2>/dev/null)
 fi
 
 #=======================================================================================
@@ -811,10 +739,10 @@ zi light stolk/imcat
 # 📊 QSV - Ultra-fast CSV toolkit with Python integration
 # Usage: `qsv stats data.csv` - advanced CSV statistics and operations
 # More features than xsv: SQL queries, Python expressions, etc.
-zi ice wait'2' lucid depth'1' as'program' pick'target/release/qsv' atclone'cargo build --release --locked --bin qsv --features "feature_capable,python,apply,foreach"' atpull'%atclone'
+zi ice wait'2' lucid from'gh-r' as'program' bpick'*x86_64*linux-gnu.zip' pick'qsv'
 zi light dathere/qsv
 
-zi ice wait'2' lucid depth'1' as'program' pick'target/release/*' atclone'cargo build --release --locked' atpull'%atclone'
+zi ice wait'2' lucid from'gh-r' as'program' bpick'*x86_64*linux-gnu.zip' pick'*/yazi'
 zi light sxyazi/yazi
 
 # ==============================================================================
