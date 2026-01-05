@@ -12,27 +12,25 @@ readonly FONTS_DIR="${DOTFILES_ROOT}/fonts"
 
 # Package definitions
 readonly -a DARWIN_PACKAGES=(
-    git grep wget curl zsh fontconfig python3
+    git grep wget curl zsh fontconfig
     csvkit xclip htop p7zip rename unzip xsel
-    glances ctags up broot pcre2-utils rsync go
+    glances ctags up pcre2-utils rsync
     coreutils gnu-sed  # GNU versions of macOS BSD tools
     autoconf automake libtool pkg-config  # Build dependencies
     openssl@3  # Library dependencies
-    pipx  # Python application installer
     pass gnupg pinentry-mac  # Secret management
 )
 
 readonly -a LINUX_PACKAGES=(
-    build-essential git tmux htop curl zsh powerline fonts-powerline
-    python3-venv python3-dev python3-pip python3-pynvim xclip p7zip-full zip unzip
-    unrar wipe cmake net-tools xsel exuberant-ctags golang-go rsync
+    build-essential git tmux htop curl zsh fonts-powerline
+    xclip p7zip-full zip unzip
+    unrar wipe cmake net-tools xsel exuberant-ctags rsync
     libncurses5-dev libncursesw5-dev util-linux-extra pcre2-utils jq
     autoconf automake libtool pkg-config  # Build dependencies
     libssl-dev libcurl4-openssl-dev zlib1g-dev libffi-dev libreadline-dev  # Development libraries
     libbz2-dev libsqlite3-dev tk-dev liblzma-dev  # Python build dependencies
     man-db less openssh-client software-properties-common  # Essential utilities
     strace gdb lsb-release shellcheck tree  # Debugging & development tools
-    pipx  # Python application installer
     pass gnupg2 pinentry-curses  # Secret management
 )
 
@@ -46,6 +44,7 @@ declare -A DOTFILE_LINKS=(
     [.vimrc]="${HOME}/.vimrc"
     [.vim]="${HOME}/.vim"
     [.gitconfig]="${HOME}/.gitconfig"
+    [.tool-versions]="${HOME}/.tool-versions"
     [zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/zsh"
     [ranger]="${XDG_CONFIG_HOME:-${HOME}/.config}/ranger"
     [sheldon]="${XDG_CONFIG_HOME:-${HOME}/.config}/sheldon"
@@ -360,6 +359,40 @@ if ! python3 -c "import pynvim" 2>/dev/null; then
 fi
 
 echo "✓ pynvim installed"
+
+#---------------------------------------------------------------------------------------
+# Install uv (fast Python package and project manager)
+#---------------------------------------------------------------------------------------
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Installing uv via asdf"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Check for existing uv installation
+if command -v uv &>/dev/null && [[ ! -f "${ASDF_DATA_DIR}/shims/uv" ]]; then
+    existing_uv="$(command -v uv)"
+    echo "⚠ Existing uv installation: ${existing_uv}"
+    echo "  asdf-managed uv will take precedence"
+fi
+
+# Add uv plugin
+if ! asdf plugin add uv; then
+    echo "WARNING: Failed to add uv plugin, skipping"
+else
+    # Install latest uv
+    if ! asdf install uv latest; then
+        echo "WARNING: Failed to install uv, skipping"
+    else
+        # Set as global default
+        asdf set uv latest --home
+
+        # Verify installation
+        if uv --version; then
+            echo "✓ uv installed via asdf: $(uv --version)"
+        else
+            echo "WARNING: uv not available after asdf installation"
+        fi
+    fi
+fi
 
 # Configure zsh as default shell
 zsh_path=$(command -v zsh)
