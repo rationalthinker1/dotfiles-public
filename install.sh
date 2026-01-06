@@ -13,7 +13,7 @@ readonly FONTS_DIR="${DOTFILES_ROOT}/fonts"
 # Package definitions
 readonly -a DARWIN_PACKAGES=(
     git grep wget curl zsh fontconfig
-    csvkit xclip htop p7zip rename unzip xsel
+    csvkit xclip htop p7zip rename unzip
     glances ctags up pcre2-utils rsync
     coreutils gnu-sed  # GNU versions of macOS BSD tools
     autoconf automake libtool pkg-config  # Build dependencies
@@ -85,10 +85,6 @@ export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export TERM=xterm-256color
 export EDITOR=vim
 export LESS="-XRF"
-
-# Source profiles if they exist (allow failures to not break script)
-[[ -f "${XDG_CONFIG_HOME}/zsh/.zprofile" ]] && source "${XDG_CONFIG_HOME}/zsh/.zprofile" || true
-[[ -f "${HOME}/.zprofile" ]] && source "${HOME}/.zprofile" || true
 
 #=======================================================================================
 # Sudo/Root Detection
@@ -189,15 +185,9 @@ if [[ "${HOST_OS}" == "darwin" ]]; then
         eval "$(${brew_prefix}/bin/brew shellenv)"
     fi
 
-    # Install packages individually
-    for pkg in "${DARWIN_PACKAGES[@]}"; do
-        if ! brew list "${pkg}" &>/dev/null; then
-            echo "Installing ${pkg}..."
-            brew install "${pkg}" || echo "WARNING: Failed to install ${pkg}"
-        else
-            echo "✓ ${pkg} already installed"
-        fi
-    done
+    # Install packages (brew automatically skips already-installed packages)
+    echo "Installing Homebrew packages..."
+    brew install "${DARWIN_PACKAGES[@]}" || echo "WARNING: Some packages failed to install"
 else
     # Linux package installation
     export DEBIAN_FRONTEND=noninteractive
@@ -206,15 +196,9 @@ else
     ${SUDO} apt-get -y update || { echo "ERROR: apt-get update failed"; exit 1; }
     ${SUDO} apt-get -y upgrade || echo "WARNING: Package upgrade had issues"
 
-    # Install packages individually
-    for pkg in "${LINUX_PACKAGES[@]}"; do
-        if ! dpkg-query -W -f='${Package}\n' 2>/dev/null | grep -xq "${pkg}"; then
-            echo "Installing ${pkg}..."
-            ${SUDO} apt-get install -y "${pkg}" || echo "WARNING: Failed to install ${pkg}"
-        else
-            echo "✓ ${pkg} already installed"
-        fi
-    done
+    # Install packages (apt automatically skips already-installed packages)
+    echo "Installing Linux packages..."
+    ${SUDO} apt-get install -y "${LINUX_PACKAGES[@]}" || echo "WARNING: Some packages failed to install"
 fi
 
 #---------------------------------------------------------------------------------------
@@ -289,11 +273,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing Python via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Add python plugin
-if ! asdf plugin add python; then
-    echo "ERROR: Failed to add python plugin"
-    exit 1
-fi
+# Add python plugin (ignore error if already exists)
+asdf plugin add python 2>/dev/null || true
 
 # Install latest Python 3
 if ! asdf install python latest:3; then
@@ -303,6 +284,9 @@ fi
 
 # Set as global default
 asdf set python latest:3 --home
+
+# Reshim to ensure python is available
+asdf reshim python
 
 # Verify installation
 if ! python3 --version; then
@@ -338,11 +322,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing uv via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Add uv plugin
-if ! asdf plugin add uv; then
-    echo "ERROR: Failed to add uv plugin"
-    exit 1
-fi
+# Add uv plugin (ignore error if already exists)
+asdf plugin add uv 2>/dev/null || true
 
 # Install latest uv
 if ! asdf install uv latest; then
@@ -352,6 +333,9 @@ fi
 
 # Set as global default
 asdf set uv latest --home
+
+# Reshim to ensure uv is available
+asdf reshim uv
 
 # Verify installation
 if ! uv --version; then
@@ -366,8 +350,12 @@ zsh_path=$(command -v zsh)
 if ! grep -qxF "${zsh_path}" /etc/shells 2>/dev/null; then
     echo "${zsh_path}" | ${SUDO} tee -a /etc/shells >/dev/null
 fi
-${SUDO} chsh -s "${zsh_path}" 2>/dev/null || true
-chsh -s "${zsh_path}" 2>/dev/null || true
+# Change shell (use appropriate method based on privileges)
+if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+    chsh -s "${zsh_path}" "${SUDO_USER:-$USER}" 2>/dev/null || true
+else
+    ${SUDO} chsh -s "${zsh_path}" "$USER" 2>/dev/null || true
+fi
 echo "✓ Default shell set to zsh"
 
 # Set clock (Linux only)
@@ -388,14 +376,11 @@ if [[ "${HOST_OS}" != "darwin" ]]; then
     ${SUDO} apt-get install -y ruby-dev lua5.3 liblua5.3-dev libperl-dev 2>/dev/null || true
 fi
 
-# Add vim plugin
-if ! asdf plugin add vim; then
-    echo "ERROR: Failed to add vim plugin"
-    exit 1
-fi
+# Add vim plugin (ignore error if already exists)
+asdf plugin add vim 2>/dev/null || true
 
 # Configure Vim build options (Python3, Ruby, Lua, Perl support)
-export ASDF_VIM_CONFIG="--with-features=huge --enable-multibyte --enable-rubyinterp=yes --enable-python3interp=yes --enable-perlinterp=yes --enable-luainterp=yes --enable-cscope --enable-fail-if-missing --disable-gui --without-x"
+export ASDF_VIM_CONFIG="--with-features=huge --enable-rubyinterp=yes --enable-python3interp=yes --enable-perlinterp=yes --enable-luainterp=yes --enable-cscope --enable-fail-if-missing --disable-gui --without-x"
 
 # Install latest Vim (asdf-vim builds from source)
 if ! asdf install vim latest; then
@@ -405,6 +390,9 @@ fi
 
 # Set as global default
 asdf set vim latest --home
+
+# Reshim to ensure vim is available
+asdf reshim vim
 
 # Verify installation
 if ! vim --version | head -1; then
@@ -421,11 +409,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing Rust via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Add rust plugin
-if ! asdf plugin add rust; then
-    echo "ERROR: Failed to add rust plugin"
-    exit 1
-fi
+# Add rust plugin (ignore error if already exists)
+asdf plugin add rust 2>/dev/null || true
 
 # Install latest stable Rust (asdf-rust uses standalone installers, not rustup)
 if ! asdf install rust latest; then
@@ -435,6 +420,9 @@ fi
 
 # Set as global default
 asdf set rust latest --home
+
+# Reshim to ensure cargo/rustc are available
+asdf reshim rust
 
 # Verify installation
 if ! cargo --version; then
@@ -451,11 +439,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing Go via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Add golang plugin
-if ! asdf plugin add golang; then
-    echo "ERROR: Failed to add golang plugin"
-    exit 1
-fi
+# Add golang plugin (ignore error if already exists)
+asdf plugin add golang 2>/dev/null || true
 
 # Install latest Go
 if ! asdf install golang latest; then
@@ -465,6 +450,9 @@ fi
 
 # Set as global default
 asdf set golang latest --home
+
+# Reshim to ensure go is available
+asdf reshim golang
 
 # Verify installation
 if ! go version; then
@@ -481,11 +469,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing Node.js via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Add nodejs plugin
-if ! asdf plugin add nodejs; then
-    echo "ERROR: Failed to add nodejs plugin"
-    exit 1
-fi
+# Add nodejs plugin (ignore error if already exists)
+asdf plugin add nodejs 2>/dev/null || true
 
 # Install latest Node.js LTS
 if ! asdf install nodejs lts; then
@@ -495,6 +480,9 @@ fi
 
 # Set as global default
 asdf set nodejs lts --home
+
+# Reshim to ensure node/npm are available
+asdf reshim nodejs
 
 # Verify installation
 if ! node --version; then
@@ -517,11 +505,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing broot via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Add broot plugin
-if ! asdf plugin add broot https://github.com/cmur2/asdf-broot.git; then
-    echo "ERROR: Failed to add broot plugin"
-    exit 1
-fi
+# Add broot plugin (ignore error if already exists)
+asdf plugin add broot https://github.com/cmur2/asdf-broot.git 2>/dev/null || true
 
 # Install latest broot (uses pre-built binaries, no Rust compilation needed)
 if ! asdf install broot latest; then
@@ -531,6 +516,9 @@ fi
 
 # Set as global default
 asdf set broot latest --home
+
+# Reshim to ensure broot is available
+asdf reshim broot
 
 # Verify installation
 if ! broot --version; then
@@ -543,29 +531,6 @@ echo "✓ broot installed via asdf: $(broot --version)"
 #---------------------------------------------------------------------------------------
 # Install platform-specific tools
 #---------------------------------------------------------------------------------------
-if [[ "$HOST_LOCATION" == "desktop" && "$HOST_OS" == "linux" ]]; then
-    if ! command -v blackhosts &>/dev/null; then
-        echo "Installing blackhosts..."
-        # Find latest .deb release (excluding musl builds)
-        url="$(curl -fsSL https://api.github.com/repos/Lateralus138/blackhosts/releases/latest | \
-            grep 'browser_download_url' | \
-            grep 'blackhosts.deb' | \
-            grep -v 'musl' | \
-            sed 's/.*"browser_download_url": *"\([^"]*\)".*/\1/' | \
-            head -n 1)"
-        
-        if [[ -n "$url" ]]; then
-            temp_deb="/tmp/${url##*/}"
-            curl -fsSL -o "$temp_deb" "$url"
-            ${SUDO} dpkg -i --force-overwrite "$temp_deb"
-            rm -f "$temp_deb"
-            echo "✓ blackhosts installed"
-        fi
-    else
-        echo "✓ blackhosts already installed"
-    fi
-fi
-
 if [[ "$HOST_OS" == "wsl" ]] && ! command -v wslvar &>/dev/null; then
     echo "Installing wslu from PPA..."
     ${SUDO} add-apt-repository ppa:wslutilities/wslu -y
@@ -623,7 +588,12 @@ for source_path in "${!DOTFILE_LINKS[@]}"; do
     
     # Backup if target exists and is not a symlink to THIS dotfiles repo
     if [[ -e "$target" ]]; then
-        resolved_path="$(readlink -f "$target" 2>/dev/null || echo "")"
+        # Get resolved path (macOS-compatible)
+        if [[ "$HOST_OS" == "darwin" ]]; then
+            resolved_path="$(readlink "$target" 2>/dev/null || echo "")"
+        else
+            resolved_path="$(readlink -f "$target" 2>/dev/null || echo "")"
+        fi
         # Only skip if symlink points to our dotfiles directory
         if [[ ! -L "$target" ]] || [[ "${resolved_path}" != "${DOTFILES_ROOT}"/* ]]; then
             if [[ -f "$target" || -d "$target" ]]; then
@@ -646,7 +616,17 @@ echo "✓ Dotfile symlinks installed"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Installing Vim plugins"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-vim -E -c PlugInstall -c qall! 2>/dev/null || echo "WARNING: Vim plugin installation failed"
+
+# Check if vim-plug is available before installing plugins
+if [[ -f "${HOME}/.vim/autoload/plug.vim" ]] || [[ -f "${HOME}/.local/share/vim/autoload/plug.vim" ]]; then
+    if vim -E -c PlugInstall -c qall!; then
+        echo "✓ Vim plugins installed"
+    else
+        echo "WARNING: Vim plugin installation failed"
+    fi
+else
+    echo "WARNING: vim-plug not found, skipping plugin installation"
+fi
 
 #---------------------------------------------------------------------------------------
 # Configure WSL environment
