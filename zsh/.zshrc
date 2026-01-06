@@ -554,7 +554,7 @@ zi light romkatv/powerlevel10k
 
 # 🎨 Fast Syntax Highlighting - Highlights commands as you type in real-time
 # Valid commands = green, invalid = red, helps catch typos before execution
-zi ice lucid wait'0a' depth'1'
+zi ice lucid depth'1'
 zi light zdharma-continuum/fast-syntax-highlighting
 
 # 💡 FZF - Fuzzy finder for files, commands, history
@@ -565,7 +565,13 @@ export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export FZF_ALT_C_COMMAND="fd --type d"
 export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --info=inline"
 export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-range :500 {}'"
-zi ice lucid wait'0' depth'1' atclone'./install --bin' atpull'%atclone' \
+
+# 🧠 FZF keybindings (Ctrl+T, Alt+C, Ctrl+R)
+# NOTE: Lazy load to improve startup time
+zi ice lucid wait'1' atload'source_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/shell/key-bindings.zsh"'
+zi snippet /dev/null
+
+zi ice lucid wait'1' depth'1' atclone'./install --bin' atpull'%atclone' \
   atload'add_to_path_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/bin"'
 zi light junegunn/fzf
 
@@ -580,13 +586,10 @@ zi light Aloxaf/fzf-tab
 zi ice lucid wait'1' depth'1' branch'main'
 zi light Freed-Wu/fzf-tab-source
 
-# NOTE: FZF history search removed - atuin (line 639) provides superior history management
-# with sync, stats, and SQLite backend. Use Ctrl+R for atuin's enhanced search.
-
 # 🔄 ZSH Autosuggestions - Fish-like command suggestions from history
 # Usage: Type command, press → (right arrow) to accept suggestion
 # Shows grayed-out suggestion based on command history as you type
-zi ice lucid wait'0b' depth'1'
+zi ice lucid depth'1'
 zi light zsh-users/zsh-autosuggestions
 
 # 🔁 ZSH Completions - Additional completion definitions for 1000+ commands
@@ -608,19 +611,17 @@ zi light reegnz/jq-zsh-plugin
 
 # 🔥 Fancy Completions - Enhanced completions for modern CLI tools
 # Provides smart completions for gh (GitHub CLI), docker, kubectl, etc.
-zi ice wait'0' lucid depth'1' branch'main'
+zi ice lucid depth'1' branch'main'
 zi light z-shell/zsh-fancy-completions
 
 # 💻 SSH Alias Manager - Manages SSH connection aliases
 # Usage: Creates convenient aliases for SSH hosts from ~/.ssh/config
-zi ice wait'2' lucid depth'1' from'gh'
-zi light sunlei/zsh-ssh
+# zi ice wait'2' lucid depth'1' from'gh'
+# zi light sunlei/zsh-ssh
 
 # ==============================================================================
 # NAVIGATION & FILE MANAGEMENT TOOLS
 # ==============================================================================
-
-# Note: enhancd disabled - replaced by custom cd() function in aliases.zsh with fzf+zoxide integration
 
 # 📁 Zoxide - Fast, smart directory jumper based on frequency
 # Usage: `z <pattern>` - jump to most-frequent matching directory
@@ -650,13 +651,16 @@ zi light eza-community/eza
 # 🌲 Erdtree - Modern file-tree visualization with disk usage
 # Usage: `erdtree` or `et` - shows directory tree with file sizes
 # Alternative to `tree` and `ncdu` with better visuals
-zi ice wait'0' lucid depth'1' from'gh-r' as'command'
+zi ice wait'2' lucid depth'1' from'gh-r' as'command'
 zi light solidiquis/erdtree
+
+zi ice wait'2' lucid depth'1' from'gh-r' as'program' pick'*/dua'
+zi light Byron/dua-cli
 
 # 🔖 ZSHmarks - Directory bookmarking system
 # Usage: `bookmark <name>` - save current dir, `jump <name>` - jump to saved dir
 # `showmarks` - list all bookmarks, `deletemark <name>` - remove bookmark
-zi ice wait'0' lucid depth'1'
+zi ice wait'2' lucid depth'1'
 zi light jocelynmallon/zshmarks
 
 # ==============================================================================
@@ -744,7 +748,7 @@ zi light bootandy/dust
 
 # 🎨 Delta - Better git diffs with syntax highlighting
 # Don't get wait more than 0, otherwise git diff stops working
-zi ice wait'0' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/delta'
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/delta'
 zi light dandavison/delta
 
 # 📁 Duf - Modern df alternative
@@ -782,7 +786,7 @@ zi light wfxr/forgit
 # 🌐 Git-Open - Open current repo in browser (GitHub/GitLab/Bitbucket)
 # Usage: `git open` - opens repo URL in browser
 # `git open --issue` - opens issues page
-zi ice wait'0' lucid depth'1'
+zi ice wait'2' lucid depth'1'
 zi light paulirish/git-open
 
 # 🛠️ Git-Extras - Collection of 60+ git utilities
@@ -807,22 +811,15 @@ zi light tj/git-extras
 # zi ice lucid wait'1' depth'1'
 # zi light dominik-schwabe/zsh-fnm
 
-
-# 📦 Better NPM Completion - Enhanced tab completion for npm/yarn/pnpm
-# Usage: `npm install <TAB>` - shows package suggestions from npm registry
-# Works for npm, yarn, and pnpm commands
-zi ice wait'0' lucid depth'1' as'completion'
-zi light lukechilds/zsh-better-npm-completion
-
 # 🎨 Laravel Artisan Completion - Smart completions for Laravel Artisan
 # Usage: `php artisan <TAB>` - shows available artisan commands
 # Works with Docker alias `pa` as well
-zi ice wait'0' lucid depth'1'
+zi ice wait'2' lucid depth'1'
 zi light jessarcher/zsh-artisan
 
 # # 🎼 Composer Completion - Tab completion for Composer commands
 # # Usage: `composer <TAB>` - shows composer commands and package names
-# zi ice wait'0' lucid depth'1' as'completion'
+# zi ice wait'2' lucid depth'1' as'completion'
 # zi snippet https://github.com/composer/composer/blob/main/res/composer-completion.zsh
 
 # ==============================================================================
@@ -870,10 +867,7 @@ source_if_exists "${ZDOTDIR}/.p10k.zsh"
 # NOTE: Removed - already handled by add_to_path_if_exists "${CARGO_HOME}/bin" at line 113
 # source_if_exists "${CARGO_HOME}/env"
 
-# 🧠 FZF keybindings (Ctrl+T, Alt+C, Ctrl+R)
-# NOTE: Lazy load to improve startup time
-zi ice lucid wait'0' atload'source_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/shell/key-bindings.zsh"'
-zi snippet /dev/null
+
 
 # ⚡️ Envman – environment loader
 # NOTE: Commented out - envman not installed
