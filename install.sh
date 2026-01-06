@@ -22,15 +22,15 @@ readonly -a DARWIN_PACKAGES=(
 )
 
 readonly -a LINUX_PACKAGES=(
-    build-essential git tmux htop curl zsh fonts-powerline
+    build-essential git tmux htop curl wget zsh fonts-powerline
     xclip p7zip-full zip unzip
-    unrar wipe cmake net-tools xsel exuberant-ctags rsync
-    libncurses5-dev libncursesw5-dev util-linux-extra pcre2-utils jq
+    unrar wipe cmake exuberant-ctags rsync
+    libncurses5-dev libncursesw5-dev util-linux-extra pcre2-utils
     autoconf automake libtool pkg-config  # Build dependencies
     libssl-dev libcurl4-openssl-dev zlib1g-dev libffi-dev libreadline-dev  # Development libraries
     libbz2-dev libsqlite3-dev tk-dev liblzma-dev  # Python build dependencies
     man-db less openssh-client software-properties-common  # Essential utilities
-    strace gdb lsb-release shellcheck tree  # Debugging & development tools
+    strace gdb lsb-release shellcheck tree lsof ncdu  # Debugging & development tools
     pass gnupg2 pinentry-curses  # Secret management
 )
 
@@ -66,35 +66,13 @@ declare -A DOTFILE_LINKS=(
 
 # Source centralized POSIX-compatible OS detection
 # Shared with .zshrc for consistency
-if [[ -f "${DOTFILES_ROOT}/zsh/functions/detect_os.sh" ]]; then
-    source "${DOTFILES_ROOT}/zsh/functions/detect_os.sh"
-else
-    # Fallback if detect_os.sh doesn't exist yet (first-time bootstrap)
-    echo "WARNING: detect_os.sh not found, using inline detection"
-    case "${OSTYPE}" in
-        linux-gnu*)
-            if [[ -f /proc/sys/kernel/osrelease ]] && grep -qi microsoft /proc/sys/kernel/osrelease 2>/dev/null; then
-                HOST_OS="wsl"
-            else
-                HOST_OS="linux"
-            fi
-            ;;
-        darwin*)
-            HOST_OS="darwin"
-            ;;
-        *)
-            HOST_OS="linux"
-            ;;
-    esac
-
-    if [[ "${HOST_OS}" == "darwin" ]] || (command -v dpkg-query &>/dev/null && dpkg-query -W -f='${Status}' ubuntu-desktop 2>/dev/null | grep -q "install ok installed"); then
-        HOST_LOCATION="desktop"
-    else
-        HOST_LOCATION="server"
-    fi
-
-    export HOST_OS HOST_LOCATION
+if [[ ! -f "${DOTFILES_ROOT}/zsh/functions/detect_os.sh" ]]; then
+    echo "ERROR: detect_os.sh not found at ${DOTFILES_ROOT}/zsh/functions/detect_os.sh"
+    echo "Your dotfiles repository may be incomplete or corrupted"
+    exit 1
 fi
+
+source "${DOTFILES_ROOT}/zsh/functions/detect_os.sh"
 export LOCAL_CONFIG="${HOME}/.config"
 export XDG_CONFIG_HOME="${HOME}/.config"
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
@@ -102,7 +80,6 @@ export ADOTDIR="${ZDOTDIR}/antigen"
 export ZSH="${ZDOTDIR}"
 export ZSH_CACHE_DIR="${ZSH}/cache"
 export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
-export NVM_DIR="${XDG_CONFIG_HOME}/.nvm"
 export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
 export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export TERM=xterm-256color
@@ -201,7 +178,8 @@ if [[ "${HOST_OS}" == "darwin" ]]; then
         elif [[ -x "/usr/local/bin/brew" ]]; then
             brew_prefix="/usr/local"
         else
-            brew_prefix="/opt/homebrew"
+            echo "ERROR: Homebrew installation failed - brew binary not found"
+            exit 1
         fi
 
         {
@@ -311,13 +289,6 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing Python via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Check for existing Python installation
-if command -v python3 &>/dev/null && [[ ! -f "${ASDF_DATA_DIR}/shims/python3" ]]; then
-    existing_python="$(command -v python3)"
-    echo "⚠ Existing Python installation: ${existing_python}"
-    echo "  asdf-managed Python will take precedence"
-fi
-
 # Add python plugin
 if ! asdf plugin add python; then
     echo "ERROR: Failed to add python plugin"
@@ -367,32 +338,28 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing uv via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Check for existing uv installation
-if command -v uv &>/dev/null && [[ ! -f "${ASDF_DATA_DIR}/shims/uv" ]]; then
-    existing_uv="$(command -v uv)"
-    echo "⚠ Existing uv installation: ${existing_uv}"
-    echo "  asdf-managed uv will take precedence"
-fi
-
 # Add uv plugin
 if ! asdf plugin add uv; then
-    echo "WARNING: Failed to add uv plugin, skipping"
-else
-    # Install latest uv
-    if ! asdf install uv latest; then
-        echo "WARNING: Failed to install uv, skipping"
-    else
-        # Set as global default
-        asdf set uv latest --home
-
-        # Verify installation
-        if uv --version; then
-            echo "✓ uv installed via asdf: $(uv --version)"
-        else
-            echo "WARNING: uv not available after asdf installation"
-        fi
-    fi
+    echo "ERROR: Failed to add uv plugin"
+    exit 1
 fi
+
+# Install latest uv
+if ! asdf install uv latest; then
+    echo "ERROR: Failed to install uv"
+    exit 1
+fi
+
+# Set as global default
+asdf set uv latest --home
+
+# Verify installation
+if ! uv --version; then
+    echo "ERROR: uv not available after asdf installation"
+    exit 1
+fi
+
+echo "✓ uv installed via asdf: $(uv --version)"
 
 # Configure zsh as default shell
 zsh_path=$(command -v zsh)
@@ -415,13 +382,6 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing Vim via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Check for existing Vim installation
-if command -v vim &>/dev/null && [[ ! -f "${ASDF_DATA_DIR}/shims/vim" ]]; then
-    existing_vim="$(command -v vim)"
-    echo "⚠ Existing Vim installation: ${existing_vim}"
-    echo "  asdf-managed Vim will take precedence"
-fi
-
 # Install Vim-specific build dependencies (asdf-vim builds from source)
 # (build-essential, libncurses*, python3-dev, git already in LINUX_PACKAGES)
 if [[ "${HOST_OS}" != "darwin" ]]; then
@@ -430,120 +390,29 @@ fi
 
 # Add vim plugin
 if ! asdf plugin add vim; then
-    echo "WARNING: Failed to add vim plugin, skipping"
-else
-    # Configure Vim build options (Python3, Ruby, Lua, Perl support)
-    export ASDF_VIM_CONFIG="--with-features=huge --enable-multibyte --enable-rubyinterp=yes --enable-python3interp=yes --enable-perlinterp=yes --enable-luainterp=yes --enable-cscope --enable-fail-if-missing --disable-gui --without-x"
-
-    # Install latest Vim (asdf-vim builds from source)
-    if ! asdf install vim latest; then
-        echo "WARNING: Failed to install Vim, skipping"
-    else
-        # Set as global default
-        asdf set vim latest --home
-
-        # Verify installation
-        if vim --version | head -1; then
-            echo "✓ Vim installed via asdf: $(vim --version | head -1)"
-        else
-            echo "WARNING: Vim not available after asdf installation"
-        fi
-    fi
+    echo "ERROR: Failed to add vim plugin"
+    exit 1
 fi
 
-# NOTE: Old source-build installation preserved below for reference
-# Commented out - Vim is now managed by asdf
-#
-# need_vim_install=false
-#
-# if ! command -v vim &>/dev/null; then
-#     need_vim_install=true
-# else
-#     current_version="$(vim --version 2>/dev/null | awk 'NR==1 {print $5}')"
-#     major_version="${current_version%%.*}"
-#
-#     if [[ ! "$major_version" =~ ^[0-9]+$ ]]; then
-#         echo "WARNING: Cannot parse vim version ${current_version}, rebuilding"
-#         need_vim_install=true
-#         elif (( major_version < VIM_MIN_VERSION )); then
-#         echo "Vim $current_version outdated, upgrading to ${VIM_MIN_VERSION}+"
-#         need_vim_install=true
-#     else
-#         echo "✓ Vim $current_version meets requirements (>= $VIM_MIN_VERSION)"
-#     fi
-# fi
-#
-# if [[ "$need_vim_install" == "true" ]]; then
-#     echo "Building Vim ${VIM_MIN_VERSION}+ from source..."
-#
-#     if ! command -v python3-config &>/dev/null; then
-#         echo "ERROR: python3-dev not found"
-#         echo "Install it with: sudo apt-get install python3-dev"
-#         exit 1
-#     fi
-#
-#     py3_config="$(python3-config --configdir 2>&1)"
-#     if [[ ! -d "${py3_config}" ]]; then
-#         echo "ERROR: Invalid python3-config: ${py3_config}"
-#         exit 1
-#     fi
-#
-#     # Cleanup function for failed builds
-#     cleanup_vim() {
-#         [[ -d vim ]] && rm -rf vim
-#     }
-#     trap cleanup_vim EXIT
-#
-#     # Install Vim-specific build dependencies
-#     # (build-essential, libncurses*, python3-dev, git already in LINUX_PACKAGES)
-#     sudo apt-get install -y \
-#     ruby-dev lua5.3 liblua5.3-dev libperl-dev
-#
-#     # Clone with retry logic
-#     max_retries=3
-#     retry_count=0
-#     while (( retry_count < max_retries )); do
-#         if git clone --depth=1 https://github.com/vim/vim.git; then
-#             break
-#         fi
-#         ((retry_count++))
-#         if (( retry_count < max_retries )); then
-#             echo "Clone failed, retrying (${retry_count}/${max_retries})..."
-#             sleep 2
-#         else
-#             echo "ERROR: Failed to clone Vim repository after ${max_retries} attempts"
-#             exit 1
-#         fi
-#     done
-#
-#     cd vim/src
-#
-#     ./configure \
-#     --with-features=huge \
-#     --enable-multibyte \
-#     --enable-rubyinterp=yes \
-#     --enable-python3interp=yes \
-#     --enable-perlinterp=yes \
-#     --enable-luainterp=yes \
-#     --enable-cscope \
-#     --enable-fail-if-missing \
-#     --disable-gui \
-#     --without-x \
-#     --prefix=/usr/local \
-#     --with-tlib=ncurses \
-#     --with-python3-config-dir="${py3_config}"
-#
-#     # Cap parallel jobs to avoid OOM on low-memory systems (e.g., 1GB VPS)
-#     nproc_count=$(nproc)
-#     max_jobs=$((nproc_count < 4 ? nproc_count : 4))
-#     make -j"${max_jobs}"
-#     sudo make install
-#
-#     cd ../..
-#     rm -rf vim
-#     trap - EXIT  # Remove trap on success
-#     echo "✓ Vim ${VIM_MIN_VERSION}+ installed"
-# fi
+# Configure Vim build options (Python3, Ruby, Lua, Perl support)
+export ASDF_VIM_CONFIG="--with-features=huge --enable-multibyte --enable-rubyinterp=yes --enable-python3interp=yes --enable-perlinterp=yes --enable-luainterp=yes --enable-cscope --enable-fail-if-missing --disable-gui --without-x"
+
+# Install latest Vim (asdf-vim builds from source)
+if ! asdf install vim latest; then
+    echo "ERROR: Failed to install Vim"
+    exit 1
+fi
+
+# Set as global default
+asdf set vim latest --home
+
+# Verify installation
+if ! vim --version | head -1; then
+    echo "ERROR: Vim not available after asdf installation"
+    exit 1
+fi
+
+echo "✓ Vim installed via asdf: $(vim --version | head -1)"
 
 #---------------------------------------------------------------------------------------
 # Install Rust via asdf
@@ -552,80 +421,28 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing Rust via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Check for existing Rust installation
-if command -v cargo &>/dev/null && [[ ! -f "${ASDF_DATA_DIR}/shims/cargo" ]]; then
-    existing_cargo="$(command -v cargo)"
-    echo "⚠ Existing Rust installation: ${existing_cargo}"
-    echo "  asdf-managed Rust will take precedence"
-fi
-
 # Add rust plugin
 if ! asdf plugin add rust; then
-    echo "WARNING: Failed to add rust plugin, skipping"
-else
-    # Install latest stable Rust (asdf-rust uses standalone installers, not rustup)
-    if ! asdf install rust latest; then
-        echo "WARNING: Failed to install Rust, skipping"
-    else
-        # Set as global default
-        asdf set rust latest --home
-
-        # Verify installation
-        if cargo --version; then
-            echo "✓ Rust installed via asdf: $(cargo --version)"
-        else
-            echo "WARNING: Cargo not available after asdf installation"
-        fi
-    fi
+    echo "ERROR: Failed to add rust plugin"
+    exit 1
 fi
 
-# NOTE: Old rustup-based installation preserved below for reference
-# Commented out - Rust is now managed by asdf
-#
-# if ! command -v cargo &>/dev/null; then
-#     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-#     echo "  Installing Rust toolchain"
-#     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-#
-#     # Download rustup installer
-#     temp_rustup="/tmp/rustup-init-$$.sh"
-#     if ! curl https://sh.rustup.rs -sSf -o "$temp_rustup"; then
-#         echo "ERROR: Failed to download rustup installer"
-#         rm -f "$temp_rustup"
-#         exit 1
-#     fi
-#
-#     # Run installer
-#     if ! RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup" \
-#     CARGO_HOME="${XDG_CONFIG_HOME}/.cargo" \
-#     sh "$temp_rustup" -y; then
-#         echo "ERROR: Rust installation failed"
-#         rm -f "$temp_rustup"
-#         exit 1
-#     fi
-#     rm -f "$temp_rustup"
-#
-#     # Source cargo environment
-#     if [[ -f "${XDG_CONFIG_HOME}/.cargo/env" ]]; then
-#         source "${XDG_CONFIG_HOME}/.cargo/env"
-#     else
-#         echo "ERROR: Cargo environment file not found"
-#         exit 1
-#     fi
-#
-#     # Verify cargo is now available
-#     if ! command -v cargo &>/dev/null; then
-#         echo "ERROR: Cargo not found after Rust installation"
-#         exit 1
-#     fi
-#
-#     rustup install stable || echo "WARNING: Failed to install stable toolchain"
-#     rustup default stable || echo "WARNING: Failed to set default toolchain"
-#
-#     echo "✓ Rust toolchain installed"
-# else
-#     echo "✓ Rust already installed (cargo found)"
-# fi
+# Install latest stable Rust (asdf-rust uses standalone installers, not rustup)
+if ! asdf install rust latest; then
+    echo "ERROR: Failed to install Rust"
+    exit 1
+fi
+
+# Set as global default
+asdf set rust latest --home
+
+# Verify installation
+if ! cargo --version; then
+    echo "ERROR: Cargo not available after asdf installation"
+    exit 1
+fi
+
+echo "✓ Rust installed via asdf: $(cargo --version)"
 
 #---------------------------------------------------------------------------------------
 # Install Go via asdf
@@ -634,32 +451,28 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing Go via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Check for existing Go installation
-if command -v go &>/dev/null && [[ ! -f "${ASDF_DATA_DIR}/shims/go" ]]; then
-    existing_go="$(command -v go)"
-    echo "⚠ Existing Go installation: ${existing_go}"
-    echo "  asdf-managed Go will take precedence"
-fi
-
 # Add golang plugin
 if ! asdf plugin add golang; then
-    echo "WARNING: Failed to add golang plugin, skipping"
-else
-    # Install latest Go
-    if ! asdf install golang latest; then
-        echo "WARNING: Failed to install Go, skipping"
-    else
-        # Set as global default
-        asdf set golang latest --home
-
-        # Verify installation
-        if go version; then
-            echo "✓ Go installed via asdf: $(go version)"
-        else
-            echo "WARNING: Go not available after asdf installation"
-        fi
-    fi
+    echo "ERROR: Failed to add golang plugin"
+    exit 1
 fi
+
+# Install latest Go
+if ! asdf install golang latest; then
+    echo "ERROR: Failed to install Go"
+    exit 1
+fi
+
+# Set as global default
+asdf set golang latest --home
+
+# Verify installation
+if ! go version; then
+    echo "ERROR: Go not available after asdf installation"
+    exit 1
+fi
+
+echo "✓ Go installed via asdf: $(go version)"
 
 #---------------------------------------------------------------------------------------
 # Install Node.js via asdf
@@ -668,33 +481,34 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing Node.js via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Check for existing Node.js installation
-if command -v node &>/dev/null && [[ ! -f "${ASDF_DATA_DIR}/shims/node" ]]; then
-    existing_node="$(command -v node)"
-    echo "⚠ Existing Node.js installation: ${existing_node}"
-    echo "  asdf-managed Node.js will take precedence"
-fi
-
 # Add nodejs plugin
 if ! asdf plugin add nodejs; then
-    echo "WARNING: Failed to add nodejs plugin, skipping"
-else
-    # Install latest Node.js LTS
-    if ! asdf install nodejs lts; then
-        echo "WARNING: Failed to install Node.js, skipping"
-    else
-        # Set as global default
-        asdf set nodejs lts --home
-
-        # Verify installation
-        if node --version && npm --version; then
-            echo "✓ Node.js installed via asdf: $(node --version)"
-            echo "✓ npm installed: $(npm --version)"
-        else
-            echo "WARNING: Node.js not available after asdf installation"
-        fi
-    fi
+    echo "ERROR: Failed to add nodejs plugin"
+    exit 1
 fi
+
+# Install latest Node.js LTS
+if ! asdf install nodejs lts; then
+    echo "ERROR: Failed to install Node.js"
+    exit 1
+fi
+
+# Set as global default
+asdf set nodejs lts --home
+
+# Verify installation
+if ! node --version; then
+    echo "ERROR: Node.js not available after asdf installation"
+    exit 1
+fi
+
+if ! npm --version; then
+    echo "ERROR: npm not available after Node.js installation"
+    exit 1
+fi
+
+echo "✓ Node.js installed via asdf: $(node --version)"
+echo "✓ npm installed: $(npm --version)"
 
 #---------------------------------------------------------------------------------------
 # Install broot via asdf
@@ -703,41 +517,28 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing broot via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Check for existing broot installation
-if command -v broot &>/dev/null && [[ ! -f "${ASDF_DATA_DIR}/shims/broot" ]]; then
-    existing_broot="$(command -v broot)"
-    echo "⚠ Existing broot installation: ${existing_broot}"
-    echo "  asdf-managed broot will take precedence"
-fi
-
 # Add broot plugin
 if ! asdf plugin add broot https://github.com/cmur2/asdf-broot.git; then
-    echo "WARNING: Failed to add broot plugin, skipping"
-else
-    # Install latest broot (uses pre-built binaries, no Rust compilation needed)
-    if ! asdf install broot latest; then
-        echo "WARNING: Failed to install broot, skipping"
-    else
-        # Set as global default
-        asdf set broot latest --home
-
-        # Verify installation
-        if broot --version; then
-            echo "✓ broot installed via asdf: $(broot --version)"
-        else
-            echo "WARNING: broot not available after asdf installation"
-        fi
-    fi
+    echo "ERROR: Failed to add broot plugin"
+    exit 1
 fi
 
-# NOTE: Old cargo-based installation preserved below for reference
-# Commented out - broot is now managed by asdf
-#
-# if ! command -v broot &>/dev/null; then
-#     echo "Installing broot..."
-#     sudo apt install -y libxcb1-dev libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev 2>/dev/null || true
-#     cargo install broot --locked --features clipboard
-# fi
+# Install latest broot (uses pre-built binaries, no Rust compilation needed)
+if ! asdf install broot latest; then
+    echo "ERROR: Failed to install broot"
+    exit 1
+fi
+
+# Set as global default
+asdf set broot latest --home
+
+# Verify installation
+if ! broot --version; then
+    echo "ERROR: broot not available after asdf installation"
+    exit 1
+fi
+
+echo "✓ broot installed via asdf: $(broot --version)"
 
 #---------------------------------------------------------------------------------------
 # Install platform-specific tools
@@ -747,8 +548,11 @@ if [[ "$HOST_LOCATION" == "desktop" && "$HOST_OS" == "linux" ]]; then
         echo "Installing blackhosts..."
         # Find latest .deb release (excluding musl builds)
         url="$(curl -fsSL https://api.github.com/repos/Lateralus138/blackhosts/releases/latest | \
-            jq -r '.assets[] | select(.name | contains("blackhosts.deb") and (contains("musl") | not)) | .browser_download_url' | \
-        head -n 1)"
+            grep 'browser_download_url' | \
+            grep 'blackhosts.deb' | \
+            grep -v 'musl' | \
+            sed 's/.*"browser_download_url": *"\([^"]*\)".*/\1/' | \
+            head -n 1)"
         
         if [[ -n "$url" ]]; then
             temp_deb="/tmp/${url##*/}"
@@ -787,11 +591,9 @@ if [[ "$HOST_LOCATION" == "desktop" && "$HOST_OS" == "linux" ]]; then
         done
         
         # Install fonts (source aliases with error handling)
-        if [[ -f "${DOTFILES_ROOT}/zsh/aliases.zsh" ]]; then
-            source "${DOTFILES_ROOT}/zsh/aliases.zsh" || true
-            if command -v install-font-subdirectories &>/dev/null; then
-                install-font-subdirectories "$install_dir"
-            fi
+        source "${DOTFILES_ROOT}/zsh/aliases.zsh" || true
+        if command -v install-font-subdirectories &>/dev/null; then
+            install-font-subdirectories "$install_dir"
         fi
         
         rm -rf "$install_dir"
