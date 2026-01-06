@@ -600,11 +600,6 @@ zi light zsh-users/zsh-completions
 zi ice wait'2' lucid depth'1'
 zi light MichaelAquilina/zsh-you-should-use
 
-# ⌨️ ZSH Autopair - Auto-closes quotes, brackets, and parentheses
-# Usage: Automatic - type '(' and it adds ')', type '"' and it adds closing '"'
-zi ice lucid depth'1'
-zi light hlissner/zsh-autopair
-
 # 🧙‍♂️ JQ ZSH Plugin - Interactive jq query builder
 # Usage: Type JSON command | (press Alt+J) - opens interactive jq builder
 # Helps construct complex jq queries visually
@@ -625,18 +620,7 @@ zi light sunlei/zsh-ssh
 # NAVIGATION & FILE MANAGEMENT TOOLS
 # ==============================================================================
 
-# 📁 Enhancd - DISABLED in favor of custom cd() function (aliases.zsh:61)
-# Reason: Custom implementation provides better fzf integration with zoxide
-# and more control over directory selection UX
-# Usage: `cd` - fuzzy search through visited directories
-# Usage: `cd ..` multiple times - interactive selection of parent dirs
-# export ENHANCD_DISABLE_DOT=1
-# export ENHANCD_FILTER="fzf"
-# export ENHANCD_COMMAND="cd"
-# export ENHANCD_DIR_PATH_STYLE="full"
-# export ENHANCD_DIVE_MAX=10
-# zi ice lucid wait'2' depth'1' src'init.sh' branch'main'
-# zi light babarot/enhancd
+# Note: enhancd disabled - replaced by custom cd() function in aliases.zsh with fzf+zoxide integration
 
 # 📁 Zoxide - Fast, smart directory jumper based on frequency
 # Usage: `z <pattern>` - jump to most-frequent matching directory
@@ -699,20 +683,6 @@ zi light sharkdp/bat
 zi ice wait'2' lucid from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"
 zi light sharkdp/fd
 
-# 🔬 XSV - Fast CSV command line toolkit
-# Usage: `xsv stats data.csv` - show column statistics
-# `xsv select column1,column2 data.csv` - select columns
-zi ice wait'2' lucid depth'1' from'gh' as'command' atclone'"${CARGO_HOME}/bin/cargo" build --release' pick'target/release/xsv' atpull'%atclone'
-zi light BurntSushi/xsv
-
-# 📊 CSVtool - Pandas-powered CSV manipulation tool
-# Usage: `csvtool filter data.csv` - interactive CSV filtering
-zi ice wait'2' lucid as'program' pick='csvtool/csvtool.py' \
-  atclone'python3 -m venv venv && venv/bin/pip install pandas openpyxl' \
-  atpull'%atclone' \
-  cmd'./venv/bin/python csvtool "$@"'
-zi light maroofi/csvtool
-
 # 🧼 SD - Intuitive find & replace CLI (better than sed)
 # Usage: `sd before after file.txt` - simpler syntax than sed
 # `sd '\d+' '[$0]' file.txt` - regex with capture groups
@@ -730,11 +700,6 @@ zi light jqlang/jq
 # Helps construct complex command pipelines with live preview
 zi ice wait'2' lucid depth'1' from'gh-r' as'command'
 zi light akavel/up
-
-# 📷 Imcat - Display images directly in terminal
-# Usage: `imcat image.png` - renders image in terminal (kitty/iTerm2)
-zi ice wait'2' lucid depth'1' from'gh' as'command' make pick'imcat'
-zi light stolk/imcat
 
 # 📊 QSV - Ultra-fast CSV toolkit with Python integration
 # Usage: `qsv stats data.csv` - advanced CSV statistics and operations
@@ -786,9 +751,9 @@ zi light dandavison/delta
 zi ice wait'2' lucid from'gh-r' as'command' bpick'*linux_x86_64.tar.gz' pick'*/duf'
 zi light muesli/duf
 
-# 🐶 Dog - Modern dig alternative
-zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.zip' pick'*/bin/dog'
-zi light ogham/dog
+# 🐶 Doggo - Modern dig alternative with better output
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*Linux_x86_64.tar.gz' pick'doggo'
+zi light mr-karan/doggo
 
 # 🦎 Lazygit - TUI for git
 zi ice wait'2' lucid from'gh-r' as'command' bpick'*Linux_x86_64.tar.gz' pick'lazygit'
@@ -824,7 +789,7 @@ zi light paulirish/git-open
 # Usage: `git summary` - repo summary, `git effort` - show file activity
 # `git changelog` - generate changelog, `git ignore` - add to .gitignore
 # Full list: https://github.com/tj/git-extras/blob/master/Commands.md
-zi ice wait'0' lucid depth'1' as'program' pick'$ZPFX/bin/git-*' make'PREFIX=$ZPFX' nocompile
+zi ice wait'2' lucid depth'1' as'program' pick'$ZPFX/bin/git-*' make'PREFIX=$ZPFX' nocompile
 zi light tj/git-extras
 
 # ==============================================================================
@@ -869,8 +834,6 @@ zi snippet OMZP::sudo             # Usage: Press ESC twice to prefix previous co
 # OMZP::extract removed - using custom extract() function from aliases.zsh
 zi snippet OMZP::copyfile         # Usage: `copyfile file.txt` - copies file contents to clipboard
 zi snippet OMZP::dirhistory       # Usage: Alt+Left/Right arrows to navigate directory history
-# 581 ms - OMZP::docker-compose
-# # zi snippet OMZP::docker-compose   # DISABLED: Very slow (581ms) - Replaced with cached native completions
 
 #=======================================================================================
 # Autocompletion
