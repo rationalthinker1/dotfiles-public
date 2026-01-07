@@ -734,8 +734,7 @@ zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.
 zi light ClementTsang/bottom
 
 # 🔥 Tokei - Fast code statistics
-zi ice wait'2' lucid from'gh' as'program' pick'target/release/tokei' \
-  atclone'cargo build --release --locked' atpull'%atclone'
+zi ice wait'2' lucid from'gh-r' as'program' pick'*/tokei'
 zi light XAMPPRocky/tokei
 
 # ⚡ Hyperfine - Command benchmarking

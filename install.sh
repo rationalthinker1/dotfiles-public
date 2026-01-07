@@ -209,7 +209,7 @@ echo "  Installing asdf version manager"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # XDG-compliant asdf installation (v0.16.0+ is a Go binary, not Bash scripts)
-readonly ASDF_VERSION="v0.16.0"
+readonly ASDF_VERSION="v0.18.0"
 export ASDF_DATA_DIR="${XDG_CONFIG_HOME}/asdf"
 export ASDF_DIR="${ASDF_DATA_DIR}"
 
@@ -267,25 +267,32 @@ fi
 echo "asdf version: $(asdf --version)"
 
 #---------------------------------------------------------------------------------------
-# Install Python via asdf
+# Install Python via asdf (Stable)
 #---------------------------------------------------------------------------------------
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Installing Python via asdf"
+echo "  Installing Latest Stable Python via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Add python plugin (ignore error if already exists)
+# Add python plugin
 asdf plugin add python 2>/dev/null || true
 
-# Install latest Python 3 (skip if already installed)
-asdf install python latest:3 2>/dev/null || echo "  (skipping - may already be installed)"
+# Identify the latest stable version (excludes -dev, a, b, or rc tags)
+STABLE_PYTHON=$(asdf list all python | grep -v "[a-z]" | grep -E "^3\.[0-9]+\.[0-9]+$" | tail -1)
 
-# Set as global default
-asdf set python latest:3 --home 2>/dev/null || true
+echo "  Targeting stable version: $STABLE_PYTHON"
 
-# Reshim to ensure python is available
+# Install if not present
+if ! asdf list python | grep -q "$STABLE_PYTHON"; then
+    asdf install python "$STABLE_PYTHON"
+else
+    echo "  (skipping - $STABLE_PYTHON is already installed)"
+fi
+
+# Set global default
+asdf global python "$STABLE_PYTHON"
+
+# Reshim and Verify
 asdf reshim python
-
-# Verify installation
 if ! python3 --version; then
     echo "ERROR: Python not available after asdf installation"
     exit 1
