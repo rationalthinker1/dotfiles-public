@@ -276,14 +276,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 # Add python plugin (ignore error if already exists)
 asdf plugin add python 2>/dev/null || true
 
-# Install latest Python 3
-if ! asdf install python latest:3; then
-    echo "ERROR: Failed to install Python"
-    exit 1
-fi
+# Install latest Python 3 (skip if already installed)
+asdf install python latest:3 2>/dev/null || echo "  (skipping - may already be installed)"
 
 # Set as global default
-asdf set python latest:3 --home
+asdf set python latest:3 --home 2>/dev/null || true
 
 # Reshim to ensure python is available
 asdf reshim python
@@ -325,14 +322,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 # Add uv plugin (ignore error if already exists)
 asdf plugin add uv 2>/dev/null || true
 
-# Install latest uv
-if ! asdf install uv latest; then
-    echo "ERROR: Failed to install uv"
-    exit 1
-fi
+# Install latest uv (skip if already installed)
+asdf install uv latest 2>/dev/null || echo "  (skipping - may already be installed)"
 
 # Set as global default
-asdf set uv latest --home
+asdf set uv latest --home 2>/dev/null || true
 
 # Reshim to ensure uv is available
 asdf reshim uv
@@ -382,14 +376,11 @@ asdf plugin add vim 2>/dev/null || true
 # Configure Vim build options (Python3, Ruby, Lua, Perl support)
 export ASDF_VIM_CONFIG="--with-features=huge --enable-rubyinterp=yes --enable-python3interp=yes --enable-perlinterp=yes --enable-luainterp=yes --enable-cscope --enable-fail-if-missing --disable-gui --without-x"
 
-# Install latest Vim (asdf-vim builds from source)
-if ! asdf install vim latest; then
-    echo "ERROR: Failed to install Vim"
-    exit 1
-fi
+# Install latest Vim (asdf-vim builds from source, skip if already installed)
+asdf install vim latest 2>/dev/null || echo "  (skipping - may already be installed)"
 
 # Set as global default
-asdf set vim latest --home
+asdf set vim latest --home 2>/dev/null || true
 
 # Reshim to ensure vim is available
 asdf reshim vim
@@ -412,14 +403,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 # Add rust plugin (ignore error if already exists)
 asdf plugin add rust 2>/dev/null || true
 
-# Install latest stable Rust (asdf-rust uses standalone installers, not rustup)
-if ! asdf install rust latest; then
-    echo "ERROR: Failed to install Rust"
-    exit 1
-fi
+# Install latest stable Rust (asdf-rust uses standalone installers, not rustup, skip if already installed)
+asdf install rust latest 2>/dev/null || echo "  (skipping - may already be installed)"
 
 # Set as global default
-asdf set rust latest --home
+asdf set rust latest --home 2>/dev/null || true
 
 # Reshim to ensure cargo/rustc are available
 asdf reshim rust
@@ -442,14 +430,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 # Add golang plugin (ignore error if already exists)
 asdf plugin add golang 2>/dev/null || true
 
-# Install latest Go
-if ! asdf install golang latest; then
-    echo "ERROR: Failed to install Go"
-    exit 1
-fi
+# Install latest Go (skip if already installed)
+asdf install golang latest 2>/dev/null || echo "  (skipping - may already be installed)"
 
 # Set as global default
-asdf set golang latest --home
+asdf set golang latest --home 2>/dev/null || true
 
 # Reshim to ensure go is available
 asdf reshim golang
@@ -472,14 +457,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 # Add nodejs plugin (ignore error if already exists)
 asdf plugin add nodejs 2>/dev/null || true
 
-# Install latest Node.js LTS
-if ! asdf install nodejs lts; then
-    echo "ERROR: Failed to install Node.js"
-    exit 1
-fi
+# Install latest Node.js LTS (skip if already installed)
+asdf install nodejs lts 2>/dev/null || echo "  (skipping - may already be installed)"
 
 # Set as global default
-asdf set nodejs lts --home
+asdf set nodejs lts --home 2>/dev/null || true
 
 # Reshim to ensure node/npm are available
 asdf reshim nodejs
@@ -497,36 +479,6 @@ fi
 
 echo "✓ Node.js installed via asdf: $(node --version)"
 echo "✓ npm installed: $(npm --version)"
-
-#---------------------------------------------------------------------------------------
-# Install broot via asdf
-#---------------------------------------------------------------------------------------
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Installing broot via asdf"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-# Add broot plugin (ignore error if already exists)
-asdf plugin add broot https://github.com/cmur2/asdf-broot.git 2>/dev/null || true
-
-# Install latest broot (uses pre-built binaries, no Rust compilation needed)
-if ! asdf install broot latest; then
-    echo "ERROR: Failed to install broot"
-    exit 1
-fi
-
-# Set as global default
-asdf set broot latest --home
-
-# Reshim to ensure broot is available
-asdf reshim broot
-
-# Verify installation
-if ! broot --version; then
-    echo "ERROR: broot not available after asdf installation"
-    exit 1
-fi
-
-echo "✓ broot installed via asdf: $(broot --version)"
 
 #---------------------------------------------------------------------------------------
 # Install platform-specific tools
