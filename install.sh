@@ -289,7 +289,7 @@ else
 fi
 
 # Set global default
-asdf global python "$STABLE_PYTHON"
+asdf set python "$STABLE_PYTHON" --home 
 
 # Reshim and Verify
 asdf reshim python
@@ -365,22 +365,27 @@ if [[ "${HOST_OS}" != "darwin" ]]; then
 fi
 
 #---------------------------------------------------------------------------------------
-# Install Vim via asdf
+# Install Vim via asdf (Stable)
 #---------------------------------------------------------------------------------------
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Installing Vim via asdf"
+echo "  Installing Stable Vim via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Install Vim-specific build dependencies (asdf-vim builds from source)
-# (build-essential, libncurses*, python3-dev, git already in LINUX_PACKAGES)
+# Install Vim-specific build dependencies
 if [[ "${HOST_OS}" != "darwin" ]]; then
     ${SUDO} apt-get install -y ruby-dev lua5.3 liblua5.3-dev libperl-dev 2>/dev/null || true
 fi
 
-# Add vim plugin (ignore error if already exists)
+# Add vim plugin
 asdf plugin add vim 2>/dev/null || true
 
-# Configure Vim build options (Python3, Ruby, Lua, Perl support)
+# Identify the latest stable version (e.g., v9.1.0000)
+# We filter for versions starting with 'v' followed by digits and dots
+STABLE_VIM=$(asdf list all vim | grep -E "^v?[0-9]+\.[0-9]+\.[0-9]+$" | tail -1)
+
+echo "  Targeting stable version: $STABLE_VIM"
+
+# Configure Vim build options
 PY3_CONFIG=$(python3-config --configdir)
 export ASDF_VIM_CONFIG="\
 --with-features=huge \
@@ -394,16 +399,18 @@ export ASDF_VIM_CONFIG="\
 --enable-cscope \
 --enable-fail-if-missing"
 
-# Install latest Vim (asdf-vim builds from source, skip if already installed)
-asdf install vim latest 2>/dev/null || echo "  (skipping - may already be installed)"
+# Install if not present
+if ! asdf list vim | grep -q "$STABLE_VIM"; then
+    asdf install vim "$STABLE_VIM"
+else
+    echo "  (skipping - $STABLE_VIM is already installed)"
+fi
 
-# Set as global default
-asdf set vim latest --home 2>/dev/null || true
+# Set as global default using --home
+asdf set vim "$STABLE_VIM" --home 2>/dev/null || true
 
-# Reshim to ensure vim is available
+# Reshim and Verify
 asdf reshim vim
-
-# Verify installation
 if ! vim --version | head -1; then
     echo "ERROR: Vim not available after asdf installation"
     exit 1
@@ -412,20 +419,30 @@ fi
 echo "✓ Vim installed via asdf: $(vim --version | head -1)"
 
 #---------------------------------------------------------------------------------------
-# Install Rust via asdf
+# Install Rust via asdf (Stable)
 #---------------------------------------------------------------------------------------
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Installing Rust via asdf"
+echo "  Installing Stable Rust via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Add rust plugin (ignore error if already exists)
 asdf plugin add rust 2>/dev/null || true
 
-# Install latest stable Rust (asdf-rust uses standalone installers, not rustup, skip if already installed)
-asdf install rust latest 2>/dev/null || echo "  (skipping - may already be installed)"
+# Identify the latest stable version 
+# Filters for standard X.Y.Z format, excluding nightly/beta strings
+STABLE_RUST=$(asdf list all rust | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$" | tail -1)
 
-# Set as global default
-asdf set rust latest --home 2>/dev/null || true
+echo "  Targeting stable version: $STABLE_RUST"
+
+# Install if not present
+if ! asdf list rust | grep -q "$STABLE_RUST"; then
+    asdf install rust "$STABLE_RUST"
+else
+    echo "  (skipping - $STABLE_RUST is already installed)"
+fi
+
+# Set as global default via --home
+asdf set rust "$STABLE_RUST" --home 2>/dev/null || true
 
 # Reshim to ensure cargo/rustc are available
 asdf reshim rust
@@ -439,20 +456,30 @@ fi
 echo "✓ Rust installed via asdf: $(cargo --version)"
 
 #---------------------------------------------------------------------------------------
-# Install Go via asdf
+# Install Go via asdf (Stable)
 #---------------------------------------------------------------------------------------
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Installing Go via asdf"
+echo "  Installing Stable Go via asdf"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Add golang plugin (ignore error if already exists)
 asdf plugin add golang 2>/dev/null || true
 
-# Install latest Go (skip if already installed)
-asdf install golang latest 2>/dev/null || echo "  (skipping - may already be installed)"
+# Identify the latest stable version
+# Filters for numeric versions (e.g., 1.21.5 or 1.22) and excludes strings like 'rc' or 'beta'
+STABLE_GO=$(asdf list all golang | grep -v "[a-z]" | grep -E "^[0-9]+\.[0-9]+(\.[0-9]+)?$" | tail -1)
 
-# Set as global default
-asdf set golang latest --home 2>/dev/null || true
+echo "  Targeting stable version: $STABLE_GO"
+
+# Install if not present
+if ! asdf list golang | grep -q "$STABLE_GO"; then
+    asdf install golang "$STABLE_GO"
+else
+    echo "  (skipping - $STABLE_GO is already installed)"
+fi
+
+# Set as global default using --home
+asdf set golang "$STABLE_GO" --home 2>/dev/null || true
 
 # Reshim to ensure go is available
 asdf reshim golang
