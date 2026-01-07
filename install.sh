@@ -374,7 +374,18 @@ fi
 asdf plugin add vim 2>/dev/null || true
 
 # Configure Vim build options (Python3, Ruby, Lua, Perl support)
-export ASDF_VIM_CONFIG="--with-features=huge --enable-rubyinterp=yes --enable-python3interp=yes --enable-perlinterp=yes --enable-luainterp=yes --enable-cscope --enable-fail-if-missing --disable-gui --without-x"
+PY3_CONFIG=$(python3-config --configdir)
+export ASDF_VIM_CONFIG="\
+--with-features=huge \
+--enable-multibyte \
+--enable-rubyinterp=yes \
+--enable-python3interp=yes \
+--with-python3-config-dir=${PY3_CONFIG} \
+--enable-perlinterp=yes \
+--disable-gui \
+--without-x \
+--enable-cscope \
+--enable-fail-if-missing"
 
 # Install latest Vim (asdf-vim builds from source, skip if already installed)
 asdf install vim latest 2>/dev/null || echo "  (skipping - may already be installed)"
