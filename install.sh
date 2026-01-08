@@ -208,7 +208,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing asdf version manager"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# XDG-compliant asdf installation (v0.16.0+ is a Go binary, not Bash scripts)
+# XDG-compliant asdf installation
 readonly ASDF_VERSION="v0.18.0"
 export ASDF_DATA_DIR="${XDG_CONFIG_HOME}/asdf"
 export ASDF_DIR="${ASDF_DATA_DIR}"
@@ -300,24 +300,6 @@ fi
 
 echo "✓ Python installed via asdf: $(python3 --version)"
 
-#---------------------------------------------------------------------------------------
-# Install pynvim (Python package for Vim)
-#---------------------------------------------------------------------------------------
-echo "Installing pynvim for Vim..."
-
-# Use asdf-managed Python's pip
-if ! python3 -m pip install --user pynvim; then
-    echo "ERROR: pynvim installation failed"
-    exit 1
-fi
-
-# Verify pynvim is available
-if ! python3 -c "import pynvim" 2>/dev/null; then
-    echo "ERROR: pynvim not importable after installation"
-    exit 1
-fi
-
-echo "✓ pynvim installed"
 
 #---------------------------------------------------------------------------------------
 # Install uv (fast Python package and project manager)
@@ -345,6 +327,23 @@ if ! uv --version; then
 fi
 
 echo "✓ uv installed via asdf: $(uv --version)"
+
+#---------------------------------------------------------------------------------------
+# Install pynvim (Python package for Vim)
+#---------------------------------------------------------------------------------------
+echo "Installing pynvim for Vim..."
+
+# Use asdf-managed Python's pip
+uv tool install pynvim || echo "  (skipping - may already be installed)"
+
+# Verify pynvim is available
+if ! python3 -c "import pynvim" 2>/dev/null; then
+    echo "ERROR: pynvim not importable after installation"
+    exit 1
+fi
+
+echo "✓ pynvim installed"
+
 
 # Configure zsh as default shell
 zsh_path=$(command -v zsh)
@@ -579,6 +578,9 @@ mkdir -p "${XDG_CONFIG_HOME}/zi"
 for source_path in "${!DOTFILE_LINKS[@]}"; do
     source="${DOTFILES_ROOT}/${source_path}"
     target="${DOTFILE_LINKS[$source_path]}"
+
+   # Skip if target is already pointing to the source
+    [[ -L "$target" && "$(readlink "$target")" == "$source" ]] && continue
     
     # Ensure parent directory exists
     mkdir -p "$(dirname "$target")"
