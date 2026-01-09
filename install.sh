@@ -6,7 +6,14 @@ set -euo pipefail
 # Configuration
 #=======================================================================================
 readonly VIM_MIN_VERSION="9"
-readonly DOTFILES_ROOT="${HOME}/.dotfiles"
+# Detect actual user's home (handle sudo correctly)
+if [[ -n "${SUDO_USER:-}" ]] && [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+    # Running with sudo: use the actual user's home, not root's
+    ACTUAL_USER_HOME=$(eval echo ~${SUDO_USER})
+    readonly DOTFILES_ROOT="${ACTUAL_USER_HOME}/.dotfiles"
+else
+    readonly DOTFILES_ROOT="${HOME}/.dotfiles"
+fi
 readonly BACKUP_DIR="${DOTFILES_ROOT}/backup"
 readonly FONTS_DIR="${DOTFILES_ROOT}/fonts"
 
@@ -19,6 +26,10 @@ readonly -a DARWIN_PACKAGES=(
     autoconf automake libtool pkg-config  # Build dependencies
     openssl@3  # Library dependencies
     pass gnupg pinentry-mac  # Secret management
+    python3  # Python 3
+    node  # Node.js (includes npm)
+    go  # Go programming language
+    vim  # Vim editor
 )
 
 readonly -a LINUX_PACKAGES=(
@@ -32,6 +43,10 @@ readonly -a LINUX_PACKAGES=(
     man-db less openssh-client software-properties-common  # Essential utilities
     strace gdb lsb-release shellcheck tree lsof ncdu  # Debugging & development tools
     pass gnupg2 pinentry-curses  # Secret management
+    python3 python3-pip python3-venv python3-dev  # Python 3
+    nodejs npm  # Node.js and npm
+    golang-go  # Go programming language
+    vim vim-gtk3  # Vim 9.1+ with clipboard support
 )
 
 # Symlink mappings
@@ -44,7 +59,6 @@ declare -A DOTFILE_LINKS=(
     [.vimrc]="${HOME}/.vimrc"
     [.vim]="${HOME}/.vim"
     [.gitconfig]="${HOME}/.gitconfig"
-    [.tool-versions]="${HOME}/.tool-versions"
     [zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/zsh"
     [ranger]="${XDG_CONFIG_HOME:-${HOME}/.config}/ranger"
     [sheldon]="${XDG_CONFIG_HOME:-${HOME}/.config}/sheldon"
@@ -87,58 +101,34 @@ export EDITOR=vim
 export LESS="-XRF"
 
 #=======================================================================================
-# Sudo/Root Detection
+# Root Privilege Check
 #=======================================================================================
 
-# Determine if we need sudo (empty if running as root)
-if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
-    SUDO=""
-    echo "✓ Running as root user"
+# This script must run as root for system-wide installation
+if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  ERROR: This script must be run as root"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo
+    echo "Please run with sudo:"
+    echo "  sudo ./install.sh"
+    echo
+    echo "Or run as root in Docker containers:"
+    echo "  docker run -it -v ./:/root/.dotfiles ubuntu:24.04"
+    echo
+    exit 1
+fi
+
+echo "✓ Running as root"
+
+# Detect actual user for file operations (when run with sudo)
+if [[ -n "${SUDO_USER:-}" ]]; then
+    ACTUAL_USER="${SUDO_USER}"
+    ACTUAL_USER_HOME=$(eval echo ~${SUDO_USER})
+    echo "✓ Detected sudo user: ${ACTUAL_USER}"
 else
-    # Check if sudo is available
-    if ! command -v sudo &>/dev/null; then
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "  ERROR: This script requires root privileges"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo
-        echo "You are not running as root and sudo is not available."
-        echo
-        echo "Please either:"
-        echo "  1. Run as root:"
-        echo "     sudo ./install.sh"
-        echo
-        echo "  2. For Docker containers, run without -u flag:"
-        echo "     docker run -it -v ./:/home/ubuntu/.dotfiles ubuntu:24.04"
-        echo
-        echo "  3. Install sudo first (as root):"
-        echo "     apt-get update && apt-get install -y sudo"
-        echo "     usermod -aG sudo <your-username>"
-        echo
-        exit 1
-    fi
-
-    # Verify sudo works (won't prompt in containers with NOPASSWD)
-    if ! sudo -n true 2>/dev/null; then
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "  ERROR: sudo requires authentication"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo
-        echo "sudo is available but requires a password."
-        echo
-        echo "Please either:"
-        echo "  1. Run with sudo:"
-        echo "     sudo ./install.sh"
-        echo
-        echo "  2. For Docker containers, run as root (without -u flag)"
-        echo
-        echo "  3. Configure passwordless sudo (run as root):"
-        echo "     echo '<your-username> ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers.d/<your-username>"
-        echo
-        exit 1
-    fi
-
-    SUDO="sudo"
-    echo "✓ Running with sudo access"
+    ACTUAL_USER="${USER}"
+    ACTUAL_USER_HOME="${HOME}"
 fi
 
 #=======================================================================================
@@ -193,345 +183,57 @@ else
     export DEBIAN_FRONTEND=noninteractive
     export TZ=America/New_York
 
-    ${SUDO} apt-get -y update || { echo "ERROR: apt-get update failed"; exit 1; }
-    ${SUDO} apt-get -y upgrade || echo "WARNING: Package upgrade had issues"
+    apt-get -y update || { echo "ERROR: apt-get update failed"; exit 1; }
+    apt-get -y upgrade || echo "WARNING: Package upgrade had issues"
 
     # Install packages (apt automatically skips already-installed packages)
     echo "Installing Linux packages..."
-    ${SUDO} apt-get install -y "${LINUX_PACKAGES[@]}" || echo "WARNING: Some packages failed to install"
+    apt-get install -y "${LINUX_PACKAGES[@]}" || echo "WARNING: Some packages failed to install"
 fi
 
-#---------------------------------------------------------------------------------------
-# Install asdf version manager
-#---------------------------------------------------------------------------------------
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Installing asdf version manager"
+echo "  Development tools installed"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-# XDG-compliant asdf installation
-readonly ASDF_VERSION="v0.18.0"
-export ASDF_DATA_DIR="${XDG_CONFIG_HOME}/asdf"
-export ASDF_DIR="${ASDF_DATA_DIR}"
-
-# Create necessary directories
-mkdir -p "${ASDF_DATA_DIR}/bin"
-mkdir -p "${ASDF_DATA_DIR}/shims"
-
-# Detect OS and architecture for binary download
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    ASDF_OS="darwin"
-    if [[ "$(uname -m)" == "arm64" ]]; then
-        ASDF_ARCH="arm64"
-    else
-        ASDF_ARCH="amd64"
-    fi
-elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    ASDF_OS="linux"
-    ASDF_ARCH="amd64"
-else
-    echo "ERROR: Unsupported OS: $OSTYPE"
-    exit 1
-fi
-
-# Download asdf binary if not already installed
-if [[ ! -f "${ASDF_DATA_DIR}/bin/asdf" ]]; then
-    echo "Downloading asdf ${ASDF_VERSION} for ${ASDF_OS}-${ASDF_ARCH}..."
-
-    ASDF_DOWNLOAD_URL="https://github.com/asdf-vm/asdf/releases/download/${ASDF_VERSION}/asdf-${ASDF_VERSION}-${ASDF_OS}-${ASDF_ARCH}.tar.gz"
-    ASDF_TEMP_DIR="$(mktemp -d)"
-
-    if curl -fsSL "${ASDF_DOWNLOAD_URL}" -o "${ASDF_TEMP_DIR}/asdf.tar.gz"; then
-        tar -xzf "${ASDF_TEMP_DIR}/asdf.tar.gz" -C "${ASDF_TEMP_DIR}"
-        mv "${ASDF_TEMP_DIR}/asdf" "${ASDF_DATA_DIR}/bin/asdf"
-        chmod +x "${ASDF_DATA_DIR}/bin/asdf"
-        rm -rf "${ASDF_TEMP_DIR}"
-        echo "✓ asdf ${ASDF_VERSION} installed"
-    else
-        echo "ERROR: Failed to download asdf binary from ${ASDF_DOWNLOAD_URL}"
-        rm -rf "${ASDF_TEMP_DIR}"
-        exit 1
-    fi
-else
-    echo "✓ asdf binary found at ${ASDF_DATA_DIR}/bin/asdf"
-fi
-
-# Add asdf to PATH for this script
-export PATH="${ASDF_DATA_DIR}/bin:${ASDF_DATA_DIR}/shims:${PATH}"
-
-# Verify asdf is functional
-if ! command -v asdf &>/dev/null; then
-    echo "ERROR: asdf not found after installation"
-    exit 1
-fi
-
-echo "asdf version: $(asdf --version)"
-
-#---------------------------------------------------------------------------------------
-# Install Python via asdf (Stable)
-#---------------------------------------------------------------------------------------
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Installing Latest Stable Python via asdf"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-# Add python plugin
-asdf plugin add python 2>/dev/null || true
-
-# Identify the latest stable version (excludes -dev, a, b, or rc tags)
-STABLE_PYTHON=$(asdf list all python | grep -v "[a-z]" | grep -E "^3\.[0-9]+\.[0-9]+$" | tail -1)
-
-echo "  Targeting stable version: $STABLE_PYTHON"
-
-# Install if not present
-if ! asdf list python | grep -q "$STABLE_PYTHON"; then
-    asdf install python "$STABLE_PYTHON"
-else
-    echo "  (skipping - $STABLE_PYTHON is already installed)"
-fi
-
-# Set global default
-asdf set python "$STABLE_PYTHON" --home 
-
-# Reshim and Verify
-asdf reshim python
-if ! python3 --version; then
-    echo "ERROR: Python not available after asdf installation"
-    exit 1
-fi
-
-echo "✓ Python installed via asdf: $(python3 --version)"
-
-
-#---------------------------------------------------------------------------------------
-# Install uv (fast Python package and project manager)
-#---------------------------------------------------------------------------------------
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Installing uv via asdf"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-# Add uv plugin (ignore error if already exists)
-asdf plugin add uv 2>/dev/null || true
-
-# Install latest uv (skip if already installed)
-asdf install uv latest 2>/dev/null || echo "  (skipping - may already be installed)"
-
-# Set as global default
-asdf set uv latest --home 2>/dev/null || true
-
-# Reshim to ensure uv is available
-asdf reshim uv
-
-# Verify installation
-if ! uv --version; then
-    echo "ERROR: uv not available after asdf installation"
-    exit 1
-fi
-
-echo "✓ uv installed via asdf: $(uv --version)"
+echo "✓ Python 3: $(python3 --version 2>&1)"
+echo "✓ Node.js: $(node --version 2>&1)"
+echo "✓ npm: $(npm --version 2>&1)"
+echo "✓ Go: $(go version 2>&1)"
+echo "✓ Vim: $(vim --version 2>&1 | head -1)"
 
 #---------------------------------------------------------------------------------------
 # Install pynvim (Python package for Vim)
 #---------------------------------------------------------------------------------------
 echo "Installing pynvim for Vim..."
-
-# Use asdf-managed Python's pip
-uv tool install pynvim || echo "  (skipping - may already be installed)"
-
-# Verify pynvim is available
-if ! python3 -c "import pynvim" 2>/dev/null; then
-    echo "ERROR: pynvim not importable after installation"
-    exit 1
-fi
-
+pip3 install --user pynvim 2>/dev/null || echo "  (skipping - may already be installed)"
+python3 -c "import pynvim" 2>/dev/null || echo "  (pynvim installation may need verification)"
 echo "✓ pynvim installed"
-
 
 # Configure zsh as default shell
 zsh_path=$(command -v zsh)
 if ! grep -qxF "${zsh_path}" /etc/shells 2>/dev/null; then
-    echo "${zsh_path}" | ${SUDO} tee -a /etc/shells >/dev/null
+    echo "${zsh_path}" | tee -a /etc/shells >/dev/null
 fi
 # Change shell (use appropriate method based on privileges)
 if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
     chsh -s "${zsh_path}" "${SUDO_USER:-$USER}" 2>/dev/null || true
 else
-    ${SUDO} chsh -s "${zsh_path}" "$USER" 2>/dev/null || true
+    chsh -s "${zsh_path}" "$USER" 2>/dev/null || true
 fi
 echo "✓ Default shell set to zsh"
 
 # Set clock (Linux only)
 if [[ "${HOST_OS}" != "darwin" ]]; then
-    ${SUDO} hwclock --hctosys 2>/dev/null || true
+    hwclock --hctosys 2>/dev/null || true
 fi
-
-#---------------------------------------------------------------------------------------
-# Install Vim via asdf (Stable)
-#---------------------------------------------------------------------------------------
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Installing Stable Vim via asdf"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-# Install Vim-specific build dependencies
-if [[ "${HOST_OS}" != "darwin" ]]; then
-    ${SUDO} apt-get install -y ruby-dev lua5.3 liblua5.3-dev libperl-dev 2>/dev/null || true
-fi
-
-# Add vim plugin
-asdf plugin add vim 2>/dev/null || true
-
-# Identify the latest stable version (e.g., v9.1.0000)
-# We filter for versions starting with 'v' followed by digits and dots
-STABLE_VIM=$(asdf list all vim | grep -E "^v?[0-9]+\.[0-9]+\.[0-9]+$" | tail -1)
-
-echo "  Targeting stable version: $STABLE_VIM"
-
-# Configure Vim build options
-PY3_CONFIG=$(python3-config --configdir)
-export ASDF_VIM_CONFIG="\
---with-features=huge \
---enable-multibyte \
---enable-rubyinterp=yes \
---enable-python3interp=yes \
---with-python3-config-dir=${PY3_CONFIG} \
---enable-perlinterp=yes \
---disable-gui \
---without-x \
---enable-cscope \
---enable-fail-if-missing"
-
-# Install if not present
-if ! asdf list vim | grep -q "$STABLE_VIM"; then
-    asdf install vim "$STABLE_VIM"
-else
-    echo "  (skipping - $STABLE_VIM is already installed)"
-fi
-
-# Set as global default using --home
-asdf set vim "$STABLE_VIM" --home 2>/dev/null || true
-
-# Reshim and Verify
-asdf reshim vim
-if ! vim --version | head -1; then
-    echo "ERROR: Vim not available after asdf installation"
-    exit 1
-fi
-
-echo "✓ Vim installed via asdf: $(vim --version | head -1)"
-
-#---------------------------------------------------------------------------------------
-# Install Rust via asdf (Stable)
-#---------------------------------------------------------------------------------------
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Installing Stable Rust via asdf"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-# Add rust plugin (ignore error if already exists)
-asdf plugin add rust 2>/dev/null || true
-
-# Identify the latest stable version 
-# Filters for standard X.Y.Z format, excluding nightly/beta strings
-STABLE_RUST=$(asdf list all rust | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$" | tail -1)
-
-echo "  Targeting stable version: $STABLE_RUST"
-
-# Install if not present
-if ! asdf list rust | grep -q "$STABLE_RUST"; then
-    asdf install rust "$STABLE_RUST"
-else
-    echo "  (skipping - $STABLE_RUST is already installed)"
-fi
-
-# Set as global default via --home
-asdf set rust "$STABLE_RUST" --home 2>/dev/null || true
-
-# Reshim to ensure cargo/rustc are available
-asdf reshim rust
-
-# Verify installation
-if ! cargo --version; then
-    echo "ERROR: Cargo not available after asdf installation"
-    exit 1
-fi
-
-echo "✓ Rust installed via asdf: $(cargo --version)"
-
-#---------------------------------------------------------------------------------------
-# Install Go via asdf (Stable)
-#---------------------------------------------------------------------------------------
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Installing Stable Go via asdf"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-# Add golang plugin (ignore error if already exists)
-asdf plugin add golang 2>/dev/null || true
-
-# Identify the latest stable version
-# Filters for numeric versions (e.g., 1.21.5 or 1.22) and excludes strings like 'rc' or 'beta'
-STABLE_GO=$(asdf list all golang | grep -v "[a-z]" | grep -E "^[0-9]+\.[0-9]+(\.[0-9]+)?$" | tail -1)
-
-echo "  Targeting stable version: $STABLE_GO"
-
-# Install if not present
-if ! asdf list golang | grep -q "$STABLE_GO"; then
-    asdf install golang "$STABLE_GO"
-else
-    echo "  (skipping - $STABLE_GO is already installed)"
-fi
-
-# Set as global default using --home
-asdf set golang "$STABLE_GO" --home 2>/dev/null || true
-
-# Reshim to ensure go is available
-asdf reshim golang
-
-# Verify installation
-if ! go version; then
-    echo "ERROR: Go not available after asdf installation"
-    exit 1
-fi
-
-echo "✓ Go installed via asdf: $(go version)"
-
-#---------------------------------------------------------------------------------------
-# Install Node.js via asdf
-#---------------------------------------------------------------------------------------
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Installing Node.js via asdf"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-# Add nodejs plugin (ignore error if already exists)
-asdf plugin add nodejs 2>/dev/null || true
-
-# Install latest Node.js LTS (skip if already installed)
-asdf install nodejs lts 2>/dev/null || echo "  (skipping - may already be installed)"
-
-# Set as global default
-asdf set nodejs lts --home 2>/dev/null || true
-
-# Reshim to ensure node/npm are available
-asdf reshim nodejs
-
-# Verify installation
-if ! node --version; then
-    echo "ERROR: Node.js not available after asdf installation"
-    exit 1
-fi
-
-if ! npm --version; then
-    echo "ERROR: npm not available after Node.js installation"
-    exit 1
-fi
-
-echo "✓ Node.js installed via asdf: $(node --version)"
-echo "✓ npm installed: $(npm --version)"
 
 #---------------------------------------------------------------------------------------
 # Install platform-specific tools
 #---------------------------------------------------------------------------------------
 if [[ "$HOST_OS" == "wsl" ]] && ! command -v wslvar &>/dev/null; then
     echo "Installing wslu from PPA..."
-    ${SUDO} add-apt-repository ppa:wslutilities/wslu -y
-    ${SUDO} apt-get update -y
-    ${SUDO} apt-get install -y wslu
+    add-apt-repository ppa:wslutilities/wslu -y
+    apt-get update -y
+    apt-get install -y wslu
 fi
 
 #---------------------------------------------------------------------------------------
@@ -636,8 +338,8 @@ if [[ "$HOST_OS" == "wsl" ]]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     
     # Setup Windows home
-    if windows_profile="$(wslvar USERPROFILE 2>&1)"; then
-        if windows_home="$(wslpath "$windows_profile" 2>&1)"; then
+    if windows_profile="$(wslvar USERPROFILE 2>/dev/null)"; then
+        if windows_home="$(wslpath "$windows_profile" 2>/dev/null)"; then
             echo "Windows home: $windows_home"
             if [[ -f "${DOTFILES_ROOT}/.wslconfig" ]]; then
                 cp "${DOTFILES_ROOT}/.wslconfig" "${windows_home}/.wslconfig"
@@ -664,36 +366,6 @@ if [[ "$HOST_OS" == "wsl" ]]; then
         fi
     fi
 fi
-
-#---------------------------------------------------------------------------------------
-# Verify asdf-managed tools
-#---------------------------------------------------------------------------------------
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Verifying asdf-managed tools"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-# List installed plugins
-echo "Installed asdf plugins:"
-asdf plugin list
-
-# List installed versions
-echo ""
-echo "Installed tool versions:"
-asdf list
-
-# Verify shims are in PATH
-echo ""
-echo "asdf shims directory: ${ASDF_DATA_DIR}/shims"
-if [[ ":${PATH}:" == *":${ASDF_DATA_DIR}/shims:"* ]]; then
-    echo "✓ asdf shims are in PATH"
-else
-    echo "⚠ asdf shims NOT in PATH (will be added by .zshrc)"
-fi
-
-# Reshim to ensure all executables are available
-asdf reshim
-
-echo "✓ asdf verification complete"
 
 #---------------------------------------------------------------------------------------
 # Done!
