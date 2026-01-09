@@ -86,9 +86,6 @@ export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export VOLTA_HOME="${XDG_CONFIG_HOME}/volta"
 export BUN_INSTALL="${XDG_CONFIG_HOME}/bun"
 export PNPM_HOME="${XDG_CONFIG_HOME}/pnpm"
-export ASDF_DATA_DIR="${XDG_CONFIG_HOME}/asdf"
-export ASDF_DIR="${ASDF_DATA_DIR}"
-export ASDF_CONFIG_FILE="${ASDF_DATA_DIR}/.asdfrc"
 
 # 🖥️ Terminal & editor defaults
 export TERM="xterm-256color"
@@ -955,11 +952,6 @@ fi
 [[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
 
 #[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
-
-# asdf (Another System Definition Facility) - version manager
-# v0.16.0+ is a Go binary (installed via install.sh), just add to PATH
-add_to_path_if_exists "${ASDF_DATA_DIR}/bin"
-add_to_path_if_exists "${ASDF_DATA_DIR}/shims"
 
 # ==============================================================================
 # WSL Windows Terminal sync (manual function)
