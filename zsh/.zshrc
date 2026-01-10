@@ -611,11 +611,6 @@ zi light reegnz/jq-zsh-plugin
 zi ice lucid depth'1' branch'main'
 zi light z-shell/zsh-fancy-completions
 
-# 💻 SSH Alias Manager - Manages SSH connection aliases
-# Usage: Creates convenient aliases for SSH hosts from ~/.ssh/config
-# zi ice wait'2' lucid depth'1' from'gh'
-# zi light sunlei/zsh-ssh
-
 # ==============================================================================
 # NAVIGATION & FILE MANAGEMENT TOOLS
 # ==============================================================================
@@ -797,17 +792,6 @@ zi light tj/git-extras
 # NODE & LANGUAGE ENVIRONMENTS
 # ==============================================================================
 
-# 344 ms - dominik-schwabe/zsh-fnm
-# 🌱 ZSH-FNM - Fast Node Manager integration with auto-switching
-# Usage: Automatic - switches Node version based on .nvmrc/.node-version
-# `fnm list` - show installed versions, `fnm install 20` - install Node 20
-# Faster than nvm, automatically switches on `cd` into projects
-# export ZSH_FNM_NODE_VERSION="22"
-# export ZSH_FNM_ENV_EXTRA_ARGS="--use-on-cd"
-# export ZSH_FNM_INSTALL_DIR="${XDG_DATA_HOME}/fnm"
-# zi ice lucid wait'1' depth'1'
-# zi light dominik-schwabe/zsh-fnm
-
 # 🎨 Laravel Artisan Completion - Smart completions for Laravel Artisan
 # Usage: `php artisan <TAB>` - shows available artisan commands
 # Works with Docker alias `pa` as well
@@ -825,7 +809,6 @@ zi light jessarcher/zsh-artisan
 
 zi ice wait'1' lucid blockf
 zi snippet OMZP::sudo             # Usage: Press ESC twice to prefix previous command with sudo
-# OMZP::extract removed - using custom extract() function from aliases.zsh
 zi snippet OMZP::copyfile         # Usage: `copyfile file.txt` - copies file contents to clipboard
 zi snippet OMZP::dirhistory       # Usage: Alt+Left/Right arrows to navigate directory history
 
@@ -952,6 +935,13 @@ fi
 [[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
 
 #[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
+
+# ==============================================================================
+# mise - version manager for Node.js
+# ==============================================================================
+if command -v mise &>/dev/null; then
+    eval "$(mise activate zsh)"
+fi
 
 # ==============================================================================
 # WSL Windows Terminal sync (manual function)

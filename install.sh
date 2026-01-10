@@ -44,7 +44,6 @@ readonly -a LINUX_PACKAGES=(
     strace gdb lsb-release shellcheck tree lsof ncdu  # Debugging & development tools
     pass gnupg2 pinentry-curses  # Secret management
     python3 python3-pip python3-venv python3-dev  # Python 3
-    nodejs npm  # Node.js and npm
     golang-go  # Go programming language
     vim vim-gtk3  # Vim 9.1+ with clipboard support
 )
@@ -195,10 +194,39 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Development tools installed"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✓ Python 3: $(python3 --version 2>&1)"
-echo "✓ Node.js: $(node --version 2>&1)"
-echo "✓ npm: $(npm --version 2>&1)"
 echo "✓ Go: $(go version 2>&1)"
 echo "✓ Vim: $(vim --version 2>&1 | head -1)"
+
+#---------------------------------------------------------------------------------------
+# Install mise for Node.js version management (as user, not root)
+#---------------------------------------------------------------------------------------
+if [[ "${HOST_OS}" != "darwin" ]]; then
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  Installing mise and Node.js LTS for ${ACTUAL_USER}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    # Install mise as the actual user (not root)
+    if ! sudo -u "${ACTUAL_USER}" bash -c 'command -v mise' &>/dev/null; then
+        echo "Installing mise to ${ACTUAL_USER_HOME}/.local/bin..."
+        sudo -u "${ACTUAL_USER}" bash -c 'curl -fsSL https://mise.run | sh'
+    else
+        echo "✓ mise already installed"
+    fi
+
+    # Install Node.js LTS globally via mise (as user)
+    echo "Installing Node.js LTS via mise..."
+    sudo -u "${ACTUAL_USER}" bash -c "export PATH=\"${ACTUAL_USER_HOME}/.local/bin:\${PATH}\" && mise use --global node@lts"
+
+    # Verify installation
+    if sudo -u "${ACTUAL_USER}" bash -c "export PATH=\"${ACTUAL_USER_HOME}/.local/bin:\${PATH}\" && mise which node" &>/dev/null; then
+        NODE_VERSION=$(sudo -u "${ACTUAL_USER}" bash -c "export PATH=\"${ACTUAL_USER_HOME}/.local/bin:\${PATH}\" && mise exec -- node --version" 2>&1)
+        NPM_VERSION=$(sudo -u "${ACTUAL_USER}" bash -c "export PATH=\"${ACTUAL_USER_HOME}/.local/bin:\${PATH}\" && mise exec -- npm --version" 2>&1)
+        echo "✓ Node.js: ${NODE_VERSION}"
+        echo "✓ npm: ${NPM_VERSION}"
+    else
+        echo "⚠ Node.js installation via mise may need verification"
+    fi
+fi
 
 #---------------------------------------------------------------------------------------
 # Install pynvim (Python package for Vim)
