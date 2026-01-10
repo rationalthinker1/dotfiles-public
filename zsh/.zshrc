@@ -766,8 +766,8 @@ autoload -Uz zmv
 # Custom Application Settings
 # ==============================================================================
 
-# Auto-start Docker on WSL if not running
-if [[ "$HOST_OS" == "wsl" ]] && (( $+commands[systemctl] )); then
+# Auto-start Docker on WSL if not running (skip on SSH sessions)
+if [[ "$HOST_OS" == "wsl" && -z "${SSH_TTY:-}" ]] && (( $+commands[systemctl] )); then
     if ! systemctl is-active --quiet docker 2>/dev/null; then
         # Start Docker without password prompt (requires sudoers NOPASSWD for systemctl)
         sudo -n systemctl start docker 2>/dev/null && echo "✓ Docker started" || true
