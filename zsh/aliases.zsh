@@ -44,10 +44,10 @@ alias dot="cd ~/.dotfiles"
 alias con="cd ~/.config"
 
 # 🦇 Bat: Better cat with syntax highlighting
-# Override 'cat' to use 'bat' for prettier output (function for lazy-loading)
-# Use 'rcat' (real cat) to access original cat command
-alias rcat=${commands[cat]}
-function cat() { bat "$@"; }
+# Override 'cat' to use 'bat' for prettier output
+# Use 'rcat' or '\cat' to access original cat command
+alias cat='bat'
+alias rcat='command cat'
 export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 
 # 🔍 FZF + Zoxide: Enhanced cd with enhancd-style features
@@ -160,29 +160,30 @@ function kkk() {
 }
 
 ## 📁 Eza: Modern ls replacement with colors and icons
-# Override 'ls' and related commands to use 'eza' (functions for lazy-loading)
+# Override 'ls' and related commands to use 'eza'
+# Use '\ls' to access original ls command
 ## Colorize the ls output ##
-function ls() { eza --color=auto "$@"; }
+alias ls='eza --color=auto'
 
 ## Use a long listing format ##
 # List with human readable filesizes
-function l() { eza --color=auto --long --header --group --group-directories-first "$@"; }
+alias l='eza --color=auto --long --header --group --group-directories-first'
 # List all, with human readable filesizes
-function ll() { eza --color=auto --long --header --group --all --group-directories-first "$@"; }
+alias ll='eza --color=auto --long --header --group --all --group-directories-first'
 # Same as above, but ordered by size
-function lls() { eza --color=auto --long --header --group --all --group-directories-first --sort size "$@"; }
+alias lls='eza --color=auto --long --header --group --all --group-directories-first --sort size'
 # Same as above, but ordered by date
-function lt() { eza --color=auto --long --header --group --all --group-directories-first --reverse --sort oldest "$@"; }
+alias lt='eza --color=auto --long --header --group --all --group-directories-first --reverse --sort oldest'
 # Show tree level 2
-function llt() { eza --color=auto --long --header --group --all --group-directories-first --tree --level=2 "$@"; }
+alias llt='eza --color=auto --long --header --group --all --group-directories-first --tree --level=2'
 # Show tree level 3
-function lllt() { eza --color=auto --long --header --group --all --group-directories-first --tree --level=3 "$@"; }
+alias lllt='eza --color=auto --long --header --group --all --group-directories-first --tree --level=3'
 # Show tree level 4
-function llllt() { eza --color=auto --long --header --group --all --group-directories-first --tree --level=4 "$@"; }
+alias llllt='eza --color=auto --long --header --group --all --group-directories-first --tree --level=4'
 # Show hidden files ##
-function l.() { eza --color=auto --long --header --group --all --group-directories-first --list-dirs .* "$@"; }
+alias l.='eza --color=auto --long --header --group --all --group-directories-first --list-dirs .*'
 # Show only directories
-function ld() { eza --color=auto --long --header --group --all --group-directories-first --only-dirs "$@"; }
+alias ld='eza --color=auto --long --header --group --all --group-directories-first --only-dirs'
 
 ## show history on h
 alias h="history"
@@ -238,7 +239,7 @@ alias myip="curl -s https://ipecho.net/plain && echo"
 # Searches up history commands
 alias hgrep="history | grep"
 
-alias br=broot
+alias br="broot"
 
 # Define fd exclusion patterns with fallback (in case .zshenv didn't load)
 if [[ -z "${FD_EXCLUDE_PATTERN}" ]]; then
@@ -436,122 +437,6 @@ function unzipd() {
 	unzip "${filename}" -d "${directory}"
 }
 
-# Install fonts from all subdirectories of a directory
-# Usage: install-font-subdirectories <directory>
-# Example: install-font-subdirectories ~/Downloads/fonts
-function install-font-subdirectories() {
-	local directory="${1}"
-
-	if [[ -z "$directory" ]]; then
-		echo "Error: No directory provided"
-		return 1
-	fi
-
-	if [[ ! -d "$directory" ]]; then
-		echo "Error: Directory does not exist: $directory"
-		return 1
-	fi
-
-	# Pure zsh: glob qualifiers replace find
-	# (/) = directories only, (N) = null_glob (don't error if no matches)
-	setopt local_options null_glob
-	local -a subdirs=("$directory"/*(N/))
-
-	for subdirectory in "${subdirs[@]}"; do
-		install-font-folder "$subdirectory"
-	done
-}
-
-# Install .ttf and .otf fonts from a directory
-# Usage: install-font-folder <directory>
-# Example: install-font-folder ~/Downloads/FiraCode
-function install-font-folder() {
-	local directory="${1}"
-	local FONT_DIRECTORY
-	local last_folder
-	local otf_count
-	local ttf_count
-
-	if [[ -z "$directory" ]]; then
-		echo "Error: No directory provided"
-		return 1
-	fi
-
-	if [[ ! -d "$directory" ]]; then
-		echo "Error: Directory does not exist: $directory"
-		return 1
-	fi
-
-	if [[ "${HOST_OS}" == "darwin" ]]; then
-		FONT_DIRECTORY="/Library/Fonts"
-	else
-		FONT_DIRECTORY="/usr/share/fonts"
-	fi
-
-	last_folder="${directory:t}"
-
-	echo "Installing fonts from: $directory"
-
-	# Create font directories
-	if ! sudo mkdir -p "${FONT_DIRECTORY}"/{true,open}type/"${last_folder}"; then
-		echo "Error: Failed to create font directories"
-		return 1
-	fi
-
-	# Install fonts - Pure zsh glob magic!
-	# (.) = regular files only, (N) = null_glob (no error if no matches)
-	setopt local_options null_glob
-	local -a otf_files=("$directory"/*.otf(N.))
-	local -a ttf_files=("$directory"/*.ttf(N.))
-
-	# Batch copy for performance (single cp call per type)
-	otf_count=${#otf_files}
-	if (( otf_count > 0 )); then
-		if ! sudo cp -t "${FONT_DIRECTORY}/opentype/${last_folder}/" -- "${otf_files[@]}" 2>/dev/null; then
-			# Fallback to one-by-one if batch fails
-			otf_count=0
-			for font_file in "${otf_files[@]}"; do
-				sudo cp "$font_file" "${FONT_DIRECTORY}/opentype/${last_folder}/" && ((otf_count++))
-			done
-		fi
-	fi
-
-	ttf_count=${#ttf_files}
-	if (( ttf_count > 0 )); then
-		if ! sudo cp -t "${FONT_DIRECTORY}/truetype/${last_folder}/" -- "${ttf_files[@]}" 2>/dev/null; then
-			# Fallback to one-by-one if batch fails
-			ttf_count=0
-			for font_file in "${ttf_files[@]}"; do
-				sudo cp "$font_file" "${FONT_DIRECTORY}/truetype/${last_folder}/" && ((ttf_count++))
-			done
-		fi
-	fi
-
-	# Update font cache
-	if (( $+commands[fc-cache] )); then
-		echo "Updating font cache..."
-		if sudo fc-cache -f -v | grep -q "${last_folder}"; then
-			echo "✓ Successfully installed $otf_count OTF and $ttf_count TTF fonts from $last_folder"
-		else
-			echo "Warning: Font cache update may have failed"
-		fi
-	else
-		echo "Warning: fc-cache not found, font cache not updated"
-	fi
-}
-
-# Unzip and install fonts from a zip file
-# Usage: install-font-zip <file.zip>
-# Example: install-font-zip FiraCode.zip
-function install-font-zip() {
-	filename="${1}"
-	directory="${filename%.zip}"
-	directory="${directory##*/}"
-	unzipd "${filename}"
-	install-font-folder "${directory}"
-	rm -rf "./${directory}"
-}
-
 # =======================================================================================
 # Node/NPM/Yarn Enhanced Aliases
 # =======================================================================================
@@ -662,7 +547,7 @@ function gpuf() {
 function git_search() {
 	git rev-list --all | GIT_PAGER=cat xargs git grep "${@}"
 }
-alias gse=git_search
+alias gse="git_search"
 
 # Reset git to a previous commit
 # Usage: git_reset [n]
@@ -682,7 +567,7 @@ function git_reset() {
 
 	git reset --hard "${COMMIT}"
 }
-alias gre=git_reset
+alias gre="git_reset"
 
 # Clone git repo and cd into it
 # Usage: git-clone <repo-url>
@@ -690,6 +575,20 @@ alias gre=git_reset
 function git-clone() {
 	git clone "$@" && cd "${${1:t}%.git}"
 }
+
+# Jump to git repository root
+# Usage: groot
+# Example: cd deeply/nested/directory && groot → jumps to repo root
+function groot() {
+	local root=$(git rev-parse --show-toplevel 2>/dev/null)
+	if [[ -n "$root" ]]; then
+		builtin cd "$root"
+	else
+		echo "Not in a git repository" >&2
+		return 1
+	fi
+}
+alias gr='groot'  # Quick alias
 
 # Enhanced Git shortcuts
 alias gst="git stash"

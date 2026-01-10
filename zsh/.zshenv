@@ -45,7 +45,6 @@ export BUN_INSTALL="${XDG_CONFIG_HOME}/bun"
 export PNPM_HOME="${XDG_CONFIG_HOME}/pnpm"
 
 # 🖥️ Terminal & editor defaults
-export TERM="xterm-256color"
 export EDITOR="vim"
 export LESS="-XRF"
 
@@ -67,7 +66,6 @@ typeset -gU path PATH
 path=(
   "${CARGO_HOME}/bin"
   "${HOME}/.local/bin"
-  "${HOME}/.local/share"
   "/usr/local/go/bin"
   "${HOME}/.yarn/bin"
   "${XDG_CONFIG_HOME}/yarn/global/node_modules/.bin"
