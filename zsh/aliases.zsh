@@ -47,7 +47,7 @@ alias con="cd ~/.config"
 # Override 'cat' to use 'bat' for prettier output (function for lazy-loading)
 # Use 'rcat' (real cat) to access original cat command
 alias rcat=${commands[cat]}
-cat() { bat "$@"; }
+function cat() { bat "$@"; }
 export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 
 # 🔍 FZF + Zoxide: Enhanced cd with enhancd-style features
@@ -162,27 +162,27 @@ function kkk() {
 ## 📁 Eza: Modern ls replacement with colors and icons
 # Override 'ls' and related commands to use 'eza' (functions for lazy-loading)
 ## Colorize the ls output ##
-ls() { eza --color=auto "$@"; }
+function ls() { eza --color=auto "$@"; }
 
 ## Use a long listing format ##
 # List with human readable filesizes
-l() { eza --color=auto --long --header --group --group-directories-first "$@"; }
+function l() { eza --color=auto --long --header --group --group-directories-first "$@"; }
 # List all, with human readable filesizes
-ll() { eza --color=auto --long --header --group --all --group-directories-first "$@"; }
+function ll() { eza --color=auto --long --header --group --all --group-directories-first "$@"; }
 # Same as above, but ordered by size
-lls() { eza --color=auto --long --header --group --all --group-directories-first --sort size "$@"; }
+function lls() { eza --color=auto --long --header --group --all --group-directories-first --sort size "$@"; }
 # Same as above, but ordered by date
-lt() { eza --color=auto --long --header --group --all --group-directories-first --reverse --sort oldest "$@"; }
+function lt() { eza --color=auto --long --header --group --all --group-directories-first --reverse --sort oldest "$@"; }
 # Show tree level 2
-llt() { eza --color=auto --long --header --group --all --group-directories-first --tree --level=2 "$@"; }
+function llt() { eza --color=auto --long --header --group --all --group-directories-first --tree --level=2 "$@"; }
 # Show tree level 3
-lllt() { eza --color=auto --long --header --group --all --group-directories-first --tree --level=3 "$@"; }
+function lllt() { eza --color=auto --long --header --group --all --group-directories-first --tree --level=3 "$@"; }
 # Show tree level 4
-llllt() { eza --color=auto --long --header --group --all --group-directories-first --tree --level=4 "$@"; }
+function llllt() { eza --color=auto --long --header --group --all --group-directories-first --tree --level=4 "$@"; }
 # Show hidden files ##
-l.() { eza --color=auto --long --header --group --all --group-directories-first --list-dirs .* "$@"; }
+function l.() { eza --color=auto --long --header --group --all --group-directories-first --list-dirs .* "$@"; }
 # Show only directories
-ld() { eza --color=auto --long --header --group --all --group-directories-first --only-dirs "$@"; }
+function ld() { eza --color=auto --long --header --group --all --group-directories-first --only-dirs "$@"; }
 
 ## show history on h
 alias h="history"
@@ -221,7 +221,13 @@ alias hiberate="sudo pm-suspend"
 
 # Show processes by name
 # example: psg bash
-alias psg="ps aux | grep -v grep | grep -i -e VSZ"
+function psg() {
+	if [[ $# -eq 0 ]]; then
+		echo "Usage: psg <pattern>"
+		return 1
+	fi
+	ps aux | grep -v grep | grep -i -e "$*"
+}
 
 # Append -c to continue the download in case of problems
 #alias wget='wget -c'
@@ -369,54 +375,56 @@ alias v!="fc -e \"sed -i -e \\\"s/cat /vim /\\\"\""
 # example: tf laravel.log
 alias tf="tail -f"
 
-# Installing, updating or removing applications aliases and functions
-alias addrepo="sudo add-apt-repository -y"
-alias install="sudo apt-get install -y "
-alias remove="sudo apt-get remove"
-alias update="sudo apt-get update -y"
-alias upgrade="sudo apt-get update && sudo apt-get upgrade"
-alias dist-upgrade="sudo apt-get update && sudo apt-get dist-upgrade"
+# Installing, updating or removing applications aliases and functions (Linux/WSL only)
+if [[ "${HOST_OS}" == "linux" || "${HOST_OS}" == "wsl" ]]; then
+	alias addrepo="sudo add-apt-repository -y"
+	alias install="sudo apt-get install -y "
+	alias remove="sudo apt-get remove"
+	alias update="sudo apt-get update -y"
+	alias upgrade="sudo apt-get update && sudo apt-get upgrade"
+	alias dist-upgrade="sudo apt-get update && sudo apt-get dist-upgrade"
 
-# Install multiple apt packages
-# Usage: apt-install <package1> [package2...]
-# Example: apt-install vim git curl
-function apt-install() {
-	for application in "$@"; do
-		sudo apt-get install -f -y "${application}"
-	done
-}
+	# Install multiple apt packages
+	# Usage: apt-install <package1> [package2...]
+	# Example: apt-install vim git curl
+	function apt-install() {
+		for application in "$@"; do
+			sudo apt-get install -f -y "${application}"
+		done
+	}
 
-# Update apt package list
-# Usage: apt-update
-function apt-update() {
-	sudo apt-get -y update
-}
+	# Update apt package list
+	# Usage: apt-update
+	function apt-update() {
+		sudo apt-get -y update
+	}
 
-# Add multiple apt repositories
-# Usage: add-repo <repo1> [repo2...]
-# Example: add-repo ppa:deadsnakes/ppa
-function add-repo() {
-	for repository in "$@"; do
-		sudo add-apt-repository -y "${repository}"
-	done
-}
+	# Add multiple apt repositories
+	# Usage: add-repo <repo1> [repo2...]
+	# Example: add-repo ppa:deadsnakes/ppa
+	function add-repo() {
+		for repository in "$@"; do
+			sudo add-apt-repository -y "${repository}"
+		done
+	}
 
-# simple-install ppa:numix/ppa numix-gtk-theme numix-icon-theme-circle
-function simple-install() {
-	repository=$1
+	# simple-install ppa:numix/ppa numix-gtk-theme numix-icon-theme-circle
+	function simple-install() {
+		repository=$1
 
-	# Add the repository
-	add-repo "${repository}"
-	shift
+		# Add the repository
+		add-repo "${repository}"
+		shift
 
-	# Update list of available packages
-	apt-update
+		# Update list of available packages
+		apt-update
 
-	for application in "$@"; do
-		# Install application
-		apt-install "${application}"
-	done
-}
+		for application in "$@"; do
+			# Install application
+			apt-install "${application}"
+		done
+	}
+fi
 
 # Unzip file into directory named after the file
 # Usage: unzipd <file.zip>
@@ -580,8 +588,8 @@ alias ycc="yarn cache clean"
 
 # pnpm (if you use it)
 alias pi="pnpm install"
-alias pa="pnpm add"
-alias pad="pnpm add -D"
+alias pna="pnpm add"
+alias pnad="pnpm add -D"
 alias pr="pnpm remove"
 
 # Quick package.json operations
@@ -664,6 +672,14 @@ function git_reset() {
 	if [[ "$#" -eq 1 ]]; then
 		COMMIT="HEAD~$1"
 	fi
+
+	local confirm
+	read -r "confirm?Hard reset to ${COMMIT}? This discards local changes (y/n): "
+	if [[ "${confirm}" != "y" ]]; then
+		echo "Cancelled"
+		return 1
+	fi
+
 	git reset --hard "${COMMIT}"
 }
 alias gre=git_reset
@@ -689,8 +705,16 @@ alias gf="git fetch"
 alias gfa="git fetch --all"
 alias gfp="git fetch --prune"
 
-alias grh="git reset --hard"
-alias grs="git reset --soft"
+function grh() {
+	local confirm
+	read -r "confirm?Hard reset to HEAD? This discards local changes (y/n): "
+	if [[ "${confirm}" != "y" ]]; then
+		echo "Cancelled"
+		return 1
+	fi
+	git reset --hard
+}
+alias grsoft="git reset --soft"
 
 alias glg="git log --graph --oneline --decorate"
 alias glga="git log --graph --oneline --decorate --all"
@@ -850,7 +874,7 @@ alias nrel="sudo nginx -t && sudo nginx -s reload"
 # =======================================================================================
 # Log Aliases and functions
 # =======================================================================================
-alias llog="tail -f /var/www/html/ecoenergy/production/storage/logs/laravel.log"
+alias llog_prod="tail -f /var/www/html/ecoenergy/production/storage/logs/laravel.log"
 alias nlog="tail -f /var/log/nginx/*.log"
 
 # =======================================================================================
@@ -975,18 +999,42 @@ alias dki="docker run -i -t -P"
 
 # Stop all Docker containers
 # Usage: dstop
-function dstop() { docker stop $(docker ps -a -q); }
+function dstop() {
+	local confirm
+	read -r "confirm?Stop all Docker containers? (y/n): "
+	if [[ "${confirm}" != "y" ]]; then
+		echo "Cancelled"
+		return 1
+	fi
+	docker stop $(docker ps -a -q)
+}
 
 # Stop and remove all Docker containers
 # Usage: drmf
-function drmf() { docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q); }
+function drmf() {
+	local confirm
+	read -r "confirm?Stop and remove ALL Docker containers? (y/n): "
+	if [[ "${confirm}" != "y" ]]; then
+		echo "Cancelled"
+		return 1
+	fi
+	docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)
+}
 
 # Get IP addresses of all running containers
 alias dpsi="docker ps -q | xargs docker inspect --format '{{ .Id }} - {{ .Name }} - {{ .NetworkSettings.IPAddress }}'"
 
 # Remove all Docker containers
 # Usage: drc
-function drc() { docker rm $(docker ps -a -q); }
+function drc() {
+	local confirm
+	read -r "confirm?Remove ALL Docker containers? (y/n): "
+	if [[ "${confirm}" != "y" ]]; then
+		echo "Cancelled"
+		return 1
+	fi
+	docker rm $(docker ps -a -q)
+}
 
 # Remove all images
 #dri() { docker rmi $(docker images -q); }
@@ -1113,8 +1161,12 @@ alias lsp="sudo lsof -iTCP -sTCP:LISTEN -n -P"
 # Usage: killp
 function killp() {
   local pid
+  local confirm
   pid=$(ps aux | fzf | awk '{print $2}')
-  [[ -n "$pid" ]] && kill -9 "$pid"
+  if [[ -n "$pid" ]]; then
+    read -r "confirm?Kill PID ${pid} with SIGKILL? (y/n): "
+    [[ "${confirm}" == "y" ]] && kill -9 "$pid"
+  fi
 }
 
 # Quick systemd service management
@@ -1131,7 +1183,7 @@ alias ports="netstat -tulanp"
 alias myip_public="curl -s https://api.ipify.org && echo"
 
 # macOS uses BSD grep, Linux uses GNU grep
-if [[ "$HOST_OS" == "macos" ]]; then
+if [[ "$HOST_OS" == "darwin" ]]; then
   alias myip_local="ifconfig | grep 'inet ' | grep -v 127.0.0.1 | awk '{print \$2}'"
 else
   alias myip_local="ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v 127.0.0.1"
@@ -1153,9 +1205,15 @@ function killport() {
   local pid=$(lsof -ti:"${port}")
 
   if [[ -n "${pid}" ]]; then
-    echo "🔫 Killing process ${pid} on port ${port}..."
-    kill -9 "${pid}"
-    echo "✓ Process killed"
+    local confirm
+    read -r "confirm?Kill PID ${pid} on port ${port} with SIGKILL? (y/n): "
+    if [[ "${confirm}" == "y" ]]; then
+      echo "🔫 Killing process ${pid} on port ${port}..."
+      kill -9 "${pid}"
+      echo "✓ Process killed"
+    else
+      echo "❌ Cancelled"
+    fi
   else
     echo "❌ No process found on port ${port}"
   fi
@@ -1186,6 +1244,12 @@ function run() {
 
 # Docker system cleanup - removes everything
 function docker-clean() {
+  local confirm
+  read -r "confirm?Prune ALL Docker data (images, containers, volumes)? (y/n): "
+  if [[ "${confirm}" != "y" ]]; then
+    echo "Cancelled"
+    return 1
+  fi
   echo "🗑️  Cleaning Docker system..."
   docker system prune -af --volumes
   echo "✓ Docker cleanup complete"
@@ -1216,7 +1280,11 @@ function replace-in-files() {
   echo ""
   read "confirm?Proceed with replacement? (y/n) "
   if [[ "${confirm}" == "y" ]]; then
-    rg "${search}" -l --glob "${pattern}" | xargs sed -i "s/${search}/${replace}/g"
+    if [[ "${HOST_OS}" == "darwin" ]]; then
+      rg "${search}" -l --glob "${pattern}" | xargs sed -i '' "s/${search}/${replace}/g"
+    else
+      rg "${search}" -l --glob "${pattern}" | xargs sed -i "s/${search}/${replace}/g"
+    fi
     echo "✓ Replacement complete"
   else
     echo "❌ Cancelled"
@@ -1307,25 +1375,25 @@ alias update-all="zi update --all && rustup update && sudo apt-get update && sud
 alias update-zi="zi update --all"
 
 # Lazygit/Lazydocker TUIs - functions for lazy-loading
-lg() { lazygit "$@"; }
-lzd() { lazydocker "$@"; }
+function lg() { lazygit "$@"; }
+function lzd() { lazydocker "$@"; }
 
 # System monitoring (override htop/top with bottom) - functions for lazy-loading
-htop() { btm "$@"; }
-top() { btm "$@"; }
+function htop() { btm "$@"; }
+function top() { btm "$@"; }
 
 # Disk usage (modern alternatives) - functions for lazy-loading
-df() { duf "$@"; }
-ncdu() { dust "$@"; }
+function df() { duf "$@"; }
+function ncdu() { dust "$@"; }
 
 # Process viewer - function for lazy-loading
-pps() { procs "$@"; }  # Use pps for procs, keep ps as fallback
+function pps() { procs "$@"; }  # Use pps for procs, keep ps as fallback
 
 # DNS lookup - function for lazy-loading
-dog() { command dog "$@"; }  # Modern dig
+function dog() { command dog "$@"; }  # Modern dig
 
 # Benchmarking - function for lazy-loading
-bench() { hyperfine "$@"; }
+function bench() { hyperfine "$@"; }
 
 # Code statistics - function for lazy-loading
-cloc() { tokei "$@"; }
+function cloc() { tokei "$@"; }

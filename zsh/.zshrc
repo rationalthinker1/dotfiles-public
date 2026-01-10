@@ -24,18 +24,18 @@
 # ==============================================================================
 
 # zmodload zsh/zprof # top of your .zshrc file - uncomment to profile startup time
-# 🧭 Base paths (XDG-compliant)
-# 📁 XDG base directories (XDG_CONFIG_HOME and ZDOTDIR already set in .zshenv)
-export XDG_CONFIG_HOME="${HOME}/.config"
-export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
+# Environment variables and PATH are defined in .zshenv
 
-export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
-export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
-export ZSH_CACHE_DIR="${ZDOTDIR}/cache"
+# Fallback: ensure ZDOTDIR/XDG_CONFIG_HOME are set if .zshenv was skipped
+if [[ -z "${ZDOTDIR:-}" ]]; then
+    export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
+    export ZDOTDIR="${ZDOTDIR:-${XDG_CONFIG_HOME}/zsh}"
+fi
 
-# 🧠 Shell and runtime config (ZDOTDIR and ZSH_CACHE_DIR already set in .zshenv)
-export ZSH="${ZDOTDIR}"
-export LOCAL_CONFIG="${XDG_CONFIG_HOME}"
+# Fallback: source .zshenv if it was not loaded
+if [[ -z "${ZSHENV_LOADED:-}" && -f "${HOME}/.zshenv" ]]; then
+    source "${HOME}/.zshenv"
+fi
 
 # ==============================================================================
 # ⚡ Powerlevel10k Instant Prompt (MUST BE NEAR TOP!)
@@ -43,83 +43,25 @@ export LOCAL_CONFIG="${XDG_CONFIG_HOME}"
 # Enable instant prompt to show prompt immediately while plugins load in background
 # This MUST come before any code that produces console output or modifies the terminal
 if [[ -r "${XDG_CACHE_HOME}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME}/p10k-instant-prompt-${(%):-%n}.zsh"
+    source "${XDG_CACHE_HOME}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
 
 # Add to PATH without checking directory existence (optimized for WSL startup speed)
 # Non-existent dirs in PATH are harmless - shell handles them fine
 function add_to_path_if_exists() {
-  # Directory existence check removed for performance (was 20% of startup time in WSL)
-  # [[ -d "${1}" ]] || return 1
-
-  # Prepend to path array - typeset -U automatically deduplicates!
-  path=("${1}" $path)
+    # Directory existence check removed for performance (was 20% of startup time in WSL)
+    # [[ -d "${1}" ]] || return 1
+    
+    # Prepend to path array - typeset -U automatically deduplicates!
+    path=("${1}" $path)
 }
 
 # Source file only if it exists and is readable
 function source_if_exists() {
-  # Single file test for minimal overhead - -f checks both existence and regular file in one syscall
-  [[ -f "${1}" ]] && . "${1}"
+    # Single file test for minimal overhead - -f checks both existence and regular file in one syscall
+    [[ -f "${1}" ]] && . "${1}"
 }
-
-# ==============================================================================
-# Detect Host OS & Environment
-# ==============================================================================
-
-# Source centralized POSIX-compatible OS detection
-# Shared with install.sh for consistency
-source_if_exists "${ZDOTDIR}/functions/detect_os.sh"
-
-# ==============================================================================
-# Core Environment Variables
-# ==============================================================================
-# 💻 Host environment
-export HOST_OS
-export HOST_LOCATION
-
-# 🧰 Tool-specific envs
-export ADOTDIR="${ZDOTDIR}/antigen"
-export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
-export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
-export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
-export VOLTA_HOME="${XDG_CONFIG_HOME}/volta"
-export BUN_INSTALL="${XDG_CONFIG_HOME}/bun"
-export PNPM_HOME="${XDG_CONFIG_HOME}/pnpm"
-
-# 🖥️ Terminal & editor defaults
-export TERM="xterm-256color"
-export EDITOR="vim"
-
-# 📜 Make less not clear the terminal after exit
-export LESS="-XRF"
-
-# ☁️ AWS
-export AWS_CONFIG_FILE="${XDG_CONFIG_HOME}/.aws/config"
-export AWS_SHARED_CREDENTIALS_FILE="${XDG_CONFIG_HOME}/.aws/credentials"
-
-# ==============================================================================
-# Update PATH
-# ==============================================================================
-
-# Make path array automatically unique (zsh magic!)
-typeset -gU path PATH
-
-
-add_to_path_if_exists "${CARGO_HOME}/bin"
-add_to_path_if_exists "${HOME}/.local/bin"
-add_to_path_if_exists "${HOME}/.local/share"
-add_to_path_if_exists "/usr/local/go/bin"
-add_to_path_if_exists "${HOME}/.yarn/bin"
-add_to_path_if_exists "${XDG_CONFIG_HOME}/yarn/global/node_modules/.bin"
-add_to_path_if_exists "${BUN_INSTALL}/bin"
-add_to_path_if_exists "${PNPM_HOME}/bin"
-
-if [[ "${HOST_OS}" == "wsl" ]]; then
-  add_to_path_if_exists "/mnt/c/Program Files/PowerShell/7"
-  add_to_path_if_exists "/mnt/c/Windows"
-  add_to_path_if_exists "/mnt/c/Windows/System32"
-fi
 
 # ==============================================================================
 # Load Local Overrides
@@ -132,29 +74,21 @@ source_if_exists "${ZDOTDIR}/local.zsh"
 if (( $+commands[pass] )); then
     # Set password store location (XDG-compliant)
     export PASSWORD_STORE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/password-store"
-
+    
     # Helper function to safely load secrets
     function load_secret() {
         local secret_path="$1"
         local env_var="$2"
-
+        
         if pass show "$secret_path" &>/dev/null; then
             export "$env_var"="$(pass show "$secret_path")"
         fi
     }
-
+    
     # Load API keys from pass (if configured)
     # Uncomment and configure after running: pass init <gpg-key-id>
     # load_secret "openai/api_key" "OPENAI_API_KEY"
     # load_secret "github/token" "GITHUB_TOKEN"
-fi
-
-#=======================================================================================
-# WSL-Specific Settings
-#=======================================================================================
-if [[ "${HOST_OS}" == "wsl" ]]; then
-    export LIBGL_ALWAYS_INDIRECT=1
-    export BROWSER="wslview"
 fi
 
 #=======================================================================================
@@ -175,12 +109,12 @@ if [[ "${HOST_LOCATION}" == "desktop" && -d "${HOME}/android" ]]; then
             break
         fi
     done
-
+    
     # Fallback: use update-alternatives on Debian/Ubuntu
     if [[ -z "${JAVA_HOME}" ]] && (( $+commands[update-java-alternatives] )); then
         export JAVA_HOME="$(update-java-alternatives -l 2>/dev/null | awk 'NR==1 {print $3}')"
     fi
-
+    
     # Only set Android paths if Java was found
     if [[ -n "$JAVA_HOME" && -d "$JAVA_HOME" ]]; then
         export ANDROID_HOME="${HOME}/android"
@@ -202,7 +136,7 @@ fi
 # 🔒 Fix Ctrl+Q messing with terminal (e.g. Vim visual block mode)
 # See: https://stackoverflow.com/a/21806557
 if [[ -t 0 ]]; then
-  stty -ixon
+    stty -ixon
 fi
 
 # 🕓 History configuration
@@ -264,42 +198,45 @@ export KEYTIMEOUT=1
 # Change cursor shape for different vi modes
 # Skip cursor changes in tmux (can cause glitches in some terminals)
 if [[ -z "$TMUX" ]]; then
-  function zle-keymap-select() {
-    case $KEYMAP in
-      vicmd)      echo -ne '\e[1 q' ;;  # Block cursor (NORMAL mode)
-      viins|main) echo -ne '\e[5 q' ;;  # Beam cursor (INSERT mode)
-    esac
-    zle reset-prompt
-  }
-
-  function zle-line-init() {
-    echo -ne '\e[5 q'  # Start with beam cursor (INSERT mode)
-    zle -K viins       # Start in insert mode
-  }
-
-  function zle-line-finish() {
-    echo -ne '\e[1 q'  # Block cursor when command finishes
-  }
+    function zle-keymap-select() {
+        case $KEYMAP in
+            vicmd)      echo -ne '\e[1 q' ;;  # Block cursor (NORMAL mode)
+            viins|main) echo -ne '\e[5 q' ;;  # Beam cursor (INSERT mode)
+        esac
+        zle reset-prompt
+    }
+    
+    function zle-line-init() {
+        echo -ne '\e[5 q'  # Start with beam cursor (INSERT mode)
+        zle -K viins       # Start in insert mode
+    }
+    
+    function zle-line-finish() {
+        echo -ne '\e[1 q'  # Block cursor when command finishes
+    }
+    
+    zle -N zle-keymap-select
+    zle -N zle-line-init
+    zle -N zle-line-finish
+    
+    # Reset cursor on each new prompt (skip in tmux)
+    function reset_cursor() {
+        echo -ne '\e[5 q'
+    }
+    precmd_functions+=(reset_cursor)
 else
-  # Simpler setup for tmux (no cursor shape changes)
-  function zle-line-init() {
-    zle -K viins       # Start in insert mode
-  }
+    # Simpler setup for tmux (no cursor shape changes)
+    function zle-line-init() {
+        zle -K viins       # Start in insert mode
+    }
+    
+    zle -N zle-line-init
 fi
 
-zle -N zle-keymap-select
-zle -N zle-line-init
-zle -N zle-line-finish
-
-# Reset cursor on each new prompt (skip in tmux)
-function reset_cursor() {
-  [[ -z "$TMUX" ]] && echo -ne '\e[5 q'
-}
-precmd_functions+=(reset_cursor)
 
 # 🪟 Set terminal title on each prompt
 function _set_terminal_title() {
-  print -Pn "\e]0;%n@%m: %~\a"
+    print -Pn "\e]0;%n@%m: %~\a"
 }
 precmd_functions+=(_set_terminal_title)
 
@@ -386,12 +323,12 @@ zle -N change-surround surround
 
 # Bind text objects for vi mode
 for m in visual viopp; do
-  for c in {a,i}${(s..)^:-\'\"\`\|,./:;=+@}; do
-    bindkey -M $m $c select-quoted
-  done
-  for c in {a,i}${(s..)^:-'()[]{}<>bB'}; do
-    bindkey -M $m $c select-bracketed
-  done
+    for c in {a,i}${(s..)^:-\'\"\`\|,./:;=+@}; do
+        bindkey -M $m $c select-quoted
+    done
+    for c in {a,i}${(s..)^:-'()[]{}<>bB'}; do
+        bindkey -M $m $c select-bracketed
+    done
 done
 
 # Surround operations (like vim-surround)
@@ -422,7 +359,7 @@ zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 zstyle ':completion:*' completer _expand _complete _match _prefix _approximate _list _history
 zstyle ':completion:*:match:*' original only
 zstyle -e ':completion:*:approximate:*' max-errors \
-  'reply=($((($#PREFIX+$#SUFFIX)/3>7?7:($#PREFIX+$#SUFFIX)/3))numeric)'
+'reply=($((($#PREFIX+$#SUFFIX)/3>7?7:($#PREFIX+$#SUFFIX)/3))numeric)'
 
 # 💬 Completion display formatting
 zstyle ':completion:*:messages'     format '%F{yellow}-- %d --%f'
@@ -439,7 +376,6 @@ zstyle ':completion:*'              group-name ''
 zstyle ':completion:*'              use-cache true
 zstyle ':completion:*'              cache-path "${ZSH_CACHE_DIR}/zcompcache"
 zstyle ':completion:*'              rehash true
-zstyle ':completion:*:functions'    ignored-patterns '(_*|pre(cmd|exec))'
 zstyle ':completion:*'              menu select interactive
 zstyle ':completion:*'              matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
 zstyle ':completion:*'              accept-exact '*(N)'        # Faster exact matches
@@ -483,20 +419,19 @@ zstyle ':completion:*:manuals.*' insert-sections true
 # 🔍 Ignore completion for commands we don't have
 zstyle ':completion:*:functions' ignored-patterns '(_*|pre(cmd|exec))'
 zstyle ':completion:*:*:*:users' ignored-patterns \
-    adm amanda apache avahi beaglidx bin cacti canna clamav daemon \
-    dbus distcache dovecot fax ftp games gdm gkrellmd gopher \
-    hacluster haldaemon halt hsqldb ident junkbust ldap lp mail \
-    mailman mailnull mldonkey mysql nagios named netdump news nfsnobody \
-    nobody nscd ntp nut nx openvpn operator pcap postfix postgres privoxy \
-    pulse pvm quagga radvd rpc rpcuser rpm shutdown squid sshd sync uucp \
-    vcsa xfs '_*'
+adm amanda apache avahi beaglidx bin cacti canna clamav daemon \
+dbus distcache dovecot fax ftp games gdm gkrellmd gopher \
+hacluster haldaemon halt hsqldb ident junkbust ldap lp mail \
+mailman mailnull mldonkey mysql nagios named netdump news nfsnobody \
+nobody nscd ntp nut nx openvpn operator pcap postfix postgres privoxy \
+pulse pvm quagga radvd rpc rpcuser rpm shutdown squid sshd sync uucp \
+vcsa xfs '_*'
 
 # 🎯 Hostname completion from known hosts
 zstyle ':completion:*:hosts' hosts \
-    ${${${${(f)"$(cat {/etc/ssh/ssh_,~/.ssh/}known_hosts(|2)(N) 2>/dev/null)"}%%[#| ]*}//,/ }//\]:[0-9]*/ }
+${${${${(f)"$(cat {/etc/ssh/ssh_,~/.ssh/}known_hosts(|2)(N) 2>/dev/null)"}%%[#| ]*}//,/ }//\]:[0-9]*/ }
 
 # 📦 Speed up completion for large repositories
-zstyle ':completion:*:git-checkout:*' sort false
 zstyle ':completion:*:descriptions' format '[%d]'
 
 # 🔒 Escape ? without quoting
@@ -507,20 +442,20 @@ zle -N self-insert url-quote-magic
 
 # 🔁 Auto-source `.dirrc` when entering a directory (SAFE version)
 function load-local-conf() {
-  local dirrc=.dirrc
-  [[ -f $dirrc ]] || return 0
-
-  # Only auto-load from trusted directories (HOME and its subdirectories)
-  case $PWD in
-    $HOME/*|$HOME)
-      source "$dirrc"
-      ;;
-    *)
-      # Warn about untrusted .dirrc files
-      print -P "%F{yellow}⚠️  Found .dirrc in untrusted location: %F{cyan}$PWD%f"
-      print -P "%F{yellow}Run 'source .dirrc' to load it manually%f"
-      ;;
-  esac
+    local dirrc=.dirrc
+    [[ -f $dirrc ]] || return 0
+    
+    # Only auto-load from trusted directories (HOME and its subdirectories)
+    case $PWD in
+        $HOME/*|$HOME)
+            source "$dirrc"
+        ;;
+        *)
+            # Warn about untrusted .dirrc files
+            print -P "%F{yellow}⚠️  Found .dirrc in untrusted location: %F{cyan}$PWD%f"
+            print -P "%F{yellow}Run 'source .dirrc' to load it manually%f"
+        ;;
+    esac
 }
 chpwd_functions+=(load-local-conf)
 
@@ -529,10 +464,10 @@ chpwd_functions+=(load-local-conf)
 # ==============================================================================
 
 ZINIT_HOME="${XDG_DATA_HOME}/zinit/zinit.git"
-[[ ! -d $ZINIT_HOME ]] && mkdir -p "$(dirname $ZINIT_HOME)"
-[[ ! -d $ZINIT_HOME/.git ]] && git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
-source "${ZINIT_HOME}/zinit.zsh"
-autoload -Uz _zinit; (( ${+_comps} )) && _comps[zinit]=_zinit
+if [[ -f "${ZINIT_HOME}/zinit.zsh" ]]; then
+    source "${ZINIT_HOME}/zinit.zsh"
+    autoload -Uz _zinit; (( ${+_comps} )) && _comps[zinit]=_zinit
+fi
 
 # ==============================================================================
 # THEMING
@@ -551,8 +486,10 @@ zi light romkatv/powerlevel10k
 
 # 🎨 Fast Syntax Highlighting - Highlights commands as you type in real-time
 # Valid commands = green, invalid = red, helps catch typos before execution
-zi ice lucid depth'1'
-zi light zdharma-continuum/fast-syntax-highlighting
+if [[ "${HOST_LOCATION}" == "desktop" && -z "${SSH_TTY:-}" ]]; then
+    zi ice lucid wait'1' depth'1'
+    zi light zdharma-continuum/fast-syntax-highlighting
+fi
 
 # 💡 FZF - Fuzzy finder for files, commands, history
 # Usage: Ctrl+T (files), Ctrl+R (history), Alt+C (directories)
@@ -569,7 +506,7 @@ zi ice lucid wait'1' atload'source_if_exists "${XDG_DATA_HOME}/zinit/plugins/jun
 zi snippet /dev/null
 
 zi ice lucid wait'1' depth'1' atclone'./install --bin' atpull'%atclone' \
-  atload'add_to_path_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/bin"'
+atload'add_to_path_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/bin"'
 zi light junegunn/fzf
 
 # 📂 FZF-Tab - Replaces tab completion with FZF interface
@@ -619,8 +556,8 @@ zi light z-shell/zsh-fancy-completions
 # Usage: `z <pattern>` - jump to most-frequent matching directory
 _ZO_FZF_OPTS="--bind=ctrl-z:ignore --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {2..}'"
 zinit ice lucid as"command" from"gh-r" \
-  atclone"./zoxide init zsh --cmd z > init.zsh" \
-  atpull"%atclone" src"init.zsh" nocompile'!'
+atclone"./zoxide init zsh --cmd z > init.zsh" \
+atpull"%atclone" src"init.zsh" nocompile'!'
 zinit light ajeetdsouza/zoxide
 
 # 📁 BD - Quickly go back to a parent directory by name
@@ -718,7 +655,7 @@ zi light cli/cli
 # Usage: Ctrl+R for powerful history search, `atuin stats` for analytics
 # Stores full context (directory, duration, exit code) and syncs across machines
 zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-musl.tar.gz' pick'*/atuin' \
-  atclone'chmod +x */atuin && ./*/atuin init zsh > init.zsh' atpull'%atclone' src'init.zsh'
+atclone'chmod +x */atuin && ./*/atuin init zsh > init.zsh' atpull'%atclone' src'init.zsh'
 zi light atuinsh/atuin
 
 # 📊 Bottom - Modern system monitor
@@ -727,7 +664,7 @@ zi light ClementTsang/bottom
 
 # 🔥 Tokei - Fast code statistics
 zi ice wait'2' lucid from'gh' as'program' pick'target/release/tokei' \
-  atclone'cargo build --release --locked' atpull'%atclone'
+atclone'cargo build --release --locked' atpull'%atclone'
 zi light XAMPPRocky/tokei
 
 # ⚡ Hyperfine - Command benchmarking
@@ -831,10 +768,10 @@ autoload -Uz zmv
 
 # Auto-start Docker on WSL if not running
 if [[ "$HOST_OS" == "wsl" ]] && (( $+commands[systemctl] )); then
-  if ! systemctl is-active --quiet docker 2>/dev/null; then
-    # Start Docker without password prompt (requires sudoers NOPASSWD for systemctl)
-    sudo -n systemctl start docker 2>/dev/null && echo "✓ Docker started" || true
-  fi
+    if ! systemctl is-active --quiet docker 2>/dev/null; then
+        # Start Docker without password prompt (requires sudoers NOPASSWD for systemctl)
+        sudo -n systemctl start docker 2>/dev/null && echo "✓ Docker started" || true
+    fi
 fi
 
 # 🗂️ broot (directory visualizer)
@@ -855,14 +792,14 @@ source_if_exists "${ZDOTDIR}/.p10k.zsh"
 
 # 🐱 Kitty terminal config + completions
 if (( $+commands[kitty] )); then
-  export KITTY_CONFIG_DIRECTORY="${XDG_CONFIG_HOME}/kitty"
-
-  # Cache kitty completion (regenerate only when kitty binary changes)
-  local kitty_comp="${ZSH_CACHE_DIR}/kitty_completion.zsh"
-  if [[ ! -f "$kitty_comp" ]] || [[ "${commands[kitty]}" -nt "$kitty_comp" ]]; then
-    kitty + complete setup zsh >| "$kitty_comp"
-  fi
-  source "$kitty_comp"
+    export KITTY_CONFIG_DIRECTORY="${XDG_CONFIG_HOME}/kitty"
+    
+    # Cache kitty completion (regenerate only when kitty binary changes)
+    local kitty_comp="${ZSH_CACHE_DIR}/kitty_completion.zsh"
+    if [[ ! -f "$kitty_comp" ]] || [[ "${commands[kitty]}" -nt "$kitty_comp" ]]; then
+        kitty + complete setup zsh >| "$kitty_comp"
+    fi
+    source "$kitty_comp"
 fi
 
 # 🧬 direnv – per-project environment management
@@ -937,42 +874,35 @@ fi
 #[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
 
 # ==============================================================================
-# mise - version manager for Node.js
-# ==============================================================================
-if command -v mise &>/dev/null; then
-    eval "$(mise activate zsh)"
-fi
-
-# ==============================================================================
 # WSL Windows Terminal sync (manual function)
 # ==============================================================================
 if [[ "${HOST_OS}" == 'wsl' ]]; then
-  sync_wt_settings() {
-    local PWSH_EXE="/mnt/c/Program Files/PowerShell/7/pwsh.exe"
-
-    if [[ -x "$PWSH_EXE" ]]; then
-        local WINDOWS_USER=$("$PWSH_EXE" -NoProfile -Command '$env:UserName' | tr -d '\r')
-        local DOTFILES_DIR="$HOME/.dotfiles"
-        local TERMINAL_SETTINGS_DEST="/mnt/c/Users/$WINDOWS_USER/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
-        local TERMINAL_SETTINGS_SRC="$DOTFILES_DIR/windows-terminal/settings.json"
-
-        if [[ -f "$TERMINAL_SETTINGS_DEST" && -f "$TERMINAL_SETTINGS_SRC" ]]; then
-          if [[ "$TERMINAL_SETTINGS_SRC" -nt "$TERMINAL_SETTINGS_DEST" ]]; then
-            cp "$TERMINAL_SETTINGS_DEST" "${TERMINAL_SETTINGS_DEST}.bak.$(date +%s)"
-            cp "$TERMINAL_SETTINGS_SRC" "$TERMINAL_SETTINGS_DEST"
-            echo "✓ Windows Terminal settings synced"
-          else
-            echo "⚠ Windows Terminal settings already up to date"
-          fi
+    function sync_wt_settings() {
+        local PWSH_EXE="/mnt/c/Program Files/PowerShell/7/pwsh.exe"
+        
+        if [[ -x "$PWSH_EXE" ]]; then
+            local WINDOWS_USER=$("$PWSH_EXE" -NoProfile -Command '$env:UserName' | tr -d '\r')
+            local DOTFILES_DIR="$HOME/.dotfiles"
+            local TERMINAL_SETTINGS_DEST="/mnt/c/Users/$WINDOWS_USER/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
+            local TERMINAL_SETTINGS_SRC="$DOTFILES_DIR/windows-terminal/settings.json"
+            
+            if [[ -f "$TERMINAL_SETTINGS_DEST" && -f "$TERMINAL_SETTINGS_SRC" ]]; then
+                if [[ "$TERMINAL_SETTINGS_SRC" -nt "$TERMINAL_SETTINGS_DEST" ]]; then
+                    cp "$TERMINAL_SETTINGS_DEST" "${TERMINAL_SETTINGS_DEST}.bak.$(date +%s)"
+                    cp "$TERMINAL_SETTINGS_SRC" "$TERMINAL_SETTINGS_DEST"
+                    echo "✓ Windows Terminal settings synced"
+                else
+                    echo "⚠ Windows Terminal settings already up to date"
+                fi
+            else
+                echo "✗ Could not find settings files"
+            fi
         else
-          echo "✗ Could not find settings files"
+            echo "✗ PowerShell not found at $PWSH_EXE"
         fi
-    else
-      echo "✗ PowerShell not found at $PWSH_EXE"
-    fi
-  }
-
-  alias update-wt-settings='sync_wt_settings'
+    }
+    
+    alias update-wt-settings='sync_wt_settings'
 fi
 #=======================================================================================
 # Source aliases and functions
@@ -995,4 +925,3 @@ compile_if_needed "${ZDOTDIR}/local.zsh"
 
 # If zsh is really slow, enable profiling via zprof, uncomment the line above and line 2
 # zprof
-

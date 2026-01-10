@@ -198,6 +198,23 @@ echo "✓ Go: $(go version 2>&1)"
 echo "✓ Vim: $(vim --version 2>&1 | head -1)"
 
 #---------------------------------------------------------------------------------------
+# Install Zinit (as user, not root)
+#---------------------------------------------------------------------------------------
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Installing Zinit for ${ACTUAL_USER}"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+user_xdg_data_home="${ACTUAL_USER_HOME}/.local/share"
+user_zinit_home="${user_xdg_data_home}/zinit/zinit.git"
+
+if [[ ! -f "${user_zinit_home}/zinit.zsh" ]]; then
+    sudo -u "${ACTUAL_USER}" mkdir -p "$(dirname "${user_zinit_home}")"
+    sudo -u "${ACTUAL_USER}" git clone https://github.com/zdharma-continuum/zinit.git "${user_zinit_home}"
+else
+    echo "✓ Zinit already installed"
+fi
+
+#---------------------------------------------------------------------------------------
 # Install mise for Node.js version management (as user, not root)
 #---------------------------------------------------------------------------------------
 if [[ "${HOST_OS}" != "darwin" ]]; then
@@ -232,8 +249,8 @@ fi
 # Install pynvim (Python package for Vim)
 #---------------------------------------------------------------------------------------
 echo "Installing pynvim for Vim..."
-pip3 install --user pynvim 2>/dev/null || echo "  (skipping - may already be installed)"
-python3 -c "import pynvim" 2>/dev/null || echo "  (pynvim installation may need verification)"
+sudo -u "${ACTUAL_USER}" -H python3 -m pip install --user pynvim 2>/dev/null || echo "  (skipping - may already be installed)"
+sudo -u "${ACTUAL_USER}" -H python3 -c "import pynvim" 2>/dev/null || echo "  (pynvim installation may need verification)"
 echo "✓ pynvim installed"
 
 # Configure zsh as default shell
@@ -281,11 +298,65 @@ if [[ "$HOST_LOCATION" == "desktop" && "$HOST_OS" == "linux" ]]; then
             [[ -f "$zipfile" ]] && unzip -q "$zipfile" -d "$install_dir"
         done
         
-        # Install fonts (source aliases with error handling)
-        source "${DOTFILES_ROOT}/zsh/aliases.zsh" || true
-        if command -v install-font-subdirectories &>/dev/null; then
-            install-font-subdirectories "$install_dir"
-        fi
+        install_font_folder() {
+            local directory="${1}"
+            local font_directory="/usr/share/fonts"
+            local last_folder
+            local -a otf_files
+            local -a ttf_files
+
+            if [[ -z "${directory}" ]]; then
+                echo "Error: No directory provided"
+                return 1
+            fi
+            if [[ ! -d "${directory}" ]]; then
+                echo "Error: Directory does not exist: ${directory}"
+                return 1
+            fi
+
+            last_folder="$(basename "${directory}")"
+            echo "Installing fonts from: ${directory}"
+
+            mkdir -p "${font_directory}/opentype/${last_folder}" "${font_directory}/truetype/${last_folder}"
+
+            shopt -s nullglob
+            otf_files=("${directory}"/*.otf)
+            ttf_files=("${directory}"/*.ttf)
+            shopt -u nullglob
+
+            if (( ${#otf_files[@]} > 0 )); then
+                cp -t "${font_directory}/opentype/${last_folder}/" -- "${otf_files[@]}" 2>/dev/null || true
+            fi
+            if (( ${#ttf_files[@]} > 0 )); then
+                cp -t "${font_directory}/truetype/${last_folder}/" -- "${ttf_files[@]}" 2>/dev/null || true
+            fi
+
+            if command -v fc-cache &>/dev/null; then
+                echo "Updating font cache..."
+                fc-cache -f -v | grep -q "${last_folder}" && echo "✓ Fonts installed: ${last_folder}"
+            fi
+        }
+
+        install_font_subdirectories() {
+            local directory="${1}"
+            local subdirectory
+
+            if [[ -z "${directory}" ]]; then
+                echo "Error: No directory provided"
+                return 1
+            fi
+            if [[ ! -d "${directory}" ]]; then
+                echo "Error: Directory does not exist: ${directory}"
+                return 1
+            fi
+
+            for subdirectory in "${directory}"/*; do
+                [[ -d "${subdirectory}" ]] || continue
+                install_font_folder "${subdirectory}"
+            done
+        }
+
+        install_font_subdirectories "${install_dir}"
         
         rm -rf "$install_dir"
         touch "${FONTS_DIR}/.installed"

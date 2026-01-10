@@ -21,7 +21,74 @@
 # - Interactive-only config (prompt, plugins → .zshrc)
 # ==============================================================================
 
+# Guard for .zshrc fallback sourcing
+export ZSHENV_LOADED=1
+
 # 🧭 Base paths (XDG-compliant)
 export XDG_CONFIG_HOME="${HOME}/.config"
+export XDG_DATA_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-${HOME}/.cache}"
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 export ZSH_CACHE_DIR="${ZDOTDIR}/cache"
+
+# 🧠 Shell and runtime config
+export ZSH="${ZDOTDIR}"
+export LOCAL_CONFIG="${XDG_CONFIG_HOME}"
+
+# 🧰 Tool-specific envs
+export ADOTDIR="${ZDOTDIR}/antigen"
+export ENHANCD_DIR="${XDG_CONFIG_HOME}/enhancd"
+export RUSTUP_HOME="${XDG_CONFIG_HOME}/.rustup"
+export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
+export VOLTA_HOME="${XDG_CONFIG_HOME}/volta"
+export BUN_INSTALL="${XDG_CONFIG_HOME}/bun"
+export PNPM_HOME="${XDG_CONFIG_HOME}/pnpm"
+
+# 🖥️ Terminal & editor defaults
+export TERM="xterm-256color"
+export EDITOR="vim"
+export LESS="-XRF"
+
+# ☁️ AWS
+export AWS_CONFIG_FILE="${XDG_CONFIG_HOME}/.aws/config"
+export AWS_SHARED_CREDENTIALS_FILE="${XDG_CONFIG_HOME}/.aws/credentials"
+
+# ==============================================================================
+# Detect Host OS & Environment
+# ==============================================================================
+if [[ -f "${ZDOTDIR}/functions/detect_os.sh" ]]; then
+  source "${ZDOTDIR}/functions/detect_os.sh"
+fi
+
+# ==============================================================================
+# Update PATH
+# ==============================================================================
+typeset -gU path PATH
+path=(
+  "${CARGO_HOME}/bin"
+  "${HOME}/.local/bin"
+  "${HOME}/.local/share"
+  "/usr/local/go/bin"
+  "${HOME}/.yarn/bin"
+  "${XDG_CONFIG_HOME}/yarn/global/node_modules/.bin"
+  "${BUN_INSTALL}/bin"
+  "${PNPM_HOME}/bin"
+  $path
+)
+
+if [[ "${HOST_OS:-}" == "wsl" ]]; then
+  path=(
+    "/mnt/c/Program Files/PowerShell/7"
+    "/mnt/c/Windows"
+    "/mnt/c/Windows/System32"
+    $path
+  )
+fi
+
+# ==============================================================================
+# WSL-Specific Settings
+# ==============================================================================
+if [[ "${HOST_OS:-}" == "wsl" ]]; then
+  export LIBGL_ALWAYS_INDIRECT=1
+  export BROWSER="wslview"
+fi
