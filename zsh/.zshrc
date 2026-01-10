@@ -436,9 +436,11 @@ zstyle ':completion:*:descriptions' format '[%d]'
 
 # 🔒 Escape ? without quoting
 set zle_bracketed_paste
-autoload -Uz bracketed-paste-magic url-quote-magic
+autoload -Uz bracketed-paste-magic
 zle -N bracketed-paste bracketed-paste-magic
-zle -N self-insert url-quote-magic
+# NOTE: url-quote-magic disabled - causes severe per-character typing lag
+# autoload -Uz url-quote-magic
+# zle -N self-insert url-quote-magic
 
 # 🔁 Auto-source `.dirrc` when entering a directory (SAFE version)
 function load-local-conf() {
@@ -484,12 +486,17 @@ zi light romkatv/powerlevel10k
 # COMPLETION / INTERACTIVE ENHANCEMENTS
 # ==============================================================================
 
-# 🎨 Fast Syntax Highlighting - Highlights commands as you type in real-time
-# Valid commands = green, invalid = red, helps catch typos before execution
+# 🎨 Syntax Highlighting - DISABLED (re-enable after PATH optimization)
+# The issue: syntax highlighting checks EVERY keystroke against 48 PATH entries
+# Once typing is fast, you can re-enable with the lighter plugin
 if [[ "${HOST_LOCATION}" == "desktop" && -z "${SSH_TTY:-}" ]]; then
-    zi ice lucid wait'1' depth'1'
-    zi light zdharma-continuum/fast-syntax-highlighting
+    zi ice lucid wait'2' depth'1'  # Increased wait time
+    zi light zsh-users/zsh-syntax-highlighting  # Lighter alternative
 fi
+# if [[ "${HOST_LOCATION}" == "desktop" && -z "${SSH_TTY:-}" ]]; then
+#     zi ice lucid wait'1' depth'1'
+#     zi light zdharma-continuum/fast-syntax-highlighting
+# fi
 
 # 💡 FZF - Fuzzy finder for files, commands, history
 # Usage: Ctrl+T (files), Ctrl+R (history), Alt+C (directories)
@@ -555,10 +562,10 @@ zi light z-shell/zsh-fancy-completions
 # 📁 Zoxide - Fast, smart directory jumper based on frequency
 # Usage: `z <pattern>` - jump to most-frequent matching directory
 _ZO_FZF_OPTS="--bind=ctrl-z:ignore --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {2..}'"
-zinit ice lucid as"command" from"gh-r" \
-atclone"./zoxide init zsh --cmd z > init.zsh" \
-atpull"%atclone" src"init.zsh" nocompile'!'
-zinit light ajeetdsouza/zoxide
+zi ice lucid as"command" from"gh-r" \
+  atclone"./zoxide init zsh --cmd z > init.zsh" \
+  atpull"%atclone" src"init.zsh" nocompile'!'
+zi light ajeetdsouza/zoxide
 
 # 📁 BD - Quickly go back to a parent directory by name
 # Usage: `bd src` - jump back to /home/user/projects/src from deep subdirectory

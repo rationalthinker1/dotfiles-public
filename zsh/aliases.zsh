@@ -558,13 +558,6 @@ function git_reset() {
 		COMMIT="HEAD~$1"
 	fi
 
-	local confirm
-	read -r "confirm?Hard reset to ${COMMIT}? This discards local changes (y/n): "
-	if [[ "${confirm}" != "y" ]]; then
-		echo "Cancelled"
-		return 1
-	fi
-
 	git reset --hard "${COMMIT}"
 }
 alias gre="git_reset"

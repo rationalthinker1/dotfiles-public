@@ -75,11 +75,23 @@ path=(
 )
 
 if [[ "${HOST_OS:-}" == "wsl" ]]; then
-  path=(
+  # Filter Windows PATH to only essential directories (performance optimization)
+  # WSL automatically appends Windows PATH, but it includes 20+ slow NTFS-mounted dirs
+  # This causes severe slowdown in fast-syntax-highlighting and other command lookups
+
+  # Build filtered Windows PATH with only essential tools
+  local -a windows_paths=(
     "/mnt/c/Program Files/PowerShell/7"
-    "/mnt/c/Windows"
     "/mnt/c/Windows/System32"
-    $path
+    "/mnt/c/Windows"
+  )
+
+  # Deduplicate and filter PATH: keep Linux paths, add only essential Windows paths
+  # This reduces PATH from 30+ entries to ~15, dramatically improving performance
+  typeset -U path  # Remove duplicates
+  path=(
+    ${windows_paths[@]}
+    ${path:#/mnt/c/*}  # Remove ALL Windows paths first
   )
 fi
 
