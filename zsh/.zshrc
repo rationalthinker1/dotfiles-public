@@ -44,7 +44,7 @@ fi
 function add_to_path_if_exists() {
     # Directory existence check removed for performance (was 20% of startup time in WSL)
     # [[ -d "${1}" ]] || return 1
-
+    
     # Prepend to path array - typeset -U automatically deduplicates!
     path=("${1}" "${path[@]}")
 }
@@ -426,12 +426,12 @@ vcsa xfs '_*'
 zstyle ':completion:*:hosts' hosts \
 ${${${${(f)"$(cat {/etc/ssh/ssh_,~/.ssh/}known_hosts(|2)(N) 2>/dev/null)"}%%[#| ]*}//,/ }//\]:[0-9]*/ }
 
-# 📦 Speed up completion for large repositories
-zstyle ':completion:*:descriptions' format '[%d]'
-
 # 🔒 Enable bracketed paste mode for safer pasting
 # This prevents pasted text from being executed immediately
 # Note: Bracketed paste is enabled automatically in modern ZSH
+if (( ${+options[bracketed_paste]} )); then
+    setopt BRACKETED_PASTE
+fi
 autoload -Uz bracketed-paste-magic
 zle -N bracketed-paste bracketed-paste-magic
 # NOTE: url-quote-magic disabled - causes severe per-character typing lag
@@ -509,12 +509,11 @@ zi ice lucid wait'1' atload'source_if_exists "${XDG_DATA_HOME}/zinit/plugins/jun
 zi snippet /dev/null
 
 zi ice lucid wait'1' depth'1' atclone'./install --bin' atpull'%atclone' \
-atload'add_to_path_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/bin"'
+    atload'add_to_path_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/bin"'
 zi light junegunn/fzf
 
 # 📂 FZF-Tab - Replaces tab completion with FZF interface
 # Usage: Press TAB for fuzzy-searchable completion menu with previews
-zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always $realpath'
 zi ice lucid wait'1' depth'1'
 zi light Aloxaf/fzf-tab
 
@@ -559,8 +558,8 @@ zi light z-shell/zsh-fancy-completions
 # Usage: `z <pattern>` - jump to most-frequent matching directory
 _ZO_FZF_OPTS="--bind=ctrl-z:ignore --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {2..}'"
 zi ice lucid as"command" from"gh-r" \
-  atclone"./zoxide init zsh --cmd z > init.zsh" \
-  atpull"%atclone" src"init.zsh" nocompile'!'
+    atclone"./zoxide init zsh --cmd z > init.zsh" \
+    atpull"%atclone" src"init.zsh" nocompile'!'
 zi light ajeetdsouza/zoxide
 
 # 📁 BD - Quickly go back to a parent directory by name
@@ -654,7 +653,7 @@ zi light cli/cli
 # Usage: Ctrl+R for powerful history search, `atuin stats` for analytics
 # Stores full context (directory, duration, exit code) and syncs across machines
 zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-musl.tar.gz' pick'*/atuin' \
-atclone'chmod +x */atuin && ./*/atuin init zsh > init.zsh' atpull'%atclone' src'init.zsh'
+    atclone'chmod +x */atuin && ./*/atuin init zsh > init.zsh' atpull'%atclone' src'init.zsh'
 zi light atuinsh/atuin
 
 # 📊 Bottom - Modern system monitor
@@ -663,7 +662,7 @@ zi light ClementTsang/bottom
 
 # 🔥 Tokei - Fast code statistics
 zi ice wait'2' lucid from'gh' as'program' pick'target/release/tokei' \
-atclone'cargo build --release --locked' atpull'%atclone'
+    atclone'cargo build --release --locked' atpull'%atclone'
 zi light XAMPPRocky/tokei
 
 # ⚡ Hyperfine - Command benchmarking
@@ -756,7 +755,7 @@ zi snippet OMZP::dirhistory       # Usage: Alt+Left/Right arrows to navigate dir
 autoload -Uz colors && colors
 
 #Calculator: zcalc
-autoload -U zcalc
+autoload -Uz zcalc
 
 # 📦 Enable zmv for wildcard-based file renaming (e.g., zmv '*.txt' 'prefix_#1.txt')
 autoload -Uz zmv
@@ -794,7 +793,7 @@ if (( $+commands[kitty] )); then
     export KITTY_CONFIG_DIRECTORY="${XDG_CONFIG_HOME}/kitty"
     
     # Cache kitty completion (regenerate only when kitty binary changes)
-    local kitty_comp="${ZSH_CACHE_DIR}/kitty_completion.zsh"
+    typeset kitty_comp="${ZSH_CACHE_DIR}/kitty_completion.zsh"
     if [[ ! -f "$kitty_comp" ]] || [[ "${commands[kitty]}" -nt "$kitty_comp" ]]; then
         kitty + complete setup zsh >| "$kitty_comp"
     fi

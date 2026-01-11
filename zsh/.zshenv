@@ -80,7 +80,7 @@ if [[ "${HOST_OS:-}" == "wsl" ]]; then
   # This causes severe slowdown in fast-syntax-highlighting and other command lookups
 
   # Build filtered Windows PATH with only essential tools
-  local -a windows_paths=(
+  typeset -a windows_paths=(
     "/mnt/c/Program Files/PowerShell/7"
     "/mnt/c/Windows/System32"
     "/mnt/c/Windows"

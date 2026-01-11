@@ -213,11 +213,15 @@ alias mkdir="mkdir -pv"
 # Repeat the previous command with sudo
 alias pls="sudo !!"
 
-# Repeat the previous command with sudo
-alias sudoi="sudo \"PATH=\$PATH\""
+# Preserve PATH when using sudo
+function sudoi() {
+    sudo env "PATH=${PATH}" "$@"
+}
 
 # sshfs with proper default settings
-alias sshfs="sshfs -o allow_other,uid=1000,gid=1000"
+function sshfs() {
+    command sshfs -o allow_other,uid="$(id -u)",gid="$(id -g)" "$@"
+}
 
 # Hiberate
 alias hiberate="sudo pm-suspend"
