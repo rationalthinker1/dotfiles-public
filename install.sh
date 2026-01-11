@@ -16,6 +16,8 @@ else
 fi
 readonly BACKUP_DIR="${DOTFILES_ROOT}/backup"
 readonly FONTS_DIR="${DOTFILES_ROOT}/fonts"
+UPGRADE_SYSTEM="${UPGRADE_SYSTEM:-0}"
+readonly UPGRADE_SYSTEM
 
 # Package definitions
 readonly -a DARWIN_PACKAGES=(
@@ -58,6 +60,7 @@ declare -A DOTFILE_LINKS=(
     [.vimrc]="${HOME}/.vimrc"
     [.vim]="${HOME}/.vim"
     [.gitconfig]="${HOME}/.gitconfig"
+    [.aws]="${XDG_CONFIG_HOME:-${HOME}/.config}/.aws"
     [zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/zsh"
     [ranger]="${XDG_CONFIG_HOME:-${HOME}/.config}/ranger"
     [sheldon]="${XDG_CONFIG_HOME:-${HOME}/.config}/sheldon"
@@ -183,7 +186,11 @@ else
     export TZ=America/New_York
 
     apt-get -y update || { echo "ERROR: apt-get update failed"; exit 1; }
-    apt-get -y upgrade || echo "WARNING: Package upgrade had issues"
+    if [[ "${UPGRADE_SYSTEM}" == "1" ]]; then
+        apt-get -y upgrade || echo "WARNING: Package upgrade had issues"
+    else
+        echo "Skipping system upgrade (set UPGRADE_SYSTEM=1 to enable)"
+    fi
 
     # Install packages (apt automatically skips already-installed packages)
     echo "Installing Linux packages..."
