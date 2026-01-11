@@ -176,16 +176,6 @@ setopt HIST_IGNORE_ALL_DUPS       # Remove all previous dups when adding new one
 setopt HIST_SAVE_NO_DUPS          # Never save duplicates to history file
 setopt HIST_VERIFY                # Verify history expansions before execution (prevents accidental !! or !foo)
 
-#=======================================================================================
-# Setting up home/end keys for keyboard
-# https://unix.stackexchange.com/questions/20298/home-key-not-working-in-terminal
-#=======================================================================================
-# Vi mode
-bindkey -v
-
-# Reduce ESC delay to 10ms for faster vi mode switching (default: 400ms)
-export KEYTIMEOUT=1
-
 # ==============================================================================
 # Vi Mode Visual Indicators
 # ==============================================================================
@@ -214,11 +204,6 @@ if [[ -z "$TMUX" ]]; then
     zle -N zle-line-init
     zle -N zle-line-finish
     
-    # Reset cursor on each new prompt (skip in tmux)
-    function reset_cursor() {
-        echo -ne '\e[5 q'
-    }
-    precmd_functions+=(reset_cursor)
 else
     # Simpler setup for tmux (no cursor shape changes)
     function zle-line-init() {
@@ -227,13 +212,6 @@ else
     
     zle -N zle-line-init
 fi
-
-
-# 🪟 Set terminal title on each prompt
-function _set_terminal_title() {
-    print -Pn "\e]0;%n@%m: %~\a"
-}
-precmd_functions+=(_set_terminal_title)
 
 # ==============================================================================
 # Enhanced Keybindings (Vi mode with Emacs conveniences)
@@ -298,6 +276,15 @@ bindkey -M vicmd 'v' edit-command-line # v in normal mode: Open in $EDITOR
 # ==============================================================================
 # Vi Mode Enhancements
 # ==============================================================================
+#=======================================================================================
+# Setting up home/end keys for keyboard
+# https://unix.stackexchange.com/questions/20298/home-key-not-working-in-terminal
+#=======================================================================================
+# Vi mode
+bindkey -v
+
+# Reduce ESC delay to 10ms for faster vi mode switching (default: 400ms)
+export KEYTIMEOUT=1
 
 # Better undo/redo
 bindkey -M vicmd 'u' undo
@@ -414,17 +401,17 @@ zstyle ':completion:*:manuals.*' insert-sections true
 # 🔍 Ignore completion for commands we don't have
 zstyle ':completion:*:functions' ignored-patterns '(_*|pre(cmd|exec))'
 zstyle ':completion:*:*:*:users' ignored-patterns \
-adm amanda apache avahi beaglidx bin cacti canna clamav daemon \
-dbus distcache dovecot fax ftp games gdm gkrellmd gopher \
-hacluster haldaemon halt hsqldb ident junkbust ldap lp mail \
-mailman mailnull mldonkey mysql nagios named netdump news nfsnobody \
-nobody nscd ntp nut nx openvpn operator pcap postfix postgres privoxy \
-pulse pvm quagga radvd rpc rpcuser rpm shutdown squid sshd sync uucp \
-vcsa xfs '_*'
+    adm amanda apache avahi beaglidx bin cacti canna clamav daemon \
+    dbus distcache dovecot fax ftp games gdm gkrellmd gopher \
+    hacluster haldaemon halt hsqldb ident junkbust ldap lp mail \
+    mailman mailnull mldonkey mysql nagios named netdump news nfsnobody \
+    nobody nscd ntp nut nx openvpn operator pcap postfix postgres privoxy \
+    pulse pvm quagga radvd rpc rpcuser rpm shutdown squid sshd sync uucp \
+    vcsa xfs '_*'
 
 # 🎯 Hostname completion from known hosts
 zstyle ':completion:*:hosts' hosts \
-${${${${(f)"$(cat {/etc/ssh/ssh_,~/.ssh/}known_hosts(|2)(N) 2>/dev/null)"}%%[#| ]*}//,/ }//\]:[0-9]*/ }
+    ${${${${(f)"$(cat {/etc/ssh/ssh_,~/.ssh/}known_hosts(|2)(N) 2>/dev/null)"}%%[#| ]*}//,/ }//\]:[0-9]*/ }
 
 # 🔒 Enable bracketed paste mode for safer pasting
 # This prevents pasted text from being executed immediately
@@ -438,24 +425,6 @@ zle -N bracketed-paste bracketed-paste-magic
 # autoload -Uz url-quote-magic
 # zle -N self-insert url-quote-magic
 
-# 🔁 Auto-source `.dirrc` when entering a directory (SAFE version)
-function load-local-conf() {
-    local dirrc=.dirrc
-    [[ -f $dirrc ]] || return 0
-    
-    # Only auto-load from trusted directories (HOME and its subdirectories)
-    case $PWD in
-        $HOME/*|$HOME)
-            source "$dirrc"
-        ;;
-        *)
-            # Warn about untrusted .dirrc files
-            print -P "%F{yellow}⚠️  Found .dirrc in untrusted location: %F{cyan}$PWD%f"
-            print -P "%F{yellow}Run 'source .dirrc' to load it manually%f"
-        ;;
-    esac
-}
-chpwd_functions+=(load-local-conf)
 
 # ==============================================================================
 # ZINIT (ZI) Plugin Manager Setup
@@ -837,9 +806,10 @@ if [[ "${HOST_OS}" == 'wsl' ]]; then
                 if [[ "$TERMINAL_SETTINGS_SRC" -nt "$TERMINAL_SETTINGS_DEST" ]]; then
                     cp "$TERMINAL_SETTINGS_DEST" "${TERMINAL_SETTINGS_DEST}.bak.$(date +%s)"
                     cp "$TERMINAL_SETTINGS_SRC" "$TERMINAL_SETTINGS_DEST"
-                    echo "✓ Windows Terminal settings synced"
+                    echo "✓ Synced Windows Terminal settings from dotfiles"
                 else
-                    echo "⚠ Windows Terminal settings already up to date"
+                    cp "$TERMINAL_SETTINGS_DEST" "$TERMINAL_SETTINGS_SRC"
+                    echo "✓ Synced dotfiles Windows Terminal settings from Windows"
                 fi
             else
                 echo "✗ Could not find settings files"
@@ -856,6 +826,7 @@ fi
 #=======================================================================================
 # Load AFTER sourcing other files because some export path may not be defined
 source_if_exists "${ZDOTDIR}/aliases.zsh"
+source_if_exists "${ZDOTDIR}/hooks.zsh"
 
 # Compile configuration files for faster loading
 function compile_if_needed() {
@@ -867,6 +838,7 @@ function compile_if_needed() {
 compile_if_needed "${ZDOTDIR}/.zshenv"
 compile_if_needed "${ZDOTDIR}/.zshrc"
 compile_if_needed "${ZDOTDIR}/aliases.zsh"
+compile_if_needed "${ZDOTDIR}/hooks.zsh"
 compile_if_needed "${ZDOTDIR}/.p10k.zsh"
 compile_if_needed "${ZDOTDIR}/local.zsh"
 
