@@ -26,16 +26,8 @@
 # zmodload zsh/zprof # top of your .zshrc file - uncomment to profile startup time
 # Environment variables and PATH are defined in .zshenv
 
-# Fallback: ensure ZDOTDIR/XDG_CONFIG_HOME are set if .zshenv was skipped
-if [[ -z "${ZDOTDIR:-}" ]]; then
-    export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
-    export ZDOTDIR="${ZDOTDIR:-${XDG_CONFIG_HOME}/zsh}"
-fi
-
-# Fallback: source .zshenv if it was not loaded
-if [[ -z "${ZSHENV_LOADED:-}" && -f "${HOME}/.zshenv" ]]; then
-    source "${HOME}/.zshenv"
-fi
+# Note: .zshenv is always sourced first by ZSH (guaranteed by ZSH specification)
+# If ZDOTDIR is not set, your shell environment is fundamentally misconfigured
 
 # ==============================================================================
 # ⚡ Powerlevel10k Instant Prompt (MUST BE NEAR TOP!)
@@ -52,15 +44,15 @@ fi
 function add_to_path_if_exists() {
     # Directory existence check removed for performance (was 20% of startup time in WSL)
     # [[ -d "${1}" ]] || return 1
-    
+
     # Prepend to path array - typeset -U automatically deduplicates!
-    path=("${1}" $path)
+    path=("${1}" "${path[@]}")
 }
 
 # Source file only if it exists and is readable
 function source_if_exists() {
     # Single file test for minimal overhead - -f checks both existence and regular file in one syscall
-    [[ -f "${1}" ]] && . "${1}"
+    [[ -f "${1}" ]] && source "${1}"
 }
 
 # ==============================================================================
@@ -119,7 +111,10 @@ if [[ "${HOST_LOCATION}" == "desktop" && -d "${HOME}/android" ]]; then
     if [[ -n "$JAVA_HOME" && -d "$JAVA_HOME" ]]; then
         export ANDROID_HOME="${HOME}/android"
         export ANDROID_SDK_ROOT="${ANDROID_HOME}"
-        export WSLENV="${ANDROID_HOME}/p:${WSLENV}"
+        # WSL-specific: Expose Android paths to Windows
+        if [[ "${HOST_OS}" == "wsl" ]]; then
+            export WSLENV="${ANDROID_HOME}/p:${WSLENV}"
+        fi
         add_to_path_if_exists "${ANDROID_HOME}/cmdline-tools/latest/bin"
         add_to_path_if_exists "${ANDROID_HOME}/platform-tools"
         add_to_path_if_exists "${ANDROID_HOME}/tools"
@@ -434,8 +429,9 @@ ${${${${(f)"$(cat {/etc/ssh/ssh_,~/.ssh/}known_hosts(|2)(N) 2>/dev/null)"}%%[#| 
 # 📦 Speed up completion for large repositories
 zstyle ':completion:*:descriptions' format '[%d]'
 
-# 🔒 Escape ? without quoting
-set zle_bracketed_paste
+# 🔒 Enable bracketed paste mode for safer pasting
+# This prevents pasted text from being executed immediately
+# Note: Bracketed paste is enabled automatically in modern ZSH
 autoload -Uz bracketed-paste-magic
 zle -N bracketed-paste bracketed-paste-magic
 # NOTE: url-quote-magic disabled - causes severe per-character typing lag
@@ -593,11 +589,7 @@ zi light solidiquis/erdtree
 zi ice wait'2' lucid depth'1' from'gh-r' as'program' pick'*/dua'
 zi light Byron/dua-cli
 
-# 🔖 ZSHmarks - Directory bookmarking system
-# Usage: `bookmark <name>` - save current dir, `jump <name>` - jump to saved dir
-# `showmarks` - list all bookmarks, `deletemark <name>` - remove bookmark
-zi ice wait'2' lucid depth'1'
-zi light jocelynmallon/zshmarks
+# Note: zshmarks removed - use zoxide for directory jumping (z <pattern>)
 
 # ==============================================================================
 # SEARCH / DEV TOOLS
@@ -814,69 +806,11 @@ fi
 #  eval "$(direnv hook zsh)"
 # fi
 
-# ☁️ doctl – DigitalOcean CLI completion
-# if (( $+commands[doctl] )); then
-#   # Cache doctl completion (regenerate only when doctl binary changes)
-#   local doctl_comp="${ZSH_CACHE_DIR}/doctl_completion.zsh"
-#   if [[ ! -f "$doctl_comp" ]] || [[ "${commands[doctl]}" -nt "$doctl_comp" ]]; then
-#     doctl completion zsh >| "$doctl_comp"
-#   fi
-#   source "$doctl_comp"
-#   compdef _doctl doctl
-# fi
-
-# 🦀 Rust toolchain completions (cargo, rustup)
-# Uncomment to enable cargo and rustup tab completions
-# if (( $+commands[rustup] )); then
-#   # Cache rustup completions (regenerate only when rustup changes)
-#   local rustup_comp="${ZSH_CACHE_DIR}/rustup_completion.zsh"
-#   if [[ ! -f "$rustup_comp" ]] || [[ "${commands[rustup]}" -nt "$rustup_comp" ]]; then
-#     rustup completions zsh cargo >| "${ZSH_CACHE_DIR}/cargo_completion.zsh"
-#     rustup completions zsh rustup >| "$rustup_comp"
-#   fi
-#   source "${ZSH_CACHE_DIR}/cargo_completion.zsh"
-#   source "$rustup_comp"
-# fi
-
-# 📁 broot – File navigator completion
-# Uncomment to enable broot tab completions
-# if (( $+commands[broot] )); then
-#   # broot already generates completions via 'broot --install'
-#   # Completions are typically auto-installed to ~/.config/broot/launcher/bash/br
-#   # If missing, run: broot --install
-# fi
-
-# 🦇 bat – Better cat completion
-# Uncomment to enable bat tab completions
-# if (( $+commands[bat] )); then
-#   # Cache bat completion (regenerate only when bat binary changes)
-#   local bat_comp="${ZSH_CACHE_DIR}/bat_completion.zsh"
-#   if [[ ! -f "$bat_comp" ]] || [[ "${commands[bat]}" -nt "$bat_comp" ]]; then
-#     bat --generate-completion-script zsh >| "$bat_comp" 2>/dev/null
-#   fi
-#   [[ -f "$bat_comp" ]] && source "$bat_comp"
-# fi
-
-# 🔍 fd – Modern find completion
-# Uncomment to enable fd tab completions
-# if (( $+commands[fd] )); then
-#   # fd completions are usually provided by the package manager or zinit
-#   # If missing, generate with: fd --gen-completions zsh > _fd
-# fi
-
-# 🔎 ripgrep (rg) – Fast grep completion
-# Uncomment to enable ripgrep tab completions
-# if (( $+commands[rg] )); then
-#   # Cache rg completion (regenerate only when rg binary changes)
-#   local rg_comp="${ZSH_CACHE_DIR}/rg_completion.zsh"
-#   if [[ ! -f "$rg_comp" ]] || [[ "${commands[rg]}" -nt "$rg_comp" ]]; then
-#     rg --generate=complete-zsh >| "$rg_comp" 2>/dev/null
-#   fi
-#   [[ -f "$rg_comp" ]] && source "$rg_comp"
-# fi
+# Note: Most tool completions are now provided automatically via zinit or tool packages
+# If you need manual completions for doctl, rustup, bat, fd, or rg, see git history
 
 # VSCode Integration
-[[ "$TERM_PROGRAM" == "vscode" ]] && . "$(code --locate-shell-integration-path zsh)"
+[[ "$TERM_PROGRAM" == "vscode" ]] && source "$(code --locate-shell-integration-path zsh)"
 
 #[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
 

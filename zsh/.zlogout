@@ -16,11 +16,11 @@
 # ==============================================================================
 
 # Clear sensitive variables from environment
-unset OPENAI_API_KEY 2>/dev/null
-unset ANTHROPIC_API_KEY 2>/dev/null
-unset GITHUB_TOKEN 2>/dev/null
-unset AWS_ACCESS_KEY_ID 2>/dev/null
-unset AWS_SECRET_ACCESS_KEY 2>/dev/null
+unset OPENAI_API_KEY
+unset ANTHROPIC_API_KEY
+unset GITHUB_TOKEN
+unset AWS_ACCESS_KEY_ID
+unset AWS_SECRET_ACCESS_KEY
 
 # Note: WSL wslpath cache cleanup is handled by trap in .zshrc (runs on all shell exits)
 
