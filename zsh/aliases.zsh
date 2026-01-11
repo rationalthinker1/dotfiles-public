@@ -65,11 +65,11 @@ function cd() {
 		local dir
 		if (( $+commands[zoxide] )); then
 			# echo "🔍 Fuzzy selecting from zoxide directory history..."
-			dir=$(zoxide query -l | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
+			dir=$(zoxide query -l | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview="eza -la {}")
 		else
 			# Fallback: find directories from common locations
 			# echo "🔍 Fuzzy selecting from common directories..."
-			dir=$(fd --type d --max-depth 3 --hidden --exclude .git --exclude .cache --exclude node_modules . ~ 2>/dev/null | fzf --height=40% --inline-info --reverse --preview='eza -la {}')
+			dir=$(fd --type d --max-depth 3 --hidden --exclude .git --exclude .cache --exclude node_modules . ~ 2>/dev/null | fzf --height=40% --inline-info --reverse --preview="eza -la {}")
 		fi
 		[[ -n "$dir" ]] && builtin cd "$dir"
 	elif [[ "$1" == ".." ]]; then
@@ -82,29 +82,29 @@ function cd() {
 		done
 		if [[ ${#parents[@]} -gt 0 ]]; then
 			local dir
-			dir=$(printf '%s\n' "${parents[@]}" | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
+			dir=$(printf '%s\n' "${parents[@]}" | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview="eza -la {}")
 			[[ -n "$dir" ]] && builtin cd "$dir"
 		fi
 	elif [[ "$1" == "." ]]; then
 		# cd . : show all subdirectories recursively
 		local dir
 		if (( $+commands[fd] )); then
-			dir=$(fd --type d --hidden --exclude .git --exclude node_modules --exclude .cache | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
+			dir=$(fd --type d --hidden --exclude .git --exclude node_modules --exclude .cache | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview="eza -la {}")
 		else
-			dir=$(find . -type d -name .git -prune -o -name node_modules -prune -o -type d -print 2>/dev/null | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
+			dir=$(find . -type d -name .git -prune -o -name node_modules -prune -o -type d -print 2>/dev/null | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview="eza -la {}")
 		fi
 		[[ -n "$dir" ]] && builtin cd "$dir"
 	elif [[ "$1" == "-" ]]; then
 		# cd - : show last 10 directories from zoxide or recent dirs from history
 		local dir
 		if (( $+commands[zoxide] )); then
-			dir=$(zoxide query -l | head -10 | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
+			dir=$(zoxide query -l | head -10 | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview="eza -la {}")
 		else
 			# Fallback: extract directories from shell history using ZSH-native parameter expansion
 			# Extract 'cd <path>' commands, remove 'cd ' prefix, expand ~, deduplicate
 			local -a recent_dirs=(${${${(M)${(f)"$(fc -l -10)"}:#*cd *}##* cd }/#\~/${HOME}})
 			if (( ${#recent_dirs[@]} > 0 )); then
-				dir=$(printf '%s\n' "${recent_dirs[@]}" | sort -u | fzf --height=40% --inline-info --reverse --preview='eza -la {}')
+				dir=$(printf '%s\n' "${recent_dirs[@]}" | sort -u | fzf --height=40% --inline-info --reverse --preview="eza -la {}")
 			fi
 		fi
 		[[ -n "$dir" ]] && builtin cd "$dir"
@@ -118,7 +118,7 @@ function cd() {
 				matches=$(zoxide query -l | grep -i "$1")
 				if [[ -n "$matches" ]]; then
 					local dir
-					dir=$(echo "$matches" | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
+					dir=$(echo "$matches" | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview="eza -la {}")
 					[[ -n "$dir" ]] && builtin cd "$dir"
 				else
 					builtin cd "$@"
@@ -144,13 +144,14 @@ function y() {
 }
 
 # 🔍 FZF + Vim: Fuzzy find and edit files with preview using zoxide
+# Function name 'kkk' is intentionally short for quick access (triple k shortcut)
 function kkk() {
 	local dir
 	if (( $+commands[zoxide] )); then
-		dir=$(zoxide query -l | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {}')
+		dir=$(zoxide query -l | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview="eza -la {}")
 	else
 		# Fallback: find directories from common locations
-		dir=$(fd --type d --max-depth 3 --hidden --exclude .git --exclude node_modules . ~ 2>/dev/null | fzf --height=40% --inline-info --reverse --preview='eza -la {}')
+		dir=$(fd --type d --max-depth 3 --hidden --exclude .git --exclude node_modules . ~ 2>/dev/null | fzf --height=40% --inline-info --reverse --preview="eza -la {}")
 	fi
 	if [[ -n "$dir" ]]; then
 		local file
@@ -192,6 +193,7 @@ alias h="history"
 alias cd..="builtin cd .."
 
 ## a quick way to get out of current directory ##
+# Note: Using builtin cd to bypass the cd() function override
 alias ..="builtin cd .."
 alias ...="builtin cd ../../"
 alias ....="builtin cd ../../../"
@@ -313,13 +315,32 @@ function bak() {
 # Create or edit reference files in ZDOTDIR/references
 # Usage: ref [name]
 # Example: ref git-commands
+# Note: Called without args shows main reference.zsh (create if needed)
+#       Called with arg creates/edits individual reference files
 function ref() {
 	if [[ "$#" -eq 0 ]]; then
-		cat "${ZDOTDIR}/reference.zsh"
+		local main_ref="${ZDOTDIR}/reference.zsh"
+		# Create main reference file if it doesn't exist
+		if [[ ! -f "${main_ref}" ]]; then
+			cat > "${main_ref}" <<'EOF'
+# ==============================================================================
+# Main Reference File
+# ==============================================================================
+# This is your main reference file for quick command reminders
+# Use 'ref <topic>' to create topic-specific reference files
+#
+# Example topics:
+# - ref git      : Git commands and workflows
+# - ref docker   : Docker commands
+# - ref kubernetes : K8s commands
+# - ref aws      : AWS CLI commands
+EOF
+		fi
+		cat "${main_ref}"
 	else
-		name="${1}"
-		folder="${ZDOTDIR}/references"
-		file="${folder}/${name}.zsh"
+		local name="${1}"
+		local folder="${ZDOTDIR}/references"
+		local file="${folder}/${name}.zsh"
 		if [[ ! -d "${folder}" ]]; then
 			mkdir -p "${folder}"
 		fi
@@ -978,10 +999,10 @@ if [[ $HOST_OS == "wsl" ]]; then
 			SUBLIME_TEXT_LOCATION="/mnt/c/Program Files/Sublime Text 3/subl.exe"
 		fi
 
-		local FILE=$1
-		local FULL_PATH=$(readlink -f "${FILE}")
-		local WIN_PATH=$(wslpath -m "$FULL_PATH")
-		"$SUBLIME_TEXT_LOCATION" "$WIN_PATH"
+		local FILE="$1"
+		local FULL_PATH="$(readlink -f "${FILE}")"
+		local WIN_PATH="$(wslpath -m "${FULL_PATH}")"
+		"${SUBLIME_TEXT_LOCATION}" "${WIN_PATH}"
 	}
 
 	# Open file/directory in Windows VS Code from WSL
@@ -996,12 +1017,12 @@ if [[ $HOST_OS == "wsl" ]]; then
 	}
 
 # Copy Windows Terminal settings to dotfiles
-	# Usage: copy-terminal-settings-to-dotfiles
-	function copy-terminal-settings-to-dotfiles() {
-		DOTFILES_DIR="${HOME}/.dotfiles"
-		WINDOWS_USER=$(powershell.exe '$env:UserName' | tr -d '\r')
-		TERMINAL_SETTINGS_DEST="/mnt/c/Users/${WINDOWS_USER}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
-  		TERMINAL_SETTINGS_SRC="${DOTFILES_DIR}/windows-terminal/settings.json"
+	# Usage: copy_terminal_settings_to_dotfiles
+	function copy_terminal_settings_to_dotfiles() {
+		local DOTFILES_DIR="${HOME}/.dotfiles"
+		local WINDOWS_USER="$(powershell.exe '$env:UserName' | tr -d '\r')"
+		local TERMINAL_SETTINGS_DEST="/mnt/c/Users/${WINDOWS_USER}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
+  		local TERMINAL_SETTINGS_SRC="${DOTFILES_DIR}/windows-terminal/settings.json"
 		if [[ -f "${TERMINAL_SETTINGS_DEST}" ]]; then
 			cp "${TERMINAL_SETTINGS_DEST}" "${TERMINAL_SETTINGS_SRC}"
 			echo "✅ Copied current terminal settings to dotfiles."
@@ -1270,13 +1291,13 @@ alias update-zi="zi update --all"
 function lg() { lazygit "$@"; }
 function lzd() { lazydocker "$@"; }
 
-# System monitoring (override htop/top with bottom) - functions for lazy-loading
-function htop() { btm "$@"; }
-function top() { btm "$@"; }
+# System monitoring aliases (use 'command htop' or 'command top' for original)
+alias htop="btm"
+alias top="btm"
 
-# Disk usage (modern alternatives) - functions for lazy-loading
-function df() { duf "$@"; }
-function ncdu() { dust "$@"; }
+# Disk usage aliases (use 'command df' or 'command ncdu' for original)
+alias df="duf"
+alias ncdu="dust"
 
 # Process viewer - function for lazy-loading
 function pps() { procs "$@"; }  # Use pps for procs, keep ps as fallback

@@ -9,7 +9,7 @@ readonly VIM_MIN_VERSION="9"
 # Detect actual user's home (handle sudo correctly)
 if [[ -n "${SUDO_USER:-}" ]] && [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
     # Running with sudo: use the actual user's home, not root's
-    ACTUAL_USER_HOME=$(eval echo ~${SUDO_USER})
+    ACTUAL_USER_HOME=$(getent passwd "${SUDO_USER}" | cut -d: -f6)
     readonly DOTFILES_ROOT="${ACTUAL_USER_HOME}/.dotfiles"
 else
     readonly DOTFILES_ROOT="${HOME}/.dotfiles"
@@ -123,7 +123,7 @@ echo "✓ Running as root"
 # Detect actual user for file operations (when run with sudo)
 if [[ -n "${SUDO_USER:-}" ]]; then
     ACTUAL_USER="${SUDO_USER}"
-    ACTUAL_USER_HOME=$(eval echo ~${SUDO_USER})
+    ACTUAL_USER_HOME=$(getent passwd "${SUDO_USER}" | cut -d: -f6)
     echo "✓ Detected sudo user: ${ACTUAL_USER}"
 else
     ACTUAL_USER="${USER}"
