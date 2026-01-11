@@ -1037,30 +1037,6 @@ if [[ $HOST_OS == "wsl" ]]; then
 fi
 
 # =======================================================================================
-# Context-Aware Navigation
-# =======================================================================================
-
-# 🐍 Smart directory context hook - Works with Enhancd
-# Automatically activates Python venv and shows README after cd
-# This uses chpwd hook instead of overriding cd, so it works with Enhancd
-# Note: May conflict with direnv - disable if using direnv
-function _context_aware_chpwd() {
-  # Auto-activate Python venv
-  if [[ -d .venv/bin ]]; then
-    [[ -z "$VIRTUAL_ENV" ]] && source .venv/bin/activate
-  fi
-
-  # Show project info if README exists
-  if [[ -f README.md ]]; then
-    echo "📄 README.md present"
-  fi
-}
-
-# Add to chpwd_functions array (runs after every directory change)
-autoload -Uz add-zsh-hook
-add-zsh-hook chpwd _context_aware_chpwd
-
-# =======================================================================================
 # Power User Aliases (Expert Level)
 # =======================================================================================
 
