@@ -3,51 +3,87 @@
 set -euo pipefail
 
 #=======================================================================================
+# Help
+#=======================================================================================
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+    cat <<'EOF'
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Dotfiles Installation Script
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DESCRIPTION:
+  Installs and configures development environment with:
+  • Essential system packages (git, tmux, zsh, etc.)
+  • Development tools via mise (Node.js, Python, Rust, Vim, etc.)
+  • Dotfile symlinks (zsh, vim, git, tmux configs)
+  • Powerline fonts
+  • Shell configuration (zsh as default)
+
+USAGE:
+  ./install.sh [OPTIONS]
+
+OPTIONS:
+  -h, --help    Show this help message
+
+EXAMPLES:
+  # Standard installation
+  ./install.sh
+
+  # Test in Docker (Ubuntu 24.04)
+  docker run -it --rm -v "$(pwd)":/root/.dotfiles ubuntu:24.04 bash
+  cd /root/.dotfiles && ./install.sh
+
+  # Test in Docker (Debian)
+  docker run -it --rm -v "$(pwd)":/root/.dotfiles debian:latest bash
+  cd /root/.dotfiles && ./install.sh
+
+NOTES:
+  • Script uses sudo for system operations (apt, chsh, fonts)
+  • Development tools are installed via mise for easy version management
+  • Run 'mise upgrade' to update all managed tools later
+  • Existing configs are backed up to ~/.dotfiles/backup/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EOF
+    exit 0
+fi
+
+#=======================================================================================
 # Configuration
 #=======================================================================================
 readonly VIM_MIN_VERSION="9"
-# Detect actual user's home (handle sudo correctly)
-if [[ -n "${SUDO_USER:-}" ]] && [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
-    # Running with sudo: use the actual user's home, not root's
-    ACTUAL_USER_HOME=$(getent passwd "${SUDO_USER}" | cut -d: -f6)
-    readonly DOTFILES_ROOT="${ACTUAL_USER_HOME}/.dotfiles"
-else
-    readonly DOTFILES_ROOT="${HOME}/.dotfiles"
-fi
+readonly DOTFILES_ROOT="${HOME}/.dotfiles"
 readonly BACKUP_DIR="${DOTFILES_ROOT}/backup"
 readonly FONTS_DIR="${DOTFILES_ROOT}/fonts"
-UPGRADE_SYSTEM="${UPGRADE_SYSTEM:-0}"
-readonly UPGRADE_SYSTEM
 
 # Package definitions
 readonly -a DARWIN_PACKAGES=(
     git grep wget curl zsh fontconfig
     csvkit xclip htop p7zip rename unzip
+    pdftk-java  # PDF manipulation tool
     glances ctags up pcre2-utils rsync
     coreutils gnu-sed  # GNU versions of macOS BSD tools
     autoconf automake libtool pkg-config  # Build dependencies
     openssl@3  # Library dependencies
     pass gnupg pinentry-mac  # Secret management
-    python3  # Python 3
-    node  # Node.js (includes npm)
-    go  # Go programming language
-    vim  # Vim editor
+    # NOTE: Python, Node.js, Go, Rust, Vim, Yarn, and uv are installed via mise
 )
 
 readonly -a LINUX_PACKAGES=(
     build-essential git tmux htop curl wget zsh fonts-powerline
     xclip p7zip-full zip unzip
+    pdftk-java  # PDF manipulation tool
     unrar wipe cmake exuberant-ctags rsync
     libncurses5-dev libncursesw5-dev util-linux-extra pcre2-utils
     autoconf automake libtool pkg-config  # Build dependencies
     libssl-dev libcurl4-openssl-dev zlib1g-dev libffi-dev libreadline-dev  # Development libraries
-    libbz2-dev libsqlite3-dev tk-dev liblzma-dev  # Python build dependencies
+    libbz2-dev libsqlite3-dev tk-dev liblzma-dev  # Python build dependencies (required for mise)
+    python3-dev libpython3-dev  # Python dev headers (required for building vim with Python3 support)
     man-db less openssh-client software-properties-common  # Essential utilities
     strace gdb lsb-release shellcheck tree lsof ncdu  # Debugging & development tools
     pass gnupg2 pinentry-curses  # Secret management
-    python3 python3-pip python3-venv python3-dev  # Python 3
-    golang-go  # Go programming language
-    vim vim-gtk3  # Vim 9.1+ with clipboard support
+		libx11-dev libxt-dev libxpm-dev libgtk-3-dev
+    # NOTE: Python, Node.js, Go, Rust, Vim, Yarn, and uv are installed via mise
 )
 
 # Symlink mappings
@@ -103,35 +139,10 @@ export EDITOR=vim
 export LESS="-XRF"
 
 #=======================================================================================
-# Root Privilege Check
+# User Detection
 #=======================================================================================
 
-# This script must run as root for system-wide installation
-if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  ERROR: This script must be run as root"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo
-    echo "Please run with sudo:"
-    echo "  sudo ./install.sh"
-    echo
-    echo "Or run as root in Docker containers:"
-    echo "  docker run -it -v ./:/root/.dotfiles ubuntu:24.04"
-    echo
-    exit 1
-fi
-
-echo "✓ Running as root"
-
-# Detect actual user for file operations (when run with sudo)
-if [[ -n "${SUDO_USER:-}" ]]; then
-    ACTUAL_USER="${SUDO_USER}"
-    ACTUAL_USER_HOME=$(getent passwd "${SUDO_USER}" | cut -d: -f6)
-    echo "✓ Detected sudo user: ${ACTUAL_USER}"
-else
-    ACTUAL_USER="${USER}"
-    ACTUAL_USER_HOME="${HOME}"
-fi
+echo "Running as user: ${USER}"
 
 #=======================================================================================
 # Main Installation
@@ -185,97 +196,145 @@ else
     export DEBIAN_FRONTEND=noninteractive
     export TZ=America/New_York
 
-    apt-get -y update || { echo "ERROR: apt-get update failed"; exit 1; }
-    if [[ "${UPGRADE_SYSTEM}" == "1" ]]; then
-        apt-get -y upgrade || echo "WARNING: Package upgrade had issues"
-    else
-        echo "Skipping system upgrade (set UPGRADE_SYSTEM=1 to enable)"
-    fi
-
+    sudo apt-get -y update || { echo "ERROR: apt-get update failed"; exit 1; }
     # Install packages (apt automatically skips already-installed packages)
     echo "Installing Linux packages..."
-    apt-get install -y "${LINUX_PACKAGES[@]}" || echo "WARNING: Some packages failed to install"
+    sudo apt-get install -y "${LINUX_PACKAGES[@]}" || echo "WARNING: Some packages failed to install"
 fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Development tools installed"
+echo "  Essential packages installed"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "✓ Python 3: $(python3 --version 2>&1)"
-echo "✓ Go: $(go version 2>&1)"
-echo "✓ Vim: $(vim --version 2>&1 | head -1)"
+echo "NOTE: Development tools (Python, Node.js, Go, Rust, Vim, Yarn, uv) will be installed via mise"
 
 #---------------------------------------------------------------------------------------
-# Install Zinit (as user, not root)
+# Install Zinit
 #---------------------------------------------------------------------------------------
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Installing Zinit for ${ACTUAL_USER}"
+echo "  Installing Zinit"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-user_xdg_data_home="${ACTUAL_USER_HOME}/.local/share"
-user_zinit_home="${user_xdg_data_home}/zinit/zinit.git"
+zinit_home="${HOME}/.local/share/zinit/zinit.git"
 
-if [[ ! -f "${user_zinit_home}/zinit.zsh" ]]; then
-    sudo -u "${ACTUAL_USER}" mkdir -p "$(dirname "${user_zinit_home}")"
-    sudo -u "${ACTUAL_USER}" git clone https://github.com/zdharma-continuum/zinit.git "${user_zinit_home}"
+if [[ ! -f "${zinit_home}/zinit.zsh" ]]; then
+    mkdir -p "$(dirname "${zinit_home}")"
+    git clone https://github.com/zdharma-continuum/zinit.git "${zinit_home}"
 else
     echo "✓ Zinit already installed"
 fi
 
 #---------------------------------------------------------------------------------------
-# Install mise for Node.js version management (as user, not root)
+# Install mise and development tools
 #---------------------------------------------------------------------------------------
-if [[ "${HOST_OS}" != "darwin" ]]; then
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  Installing mise and Node.js LTS for ${ACTUAL_USER}"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Installing mise and development tools"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-    # Install mise as the actual user (not root)
-    if ! sudo -u "${ACTUAL_USER}" bash -c 'command -v mise' &>/dev/null; then
-        echo "Installing mise to ${ACTUAL_USER_HOME}/.local/bin..."
-        sudo -u "${ACTUAL_USER}" bash -c 'curl -fsSL https://mise.run | sh'
-    else
-        echo "✓ mise already installed"
-    fi
-
-    # Install Node.js LTS globally via mise (as user)
-    echo "Installing Node.js LTS via mise..."
-    sudo -u "${ACTUAL_USER}" bash -c "export PATH=\"${ACTUAL_USER_HOME}/.local/bin:\${PATH}\" && mise use --global node@lts"
-
-    # Verify installation
-    if sudo -u "${ACTUAL_USER}" bash -c "export PATH=\"${ACTUAL_USER_HOME}/.local/bin:\${PATH}\" && mise which node" &>/dev/null; then
-        NODE_VERSION=$(sudo -u "${ACTUAL_USER}" bash -c "export PATH=\"${ACTUAL_USER_HOME}/.local/bin:\${PATH}\" && mise exec -- node --version" 2>&1)
-        NPM_VERSION=$(sudo -u "${ACTUAL_USER}" bash -c "export PATH=\"${ACTUAL_USER_HOME}/.local/bin:\${PATH}\" && mise exec -- npm --version" 2>&1)
-        echo "✓ Node.js: ${NODE_VERSION}"
-        echo "✓ npm: ${NPM_VERSION}"
-    else
-        echo "⚠ Node.js installation via mise may need verification"
-    fi
+# Install mise
+if ! command -v mise &>/dev/null; then
+    echo "Installing mise to ${HOME}/.local/bin..."
+    curl -fsSL https://mise.run | sh
+else
+    echo "✓ mise already installed"
 fi
+
+# Install development tools globally via mise
+echo "Installing development tools via mise..."
+
+# Node.js LTS
+echo "  → Node.js LTS..."
+mise use --global node@lts 2>/dev/null || echo "    (skipped - may already be installed)"
+
+# Yarn (latest)
+echo "  → Yarn..."
+mise use --global yarn@latest 2>/dev/null || echo "    (skipped - may already be installed)"
+
+# Python (latest stable)
+echo "  → Python..."
+mise use --global python@latest 2>/dev/null || echo "    (skipped - may already be installed)"
+
+# Rust (latest stable)
+echo "  → Rust..."
+mise use --global rust@latest 2>/dev/null || echo "    (skipped - may already be installed)"
+
+# uv (fast Python package installer)
+echo "  → uv..."
+mise use --global uv@latest 2>/dev/null || echo "    (skipped - may already be installed)"
+
+# Vim (with Python3 support)
+echo "  → Vim with Python3 support..."
+# Get mise Python paths (don't use 'mise exec' to avoid triggering vim installation)
+PYTHON_PREFIX=$(python3 -c "import sys; print(sys.prefix)" 2>/dev/null)
+PY3_CONFIG_DIR=$(python3-config --configdir 2>/dev/null)
+
+if [[ -n "$PY3_CONFIG_DIR" && -n "$PYTHON_PREFIX" ]]; then
+    # Set library path so linker can find Python shared library
+    export LD_LIBRARY_PATH="${PYTHON_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
+    export LDFLAGS="-L${PYTHON_PREFIX}/lib ${LDFLAGS:-}"
+    export ASDF_VIM_CONFIG="--with-tlib=ncurses --with-compiledby=mise --enable-multibyte --enable-cscope --enable-terminal --enable-python3interp --with-python3-config-dir=$PY3_CONFIG_DIR --enable-fail-if-missing --enable-gui=no --without-x"
+    mise use --global vim@latest 2>/dev/null || echo "    (skipped - may already be installed)"
+    # Unset to prevent triggering vim installation on subsequent mise commands
+    unset ASDF_VIM_CONFIG LD_LIBRARY_PATH LDFLAGS
+else
+    echo "    WARNING: python3-config not found, vim may not have Python3 support"
+    mise use --global vim@latest 2>/dev/null || echo "    (skipped - may already be installed)"
+fi
+
+# Verify installations
+echo ""
+echo "Verifying mise installations..."
+
+verify_tool() {
+    local tool=$1
+    local version_cmd=$2
+    if mise which ${tool} &>/dev/null; then
+        local version=$(mise exec -- ${version_cmd} 2>&1 | head -1)
+        echo "✓ ${tool}: ${version}"
+        return 0
+    else
+        echo "⚠ ${tool}: not found (may need manual verification)"
+        return 1
+    fi
+}
+
+verify_tool "node" "node --version"
+verify_tool "yarn" "yarn --version"
+verify_tool "python" "python --version"
+verify_tool "rustc" "rustc --version"
+verify_tool "cargo" "cargo --version"
+verify_tool "uv" "uv --version"
+verify_tool "vim" "vim --version | head -1"
+
+# Verify vim has Python3 support
+echo ""
+if mise exec -- vim --version | grep -q '+python3'; then
+    echo "✓ Vim has Python3 support enabled"
+else
+    echo "⚠ WARNING: Vim may not have Python3 support"
+fi
+
+echo ""
+echo "To update all tools to latest versions, run:"
+echo "  mise upgrade"
 
 #---------------------------------------------------------------------------------------
 # Install pynvim (Python package for Vim)
 #---------------------------------------------------------------------------------------
 echo "Installing pynvim for Vim..."
-sudo -u "${ACTUAL_USER}" -H python3 -m pip install --user pynvim 2>/dev/null || echo "  (skipping - may already be installed)"
-sudo -u "${ACTUAL_USER}" -H python3 -c "import pynvim" 2>/dev/null || echo "  (pynvim installation may need verification)"
-echo "✓ pynvim installed"
+mise exec -- uv pip install --user pynvim 2>/dev/null || echo "  (skipping - may already be installed)"
+mise exec -- python -c 'import pynvim' 2>/dev/null && echo "✓ pynvim installed" || echo "  (pynvim installation may need verification)"
 
 # Configure zsh as default shell
 zsh_path=$(command -v zsh)
 if ! grep -qxF "${zsh_path}" /etc/shells 2>/dev/null; then
-    echo "${zsh_path}" | tee -a /etc/shells >/dev/null
+    echo "${zsh_path}" | sudo tee -a /etc/shells >/dev/null
 fi
-# Change shell (use appropriate method based on privileges)
-if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
-    chsh -s "${zsh_path}" "${SUDO_USER:-$USER}" 2>/dev/null || true
-else
-    chsh -s "${zsh_path}" "$USER" 2>/dev/null || true
-fi
+sudo chsh -s "${zsh_path}" "$USER" 2>/dev/null || true
 echo "✓ Default shell set to zsh"
 
 # Set clock (Linux only)
 if [[ "${HOST_OS}" != "darwin" ]]; then
-    hwclock --hctosys 2>/dev/null || true
+    sudo hwclock --hctosys 2>/dev/null || true
 fi
 
 #---------------------------------------------------------------------------------------
@@ -283,9 +342,9 @@ fi
 #---------------------------------------------------------------------------------------
 if [[ "$HOST_OS" == "wsl" ]] && ! command -v wslvar &>/dev/null; then
     echo "Installing wslu from PPA..."
-    add-apt-repository ppa:wslutilities/wslu -y
-    apt-get update -y
-    apt-get install -y wslu
+    sudo add-apt-repository ppa:wslutilities/wslu -y
+    sudo apt-get update -y
+    sudo apt-get install -y wslu
 fi
 
 #---------------------------------------------------------------------------------------
@@ -324,7 +383,7 @@ if [[ "$HOST_LOCATION" == "desktop" && "$HOST_OS" == "linux" ]]; then
             last_folder="$(basename "${directory}")"
             echo "Installing fonts from: ${directory}"
 
-            mkdir -p "${font_directory}/opentype/${last_folder}" "${font_directory}/truetype/${last_folder}"
+            sudo mkdir -p "${font_directory}/opentype/${last_folder}" "${font_directory}/truetype/${last_folder}"
 
             shopt -s nullglob
             otf_files=("${directory}"/*.otf)
@@ -332,15 +391,15 @@ if [[ "$HOST_LOCATION" == "desktop" && "$HOST_OS" == "linux" ]]; then
             shopt -u nullglob
 
             if (( ${#otf_files[@]} > 0 )); then
-                cp -t "${font_directory}/opentype/${last_folder}/" -- "${otf_files[@]}" 2>/dev/null || true
+                sudo cp -t "${font_directory}/opentype/${last_folder}/" -- "${otf_files[@]}" 2>/dev/null || true
             fi
             if (( ${#ttf_files[@]} > 0 )); then
-                cp -t "${font_directory}/truetype/${last_folder}/" -- "${ttf_files[@]}" 2>/dev/null || true
+                sudo cp -t "${font_directory}/truetype/${last_folder}/" -- "${ttf_files[@]}" 2>/dev/null || true
             fi
 
             if command -v fc-cache &>/dev/null; then
                 echo "Updating font cache..."
-                fc-cache -f -v | grep -q "${last_folder}" && echo "✓ Fonts installed: ${last_folder}"
+                sudo fc-cache -f -v | grep -q "${last_folder}" && echo "✓ Fonts installed: ${last_folder}"
             fi
         }
 

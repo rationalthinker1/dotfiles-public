@@ -48,6 +48,18 @@ export PNPM_HOME="${XDG_CONFIG_HOME}/pnpm"
 export EDITOR="vim"
 export LESS="-XRF"
 
+# 🛠️ Vim build configuration for mise (with Python3 support)
+# These ensure vim builds with Python3 support during 'mise install' and 'mise upgrade'
+if command -v python3 &>/dev/null && command -v python3-config &>/dev/null; then
+  PYTHON_PREFIX=$(python3 -c "import sys; print(sys.prefix)" 2>/dev/null)
+  PY3_CONFIG_DIR=$(python3-config --configdir 2>/dev/null)
+  if [[ -n "$PY3_CONFIG_DIR" && -n "$PYTHON_PREFIX" ]]; then
+    export ASDF_VIM_CONFIG="--with-tlib=ncurses --with-compiledby=mise --enable-multibyte --enable-cscope --enable-terminal --enable-python3interp --with-python3-config-dir=$PY3_CONFIG_DIR --enable-fail-if-missing --enable-gui=no --without-x"
+    export LD_LIBRARY_PATH="${PYTHON_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
+    export LDFLAGS="-L${PYTHON_PREFIX}/lib ${LDFLAGS:-}"
+  fi
+fi
+
 # ☁️ AWS
 export AWS_CONFIG_FILE="${XDG_CONFIG_HOME}/.aws/config"
 export AWS_SHARED_CREDENTIALS_FILE="${XDG_CONFIG_HOME}/.aws/credentials"
