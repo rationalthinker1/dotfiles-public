@@ -266,21 +266,48 @@ mise use --global uv@latest 2>/dev/null || echo "    (skipped - may already be i
 
 # Vim (with Python3 support)
 echo "  → Vim with Python3 support..."
-# Get mise Python paths (don't use 'mise exec' to avoid triggering vim installation)
-PYTHON_PREFIX=$(python3 -c "import sys; print(sys.prefix)" 2>/dev/null)
-PY3_CONFIG_DIR=$(python3-config --configdir 2>/dev/null)
 
-if [[ -n "$PY3_CONFIG_DIR" && -n "$PYTHON_PREFIX" ]]; then
-    # Set library path so linker can find Python shared library
-    export LD_LIBRARY_PATH="${PYTHON_PREFIX}/lib:${LD_LIBRARY_PATH:-}"
-    export LDFLAGS="-L${PYTHON_PREFIX}/lib ${LDFLAGS:-}"
-    export ASDF_VIM_CONFIG="--with-tlib=ncurses --with-compiledby=mise --enable-multibyte --enable-cscope --enable-terminal --enable-python3interp --with-python3-config-dir=$PY3_CONFIG_DIR --enable-fail-if-missing --enable-gui=no --without-x"
-    mise use --global vim@latest 2>/dev/null || echo "    (skipped - may already be installed)"
-    # Unset to prevent triggering vim installation on subsequent mise commands
-    unset ASDF_VIM_CONFIG LD_LIBRARY_PATH LDFLAGS
+# Check if vim should be installed/upgraded (only on major.minor version changes)
+should_install_vim=false
+if mise which vim &>/dev/null; then
+    # Extract major.minor from current vim version (e.g., "9.1" from "9.1.2001")
+    current_vim_version=$(mise exec -- vim --version 2>/dev/null | head -1 | grep -oP '\d+\.\d+' | head -1)
+    # Get major.minor from latest vim version
+    latest_vim_version=$(mise latest vim 2>/dev/null | grep -oP '^\d+\.\d+' | head -1)
+
+    if [[ -n "$current_vim_version" && -n "$latest_vim_version" ]]; then
+        if [[ "$current_vim_version" != "$latest_vim_version" ]]; then
+            echo "    Current: vim $current_vim_version, Latest: vim $latest_vim_version - upgrading..."
+            should_install_vim=true
+        else
+            echo "    (skipped - vim $current_vim_version already installed, same major.minor as latest)"
+        fi
+    else
+        # Can't determine versions, install to be safe
+        should_install_vim=true
+    fi
 else
-    echo "    WARNING: python3-config not found, vim may not have Python3 support"
-    mise use --global vim@latest 2>/dev/null || echo "    (skipped - may already be installed)"
+    echo "    Installing vim for the first time..."
+    should_install_vim=true
+fi
+
+if [[ "$should_install_vim" == "true" ]]; then
+    # Get mise Python paths (don't use 'mise exec' to avoid triggering vim installation)
+    PYTHON_PREFIX=$(python3 -c "import sys; print(sys.prefix)" 2>/dev/null)
+    PY3_FILE_LOCATION=$(which python3 2>/dev/null)
+
+    if [[ -n "$PY3_FILE_LOCATION" && -n "$PYTHON_PREFIX" ]]; then
+        # Embed Python library path into vim binary using rpath
+        # This ensures vim can find Python libraries at runtime without needing LD_LIBRARY_PATH
+        export LDFLAGS="-L${PYTHON_PREFIX}/lib -Wl,-rpath,${PYTHON_PREFIX}/lib ${LDFLAGS:-}"
+        export ASDF_VIM_CONFIG="--with-tlib=ncurses --with-compiledby=mise --enable-multibyte --enable-cscope --enable-terminal --enable-python3interp --with-python3-command=$PY3_FILE_LOCATION --enable-fail-if-missing --enable-gui=no --without-x"
+        mise use --global vim@latest 2>/dev/null || echo "    (installation failed)"
+        # Unset to prevent triggering vim installation on subsequent mise commands
+        unset ASDF_VIM_CONFIG LDFLAGS
+    else
+        echo "    WARNING: python3-config not found, vim may not have Python3 support"
+        mise use --global vim@latest 2>/dev/null || echo "    (installation failed)"
+    fi
 fi
 
 # Verify installations
