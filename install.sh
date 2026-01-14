@@ -181,10 +181,13 @@ if [[ "${HOST_OS}" == "darwin" ]]; then
             exit 1
         fi
 
-        {
-            echo
-            echo "eval \"\$(${brew_prefix}/bin/brew shellenv)\""
-        } >>"${HOME}/.zprofile"
+        # Add Homebrew to shell profile if not already present
+        if ! grep -q "brew shellenv" "${HOME}/.zprofile" 2>/dev/null; then
+            {
+                echo
+                echo "eval \"\$(${brew_prefix}/bin/brew shellenv)\""
+            } >>"${HOME}/.zprofile"
+        fi
         eval "$(${brew_prefix}/bin/brew shellenv)"
     fi
 
@@ -342,8 +345,11 @@ fi
 #---------------------------------------------------------------------------------------
 if [[ "$HOST_OS" == "wsl" ]] && ! command -v wslvar &>/dev/null; then
     echo "Installing wslu from PPA..."
-    sudo add-apt-repository ppa:wslutilities/wslu -y
-    sudo apt-get update -y
+    # Add PPA only if not already present
+    if ! grep -q "wslutilities/wslu" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
+        sudo add-apt-repository ppa:wslutilities/wslu -y
+        sudo apt-get update -y
+    fi
     sudo apt-get install -y wslu
 fi
 
@@ -522,8 +528,9 @@ if [[ "$HOST_OS" == "wsl" ]]; then
             settings_dest="/mnt/c/Users/$windows_user/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
             
             if [[ -f "$settings_src" ]]; then
-                if [[ -f "$settings_dest" ]]; then
-                    cp "$settings_dest" "${settings_dest}.bak.$(date +%s)"
+                # Backup original settings only if no backup exists
+                if [[ -f "$settings_dest" && ! -f "${settings_dest}.bak" ]]; then
+                    cp "$settings_dest" "${settings_dest}.bak"
                 fi
                 cp "$settings_src" "$settings_dest"
                 echo "✓ Windows Terminal configured"
