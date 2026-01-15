@@ -545,7 +545,7 @@ zi light ap/rename
 # 📊 Eza - Modern ls replacement with colors, icons, and git integration
 # Usage: Already aliased to `ls`, `l`, `la`, `ll`, `tree`
 # Shows file permissions, size, git status, and uses colors automatically
-zi ice lucid depth'1' from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza' bpick'eza_x86_64-unknown-linux-gnu.tar.gz'
+zi ice lucid depth'1' from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza'
 zi light eza-community/eza
 
 # 🌲 Erdtree - Modern file-tree visualization with disk usage
@@ -604,10 +604,10 @@ zi light akavel/up
 # 📊 QSV - Ultra-fast CSV toolkit with Python integration
 # Usage: `qsv stats data.csv` - advanced CSV statistics and operations
 # More features than xsv: SQL queries, Python expressions, etc.
-zi ice wait'2' lucid from'gh-r' as'program' bpick'*x86_64*-linux-musl.zip' pick'qsv'
+zi ice wait'2' lucid from'gh-r' as'program' pick'qsv'
 zi light dathere/qsv
 
-zi ice wait'2' lucid from'gh-r' as'program' bpick'*x86_64*-linux-musl.zip' pick'*/yazi'
+zi ice wait'2' lucid from'gh-r' as'program' pick'*/yazi'
 zi light sxyazi/yazi
 
 # ==============================================================================
@@ -621,12 +621,12 @@ zi light cli/cli
 # 🧠 Atuin - Magical shell history with sync, stats, and better search
 # Usage: Ctrl+R for powerful history search, `atuin stats` for analytics
 # Stores full context (directory, duration, exit code) and syncs across machines
-zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-musl.tar.gz' pick'*/atuin' \
+zi ice wait'2' lucid from'gh-r' as'command' pick'*/atuin' \
     atclone'chmod +x */atuin && ./*/atuin init zsh > init.zsh' atpull'%atclone' src'init.zsh'
 zi light atuinsh/atuin
 
 # 📊 Bottom - Modern system monitor
-zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/btm'
+zi ice wait'2' lucid from'gh-r' as'command' pick'*/btm'
 zi light ClementTsang/bottom
 
 # 🔥 Tokei - Fast code statistics
@@ -635,16 +635,16 @@ zi ice wait'2' lucid from'gh' as'program' pick'target/release/tokei' \
 zi light XAMPPRocky/tokei
 
 # ⚡ Hyperfine - Command benchmarking
-zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/hyperfine'
+zi ice wait'2' lucid from'gh-r' as'command' pick'*/hyperfine'
 zi light sharkdp/hyperfine
 
 # 🧼 Dust - Fast Rust-based alternative to du
-zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/dust'
+zi ice wait'2' lucid from'gh-r' as'command' pick'*/dust'
 zi light bootandy/dust
 
 # 🎨 Delta - Better git diffs with syntax highlighting
 # Don't get wait more than 0, otherwise git diff stops working
-zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'*/delta'
+zi ice wait'2' lucid from'gh-r' as'command' pick'*/delta'
 zi light dandavison/delta
 
 # 📁 Duf - Modern df alternative
