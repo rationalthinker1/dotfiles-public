@@ -604,10 +604,10 @@ zi light akavel/up
 # 📊 QSV - Ultra-fast CSV toolkit with Python integration
 # Usage: `qsv stats data.csv` - advanced CSV statistics and operations
 # More features than xsv: SQL queries, Python expressions, etc.
-zi ice wait'2' lucid from'gh-r' as'program' bpick'*x86_64*linux-gnu.zip' pick'qsv'
+zi ice wait'2' lucid from'gh-r' as'program' bpick'*x86_64*-linux-musl.zip' pick'qsv'
 zi light dathere/qsv
 
-zi ice wait'2' lucid from'gh-r' as'program' bpick'*x86_64*linux-gnu.zip' pick'*/yazi'
+zi ice wait'2' lucid from'gh-r' as'program' bpick'*x86_64*-linux-musl.zip' pick'*/yazi'
 zi light sxyazi/yazi
 
 # ==============================================================================
