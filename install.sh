@@ -2,6 +2,19 @@
 
 set -euo pipefail
 
+verify_tool() {
+    local tool=$1
+    local version_cmd=$2
+    if mise which ${tool} &>/dev/null; then
+        local version=$(mise exec -- ${version_cmd} 2>&1 | head -1)
+        echo "✓ ${tool}: ${version}"
+        return 0
+    else
+        echo "⚠ ${tool}: not found (may need manual verification)"
+        return 1
+    fi
+}
+
 #=======================================================================================
 # Help
 #=======================================================================================
@@ -266,7 +279,6 @@ mise use --global uv@latest 2>/dev/null || echo "    (skipped - may already be i
 
 # Vim (with Python3 support)
 echo "  → Vim with Python3 support..."
-
 # Check if vim should be installed/upgraded (only on major.minor version changes)
 should_install_vim=false
 if mise which vim &>/dev/null; then
@@ -313,20 +325,6 @@ fi
 # Verify installations
 echo ""
 echo "Verifying mise installations..."
-
-verify_tool() {
-    local tool=$1
-    local version_cmd=$2
-    if mise which ${tool} &>/dev/null; then
-        local version=$(mise exec -- ${version_cmd} 2>&1 | head -1)
-        echo "✓ ${tool}: ${version}"
-        return 0
-    else
-        echo "⚠ ${tool}: not found (may need manual verification)"
-        return 1
-    fi
-}
-
 verify_tool "node" "node --version"
 verify_tool "yarn" "yarn --version"
 verify_tool "python" "python --version"
