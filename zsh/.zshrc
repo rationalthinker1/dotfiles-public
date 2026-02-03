@@ -643,8 +643,7 @@ zi ice wait'2' lucid from'gh-r' as'command' pick'*/dust'
 zi light bootandy/dust
 
 # 🎨 Delta - Better git diffs with syntax highlighting
-# Don't get wait more than 0, otherwise git diff stops working
-zi ice wait'2' lucid from'gh-r' as'command' pick'*/delta'
+zi ice wait'0' lucid from'gh-r' as'command' pick'*/delta'
 zi light dandavison/delta
 
 # 📁 Duf - Modern df alternative

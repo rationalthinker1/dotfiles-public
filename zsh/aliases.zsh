@@ -799,31 +799,13 @@ alias nlog="tail -f /var/log/nginx/*.log"
 # =======================================================================================
 # Runs docker compose command looking at other files
 function dc() {
-    local -a compose_files=(
-        "docker-compose.yml"
-        "compose.yaml"
-        "compose.yml"
-        "./docker/docker-compose.yml"
-        "./docker/compose.yaml"
-        "./docker/compose.yml"
-    )
-
-    for file in "${compose_files[@]}"; do
-        if [[ -e "$file" ]]; then
-            if [[ "$file" == ./docker/* ]]; then
-                docker compose -f "$file" --project-directory ./ "$@"
-            else
-                docker compose "$@"
-            fi
-            return
-        fi
-    done
-
-    echo "No docker compose file found"
-    return 1
+	export IP_ADDRESS=$(ip route list default | awk '{print $3}')
+    IP_ADDRESS=$IP_ADDRESS docker compose "$@"
 }
 
-alias dce="docker compose -f \"./docker/docker-compose.yml\" --project-directory ./ exec --user $(id -u):$(id -g)"
+function dce() {
+	dc exec --user "$(id -u):$(id -g)" "$@"
+}
 
 # Run docker compose in detached mode (looks for docker.sh first)
 # Usage: dcu [args...]
