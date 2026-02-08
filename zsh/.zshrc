@@ -625,8 +625,8 @@ zi load cli/cli
 # 🧠 Atuin - Magical shell history with sync, stats, and better search
 # Usage: Ctrl+R for powerful history search, `atuin stats` for analytics
 # Stores full context (directory, duration, exit code) and syncs across machines
-zi ice wait'2' lucid from'gh-r' as'command' pick='*/atuin' \
-    atclone='chmod +x */atuin && ./*/atuin init zsh > init.zsh' atpull='%atclone' src='init.zsh' nocompile='!'
+zi ice wait'2' lucid from'gh-r' as'program' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'atuin-x86_64-unknown-linux-gnu/atuin' \
+    atclone='./atuin-x86_64-unknown-linux-gnu/atuin init zsh > init.zsh' atpull='%atclone' src='init.zsh' nocompile='!'
 zi load atuinsh/atuin
 
 # 📊 Bottom - Modern system monitor
