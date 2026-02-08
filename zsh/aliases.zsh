@@ -46,7 +46,18 @@ alias con="cd ~/.config"
 # 🦇 Bat: Better cat with syntax highlighting
 # Override 'cat' to use 'bat' for prettier output
 # Use 'rcat' or '\cat' to access original cat command
-alias cat='bat'
+function cat() {
+	# Only override cat in interactive shells; use builtin for scripts
+	[[ -o interactive ]] || { command cat "$@"; return; }
+
+	# Fall back to regular cat if bat is not installed
+	(( $+commands[bat] )) || { command cat "$@"; return; }
+
+	# Use regular cat if output is being piped (not a terminal)
+	[[ -t 1 ]] || { command cat "$@"; return; }
+
+	bat "$@"
+}
 alias rcat='command cat'
 export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 
@@ -164,7 +175,15 @@ function kkk() {
 # Override 'ls' and related commands to use 'eza'
 # Use '\ls' to access original ls command
 ## Colorize the ls output ##
-alias ls='eza --color=auto'
+function ls() {
+	# Only override ls in interactive shells; use builtin for scripts
+	[[ -o interactive ]] || { command ls --color=auto "$@"; return; }
+
+	# Fall back to regular ls if eza is not installed
+	(( $+commands[eza] )) || { command ls --color=auto "$@"; return; }
+
+	eza --color=auto "$@"
+}
 
 ## Use a long listing format ##
 # List with human readable filesizes
@@ -203,9 +222,26 @@ alias .5="builtin cd ../../../../.."
 alias r="builtin cd /"
 
 ## Colorize the grep command output for ease of use (good for log files)##
-alias grep="grep --color=auto"
-alias egrep="egrep --color=auto"
-alias fgrep="fgrep --color=auto"
+function grep() {
+	# Only add color in interactive shells; use plain grep for scripts
+	[[ -o interactive ]] || { command grep "$@"; return; }
+
+	command grep --color=auto "$@"
+}
+
+function egrep() {
+	# Only add color in interactive shells; use plain egrep for scripts
+	[[ -o interactive ]] || { command egrep "$@"; return; }
+
+	command egrep --color=auto "$@"
+}
+
+function fgrep() {
+	# Only add color in interactive shells; use plain fgrep for scripts
+	[[ -o interactive ]] || { command fgrep "$@"; return; }
+
+	command fgrep --color=auto "$@"
+}
 
 # Create parent dirs if they don't exist
 alias mkdir="mkdir -pv"
