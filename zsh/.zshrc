@@ -281,10 +281,13 @@ bindkey -M vicmd 'v' edit-command-line # v in normal mode: Open in $EDITOR
 # https://unix.stackexchange.com/questions/20298/home-key-not-working-in-terminal
 #=======================================================================================
 # Vi mode
-bindkey -v
+# bindkey -v  # DISABLED - Vim mode disabled
+
+# Use emacs mode instead (default zsh mode)
+bindkey -e
 
 # Reduce ESC delay to 10ms for faster vi mode switching (default: 400ms)
-export KEYTIMEOUT=1
+# export KEYTIMEOUT=1  # Not needed in emacs mode
 
 # Better undo/redo
 bindkey -M vicmd 'u' undo

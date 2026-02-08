@@ -261,9 +261,9 @@ echo "Installing development tools via mise..."
 echo "  → Node.js LTS..."
 mise use --global node@lts 2>/dev/null || echo "    (skipped - may already be installed)"
 
-# Yarn (latest)
-echo "  → Yarn..."
-mise use --global yarn@latest 2>/dev/null || echo "    (skipped - may already be installed)"
+# Yarn (latest version 1.x - classic)
+echo "  → Yarn 1.x (classic)..."
+mise use --global yarn@1 2>/dev/null || echo "    (skipped - may already be installed)"
 
 # Python (latest stable)
 echo "  → Python..."
