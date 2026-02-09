@@ -43,6 +43,7 @@ export CARGO_HOME="${XDG_CONFIG_HOME}/.cargo"
 export VOLTA_HOME="${XDG_CONFIG_HOME}/volta"
 export BUN_INSTALL="${XDG_CONFIG_HOME}/bun"
 export PNPM_HOME="${XDG_CONFIG_HOME}/pnpm"
+export CLAUDE_CONFIG_DIR="${XDG_CONFIG_HOME}/claude"
 
 # 🖥️ Terminal & editor defaults
 export EDITOR="vim"

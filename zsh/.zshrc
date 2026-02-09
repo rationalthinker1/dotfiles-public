@@ -29,10 +29,6 @@
 # Note: .zshenv is always sourced first by ZSH (guaranteed by ZSH specification)
 # If ZDOTDIR is not set, your shell environment is fundamentally misconfigured
 
-# TODO
-# croc - Easy file transfer between computers
-# look at syncthing - Continuous file synchronization
-
 # ==============================================================================
 # ⚡ Powerlevel10k Instant Prompt (MUST BE NEAR TOP!)
 # ==============================================================================
@@ -285,10 +281,13 @@ bindkey -M vicmd 'v' edit-command-line # v in normal mode: Open in $EDITOR
 # https://unix.stackexchange.com/questions/20298/home-key-not-working-in-terminal
 #=======================================================================================
 # Vi mode
-bindkey -v
+# bindkey -v  # DISABLED - Vim mode disabled
+
+# Use emacs mode instead (default zsh mode)
+bindkey -e
 
 # Reduce ESC delay to 10ms for faster vi mode switching (default: 400ms)
-export KEYTIMEOUT=1
+# export KEYTIMEOUT=1  # Not needed in emacs mode
 
 # Better undo/redo
 bindkey -M vicmd 'u' undo
@@ -533,7 +532,7 @@ _ZO_FZF_OPTS="--bind=ctrl-z:ignore --exit-0 --height=40% --inline-info --no-sort
 zi ice lucid as"command" from"gh-r" \
     atclone"./zoxide init zsh --cmd z > init.zsh" \
     atpull"%atclone" src"init.zsh" nocompile'!'
-zi light ajeetdsouza/zoxide
+zi load ajeetdsouza/zoxide
 
 # 📁 BD - Quickly go back to a parent directory by name
 # Usage: `bd src` - jump back to /home/user/projects/src from deep subdirectory
@@ -549,17 +548,18 @@ zi light ap/rename
 # 📊 Eza - Modern ls replacement with colors, icons, and git integration
 # Usage: Already aliased to `ls`, `l`, `la`, `ll`, `tree`
 # Shows file permissions, size, git status, and uses colors automatically
-zi ice lucid depth'1' from'gh-r' as'program' sbin'**/eza -> eza' atclone'cp -vf completions/eza.zsh _eza'
-zi light eza-community/eza
+zi ice lucid from'gh-r' as'program' sbin'**/eza -> eza' \
+    atclone'cp -vf completions/eza.zsh _eza' nocompile'!'
+zi load eza-community/eza
 
 # 🌲 Erdtree - Modern file-tree visualization with disk usage
 # Usage: `erdtree` or `et` - shows directory tree with file sizes
 # Alternative to `tree` and `ncdu` with better visuals
-zi ice wait'2' lucid depth'1' from'gh-r' as'command'
-zi light solidiquis/erdtree
+zi ice wait'2' lucid from'gh-r' as'command' nocompile'!'
+zi load solidiquis/erdtree
 
-zi ice wait'2' lucid depth'1' from'gh-r' as'program' pick'*/dua'
-zi light Byron/dua-cli
+zi ice wait'2' lucid from'gh-r' as'program' pick'*/dua' nocompile'!'
+zi load Byron/dua-cli
 
 # Note: zshmarks removed - use zoxide for directory jumping (z <pattern>)
 
@@ -571,67 +571,67 @@ zi light Byron/dua-cli
 # Usage: `rg "pattern"` - searches files recursively, respects .gitignore
 # Auto-pipes through less with `rg()` function in aliases.zsh
 export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME}/ripgrep/.ripgreprc"
-zi ice wait'2' lucid from'gh-r' as'command' pick='*/rg'
-zi light BurntSushi/ripgrep
+zi ice wait'2' lucid from'gh-r' as'command' pick='*/rg' nocompile'!'
+zi load BurntSushi/ripgrep
 
 # 🦇 Bat - Cat clone with syntax highlighting and git integration
 # Usage: Already aliased to `cat` - shows line numbers and syntax colors
 # Original cat available as `rcat`
 export BAT_THEME="OneHalfDark"
-zi ice wait'2' lucid from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat"
-zi light sharkdp/bat
+zi ice wait'2' lucid from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat" nocompile'!'
+zi load sharkdp/bat
 
 # 🔍 FD - Simple, fast alternative to `find`
 # Usage: `fd pattern` - finds files by name, faster than find
 # `fd -e js` - find by extension, `fd -t d` - find directories only
-zi ice wait'2' lucid from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd"
-zi light sharkdp/fd
+zi ice wait'2' lucid from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd" nocompile'!'
+zi load sharkdp/fd
 
 # 🧼 SD - Intuitive find & replace CLI (better than sed)
 # Usage: `sd before after file.txt` - simpler syntax than sed
 # `sd '\d+' '[$0]' file.txt` - regex with capture groups
-zi ice wait'2' lucid from'gh-r' as'command' pick'gnu'
-zi light chmln/sd
+zi ice wait'2' lucid from'gh-r' as'command' nocompile'!'
+zi load chmln/sd
 
 # 🧠 JQ - Command-line JSON processor
 # Usage: `echo '{"key":"value"}' | jq .key` - extract JSON fields
 # Works with jq-zsh-plugin for interactive query building (Alt+J)
-zi ice wait'2' lucid as'program' from'gh-r' bpick'*linux64' mv'jq* -> jq'
-zi light jqlang/jq
+zi ice wait'2' lucid as'program' from'gh-r' mv'jq* -> jq' nocompile'!'
+zi load jqlang/jq
 
 # 💥 UP - Interactive pipe builder for shell commands
 # Usage: `up` - opens visual editor to build/test pipelines interactively
 # Helps construct complex command pipelines with live preview
-zi ice wait'2' lucid depth'1' from'gh-r' as'command'
-zi light akavel/up
+zi ice wait'2' lucid from'gh-r' as'command' nocompile'!'
+zi load akavel/up
 
 # 📊 QSV - Ultra-fast CSV toolkit with Python integration
 # Usage: `qsv stats data.csv` - advanced CSV statistics and operations
 # More features than xsv: SQL queries, Python expressions, etc.
-zi ice wait'2' lucid from'gh-r' as'program' pick'qsv'
-zi light dathere/qsv
+zi ice wait'2' lucid from'gh-r' as'program' pick'qsv' nocompile'!'
+zi load dathere/qsv
 
-zi ice wait'2' lucid from'gh-r' as'program' pick'*/yazi'
-zi light sxyazi/yazi
+zi ice wait'2' lucid from'gh-r' as'program' pick'*/yazi' nocompile'!'
+zi load sxyazi/yazi
 
 # ==============================================================================
 # ADDITIONAL MODERN CLI TOOLS
 # ==============================================================================
 
 # 🔍 GitHub CLI - Essential for git-heavy workflow
-zi ice wait'2' lucid from'gh-r' as'command' bpick'*linux_amd64.tar.gz' pick'*/bin/gh'
-zi light cli/cli
+zi ice wait'2' lucid from'gh-r' as'command' pick='*/bin/gh' nocompile'!'
+zi load cli/cli
 
 # 🧠 Atuin - Magical shell history with sync, stats, and better search
 # Usage: Ctrl+R for powerful history search, `atuin stats` for analytics
 # Stores full context (directory, duration, exit code) and syncs across machines
-zi ice wait'2' lucid from'gh-r' as'command' pick'*/atuin' \
-    atclone'chmod +x */atuin && ./*/atuin init zsh > init.zsh' atpull'%atclone' src'init.zsh'
-zi light atuinsh/atuin
+zi ice wait'2' lucid from'gh-r' as'program' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'atuin-x86_64-unknown-linux-gnu/atuin' \
+    atclone='./atuin-x86_64-unknown-linux-gnu/atuin init zsh > init.zsh' atpull='%atclone' src='init.zsh' nocompile='!'
+zi load atuinsh/atuin
 
 # 📊 Bottom - Modern system monitor
-zi ice wait'2' lucid from'gh-r' as'command' pick'*/btm'
-zi light ClementTsang/bottom
+zi ice wait'2' lucid from'gh-r' as'command' pick='*/btm' nocompile='!'
+zi load ClementTsang/bottom
 
 # 🔥 Tokei - Fast code statistics
 zi ice wait'2' lucid from'gh' as'program' pick'target/release/tokei' \
@@ -639,36 +639,36 @@ zi ice wait'2' lucid from'gh' as'program' pick'target/release/tokei' \
 zi light XAMPPRocky/tokei
 
 # ⚡ Hyperfine - Command benchmarking
-zi ice wait'2' lucid from'gh-r' as'command' pick'*/hyperfine'
-zi light sharkdp/hyperfine
+zi ice wait'2' lucid from'gh-r' as'command' pick='*/hyperfine' nocompile='!'
+zi load sharkdp/hyperfine
 
 # 🧼 Dust - Fast Rust-based alternative to du
-zi ice wait'2' lucid from'gh-r' as'command' pick'*/dust'
-zi light bootandy/dust
+zi ice wait'2' lucid from'gh-r' as'command' pick='*/dust' nocompile='!'
+zi load bootandy/dust
 
 # 🎨 Delta - Better git diffs with syntax highlighting
-zi ice wait'0' lucid from'gh-r' as'command' pick'*/delta'
-zi light dandavison/delta
+zi ice wait'0' lucid from'gh-r' as'command' pick='*/delta' nocompile='!'
+zi load dandavison/delta
 
 # 📁 Duf - Modern df alternative
-zi ice wait'2' lucid from'gh-r' as'command' bpick'*linux_x86_64.tar.gz' pick'*/duf'
-zi light muesli/duf
+zi ice wait'2' lucid from'gh-r' as'command' pick='*/duf' nocompile='!'
+zi load muesli/duf
 
 # 🐶 Doggo - Modern dig alternative with better output
-zi ice wait'2' lucid from'gh-r' as'command' bpick'*Linux_x86_64.tar.gz' pick'doggo'
-zi light mr-karan/doggo
+zi ice wait'2' lucid from'gh-r' as'command' pick='doggo' nocompile='!'
+zi load mr-karan/doggo
 
 # 🦎 Lazygit - TUI for git
-zi ice wait'2' lucid from'gh-r' as'command' bpick'*Linux_x86_64.tar.gz' pick'lazygit'
-zi light jesseduffield/lazygit
+zi ice wait'2' lucid from'gh-r' as'command' pick='lazygit' nocompile='!'
+zi load jesseduffield/lazygit
 
 # 🐳 Lazydocker - TUI for docker
-zi ice wait'2' lucid from'gh-r' as'command' bpick'*Linux_x86_64.tar.gz' pick'lazydocker'
-zi light jesseduffield/lazydocker
+zi ice wait'2' lucid from'gh-r' as'command' pick='lazydocker' nocompile='!'
+zi load jesseduffield/lazydocker
 
 # 🔧 Procs - Modern ps alternative
-zi ice wait'2' lucid from'gh-r' as'command' bpick'*linux.zip' pick'procs'
-zi light dalance/procs
+zi ice wait'2' lucid from'gh-r' as'command' pick='procs' nocompile='!'
+zi load dalance/procs
 
 # ==============================================================================
 # GIT ENHANCEMENTS
@@ -736,8 +736,8 @@ autoload -Uz zmv
 # Custom Application Settings
 # ==============================================================================
 
-# Auto-start Docker on WSL if not running (skip on SSH sessions and containers)
-if [[ "$HOST_OS" == "wsl" && -z "${SSH_TTY:-}" && "${IS_DEVCONTAINER}" != "true" ]] && (( $+commands[systemctl] )); then
+# Auto-start Docker on WSL if not running (skip on SSH sessions)
+if [[ "$HOST_OS" == "wsl" && -z "${SSH_TTY:-}" ]] && (( $+commands[systemctl] )); then
     if ! systemctl is-active --quiet docker 2>/dev/null; then
         # Start Docker without password prompt (requires sudoers NOPASSWD for systemctl)
         sudo -n systemctl start docker 2>/dev/null && echo "✓ Docker started" || true
@@ -780,11 +780,8 @@ fi
 # Note: Most tool completions are now provided automatically via zinit or tool packages
 # If you need manual completions for doctl, rustup, bat, fd, or rg, see git history
 
-# VSCode Integration (safe wrapper for containers)
-if [[ "$TERM_PROGRAM" == "vscode" ]]; then
-    code_shell_integration="$(code --locate-shell-integration-path zsh 2>/dev/null)" || true
-    [[ -n "$code_shell_integration" && -f "$code_shell_integration" ]] && source "$code_shell_integration"
-fi
+# VSCode Integration
+[[ "$TERM_PROGRAM" == "vscode" ]] && source "$(code --locate-shell-integration-path zsh)"
 
 #[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
 

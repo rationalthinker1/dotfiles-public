@@ -122,6 +122,7 @@ declare -A DOTFILE_LINKS=(
     [.Xresources]="${HOME}/.Xresources"
     [rc.sh]="${HOME}/.ssh/rc"
     [zi/init.zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/zi/init.zsh"
+    [claude]="${CLAUDE_CONFIG_DIR:-${HOME}/.config}/claude"
 )
 
 
