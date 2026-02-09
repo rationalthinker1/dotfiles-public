@@ -29,6 +29,10 @@
 # Note: .zshenv is always sourced first by ZSH (guaranteed by ZSH specification)
 # If ZDOTDIR is not set, your shell environment is fundamentally misconfigured
 
+# TODO
+# croc - Easy file transfer between computers
+# look at syncthing - Continuous file synchronization
+
 # ==============================================================================
 # ⚡ Powerlevel10k Instant Prompt (MUST BE NEAR TOP!)
 # ==============================================================================
@@ -732,8 +736,8 @@ autoload -Uz zmv
 # Custom Application Settings
 # ==============================================================================
 
-# Auto-start Docker on WSL if not running (skip on SSH sessions)
-if [[ "$HOST_OS" == "wsl" && -z "${SSH_TTY:-}" ]] && (( $+commands[systemctl] )); then
+# Auto-start Docker on WSL if not running (skip on SSH sessions and containers)
+if [[ "$HOST_OS" == "wsl" && -z "${SSH_TTY:-}" && "${IS_DEVCONTAINER}" != "true" ]] && (( $+commands[systemctl] )); then
     if ! systemctl is-active --quiet docker 2>/dev/null; then
         # Start Docker without password prompt (requires sudoers NOPASSWD for systemctl)
         sudo -n systemctl start docker 2>/dev/null && echo "✓ Docker started" || true
@@ -776,8 +780,11 @@ fi
 # Note: Most tool completions are now provided automatically via zinit or tool packages
 # If you need manual completions for doctl, rustup, bat, fd, or rg, see git history
 
-# VSCode Integration
-[[ "$TERM_PROGRAM" == "vscode" ]] && source "$(code --locate-shell-integration-path zsh)"
+# VSCode Integration (safe wrapper for containers)
+if [[ "$TERM_PROGRAM" == "vscode" ]]; then
+    code_shell_integration="$(code --locate-shell-integration-path zsh 2>/dev/null)" || true
+    [[ -n "$code_shell_integration" && -f "$code_shell_integration" ]] && source "$code_shell_integration"
+fi
 
 #[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
 

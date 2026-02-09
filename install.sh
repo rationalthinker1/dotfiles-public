@@ -352,23 +352,27 @@ echo "Installing pynvim for Vim..."
 mise exec -- uv pip install --user pynvim 2>/dev/null || echo "  (skipping - may already be installed)"
 mise exec -- python -c 'import pynvim' 2>/dev/null && echo "✓ pynvim installed" || echo "  (pynvim installation may need verification)"
 
-# Configure zsh as default shell
-zsh_path=$(command -v zsh)
-if ! grep -qxF "${zsh_path}" /etc/shells 2>/dev/null; then
-    echo "${zsh_path}" | sudo tee -a /etc/shells >/dev/null
+# Configure zsh as default shell (skip in containers - shell is pre-configured)
+if [[ "${IS_DEVCONTAINER}" != "true" ]]; then
+    zsh_path=$(command -v zsh)
+    if ! grep -qxF "${zsh_path}" /etc/shells 2>/dev/null; then
+        echo "${zsh_path}" | sudo tee -a /etc/shells >/dev/null
+    fi
+    sudo chsh -s "${zsh_path}" "$USER" 2>/dev/null || true
+    echo "✓ Default shell set to zsh"
+else
+    echo "✓ Skipping shell change (container environment)"
 fi
-sudo chsh -s "${zsh_path}" "$USER" 2>/dev/null || true
-echo "✓ Default shell set to zsh"
 
-# Set clock (Linux only)
-if [[ "${HOST_OS}" != "darwin" ]]; then
+# Set clock (Linux only, skip in containers - no hardware clock access)
+if [[ "${HOST_OS}" != "darwin" && "${IS_DEVCONTAINER}" != "true" ]]; then
     sudo hwclock --hctosys 2>/dev/null || true
 fi
 
 #---------------------------------------------------------------------------------------
-# Install platform-specific tools
+# Install platform-specific tools (skip in containers)
 #---------------------------------------------------------------------------------------
-if [[ "$HOST_OS" == "wsl" ]] && ! command -v wslvar &>/dev/null; then
+if [[ "$HOST_OS" == "wsl" && "${IS_DEVCONTAINER}" != "true" ]] && ! command -v wslvar &>/dev/null; then
     echo "Installing wslu from PPA..."
     # Add PPA only if not already present
     if ! grep -q "wslutilities/wslu" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
@@ -526,9 +530,9 @@ else
 fi
 
 #---------------------------------------------------------------------------------------
-# Configure WSL environment
+# Configure WSL environment (skip in containers)
 #---------------------------------------------------------------------------------------
-if [[ "$HOST_OS" == "wsl" ]]; then
+if [[ "$HOST_OS" == "wsl" && "${IS_DEVCONTAINER}" != "true" ]]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "  Configuring WSL environment"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

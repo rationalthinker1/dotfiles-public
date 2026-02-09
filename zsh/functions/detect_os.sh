@@ -9,8 +9,9 @@
 #   - .zshrc (ZSH interactive configuration)
 #
 # EXPORTS:
-#   HOST_OS       - "wsl", "darwin", "linux", "windows", "unknown"
-#   HOST_LOCATION - "desktop" or "server"
+#   HOST_OS           - "wsl", "darwin", "linux", "windows", "unknown"
+#   HOST_LOCATION     - "desktop" or "server"
+#   IS_DEVCONTAINER   - "true" or "false"
 #
 # IMPORTANT: Keep this file POSIX sh-compatible!
 #   - No bash-isms (no [[ ]], no (( )))
@@ -18,6 +19,32 @@
 #   - Use [ ] for tests, not [[ ]]
 #   - Use command -v for existence checks
 # ==============================================================================
+
+detect_container() {
+    # Detect if running in a container
+    # Returns 0 (true) if in container, 1 (false) otherwise
+
+    # VS Code Dev Containers
+    [ -n "${DEVCONTAINER:-}" ] && return 0
+    [ -n "${REMOTE_CONTAINERS:-}" ] && return 0
+
+    # Docker
+    [ -f /.dockerenv ] && return 0
+
+    # Systemd containers (podman, systemd-nspawn)
+    [ -n "${container:-}" ] && return 0
+
+    # Kubernetes pods (check for kubernetes service account)
+    [ -d /var/run/secrets/kubernetes.io ] && return 0
+
+    # GitHub Codespaces
+    [ -n "${CODESPACES:-}" ] && return 0
+
+    # Gitpod
+    [ -n "${GITPOD_WORKSPACE_ID:-}" ] && return 0
+
+    return 1
+}
 
 detect_os() {
     # Detect operating system
@@ -40,9 +67,18 @@ detect_os() {
             ;;
     esac
 
+    # Detect if running in container
+    if detect_container; then
+        IS_DEVCONTAINER="true"
+    else
+        IS_DEVCONTAINER="false"
+    fi
+
     # Detect location (desktop vs server)
-    # Desktop if: macOS, or has DISPLAY, or has ubuntu-desktop package
-    if [ "${HOST_OS}" = "darwin" ]; then
+    # Force server mode in containers, even if desktop packages exist
+    if [ "${IS_DEVCONTAINER}" = "true" ]; then
+        HOST_LOCATION="server"
+    elif [ "${HOST_OS}" = "darwin" ]; then
         HOST_LOCATION="desktop"
     elif [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
         HOST_LOCATION="desktop"
@@ -54,7 +90,7 @@ detect_os() {
     fi
 
     # Export for use by calling script
-    export HOST_OS HOST_LOCATION
+    export HOST_OS HOST_LOCATION IS_DEVCONTAINER
 }
 
 # Auto-run if sourced
