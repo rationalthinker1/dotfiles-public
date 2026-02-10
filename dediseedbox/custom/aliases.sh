@@ -89,10 +89,21 @@ alias .4="builtin cd ../../../../"
 alias .5="builtin cd ../../../../.."
 alias r="builtin cd /"
 
-# Colorize the grep command output
-alias grep="grep --color=auto"
-alias egrep="egrep --color=auto"
-alias fgrep="fgrep --color=auto"
+# Colorize grep output (smart functions that only colorize in interactive shells)
+function grep() {
+    [[ -o interactive ]] || { command grep "$@"; return; }
+    command grep --color=auto "$@"
+}
+
+function egrep() {
+    [[ -o interactive ]] || { command egrep "$@"; return; }
+    command egrep --color=auto "$@"
+}
+
+function fgrep() {
+    [[ -o interactive ]] || { command fgrep "$@"; return; }
+    command fgrep --color=auto "$@"
+}
 
 # Create parent dirs if they don't exist
 alias mkdir="mkdir -pv"
@@ -830,8 +841,11 @@ alias week='date +%V'
 # Current time
 alias now='date +"%Y-%m-%d %H:%M:%S"'
 
-# Clear screen
-alias c='clear'
+# Quick git checkout
+function c() { git checkout "$@"; }
+
+# Clear screen (use 'clear' command or Ctrl+L)
+alias cls='clear'
 
 # Create directory alias (function in functions.sh)
 alias md='mkcd'

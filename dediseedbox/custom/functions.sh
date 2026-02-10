@@ -297,11 +297,8 @@ serve() {
 # ------------------------------------------------------------------------------
 # Port Management
 # ------------------------------------------------------------------------------
-# List listening ports (ps-based)
-lsp() {
-    echo "Listening processes (use 'ps aux' for details):"
-    ps aux | grep -i listen | grep -v grep
-}
+# List listening ports (lsof-based - more accurate)
+alias lsp="sudo lsof -iTCP -sTCP:LISTEN -n -P"
 
 # Kill process on port
 # Usage: killport <port>

@@ -22,7 +22,6 @@ alias ga="git add"
 alias gaa="git add --all"
 alias gau="git add --update"      # Add modified/deleted, not untracked
 alias gc="git commit"
-alias gcm="git commit -m"
 alias gca="git commit --amend"
 alias gcan="git commit --amend --no-edit"
 
@@ -46,10 +45,37 @@ alias gbD="git branch -D"         # Force delete branch
 # ------------------------------------------------------------------------------
 # Git Pull & Push
 # ------------------------------------------------------------------------------
-alias gp="git push"
-alias gpu="git pull"
 alias gpf="git push --force-with-lease"  # Safer force push
 alias gpr="git pull --rebase"
+
+# Git pull with .git_cli_prepend support
+function gp() {
+    _validate_and_apply_git_prepend git pull
+}
+
+# Git push with auto-upstream and .git_cli_prepend support
+function gpu() {
+    local remote_branch=$(git config "branch.$(git symbolic-ref --short HEAD).merge" 2>/dev/null)
+    if [[ -z $remote_branch ]]; then
+        _validate_and_apply_git_prepend git push -u origin $(git symbolic-ref --short HEAD)
+    else
+        _validate_and_apply_git_prepend git push
+    fi
+}
+
+# Git push force (with lease) with .git_cli_prepend support
+function gpuf() {
+    _validate_and_apply_git_prepend git push --force-with-lease
+}
+
+# Conventional commits helper
+function gcm() {
+    local type=$1
+    shift
+    git commit -m "${type}: $*"
+}
+# Usage: gcm feat add user authentication
+# Types: feat, fix, docs, style, refactor, test, chore
 
 # ------------------------------------------------------------------------------
 # Git Fetch & Remote
