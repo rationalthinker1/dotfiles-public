@@ -47,6 +47,7 @@ Key behaviors:
 - Execute git commit with generated message
 - For dependency updates: list ONLY direct dependencies from manifest files
 - Use Multiple Distinct Changes format ONLY for truly unrelated changes
+- No do add co-authored by Claude 
 
 ## Conventional Commits 1.0.0 Rules
 
