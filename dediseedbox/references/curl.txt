@@ -1,0 +1,87 @@
+🧠 cURL Cheat Sheet
+
+🔍 Basic Usage
+curl example.com                     # GET request to URL
+curl -X POST example.com             # POST request
+curl -o file.html example.com        # Save output to file
+curl -O example.com/file.zip         # Save with remote filename
+curl -L example.com                  # Follow redirects
+
+📤 Request Methods
+curl -X GET example.com              # GET request (default)
+curl -X POST example.com             # POST request
+curl -X PUT example.com              # PUT request
+curl -X DELETE example.com           # DELETE request
+curl -X PATCH example.com            # PATCH request
+curl -I example.com                  # HEAD request (headers only)
+
+📦 Sending Data
+curl -d "key=value" example.com      # Send POST data
+curl -d @file.json example.com       # Send data from file
+curl --json '{"key":"val"}' url      # Send JSON (sets Content-Type)
+curl -F "file=@path.jpg" url         # Upload file (multipart)
+curl -F "key=value" url              # Form data
+curl -G -d "q=search" url            # GET with query params
+
+🔐 Authentication
+curl -u user:pass example.com        # Basic authentication
+curl -u user example.com             # Prompt for password
+curl -H "Authorization: Bearer token" url  # Bearer token
+curl --oauth2-bearer token url       # OAuth2 token
+curl -E cert.pem example.com         # Client certificate
+
+🏷️ Headers
+curl -H "Content-Type: application/json" url    # Set header
+curl -H "Accept: application/json" url          # Accept header
+curl -A "User-Agent" url                        # Custom user agent
+curl -e "http://referer.com" url                # Referer header
+curl -H "X-Custom: value" url                   # Custom header
+curl -i example.com                             # Include response headers
+curl -v example.com                             # Verbose (show headers)
+
+📊 Output and Display
+curl -s example.com                  # Silent mode (no progress)
+curl -S example.com                  # Show errors in silent mode
+curl -# example.com                  # Progress bar
+curl -w "%{http_code}\n" url         # Print HTTP status code
+curl -w "@format.txt" url            # Custom output format
+curl --no-progress-meter url         # Hide progress meter
+
+🔄 Downloads
+curl -O url/file.zip                 # Download with original name
+curl -o custom.zip url/file.zip      # Download with custom name
+curl -C - -O url/file.zip            # Resume download
+curl -r 0-999 url                    # Download first 1000 bytes
+curl --limit-rate 100K url           # Limit download speed
+
+🍪 Cookies
+curl -b cookies.txt url              # Send cookies from file
+curl -c cookies.txt url              # Save cookies to file
+curl -b "name=value" url             # Send cookie
+curl -j url                          # Ignore session cookies
+
+🔧 Advanced Options
+curl -k example.com                  # Ignore SSL certificate errors
+curl --cacert ca.pem url             # Custom CA certificate
+curl -x proxy:port url               # Use proxy
+curl -U user:pass -x proxy url       # Proxy with auth
+curl --connect-timeout 10 url        # Connection timeout (seconds)
+curl --max-time 30 url               # Maximum time for request
+curl --retry 3 url                   # Retry on failure
+curl --retry-delay 2 url             # Delay between retries
+
+🧪 Testing and Debugging
+curl -v example.com                  # Verbose output
+curl --trace trace.txt url           # Full trace to file
+curl --trace-ascii trace.txt url     # ASCII trace
+curl -w "@-" <<< '%{http_code}' url  # Custom timing info
+curl --http2 example.com             # Force HTTP/2
+curl --http1.1 example.com           # Force HTTP/1.1
+
+🔗 Multiple Requests
+curl url1 url2 url3                  # Multiple URLs in sequence
+curl -Z url1 url2                    # Parallel downloads
+curl "example.com/file[1-10].jpg"    # Download numbered files
+curl "example.com/{one,two,three}"   # Download from patterns
+
+✅ Done. Happy curling!

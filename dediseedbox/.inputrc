@@ -1,0 +1,76 @@
+# ==============================================================================
+# .inputrc - Readline Configuration for Bash
+# ==============================================================================
+# Enhanced keybindings for bash (similar to ZSH configuration)
+# This file configures readline, which is used by bash for command-line editing
+# ==============================================================================
+
+# Use Emacs mode (default, but explicit)
+set editing-mode emacs
+
+# ==============================================================================
+# General Readline Settings
+# ==============================================================================
+
+# Case-insensitive completion
+set completion-ignore-case on
+
+# Treat hyphens and underscores as equivalent for completion
+set completion-map-case on
+
+# Show all completions immediately (no double TAB needed)
+set show-all-if-ambiguous on
+
+# Complete partial matches with first TAB
+set menu-complete-display-prefix on
+
+# Show extra info about completions (file type indicators)
+set visible-stats on
+set mark-directories on
+set mark-symlinked-directories on
+
+# Color completion by file type (uses LS_COLORS)
+set colored-stats on
+set colored-completion-prefix on
+
+# Enable incremental history search with arrow keys
+set enable-bracketed-paste on
+
+# Don't ring bell on completion
+set bell-style none
+
+# Append slash to symlinked directories
+set mark-symlinked-directories on
+
+# ==============================================================================
+# Emacs Mode Keybindings (Enhanced)
+# ==============================================================================
+
+# History search (smart prefix search like ZSH)
+"\C-p": history-search-backward  # Ctrl+P: Search history backward
+"\C-n": history-search-forward   # Ctrl+N: Search history forward
+"\e[A": history-search-backward  # Up arrow: Search by prefix
+"\e[B": history-search-forward   # Down arrow: Search by prefix
+
+# Word movement (Ctrl+Arrow keys and Alt+Arrow keys)
+"\e[1;5C": forward-word          # Ctrl+Right: Forward word
+"\e[1;5D": backward-word         # Ctrl+Left: Backward word
+"\e[1;3C": forward-word          # Alt+Right: Forward word
+"\e[1;3D": backward-word         # Alt+Left: Backward word
+
+# Home/End keys (multiple terminal types)
+"\e[1~": beginning-of-line       # Linux console
+"\e[H": beginning-of-line        # xterm
+"\eOH": beginning-of-line        # gnome-terminal
+"\e[4~": end-of-line             # Linux console
+"\e[F": end-of-line              # xterm
+"\eOF": end-of-line              # gnome-terminal
+
+# Other useful keys
+"\e[2~": overwrite-mode          # Insert
+"\e[3~": delete-char             # Delete
+"\e[5~": history-search-backward # Page Up
+"\e[6~": history-search-forward  # Page Down
+
+# Edit command in $EDITOR (Ctrl+X Ctrl+E)
+"\C-x\C-e": edit-and-execute-command
