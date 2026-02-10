@@ -413,8 +413,9 @@ zstyle ':completion:*:*:*:users' ignored-patterns \
     vcsa xfs '_*'
 
 # 🎯 Hostname completion from known hosts
-zstyle ':completion:*:hosts' hosts \
-    ${${${${(f)"$(cat {/etc/ssh/ssh_,~/.ssh/}known_hosts(|2)(N) 2>/dev/null)"}%%[#| ]*}//,/ }//\]:[0-9]*/ }
+# Disabled: can cause hangs on servers with large known_hosts files
+# zstyle ':completion:*:hosts' hosts \
+#     ${${${${(f)"$(cat {/etc/ssh/ssh_,~/.ssh/}known_hosts(|2)(N) 2>/dev/null)"}%%[#| ]*}//,/ }//\]:[0-9]*/ }
 
 # 🔒 Enable bracketed paste mode for safer pasting
 # This prevents pasted text from being executed immediately
@@ -625,9 +626,9 @@ zi load cli/cli
 # 🧠 Atuin - Magical shell history with sync, stats, and better search
 # Usage: Ctrl+R for powerful history search, `atuin stats` for analytics
 # Stores full context (directory, duration, exit code) and syncs across machines
-zi ice wait'2' lucid from'gh-r' as'program' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'atuin-x86_64-unknown-linux-gnu/atuin' \
-    atclone='./atuin-x86_64-unknown-linux-gnu/atuin init zsh > init.zsh' atpull='%atclone' src='init.zsh' nocompile='!'
+zi ice lucid from'gh-r' as'program' bpick'*x86_64-unknown-linux-gnu.tar.gz' pick'atuin-x86_64-unknown-linux-gnu/atuin'
 zi load atuinsh/atuin
+eval "$(atuin init zsh)"
 
 # 📊 Bottom - Modern system monitor
 zi ice wait'2' lucid from'gh-r' as'command' pick='*/btm' nocompile='!'

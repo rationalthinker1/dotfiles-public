@@ -45,7 +45,7 @@ alias con="cd ~/.config"
 
 # 🦇 Bat: Better cat with syntax highlighting
 # Override 'cat' to use 'bat' for prettier output
-# Use 'rcat' or '\cat' to access original cat command
+# Use 'rcat' or 'command cat' to access original cat command
 function cat() {
 	# Only override cat in interactive shells; use builtin for scripts
 	[[ -o interactive ]] || { command cat "$@"; return; }
