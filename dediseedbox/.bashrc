@@ -21,11 +21,12 @@ esac
 export OSH="/.oh-my-bash"
 
 # oh-my-bash configuration
-OSH_THEME="powerline-plain"  # ASCII-only theme (no Nerd Fonts needed)
+# OSH_THEME="powerline-plain"  # ASCII-only theme (no Nerd Fonts needed)
 
 # Plugins to load (order matters - only standard tool plugins)
 plugins=(
-    git           # Git aliases and completion
+    starship    
+    git       # Git aliases and completion
 )
 
 # Aliases to enable

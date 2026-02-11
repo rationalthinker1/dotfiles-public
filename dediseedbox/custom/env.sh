@@ -10,6 +10,9 @@ export XDG_CONFIG_HOME="/.config"
 export XDG_DATA_HOME="/.local/share"
 export XDG_CACHE_HOME="/.cache"
 
+# Claude configuration directory (example for a modern AI CLI tool)
+export CLAUDE_CONFIG_DIR="${XDG_CONFIG_HOME}/claude"
+
 # Editor preferences
 export EDITOR="vim"
 export VISUAL="vim"
