@@ -61,6 +61,12 @@ if [[ -t 0 ]]; then
     stty -ixon
 fi
 
+if [ -f "~/.bash-preexec.sh" ]; then
+    # shellcheck source=/dev/null
+    . "~/.bash_preexec"
+fi
+eval "$(atuin init bash)"
+
 # Load oh-my-bash
 if [ -f "$OSH/oh-my-bash.sh" ]; then
     # shellcheck source=/dev/null
