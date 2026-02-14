@@ -680,7 +680,7 @@ zi load dalance/procs
 # `gd` - interactive diff, `ga` - interactive add, `glo` - interactive log
 export forgit_log=gl
 export FORGIT_DIFF_GIT_OPTS="-w --ignore-blank-lines"
-zi ice lucid wait'1' depth'1' branch'main'
+zi ice lucid wait'0' depth'1' branch'main'
 zi light wfxr/forgit
 
 # 🌐 Git-Open - Open current repo in browser (GitHub/GitLab/Bitbucket)
@@ -824,6 +824,45 @@ if [[ "${HOST_OS}" == 'wsl' ]]; then
     }
     
     alias update-wt-settings='sync_wt_settings'
+
+    function sync_ssh_config() {
+        local PWSH_EXE="/mnt/c/Program Files/PowerShell/7/pwsh.exe"
+
+        if [[ -x "$PWSH_EXE" ]]; then
+            local WINDOWS_USER=$("$PWSH_EXE" -NoProfile -Command '$env:UserName' | tr -d '\r')
+            local DOTFILES_DIR="$HOME/.dotfiles"
+            local SSH_CONFIG_DEST="/mnt/c/Users/$WINDOWS_USER/.ssh/config"
+            local SSH_CONFIG_SRC="$DOTFILES_DIR/.ssh/config"
+
+            if [[ -f "$SSH_CONFIG_DEST" ]]; then
+                # Create .ssh directory in dotfiles if it doesn't exist
+                mkdir -p "$DOTFILES_DIR/.ssh"
+
+                if [[ -f "$SSH_CONFIG_SRC" ]]; then
+                    # Both files exist - compare timestamps
+                    if [[ "$SSH_CONFIG_SRC" -nt "$SSH_CONFIG_DEST" ]]; then
+                        cp "$SSH_CONFIG_DEST" "${SSH_CONFIG_DEST}.bak.$(date +%s)"
+                        cp "$SSH_CONFIG_SRC" "$SSH_CONFIG_DEST"
+                        echo "✓ Synced SSH config from dotfiles to Windows"
+                    else
+                        cp "$SSH_CONFIG_SRC" "${SSH_CONFIG_SRC}.bak.$(date +%s)"
+                        cp "$SSH_CONFIG_DEST" "$SSH_CONFIG_SRC"
+                        echo "✓ Synced SSH config from Windows to dotfiles"
+                    fi
+                else
+                    # Only Windows file exists - copy to dotfiles
+                    cp "$SSH_CONFIG_DEST" "$SSH_CONFIG_SRC"
+                    echo "✓ Copied SSH config from Windows to dotfiles"
+                fi
+            else
+                echo "✗ Could not find SSH config at $SSH_CONFIG_DEST"
+            fi
+        else
+            echo "✗ PowerShell not found at $PWSH_EXE"
+        fi
+    }
+
+    alias update-ssh-config='sync_ssh_config'
 fi
 #=======================================================================================
 # Source aliases and functions

@@ -352,6 +352,44 @@ function bak() {
     fi
 }
 
+# Copy file/folder with timestamp suffix
+# Usage: bakt <file|folder>
+# Example: bakt config.json -> config_20301512022026_backup.json
+function bakt() {
+    if [[ -z "$1" ]]; then
+        echo "Error: No file or folder name provided."
+        return 1
+    fi
+
+    if [[ ! -e "$1" ]]; then
+        echo "Error: ${1} does not exist."
+        return 1
+    fi
+
+    local timestamp=$(date +%S%M%H%d%m%Y)
+    local target
+
+    if [[ -d "$1" ]]; then
+        # Directory - no extension to handle
+        target="${1}_${timestamp}_backup"
+    else
+        # File - handle extension
+        local basename="${1%.*}"
+        local extension="${1##*.}"
+
+        if [[ "$basename" == "$1" ]]; then
+            # No extension
+            target="${1}_${timestamp}_backup"
+        else
+            # Has extension
+            target="${basename}_${timestamp}_backup.${extension}"
+        fi
+    fi
+
+    cp -r "$1" "$target"
+    echo "Copied ${1} to ${target}"
+}
+
 # Create or edit reference files in ZDOTDIR/references
 # Usage: ref [name]
 # Example: ref git-commands
@@ -552,7 +590,19 @@ function b() { git branch "$@"; }
 alias gcam="git commit -a --amend"
 alias gc="git commit -am"
 alias gs="git status"
-alias gd="git diff --ignore-all-space --ignore-space-at-eol --ignore-space-change --ignore-blank-lines"
+# Removed: conflicted with forgit::diff
+# alias gd="git diff --ignore-all-space --ignore-space-at-eol --ignore-space-change --ignore-blank-lines"
+
+# Quick commit with Claude
+function cc() {
+    echo "📋 Files to be committed:"
+    git status --short
+    echo ""
+    echo "📝 Last commit:"
+    git log -1 --oneline --color=always
+    echo ""
+    git add -A && claude -p '/commit' && echo "" && echo "✅ New commit:" && git log -1 --color=always
+}
 
 # Internal helper: validate and apply .git_cli_prepend safely
 # Usage: _validate_and_apply_git_prepend <git command args...>
@@ -621,7 +671,8 @@ function git_reset() {
 
 	git reset --hard "${COMMIT}"
 }
-alias gre="git_reset"
+# Removed: conflicted with forgit::reset::head
+# alias gre="git_reset"
 
 # Clone git repo and cd into it
 # Usage: git-clone <repo-url>
@@ -690,6 +741,38 @@ function gcm() {
 }
 # Usage: gcm feat add user authentication
 # Types: feat, fix, docs, style, refactor, test, chore
+
+# =======================================================================================
+# Forgit - Interactive Git Tool Aliases
+# =======================================================================================
+# Check if forgit functions are available, otherwise use fallback aliases
+if (( $+functions[forgit::log] )); then
+    # Forgit is available - use interactive forgit commands
+    alias gl='forgit::log'          # Interactive git log browser
+    alias gd='forgit::diff'         # Interactive git diff viewer
+    alias ga='forgit::add'          # Interactive git add
+    alias gre='forgit::reset::head' # Interactive git reset HEAD
+    alias gcf='forgit::checkout::file'   # Interactive checkout files
+    alias gcb='forgit::checkout::branch' # Interactive checkout branch
+    alias gss='forgit::stash::show' # Interactive stash viewer
+    alias gcp='forgit::cherry::pick' # Interactive cherry-pick
+    alias grb='forgit::rebase'      # Interactive rebase
+    alias gfu='forgit::fixup'       # Interactive fixup
+    alias gclean='forgit::clean'    # Interactive clean
+else
+    # Forgit not available - use standard git command fallbacks
+    alias gl='git log --graph --oneline --decorate --all'
+    alias gd='git diff'
+    alias ga='git add'
+    alias gre='git reset HEAD'
+    alias gcf='git checkout'
+    alias gcb='git checkout -b'
+    alias gss='git stash show -p'
+    alias gcp='git cherry-pick'
+    alias grb='git rebase'
+    alias gfu='git commit --fixup'
+    alias gclean='git clean -id'
+fi
 
 # =======================================================================================
 # Suffix Aliases
