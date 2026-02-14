@@ -1120,21 +1120,6 @@ if [[ $HOST_OS == "wsl" ]]; then
 		fi
 		"${code_exe}" "$@"
 	}
-
-# Copy Windows Terminal settings to dotfiles
-	# Usage: copy_terminal_settings_to_dotfiles
-	function copy_terminal_settings_to_dotfiles() {
-		local DOTFILES_DIR="${HOME}/.dotfiles"
-		local WINDOWS_USER="$(powershell.exe '$env:UserName' | tr -d '\r')"
-		local TERMINAL_SETTINGS_DEST="/mnt/c/Users/${WINDOWS_USER}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
-  		local TERMINAL_SETTINGS_SRC="${DOTFILES_DIR}/windows-terminal/settings.json"
-		if [[ -f "${TERMINAL_SETTINGS_DEST}" ]]; then
-			cp "${TERMINAL_SETTINGS_DEST}" "${TERMINAL_SETTINGS_SRC}"
-			echo "✅ Copied current terminal settings to dotfiles."
-		else
-			echo "❌ Terminal settings not found at: ${TERMINAL_SETTINGS_DEST}"
-		fi
-	}
 fi
 
 # =======================================================================================
