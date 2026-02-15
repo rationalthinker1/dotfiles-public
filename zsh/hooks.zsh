@@ -2,6 +2,10 @@
 # Context-Aware Navigation
 # =======================================================================================
 
+# Ensure hook arrays are properly initialized
+typeset -ga precmd_functions
+typeset -ga chpwd_functions
+
 # Reset cursor on each new prompt (skip in tmux)
 if [[ -z "$TMUX" ]]; then
   function reset_cursor() {

@@ -31,8 +31,4 @@ zsh/.zplug
 zsh/cache/*
 *.backup
 *.old
-# Claude Code - ignore everything except commands/ and agents/
-claude/*
-!claude/commands/
-!claude/agents/
 

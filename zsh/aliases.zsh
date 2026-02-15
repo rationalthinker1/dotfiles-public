@@ -392,10 +392,22 @@ function bakt() {
 
 # Create or edit reference files in ZDOTDIR/references
 # Usage: ref [name]
+#        ref --list | -l    (show all available reference topics)
 # Example: ref git-commands
 # Note: Called without args shows main reference.zsh (create if needed)
 #       Called with arg creates/edits individual reference files
 function ref() {
+	# Show list of available reference topics
+	if [[ "$1" == "--list" || "$1" == "-l" ]]; then
+		echo "Available reference topics:"
+		if [[ -d "${ZDOTDIR}/references" ]]; then
+			ls -1 "${ZDOTDIR}/references/" 2>/dev/null | sed 's/\.zsh$//' | sed 's/^/  - /'
+		else
+			echo "  (no reference topics yet - create one with 'ref <topic>')"
+		fi
+		return 0
+	fi
+
 	if [[ "$#" -eq 0 ]]; then
 		local main_ref="${ZDOTDIR}/reference.zsh"
 		# Create main reference file if it doesn't exist

@@ -296,8 +296,14 @@ if mise which vim &>/dev/null; then
             echo "    (skipped - vim $current_vim_version already installed, same major.minor as latest)"
         fi
     else
-        # Can't determine versions, install to be safe
-        should_install_vim=true
+        # Can't determine versions - verify vim works before reinstalling
+        if mise exec -- vim --version &>/dev/null; then
+            echo "    (skipped - vim already installed and functional)"
+            should_install_vim=false
+        else
+            echo "    Can't determine versions, installing to be safe..."
+            should_install_vim=true
+        fi
     fi
 else
     echo "    Installing vim for the first time..."
