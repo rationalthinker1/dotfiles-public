@@ -225,19 +225,23 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "NOTE: Development tools (Python, Node.js, Go, Rust, Vim, Yarn, uv) will be installed via mise"
 
 #---------------------------------------------------------------------------------------
-# Install Zinit
+# Install ZI (z-shell/zi)
 #---------------------------------------------------------------------------------------
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "  Installing Zinit"
+echo "  Installing ZI (z-shell/zi)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-zinit_home="${HOME}/.local/share/zinit/zinit.git"
+zi_home="${HOME}/.zi"
+zi_bin="${zi_home}/bin"
 
-if [[ ! -f "${zinit_home}/zinit.zsh" ]]; then
-    mkdir -p "$(dirname "${zinit_home}")"
-    git clone https://github.com/zdharma-continuum/zinit.git "${zinit_home}"
+if [[ ! -d "${zi_bin}/.git" ]]; then
+    echo "Cloning ZI from https://github.com/z-shell/zi.git..."
+    mkdir -p "${zi_home}"
+    git clone --depth=1 --single-branch --branch main https://github.com/z-shell/zi.git "${zi_bin}"
+    echo "✓ ZI installed successfully"
 else
-    echo "✓ Zinit already installed"
+    echo "ZI already installed, updating..."
+    (cd "${zi_bin}" && git pull --quiet origin main) && echo "✓ ZI updated" || echo "⚠ ZI update failed (continuing)"
 fi
 
 #---------------------------------------------------------------------------------------

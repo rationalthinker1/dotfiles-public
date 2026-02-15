@@ -431,14 +431,23 @@ zle -N bracketed-paste bracketed-paste-magic
 
 
 # ==============================================================================
-# ZINIT (ZI) Plugin Manager Setup
+# ZI Plugin Manager Setup
 # ==============================================================================
 
-ZINIT_HOME="${XDG_DATA_HOME}/zinit/zinit.git"
-if [[ -f "${ZINIT_HOME}/zinit.zsh" ]]; then
-    source "${ZINIT_HOME}/zinit.zsh"
-    autoload -Uz _zinit; (( ${+_comps} )) && _comps[zinit]=_zinit
+# ZI configuration
+typeset -A ZI
+ZI[HOME_DIR]="${HOME}/.zi"
+ZI[BIN_DIR]="${ZI[HOME_DIR]}/bin"
+ZI[ZCOMPDUMP_PATH]="${ZI[HOME_DIR]}/zcomp"
+
+# Clone and load ZI if not present
+if [[ ! -f "${ZI[BIN_DIR]}/zi.zsh" ]]; then
+    command mkdir -p "${ZI[BIN_DIR]}"
+    command git clone --depth=1 --branch main https://github.com/z-shell/zi.git "${ZI[BIN_DIR]}"
 fi
+
+# Source ZI
+[[ -f "${ZI[BIN_DIR]}/zi.zsh" ]] && source "${ZI[BIN_DIR]}/zi.zsh"
 
 # ==============================================================================
 # THEMING
@@ -475,15 +484,14 @@ export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export FZF_ALT_C_COMMAND="fd --type d"
 export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --info=inline"
 export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-range :500 {}'"
+zi ice lucid wait'0' depth'1' atclone'./install --bin' atpull'%atclone' \
+    atload'add_to_path_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/bin"'
+zi light junegunn/fzf
 
 # 🧠 FZF keybindings (Ctrl+T, Alt+C, Ctrl+R)
 # NOTE: Lazy load to improve startup time
 zi ice lucid wait'1' atload'source_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/shell/key-bindings.zsh"'
 zi snippet /dev/null
-
-zi ice lucid wait'1' depth'1' atclone'./install --bin' atpull'%atclone' \
-    atload'add_to_path_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/bin"'
-zi light junegunn/fzf
 
 # 📂 FZF-Tab - Replaces tab completion with FZF interface
 # Usage: Press TAB for fuzzy-searchable completion menu with previews
@@ -530,7 +538,7 @@ zi light z-shell/zsh-fancy-completions
 # 📁 Zoxide - Fast, smart directory jumper based on frequency
 # Usage: `z <pattern>` - jump to most-frequent matching directory
 _ZO_FZF_OPTS="--bind=ctrl-z:ignore --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {2..}'"
-zi ice lucid as"command" from"gh-r" \
+zi ice lucid wait'1' as"command" from"gh-r" \
     atclone"./zoxide init zsh --cmd z > init.zsh" \
     atpull"%atclone" src"init.zsh" nocompile'!'
 zi load ajeetdsouza/zoxide
@@ -790,7 +798,7 @@ fi
 # ==============================================================================
 # mise - version manager for Node.js
 # ==============================================================================
-if command -v mise &>/dev/null; then
+if (( $+commands[mise] )); then
     eval "$(mise activate zsh)"
 fi
 
