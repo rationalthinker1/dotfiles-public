@@ -548,7 +548,13 @@ if [[ "$HOST_OS" == "wsl" && "${IS_DEVCONTAINER}" != "true" ]]; then
             fi
         fi
     fi
-    
+
+    # Setup wsl.conf (idempotent: only if not exists)
+    if [[ -f "${DOTFILES_ROOT}/wsl.conf" && ! -f "/etc/wsl.conf" ]]; then
+        sudo cp "${DOTFILES_ROOT}/wsl.conf" /etc/wsl.conf
+        echo "✓ Installed wsl.conf (run 'update-wsl-settings' to sync changes)"
+    fi
+
     # Setup Windows Terminal
     if command -v powershell.exe &>/dev/null; then
         windows_user="$(powershell.exe '$env:UserName' 2>&1 | tr -d '\r\n')"

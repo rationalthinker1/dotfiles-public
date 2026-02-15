@@ -864,6 +864,146 @@ if [[ "${HOST_OS}" == 'wsl' ]]; then
     }
 
     alias update-ssh-config='sync_ssh_config'
+
+    function sync_wslconfig() {
+        # Sync /etc/wsl.conf (per-distribution settings)
+        local DOTFILES_DIR="$HOME/.dotfiles"
+        local WSLCONF_DEST="/etc/wsl.conf"
+        local WSLCONF_SRC="$DOTFILES_DIR/wsl.conf"
+
+        if [[ -f "$WSLCONF_SRC" ]]; then
+            if [[ -f "$WSLCONF_DEST" ]]; then
+                # Both files exist - compare timestamps
+                if [[ "$WSLCONF_SRC" -nt "$WSLCONF_DEST" ]]; then
+                    sudo cp "$WSLCONF_DEST" "${WSLCONF_DEST}.bak.$(date +%s)" 2>/dev/null || true
+                    sudo cp "$WSLCONF_SRC" "$WSLCONF_DEST"
+                    echo "✓ Synced wsl.conf from dotfiles to /etc/wsl.conf"
+                    echo "  Run 'wsl --shutdown' from PowerShell to apply changes"
+                else
+                    cp "$WSLCONF_SRC" "${WSLCONF_SRC}.bak.$(date +%s)"
+                    sudo cp "$WSLCONF_DEST" "$WSLCONF_SRC"
+                    sudo chown "$(id -u):$(id -g)" "$WSLCONF_SRC"
+                    echo "✓ Synced wsl.conf from /etc to dotfiles"
+                fi
+            else
+                # No existing /etc/wsl.conf - copy from dotfiles
+                sudo cp "$WSLCONF_SRC" "$WSLCONF_DEST"
+                echo "✓ Installed wsl.conf to /etc/wsl.conf"
+                echo "  Run 'wsl --shutdown' from PowerShell to apply changes"
+            fi
+        else
+            echo "✗ wsl.conf not found in dotfiles at $WSLCONF_SRC"
+        fi
+    }
+
+    alias update-wsl-settings='sync_wslconfig'
+
+    function sync_wslconfig_global() {
+        # Sync global .wslconfig (VM settings for all distros)
+        local PWSH_EXE="/mnt/c/Program Files/PowerShell/7/pwsh.exe"
+
+        if [[ -x "$PWSH_EXE" ]]; then
+            local WINDOWS_USER=$("$PWSH_EXE" -NoProfile -Command '$env:UserName' | tr -d '\r')
+            local DOTFILES_DIR="$HOME/.dotfiles"
+            local WSLCONFIG_DEST="/mnt/c/Users/$WINDOWS_USER/.wslconfig"
+            local WSLCONFIG_SRC="$DOTFILES_DIR/.wslconfig"
+
+            if [[ -f "$WSLCONFIG_DEST" ]]; then
+                if [[ -f "$WSLCONFIG_SRC" ]]; then
+                    # Both files exist - compare timestamps
+                    if [[ "$WSLCONFIG_SRC" -nt "$WSLCONFIG_DEST" ]]; then
+                        cp "$WSLCONFIG_DEST" "${WSLCONFIG_DEST}.bak.$(date +%s)"
+                        cp "$WSLCONFIG_SRC" "$WSLCONFIG_DEST"
+                        echo "✓ Synced .wslconfig from dotfiles to Windows"
+                        echo "  Run 'wsl --shutdown' to apply changes"
+                    else
+                        cp "$WSLCONFIG_SRC" "${WSLCONFIG_SRC}.bak.$(date +%s)"
+                        cp "$WSLCONFIG_DEST" "$WSLCONFIG_SRC"
+                        echo "✓ Synced .wslconfig from Windows to dotfiles"
+                    fi
+                else
+                    # Only Windows file exists - copy to dotfiles
+                    cp "$WSLCONFIG_DEST" "$WSLCONFIG_SRC"
+                    echo "✓ Copied .wslconfig from Windows to dotfiles"
+                fi
+            else
+                echo "✗ Could not find .wslconfig at $WSLCONFIG_DEST"
+            fi
+        else
+            echo "✗ PowerShell not found at $PWSH_EXE"
+        fi
+    }
+
+    alias update-wsl-global-settings='sync_wslconfig_global'
+
+    function sync_all_wsl_settings() {
+        # Force sync all WSL-related settings from dotfiles to system
+        echo "=== Syncing WSL settings from dotfiles ==="
+        
+        local DOTFILES_DIR="$HOME/.dotfiles"
+        local PWSH_EXE="/mnt/c/Program Files/PowerShell/7/pwsh.exe"
+        local updated=0
+
+        # 1. Sync wsl.conf (per-distribution settings)
+        local WSLCONF_DEST="/etc/wsl.conf"
+        local WSLCONF_SRC="$DOTFILES_DIR/wsl.conf"
+
+        if [[ -f "$WSLCONF_SRC" ]]; then
+            if [[ -f "$WSLCONF_DEST" ]]; then
+                sudo cp "$WSLCONF_DEST" "${WSLCONF_DEST}.bak.$(date +%s)"
+            fi
+            sudo cp "$WSLCONF_SRC" "$WSLCONF_DEST"
+            echo "✓ wsl.conf → /etc/wsl.conf"
+            ((updated++))
+        else
+            echo "✗ wsl.conf not found in dotfiles"
+        fi
+
+        # 2. Sync .wslconfig (global VM settings)
+        if [[ -x "$PWSH_EXE" ]]; then
+            local WINDOWS_USER=$("$PWSH_EXE" -NoProfile -Command '$env:UserName' | tr -d '\r')
+            local WSLCONFIG_DEST="/mnt/c/Users/$WINDOWS_USER/.wslconfig"
+            local WSLCONFIG_SRC="$DOTFILES_DIR/.wslconfig"
+
+            if [[ -f "$WSLCONFIG_SRC" ]]; then
+                if [[ -f "$WSLCONFIG_DEST" ]]; then
+                    cp "$WSLCONFIG_DEST" "${WSLCONFIG_DEST}.bak.$(date +%s)"
+                fi
+                cp "$WSLCONFIG_SRC" "$WSLCONFIG_DEST"
+                echo "✓ .wslconfig → C:\Users\$WINDOWS_USER\.wslconfig"
+                ((updated++))
+            else
+                echo "✗ .wslconfig not found in dotfiles"
+            fi
+        else
+            echo "✗ PowerShell not found, skipping .wslconfig"
+        fi
+
+        # 3. Sync Windows Terminal settings
+        if [[ -x "$PWSH_EXE" ]]; then
+            local WINDOWS_USER=$("$PWSH_EXE" -NoProfile -Command '$env:UserName' | tr -d '\r')
+            local WT_DEST="/mnt/c/Users/$WINDOWS_USER/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
+            local WT_SRC="$DOTFILES_DIR/windows-terminal/settings.json"
+
+            if [[ -f "$WT_SRC" ]]; then
+                if [[ -f "$WT_DEST" ]]; then
+                    cp "$WT_DEST" "${WT_DEST}.bak.$(date +%s)"
+                    cp "$WT_SRC" "$WT_DEST"
+                    echo "✓ windows-terminal/settings.json → Windows Terminal"
+                    ((updated++))
+                else
+                    echo "⚠ Windows Terminal settings.json not found at destination (install Windows Terminal first)"
+                fi
+            else
+                echo "✗ windows-terminal/settings.json not found in dotfiles"
+            fi
+        fi
+
+        echo ""
+        echo "Synced $updated config(s). Run 'wsl --shutdown' from PowerShell to apply WSL changes."
+    }
+
+    alias update-all-wsl='sync_all_wsl_settings'
 fi
 #=======================================================================================
 # Source aliases and functions
