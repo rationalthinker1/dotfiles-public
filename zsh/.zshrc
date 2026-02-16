@@ -431,23 +431,14 @@ zle -N bracketed-paste bracketed-paste-magic
 
 
 # ==============================================================================
-# ZI Plugin Manager Setup
+# ZINIT (ZI) Plugin Manager Setup
 # ==============================================================================
 
-# ZI configuration
-typeset -A ZI
-ZI[HOME_DIR]="${HOME}/.zi"
-ZI[BIN_DIR]="${ZI[HOME_DIR]}/bin"
-ZI[ZCOMPDUMP_PATH]="${ZI[HOME_DIR]}/zcomp"
-
-# Clone and load ZI if not present
-if [[ ! -f "${ZI[BIN_DIR]}/zi.zsh" ]]; then
-    command mkdir -p "${ZI[BIN_DIR]}"
-    command git clone --depth=1 --branch main https://github.com/z-shell/zi.git "${ZI[BIN_DIR]}"
+ZINIT_HOME="${XDG_DATA_HOME}/zinit/zinit.git"
+if [[ -f "${ZINIT_HOME}/zinit.zsh" ]]; then
+    source "${ZINIT_HOME}/zinit.zsh"
+    autoload -Uz _zinit; (( ${+_comps} )) && _comps[zinit]=_zinit
 fi
-
-# Source ZI
-[[ -f "${ZI[BIN_DIR]}/zi.zsh" ]] && source "${ZI[BIN_DIR]}/zi.zsh"
 
 # ==============================================================================
 # THEMING
