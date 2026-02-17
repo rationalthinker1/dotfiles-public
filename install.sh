@@ -28,6 +28,7 @@ DESCRIPTION:
   Installs and configures development environment with:
   • Essential system packages (git, tmux, zsh, etc.)
   • Development tools via mise (Node.js, Python, Rust, Vim, etc.)
+  • Claude Code (AI-powered coding assistant)
   • Dotfile symlinks (zsh, vim, git, tmux configs)
   • Powerline fonts
   • Shell configuration (zsh as default)
@@ -358,6 +359,31 @@ echo "  mise upgrade"
 echo "Installing pynvim for Vim..."
 mise exec -- uv pip install --user pynvim 2>/dev/null || echo "  (skipping - may already be installed)"
 mise exec -- python -c 'import pynvim' 2>/dev/null && echo "✓ pynvim installed" || echo "  (pynvim installation may need verification)"
+
+#---------------------------------------------------------------------------------------
+# Install Claude Code
+#---------------------------------------------------------------------------------------
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Installing Claude Code"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+if command -v claude &>/dev/null || [[ -x "${HOME}/.local/bin/claude" ]]; then
+    claude_version=$(claude --version 2>/dev/null || "${HOME}/.local/bin/claude" --version 2>/dev/null || echo "version unknown")
+    echo "✓ Claude Code already installed (${claude_version})"
+else
+    echo "Installing Claude Code via native installer..."
+    if curl -fsSL https://claude.ai/install.sh | bash; then
+        # Verify installation
+        if command -v claude &>/dev/null || [[ -x "${HOME}/.local/bin/claude" ]]; then
+            claude_version=$(claude --version 2>/dev/null || "${HOME}/.local/bin/claude" --version 2>/dev/null || echo "version unknown")
+            echo "✓ Claude Code installed (${claude_version})"
+        else
+            echo "⚠ Claude Code installed but not in PATH — add ~/.local/bin to PATH"
+        fi
+    else
+        echo "⚠ Claude Code installation failed (network issue or unsupported platform)"
+    fi
+fi
 
 # Configure zsh as default shell (skip in containers - shell is pre-configured)
 if [[ "${IS_DEVCONTAINER}" != "true" ]]; then
