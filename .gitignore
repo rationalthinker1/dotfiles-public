@@ -24,6 +24,12 @@ zsh/.zcompdump*
 zsh/.zplug
 .aws/largefile
 .aws/credentials
+.ssh/
+.vim/tmp/
+windows-terminal/settings.json
+password-store/
+socks.sh
+zsh/local.example.zsh
 *.DS_Store
 *:Zone.Identifiere
 *.zwc
