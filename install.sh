@@ -69,6 +69,10 @@ readonly VIM_MIN_VERSION="9"
 readonly DOTFILES_ROOT="${HOME}/.dotfiles"
 readonly BACKUP_DIR="${DOTFILES_ROOT}/backup"
 readonly FONTS_DIR="${DOTFILES_ROOT}/fonts"
+export XDG_CONFIG_HOME="${HOME}/.config"
+export CLAUDE_CONFIG_DIR="${XDG_CONFIG_HOME}/claude"
+export PASSWORD_STORE_DIR="${XDG_CONFIG_HOME}/password-store"
+export GNUPGHOME="${XDG_CONFIG_HOME}/gnupg"
 
 # Package definitions
 readonly -a DARWIN_PACKAGES=(
@@ -123,7 +127,8 @@ declare -A DOTFILE_LINKS=(
     [.Xresources]="${HOME}/.Xresources"
     [rc.sh]="${HOME}/.ssh/rc"
     [zi/init.zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/zi/init.zsh"
-    [claude/commands]="${CLAUDE_CONFIG_DIR:-${HOME}/.config/claude}/commands"
+    [claude/commands]="${CLAUDE_CONFIG_DIR}/commands"
+    [password-store]="${PASSWORD_STORE_DIR}"
 )
 
 
@@ -510,11 +515,21 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 mkdir -p "$BACKUP_DIR"
 mkdir -p "${XDG_CONFIG_HOME}/zi"
 
+# GPG requires strict permissions on its directory
+if [[ ! -d "$GNUPGHOME" ]]; then
+    mkdir -p "$GNUPGHOME"
+    chmod 700 "$GNUPGHOME"
+    echo "✓ Created GNUPGHOME at $GNUPGHOME"
+fi
+
 for source_path in "${!DOTFILE_LINKS[@]}"; do
     source="${DOTFILES_ROOT}/${source_path}"
     target="${DOTFILE_LINKS[$source_path]}"
 
-   # Skip if target is already pointing to the source
+    # Skip if source doesn't exist in dotfiles (e.g. password-store not yet committed)
+    [[ ! -e "$source" ]] && continue
+
+    # Skip if target is already pointing to the source
     [[ -L "$target" && "$(readlink "$target")" == "$source" ]] && continue
     
     # Ensure parent directory exists

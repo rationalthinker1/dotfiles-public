@@ -62,11 +62,32 @@ source_if_exists "${ZDOTDIR}/local.zsh"
 
 # ==============================================================================
 # Secret Management with pass
+# ------------------------------------------------------------------------------
+# pass is a GPG-encrypted password/secret manager. Quick reference:
+#
+#   Setup:
+#     gpg --gen-key                        # generate a GPG key (one-time)
+#     pass init "your@email.com"           # initialize the store
+#
+#   Store a secret:
+#     pass insert api/openai               # opens $EDITOR, type value, save
+#     echo "sk-xyz" | pass insert --echo api/openai  # pipe value directly
+#
+#   Retrieve:
+#     pass api/openai                      # print to stdout
+#     pass -c api/openai                   # copy to clipboard (clears after 45s)
+#
+#   List / remove:
+#     pass ls                              # list all entries
+#     pass rm api/openai                   # delete an entry
+#
+#   GPG agent caching (avoid re-prompting every shell):
+#     mkdir -p "$GNUPGHOME" && chmod 700 "$GNUPGHOME"
+#     echo "default-cache-ttl 86400" >> "$GNUPGHOME/gpg-agent.conf"
+#     echo "max-cache-ttl 604800"    >> "$GNUPGHOME/gpg-agent.conf"
+#     gpgconf --kill gpg-agent
 # ==============================================================================
 if (( $+commands[pass] )); then
-    # Set password store location (XDG-compliant)
-    export PASSWORD_STORE_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/password-store"
-    
     # Helper function to safely load secrets
     function load_secret() {
         local secret_path="$1"
