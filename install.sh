@@ -261,6 +261,9 @@ else
     echo "✓ mise already installed"
 fi
 
+# Activate mise for the current script session
+export PATH="${HOME}/.local/bin:${PATH}"
+
 # Install development tools globally via mise
 echo "Installing development tools via mise..."
 
