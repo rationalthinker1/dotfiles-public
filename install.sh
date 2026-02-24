@@ -91,7 +91,7 @@ readonly -a LINUX_PACKAGES=(
     xclip p7zip-full zip unzip
     pdftk-java  # PDF manipulation tool
     unrar wipe cmake exuberant-ctags rsync
-    libncurses5-dev libncursesw5-dev util-linux-extra pcre2-utils
+    libncurses-dev util-linux-extra pcre2-utils
     autoconf automake libtool pkg-config  # Build dependencies
     libssl-dev libcurl4-openssl-dev zlib1g-dev libffi-dev libreadline-dev  # Development libraries
     libbz2-dev libsqlite3-dev tk-dev liblzma-dev  # Python build dependencies (required for mise)
