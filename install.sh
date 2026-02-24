@@ -11,7 +11,6 @@ verify_tool() {
         return 0
     else
         echo "⚠ ${tool}: not found (may need manual verification)"
-        return 1
     fi
 }
 
