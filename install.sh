@@ -77,7 +77,7 @@ export GNUPGHOME="${XDG_CONFIG_HOME}/gnupg"
 readonly -a DARWIN_PACKAGES=(
     git grep wget curl zsh fontconfig
     csvkit xclip htop p7zip rename unzip
-    pdftk-java  # PDF manipulation tool
+    pdftk  # PDF manipulation tool
     glances ctags up pcre2-utils rsync
     coreutils gnu-sed  # GNU versions of macOS BSD tools
     autoconf automake libtool pkg-config  # Build dependencies
@@ -212,7 +212,7 @@ if [[ "${HOST_OS}" == "darwin" ]]; then
 
     # Install packages (brew automatically skips already-installed packages)
     echo "Installing Homebrew packages..."
-    local failed_packages=()
+    failed_packages=()
     for pkg in "${DARWIN_PACKAGES[@]}"; do
         brew install "$pkg" || failed_packages+=("$pkg")
     done
@@ -227,7 +227,7 @@ else
     sudo apt-get -y update || { echo "ERROR: apt-get update failed"; exit 1; }
     # Install packages (apt automatically skips already-installed packages)
     echo "Installing Linux packages..."
-    local failed_packages=()
+    failed_packages=()
     for pkg in "${LINUX_PACKAGES[@]}"; do
         sudo apt-get install -y "$pkg" || failed_packages+=("$pkg")
     done
@@ -332,8 +332,8 @@ fi
 
 if [[ "$should_install_vim" == "true" ]]; then
     # Get mise Python paths (don't use 'mise exec' to avoid triggering vim installation)
-    PYTHON_PREFIX=$(python3 -c "import sys; print(sys.prefix)" 2>/dev/null)
-    PY3_FILE_LOCATION=$(which python3 2>/dev/null)
+    PYTHON_PREFIX=$(mise exec -- python3 -c "import sys; print(sys.prefix)" 2>/dev/null)
+    PY3_FILE_LOCATION=$(mise which python3 2>/dev/null)
 
     if [[ -n "$PY3_FILE_LOCATION" && -n "$PYTHON_PREFIX" ]]; then
         # Embed Python library path into vim binary using rpath
@@ -582,7 +582,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 # Check if vim-plug is available before installing plugins
 if [[ -f "${HOME}/.vim/autoload/plug.vim" ]] || [[ -f "${HOME}/.local/share/vim/autoload/plug.vim" ]]; then
-    if vim -E -c PlugInstall -c qall!; then
+    if mise exec -- vim -E -c PlugInstall -c qall!; then
         echo "✓ Vim plugins installed"
     else
         echo "WARNING: Vim plugin installation failed"
