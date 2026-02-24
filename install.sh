@@ -212,7 +212,13 @@ if [[ "${HOST_OS}" == "darwin" ]]; then
 
     # Install packages (brew automatically skips already-installed packages)
     echo "Installing Homebrew packages..."
-    brew install "${DARWIN_PACKAGES[@]}" || echo "WARNING: Some packages failed to install"
+    local failed_packages=()
+    for pkg in "${DARWIN_PACKAGES[@]}"; do
+        brew install "$pkg" || failed_packages+=("$pkg")
+    done
+    if (( ${#failed_packages[@]} > 0 )); then
+        echo "WARNING: The following packages failed to install: ${failed_packages[*]}"
+    fi
 else
     # Linux package installation
     export DEBIAN_FRONTEND=noninteractive
@@ -221,7 +227,13 @@ else
     sudo apt-get -y update || { echo "ERROR: apt-get update failed"; exit 1; }
     # Install packages (apt automatically skips already-installed packages)
     echo "Installing Linux packages..."
-    sudo apt-get install -y "${LINUX_PACKAGES[@]}" || echo "WARNING: Some packages failed to install"
+    local failed_packages=()
+    for pkg in "${LINUX_PACKAGES[@]}"; do
+        sudo apt-get install -y "$pkg" || failed_packages+=("$pkg")
+    done
+    if (( ${#failed_packages[@]} > 0 )); then
+        echo "WARNING: The following packages failed to install: ${failed_packages[*]}"
+    fi
 fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
