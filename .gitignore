@@ -24,6 +24,9 @@ zsh/.zcompdump*
 zsh/.zplug
 .aws/largefile
 .aws/credentials
+.aws/config
+.gitconfig
+zsh/references/aws.zsh
 .ssh/
 .vim/tmp/
 windows-terminal/settings.json
