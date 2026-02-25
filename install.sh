@@ -3,9 +3,9 @@
 set -euo pipefail
 
 verify_tool() {
-    local tool=$1
-    local version_cmd=$2
-    if mise which ${tool} &>/dev/null; then
+    local tool="${1}"
+    local version_cmd="${2}"
+    if mise which "${tool}" &>/dev/null; then
         local version=$(mise exec -- ${version_cmd} 2>&1 | head -1)
         echo "✓ ${tool}: ${version}"
         return 0
@@ -168,8 +168,8 @@ echo "Running as user: ${USER}"
 #=======================================================================================
 
 # Validate that dotfiles directory exists
-if [[ ! -d "$DOTFILES_ROOT" ]]; then
-    echo "ERROR: $DOTFILES_ROOT does not exist"
+if [[ ! -d "${DOTFILES_ROOT}" ]]; then
+    echo "ERROR: ${DOTFILES_ROOT} does not exist"
     echo "Please clone your dotfiles repository first"
     exit 1
 fi
@@ -177,7 +177,7 @@ fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Starting dotfiles installation"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "OS: $HOST_OS | Location: $HOST_LOCATION"
+echo "OS: ${HOST_OS} | Location: ${HOST_LOCATION}"
 echo
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -207,14 +207,14 @@ if [[ "${HOST_OS}" == "darwin" ]]; then
                 echo "eval \"\$(${brew_prefix}/bin/brew shellenv)\""
             } >>"${HOME}/.zprofile"
         fi
-        eval "$(${brew_prefix}/bin/brew shellenv)"
+        eval "$("${brew_prefix}"/bin/brew shellenv)"
     fi
 
     # Install packages (brew automatically skips already-installed packages)
     echo "Installing Homebrew packages..."
     failed_packages=()
     for pkg in "${DARWIN_PACKAGES[@]}"; do
-        brew install "$pkg" || failed_packages+=("$pkg")
+        brew install "${pkg}" || failed_packages+=("${pkg}")
     done
     if (( ${#failed_packages[@]} > 0 )); then
         echo "WARNING: The following packages failed to install: ${failed_packages[*]}"
@@ -229,7 +229,7 @@ else
     echo "Installing Linux packages..."
     failed_packages=()
     for pkg in "${LINUX_PACKAGES[@]}"; do
-        sudo apt-get install -y "$pkg" || failed_packages+=("$pkg")
+        sudo apt-get install -y "${pkg}" || failed_packages+=("${pkg}")
     done
     if (( ${#failed_packages[@]} > 0 )); then
         echo "WARNING: The following packages failed to install: ${failed_packages[*]}"
@@ -308,12 +308,12 @@ if mise which vim &>/dev/null; then
     # Get major.minor from latest vim version
     latest_vim_version=$(mise latest vim 2>/dev/null | grep -oP '^\d+\.\d+' | head -1)
 
-    if [[ -n "$current_vim_version" && -n "$latest_vim_version" ]]; then
-        if [[ "$current_vim_version" != "$latest_vim_version" ]]; then
-            echo "    Current: vim $current_vim_version, Latest: vim $latest_vim_version - upgrading..."
+    if [[ -n "${current_vim_version}" && -n "${latest_vim_version}" ]]; then
+        if [[ "${current_vim_version}" != "${latest_vim_version}" ]]; then
+            echo "    Current: vim ${current_vim_version}, Latest: vim ${latest_vim_version} - upgrading..."
             should_install_vim=true
         else
-            echo "    (skipped - vim $current_vim_version already installed, same major.minor as latest)"
+            echo "    (skipped - vim ${current_vim_version} already installed, same major.minor as latest)"
         fi
     else
         # Can't determine versions - verify vim works before reinstalling
@@ -330,16 +330,16 @@ else
     should_install_vim=true
 fi
 
-if [[ "$should_install_vim" == "true" ]]; then
+if [[ "${should_install_vim}" == "true" ]]; then
     # Get mise Python paths (don't use 'mise exec' to avoid triggering vim installation)
     PYTHON_PREFIX=$(mise exec -- python3 -c "import sys; print(sys.prefix)" 2>/dev/null)
     PY3_FILE_LOCATION=$(mise which python3 2>/dev/null)
 
-    if [[ -n "$PY3_FILE_LOCATION" && -n "$PYTHON_PREFIX" ]]; then
+    if [[ -n "${PY3_FILE_LOCATION}" && -n "${PYTHON_PREFIX}" ]]; then
         # Embed Python library path into vim binary using rpath
         # This ensures vim can find Python libraries at runtime without needing LD_LIBRARY_PATH
         export LDFLAGS="-L${PYTHON_PREFIX}/lib -Wl,-rpath,${PYTHON_PREFIX}/lib ${LDFLAGS:-}"
-        export ASDF_VIM_CONFIG="--with-tlib=ncurses --with-compiledby=mise --enable-multibyte --enable-cscope --enable-terminal --enable-python3interp --with-python3-command=$PY3_FILE_LOCATION --enable-fail-if-missing --enable-gui=no --without-x"
+        export ASDF_VIM_CONFIG="--with-tlib=ncurses --with-compiledby=mise --enable-multibyte --enable-cscope --enable-terminal --enable-python3interp --with-python3-command=${PY3_FILE_LOCATION} --enable-fail-if-missing --enable-gui=no --without-x"
         mise use --global vim@latest 2>/dev/null || echo "    (installation failed)"
         # Unset to prevent triggering vim installation on subsequent mise commands
         unset ASDF_VIM_CONFIG LDFLAGS
@@ -410,7 +410,7 @@ if [[ "${IS_DEVCONTAINER}" != "true" ]]; then
     if ! grep -qxF "${zsh_path}" /etc/shells 2>/dev/null; then
         echo "${zsh_path}" | sudo tee -a /etc/shells >/dev/null
     fi
-    sudo chsh -s "${zsh_path}" "$USER" 2>/dev/null || true
+    sudo chsh -s "${zsh_path}" "${USER}" 2>/dev/null || true
     echo "✓ Default shell set to zsh"
 else
     echo "✓ Skipping shell change (container environment)"
@@ -424,7 +424,7 @@ fi
 #---------------------------------------------------------------------------------------
 # Install platform-specific tools (skip in containers)
 #---------------------------------------------------------------------------------------
-if [[ "$HOST_OS" == "wsl" && "${IS_DEVCONTAINER}" != "true" ]] && ! command -v wslvar &>/dev/null; then
+if [[ "${HOST_OS}" == "wsl" && "${IS_DEVCONTAINER}" != "true" ]] && ! command -v wslvar &>/dev/null; then
     echo "Installing wslu from PPA..."
     # Add PPA only if not already present
     if ! grep -q "wslutilities/wslu" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
@@ -437,18 +437,18 @@ fi
 #---------------------------------------------------------------------------------------
 # Install fonts (desktop Linux only)
 #---------------------------------------------------------------------------------------
-if [[ "$HOST_LOCATION" == "desktop" && "$HOST_OS" == "linux" ]]; then
+if [[ "${HOST_LOCATION}" == "desktop" && "${HOST_OS}" == "linux" ]]; then
     if [[ ! -f "${FONTS_DIR}/.installed" ]]; then
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo "  Installing fonts"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         
         install_dir="${FONTS_DIR}/installations"
-        mkdir -p "$install_dir"
-        
+        mkdir -p "${install_dir}"
+
         # Extract all font archives
         for zipfile in "${FONTS_DIR}"/*.zip; do
-            [[ -f "$zipfile" ]] && unzip -q "$zipfile" -d "$install_dir"
+            [[ -f "${zipfile}" ]] && unzip -q "${zipfile}" -d "${install_dir}"
         done
         
         install_font_folder() {
@@ -511,7 +511,7 @@ if [[ "$HOST_LOCATION" == "desktop" && "$HOST_OS" == "linux" ]]; then
 
         install_font_subdirectories "${install_dir}"
         
-        rm -rf "$install_dir"
+        rm -rf "${install_dir}"
         touch "${FONTS_DIR}/.installed"
         echo "✓ Fonts installed"
     else
@@ -526,49 +526,49 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing dotfile symlinks"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-mkdir -p "$BACKUP_DIR"
+mkdir -p "${BACKUP_DIR}"
 mkdir -p "${XDG_CONFIG_HOME}/zi"
 
 # GPG requires strict permissions on its directory
-if [[ ! -d "$GNUPGHOME" ]]; then
-    mkdir -p "$GNUPGHOME"
-    chmod 700 "$GNUPGHOME"
-    echo "✓ Created GNUPGHOME at $GNUPGHOME"
+if [[ ! -d "${GNUPGHOME}" ]]; then
+    mkdir -p "${GNUPGHOME}"
+    chmod 700 "${GNUPGHOME}"
+    echo "✓ Created GNUPGHOME at ${GNUPGHOME}"
 fi
 
 for source_path in "${!DOTFILE_LINKS[@]}"; do
     source="${DOTFILES_ROOT}/${source_path}"
-    target="${DOTFILE_LINKS[$source_path]}"
+    target="${DOTFILE_LINKS[${source_path}]}"
 
     # Skip if source doesn't exist in dotfiles (e.g. password-store not yet committed)
-    [[ ! -e "$source" ]] && continue
+    [[ ! -e "${source}" ]] && continue
 
     # Skip if target is already pointing to the source
-    [[ -L "$target" && "$(readlink "$target")" == "$source" ]] && continue
-    
+    [[ -L "${target}" && "$(readlink "${target}")" == "${source}" ]] && continue
+
     # Ensure parent directory exists
-    mkdir -p "$(dirname "$target")"
-    
+    mkdir -p "$(dirname "${target}")"
+
     # Backup if target exists and is not a symlink to THIS dotfiles repo
-    if [[ -e "$target" ]]; then
+    if [[ -e "${target}" ]]; then
         # Get resolved path (macOS-compatible)
-        if [[ "$HOST_OS" == "darwin" ]]; then
-            resolved_path="$(readlink "$target" 2>/dev/null || echo "")"
+        if [[ "${HOST_OS}" == "darwin" ]]; then
+            resolved_path="$(readlink "${target}" 2>/dev/null || echo "")"
         else
-            resolved_path="$(readlink -f "$target" 2>/dev/null || echo "")"
+            resolved_path="$(readlink -f "${target}" 2>/dev/null || echo "")"
         fi
         # Only skip if symlink points to our dotfiles directory
-        if [[ ! -L "$target" ]] || [[ "${resolved_path}" != "${DOTFILES_ROOT}"/* ]]; then
-            if [[ -f "$target" || -d "$target" ]]; then
+        if [[ ! -L "${target}" ]] || [[ "${resolved_path}" != "${DOTFILES_ROOT}"/* ]]; then
+            if [[ -f "${target}" || -d "${target}" ]]; then
                 echo "  Backing up existing: ${target}"
-                rsync -a "$target" "${BACKUP_DIR}/" 2>/dev/null || true
-                rm -rf "$target"
+                rsync -a "${target}" "${BACKUP_DIR}/" 2>/dev/null || true
+                rm -rf "${target}"
             fi
         fi
     fi
-    
+
     # Create symlink
-    ln -nfs "$source" "$target"
+    ln -nfs "${source}" "${target}"
 done
 
 echo "✓ Dotfile symlinks installed"
@@ -594,15 +594,15 @@ fi
 #---------------------------------------------------------------------------------------
 # Configure WSL environment (skip in containers)
 #---------------------------------------------------------------------------------------
-if [[ "$HOST_OS" == "wsl" && "${IS_DEVCONTAINER}" != "true" ]]; then
+if [[ "${HOST_OS}" == "wsl" && "${IS_DEVCONTAINER}" != "true" ]]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "  Configuring WSL environment"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     
     # Setup Windows home
     if windows_profile="$(wslvar USERPROFILE 2>/dev/null)"; then
-        if windows_home="$(wslpath "$windows_profile" 2>/dev/null)"; then
-            echo "Windows home: $windows_home"
+        if windows_home="$(wslpath "${windows_profile}" 2>/dev/null)"; then
+            echo "Windows home: ${windows_home}"
             if [[ -f "${DOTFILES_ROOT}/.wslconfig" ]]; then
                 cp "${DOTFILES_ROOT}/.wslconfig" "${windows_home}/.wslconfig"
                 echo "✓ Copied .wslconfig"
@@ -620,20 +620,45 @@ if [[ "$HOST_OS" == "wsl" && "${IS_DEVCONTAINER}" != "true" ]]; then
     if command -v powershell.exe &>/dev/null; then
         windows_user="$(powershell.exe '$env:UserName' 2>&1 | tr -d '\r\n')"
         
-        if [[ -n "$windows_user" && ! "$windows_user" =~ ^[Ee]rror ]]; then
+        if [[ -n "${windows_user}" && ! "${windows_user}" =~ ^[Ee]rror ]]; then
             settings_src="${DOTFILES_ROOT}/windows-terminal/settings.json"
-            settings_dest="/mnt/c/Users/$windows_user/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
-            
-            if [[ -f "$settings_src" ]]; then
+            settings_dest="/mnt/c/Users/${windows_user}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
+
+            if [[ -f "${settings_src}" ]]; then
                 # Backup original settings only if no backup exists
-                if [[ -f "$settings_dest" && ! -f "${settings_dest}.bak" ]]; then
-                    cp "$settings_dest" "${settings_dest}.bak"
+                if [[ -f "${settings_dest}" && ! -f "${settings_dest}.bak" ]]; then
+                    cp "${settings_dest}" "${settings_dest}.bak"
                 fi
-                cp "$settings_src" "$settings_dest"
+                cp "${settings_src}" "${settings_dest}"
                 echo "✓ Windows Terminal configured"
             fi
         fi
     fi
+fi
+
+#---------------------------------------------------------------------------------------
+# Install git hooks
+#---------------------------------------------------------------------------------------
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Installing git hooks"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+git_hooks_src="${DOTFILES_ROOT}/git-hooks"
+git_hooks_dest="${DOTFILES_ROOT}/.git/hooks"
+
+if [[ -d "${git_hooks_dest}" ]]; then
+    for hook in "${git_hooks_src}"/*; do
+        hook_name="$(basename "${hook}")"
+        dest="${git_hooks_dest}/${hook_name}"
+        if [[ -L "${dest}" && "$(readlink "${dest}")" == "${hook}" ]]; then
+            echo "✓ git hook already linked: ${hook_name}"
+        else
+            ln -nfs "${hook}" "${dest}"
+            echo "✓ git hook installed: ${hook_name}"
+        fi
+    done
+else
+    echo "⚠ .git/hooks directory not found — skipping git hooks"
 fi
 
 #---------------------------------------------------------------------------------------

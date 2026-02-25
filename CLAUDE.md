@@ -104,7 +104,7 @@ my_function() {  # Style violation unless POSIX compatibility required
 
 - **Default:** Use double quotes for all strings and variable expansion
 - **Single quotes:** Only when expansion is explicitly undesired
-- Always quote variables: `"$variable"` not `$variable`
+- Always quote variables with braces: `"${variable}"` not `$variable` or `"$variable"`
 
 ### Command and Pattern Consistency
 
@@ -226,7 +226,7 @@ When reviewing changes:
 - Use Bash syntax in ZSH-specific files
 - Assume commands exist without checking
 - Hardcode OS-specific paths without detection
-- Use unquoted variables
+- Use unquoted or bare-dollar variables (`$var` or `"$var"` — use `"${var}"` instead)
 - Mix function declaration styles
 
 ✅ **Do:**
