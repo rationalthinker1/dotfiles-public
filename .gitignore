@@ -40,4 +40,6 @@ zsh/local.example.zsh
 zsh/cache/*
 *.backup
 *.old
+*.log
+fonts/*
 
