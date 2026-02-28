@@ -3,8 +3,19 @@
 --max-columns-preview
 
 # Add my 'web' type.
+# Usage: rg --type web 'querySelector'
 --type-add
 web:*.{html,css,scss,js,ts,tsx,jsx,vue}*
+
+# Add config type.
+# Usage: rg --type config 'DATABASE_URL'
+--type-add
+config:*.{json,yaml,yml,toml,ini,env}
+
+# Add log type.
+# Usage: rg --type log 'ERROR'
+--type-add
+log:*.{log,logs,out}
 
 # Using glob patterns to include/exclude files or folders
 --glob=!.git
@@ -25,6 +36,15 @@ web:*.{html,css,scss,js,ts,tsx,jsx,vue}*
 --glob=!.tags
 --glob=!{package-lock.json}
 --glob=!*.{lock,svg,jpg,png,pdf,gif}
+--glob=!dist
+--glob=!coverage
+--glob=!.next
+--glob=!.nuxt
+--glob=!.yarn
+--glob=!.pnp.*
+--glob=!__pycache__
+--glob=!*.pyc
+--glob=!.venv
 
 # Set the colors.
 --colors=line:fg:yellow
@@ -43,3 +63,12 @@ web:*.{html,css,scss,js,ts,tsx,jsx,vue}*
 
 # Match whole words
 #--word-regexp
+
+# to follow symlinks during searches
+--follow
+
+# Trim leading/trailing whitespace from matches
+--trim
+
+# Don't cross filesystem boundaries (prevents crawling /mnt/c/ in WSL)
+--one-file-system

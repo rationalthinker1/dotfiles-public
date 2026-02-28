@@ -461,6 +461,9 @@ if [[ -f "${ZINIT_HOME}/zinit.zsh" ]]; then
     autoload -Uz _zinit; (( ${+_comps} )) && _comps[zinit]=_zinit
 fi
 
+# Initialize ZSH completion system before any plugins that depend on it (e.g. fzf-tab)
+autoload -Uz compinit; compinit
+
 # ==============================================================================
 # THEMING
 # ==============================================================================
