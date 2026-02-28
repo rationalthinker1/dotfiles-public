@@ -776,11 +776,12 @@ source_if_exists "${ZDOTDIR}/.p10k.zsh"
 # NOTE: Removed - already handled by add_to_path_if_exists "${CARGO_HOME}/bin" at line 113
 # source_if_exists "${CARGO_HOME}/env"
 
-
-
 # ⚡️ Envman – environment loader
 # NOTE: Commented out - envman not installed
 # source_if_exists "${XDG_CONFIG_HOME}/envman/load.sh"
+
+# 🧅 Bun – Fast JavaScript runtime and package manager
+source_if_exists "${BUN_INSTALL}/_bun"
 
 # 🐱 Kitty terminal config + completions
 if (( $+commands[kitty] )); then
