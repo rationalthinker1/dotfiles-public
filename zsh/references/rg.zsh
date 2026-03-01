@@ -39,4 +39,26 @@ rg --max-filesize 1M       # Skip files larger than 1MB
 rg --glob "*.js"           # Include only .js files
 rg --glob "!*.test.js"     # Exclude test files
 
+⚙️  Active Defaults (from ~/.ripgreprc)
+# These are always ON — no need to pass them manually:
+--smart-case          # Case-sensitive only when pattern has uppercase
+--hidden              # Include hidden files/dirs
+--follow              # Follow symlinks
+--trim                # Strip leading/trailing whitespace from matches
+--one-file-system     # Don't cross filesystem boundaries (safe in WSL)
+--max-columns=150     # Truncate long lines (preview shown instead)
+--max-columns-preview # Show truncated line preview when limit hit
+
+📦 Custom Types (from ~/.ripgreprc)
+rg --type web "pattern"     # *.{html,css,scss,js,ts,tsx,jsx,vue}
+rg --type config "pattern"  # *.{json,yaml,yml,toml,ini,env}
+rg --type log "pattern"     # *.{log,logs,out}
+
+🚫 Auto-Excluded Globs (from ~/.ripgreprc)
+# Always skipped: .git, node_modules, bower_components, vendor, build,
+# bundle, oh-my-zsh, antigen, .npm, .cache, dist, coverage,
+# .next, .nuxt, .yarn, .pnp.*, __pycache__, .venv
+# Also: *.bak, *.zip, *.min.js, *.min.css, *.min.map, .tags,
+#        package-lock.json, *.{lock,svg,jpg,png,pdf,gif}, *.pyc
+
 ✅ Done. Happy grepping!
