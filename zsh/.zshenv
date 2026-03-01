@@ -45,6 +45,7 @@ export VOLTA_HOME="${XDG_CONFIG_HOME}/volta"
 export BUN_INSTALL="${XDG_CONFIG_HOME}/bun"
 export PNPM_HOME="${XDG_CONFIG_HOME}/pnpm"
 export CLAUDE_CONFIG_DIR="${XDG_CONFIG_HOME}/claude"
+export CODEX_HOME="${XDG_CONFIG_HOME}/codex"
 export GNUPGHOME="${XDG_CONFIG_HOME}/gnupg"
 export PASSWORD_STORE_DIR="${XDG_CONFIG_HOME}/password-store"
 
