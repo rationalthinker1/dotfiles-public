@@ -428,6 +428,17 @@ EOF
 		fi
 		cat "${main_ref}"
 	else
+		local edit=0
+		if [[ "$1" == "-e" ]]; then
+			edit=1
+			shift
+		fi
+
+		if [[ "$#" -eq 0 ]]; then
+			echo "Usage: ref [-e] <topic>"
+			return 1
+		fi
+
 		local name="${1}"
 		local folder="${ZDOTDIR}/references"
 		local file="${folder}/${name}.zsh"
@@ -437,7 +448,12 @@ EOF
 		if [[ ! -f "${file}" ]]; then
 			touch "${file}"
 		fi
-		vim "${file}"
+
+		if (( edit )); then
+			"${EDITOR:-vim}" "${file}"
+		else
+			cat "${file}"
+		fi
 	fi
 }
 
