@@ -46,7 +46,7 @@ Modern ZSH configuration with 40+ plugins, synchronized across multiple environm
 These files are tracked on `master` (private repo) but gitignored on `public` (public repo):
 - `.gitconfig` - Personal git identity
 - `.aws/config` - Cloud provider infrastructure details
-- `zsh/references/aws.zsh` - Contains S3 bucket names
+- `zsh/references/aws.md` - Contains S3 bucket names
 
 These files are gitignored on **all** branches — never commit:
 - `.aws/credentials` - Cloud credentials (use `pass` instead)
