@@ -27,7 +27,7 @@ zsh/.zplug
 .aws/credentials
 .aws/config
 .gitconfig
-zsh/references/aws.zsh
+zsh/references/aws.md
 .ssh/
 .vim/tmp/
 windows-terminal/settings.json
