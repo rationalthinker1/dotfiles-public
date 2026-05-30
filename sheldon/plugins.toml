@@ -1,0 +1,113 @@
+# `sheldon` configuration file
+# ----------------------------
+#
+# You can modify this file directly or you can use one of the following
+# `sheldon` commands which are provided to assist in editing the config file:
+#
+# - `sheldon add` to add a new plugin to the config file
+# - `sheldon edit` to open up the config file in the default editor
+# - `sheldon remove` to remove a plugin from the config file
+#
+# See the documentation for more https://github.com/rossmacarthur/sheldon#readme
+
+shell = 'zsh'
+
+[templates]
+defer = '{% for file in files %}zsh-defer source "{{ file }}"\n{% endfor %}'
+
+[plugins]
+
+[plugins.zsh-defer]
+github = 'romkatv/zsh-defer'
+
+[plugins.up]
+github = 'akavel/up'
+apply = ['defer']
+
+[plugins.fzf-zsh-plugin]
+github = 'unixorn/fzf-zsh-plugin'
+apply = ['defer']
+
+[plugins.extract]
+github = 'ohmyzsh/ohmyzsh'
+use = ['plugins/extract/*.zsh']
+apply = ['defer']
+
+[plugins.ripgrep]
+github = 'BurntSushi/ripgrep'
+apply = ['defer']
+
+[plugins.zsh-autosuggestions]
+github = 'zsh-users/zsh-autosuggestions'
+use = ['{{ name }}.zsh']
+apply = ['defer']
+
+[plugins.base16]
+github = 'chriskempson/base16-shell'
+
+[plugins.enhancd]
+github = 'b4b4r07/enhancd'
+apply = ['defer']
+
+[plugins.yarn-extra-completion]
+github = 'buonomo/yarn-extra-completion'
+apply = ['defer']
+
+[plugins.fzf]
+github = 'junegunn/fzf'
+apply = ['defer']
+use = [
+  'completion.zsh',
+  'key-bindings.zsh',
+]
+
+[plugins.powerlevel10k]
+github = 'romkatv/powerlevel10k'
+
+[plugins.fast-syntax-highlighting]
+github = 'zdharma-continuum/fast-syntax-highlighting'
+apply = ['defer']
+
+[plugins.zsh-completions]
+github = 'zsh-users/zsh-completions'
+apply = ['defer']
+
+[plugins.forgit]
+github = 'wfxr/forgit'
+apply = ['defer']
+
+[plugins.gitfast]
+github = 'ohmyzsh/ohmyzsh'
+dir = 'plugins/gitfast'
+apply = ['defer']
+
+[plugins.docker]
+github = 'ohmyzsh/ohmyzsh'
+dir = 'plugins/docker'
+apply = ['defer']
+
+[plugins.docker-compose]
+github = 'ohmyzsh/ohmyzsh'
+dir = 'plugins/docker-compose'
+apply = ['defer']
+
+# By pressing the esc key twice, you will have the same command with sudo prefixed without typing
+[plugins.sudo]
+github = 'ohmyzsh/ohmyzsh'
+dir = 'plugins/sudo'
+apply = ['defer']
+
+#copies the contents of a file in your system clipboard by using command 'copyfile <filename>'
+[plugins.copyfile]
+github = 'ohmyzsh/ohmyzsh'
+dir = 'plugins/copyfile'
+apply = ['defer']
+
+# alt+left -> Go to previous directory
+# alt+right -> Go to next directory
+# alt+up -> Go to parent directory
+# alt+down -> Go to first child directory by alphabetical order
+[plugins.dirhistory]
+github = 'ohmyzsh/ohmyzsh'
+dir = 'plugins/dirhistory'
+apply = ['defer']

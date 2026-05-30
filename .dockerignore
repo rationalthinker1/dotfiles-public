@@ -1,0 +1,50 @@
+# ==============================================================================
+# Docker Ignore File for Dotfiles
+# ==============================================================================
+# Excludes files when dotfiles are copied into containers
+# This is automatically used by Docker COPY commands
+
+# Fonts directory (310MB, 150+ font files)
+# Fonts are not needed in containers and significantly increase build time
+fonts/
+
+# Backup directory (created during install.sh)
+backup/
+
+# ZSH cache files (regenerated automatically)
+zsh/cache/
+zsh/.zcompdump*
+zsh/.zsh_history
+
+# Compiled ZSH files (regenerated automatically)
+**/*.zwc
+
+# Git metadata (optional - uncomment if needed to reduce size)
+# .git/
+
+# Test infrastructure (not needed in production containers)
+tests/
+
+# Documentation (optional - uncomment if not needed)
+# *.md
+# !README.md
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE files
+.vscode/
+.idea/
+
+# Local configuration overrides
+local.*.zsh
+local.*.sh
+
+# Temporary files
+tmp/
+*.tmp
+*.log

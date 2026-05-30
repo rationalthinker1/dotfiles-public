@@ -1,0 +1,23 @@
+FROM dotfiles-test-base:latest
+
+# Install ubuntu-desktop-minimal package to trigger desktop detection
+# This makes detect_location() return "desktop"
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ubuntu-desktop-minimal && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+USER ubuntu
+
+# Copy dotfiles into container
+COPY --chown=ubuntu:ubuntu . /home/ubuntu/.dotfiles
+
+# Set environment variables
+ENV HOME=/home/ubuntu
+ENV DEBUG=""
+
+WORKDIR /home/ubuntu
+
+# Default command: run install.sh
+CMD ["/bin/bash", "/home/ubuntu/.dotfiles/install.sh"]

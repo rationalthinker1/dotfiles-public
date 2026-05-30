@@ -1,0 +1,771 @@
+"backspace and cursor keys wrap to previous/next line
+"CTRL-X and SHIFT-Del are Cut
+"CTRL-C and CTRL-Insert are Copy
+"CTRL-V and SHIFT-Insert are Paste
+"Use CTRL-Q to do what CTRL-V used to do
+"Use CTRL-S for saving, also in Insert mode
+"CTRL-Z is Undo; not in cmdline though
+"CTRL-Y is Redo (although not repeat); not in cmdline though
+"Alt-Space is System menu
+"CTRL-A is Select all
+"CTRL-Tab is Next window
+"CTRL-F4 is Close window
+"source $VIMRUNTIME/mswin.vim
+source ~/.vim/custom-mswin.vim
+behave mswin
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--Vim-Plug Configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Automatically install vim-plug and run PlugInstall if vim-plug not found
+if empty(glob('~/.vim/autoload/plug.vim'))
+	silent !curl -fLo ~/.vim/autoload/plug.vim --create-dirs
+				\ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+	autocmd VimEnter * PlugInstall | source $MYVIMRC
+endif
+
+call plug#begin('~/.vim/plugged')
+"Plug 'sheerun/vim-polyglot'              " Language packs for Vim
+"=== Syntax Highlighting
+Plug 'chr4/nginx.vim'
+Plug 'vim-scripts/httplog'
+Plug 'vim-scripts/apachelogs.vim'
+Plug 'vim-scripts/apachestyle'
+Plug 'ekalinin/Dockerfile.vim'
+Plug 'stanangeloff/php.vim'
+Plug 'stephpy/vim-yaml'
+Plug 'cakebaker/scss-syntax.vim'
+Plug 'tmux-plugins/vim-tmux'
+Plug 'burnettk/vim-angular'
+
+Plug 'mg979/vim-visual-multi'             " Ctrl+N to select multi-line edits and press c to change, i to add and d to delete
+Plug 'tpope/vim-fugitive'                 " :Git commit :Git diff :Git log :Git difftool :Gedit HEAD~3:%
+Plug 'alvan/vim-closetag'                 " autocomplete html tags
+Plug 'tpope/vim-abolish'                  " foo_bar => fooBar 'crm' 'crc' 'crs' 'cr-'; :%Subvert/facilit{y,ies}/building{,s}/g
+Plug 'scrooloose/nerdcommenter'           " Ability to comment out lines from many files
+Plug 'Yggdroot/indentLine'                " Displays thin vertical lines at each indentation level
+Plug 'junegunn/vim-easy-align'            " Highlight area, press ga{=,:, } to align by it
+Plug 'tpope/vim-eunuch'                   " Adds methods like :Rename :Delete :Move :Chmod :Mkdir :SudoWrite
+Plug 'luochen1990/rainbow'                " Rainbow Parentheses
+Plug 'bronson/vim-trailing-whitespace'    " Adds command :FixWhitespace
+Plug 'tpope/vim-surround'                 " cs)} -> change surrounding from ) to }; ds( -> delete surrounding (; ysiw} -> yank surrounding inside word }
+Plug 'tpope/vim-repeat'                   " repeat using . for non-ing . for non-native commands too
+Plug 'ConradIrwin/vim-bracketed-paste'    " enables transparent pasting into vim. (i.e. no more :set paste!)
+Plug 'farmergreg/vim-lastplace'           " reopen files at your last edit position
+Plug 'chip/vim-fat-finger'                " Automatically corrects common misspellings and typos as you type
+Plug 'mhinz/vim-startify'                 " vim start menu showing last open files on vim
+Plug 'psliwka/vim-smoothie'               " Smooth scroll
+Plug 'easymotion/vim-easymotion'          " Press <leader><leader>w and type one of the highlighted characters
+Plug 'kshenoy/vim-signature'              " Shows bookmarks visually on the left
+Plug 'tmux-plugins/vim-tmux-focus-events' " Focus is gain when switching back and forth with tmux screens
+Plug 'christoomey/vim-tmux-navigator'     " Using same keys to move between tmux and vim panes
+Plug 'airblade/vim-rooter'                " Loads up root directory of the project automatically
+Plug 'thinca/vim-visualstar'              " Search up whatever is highlighted and replace with %s//{field}/g
+Plug 'simeji/winresizer'                  " Ctrl-E and you can resize current vim windows using 'h', 'j', 'k', 'l' keys
+Plug 'PeterRincker/vim-argumentative'     " Shifting arguments with <, and >,
+
+Plug 'haya14busa/incsearch.vim'           " provides incremental highlighting for ALL patterns matches unlike default 'incsearch'.
+let g:incsearch#magic = '\v'
+map /  <Plug>(incsearch-forward)
+map ?  <Plug>(incsearch-backward)
+map g/ <Plug>(incsearch-stay)
+
+set hlsearch
+let g:incsearch#auto_nohlsearch = 1
+map n  <Plug>(incsearch-nohl-n)
+map N  <Plug>(incsearch-nohl-N)
+map *  <Plug>(incsearch-nohl-*)
+map #  <Plug>(incsearch-nohl-#)
+map g* <Plug>(incsearch-nohl-g*)
+map g# <Plug>(incsearch-nohl-g#)
+
+Plug 'haya14busa/vim-asterisk' " hover over word, press z*, cgn to replace word, and continue pressing . to replace others
+map *   <Plug>(incsearch-nohl)<Plug>(asterisk-*)
+map g*  <Plug>(incsearch-nohl)<Plug>(asterisk-g*)
+map #   <Plug>(incsearch-nohl)<Plug>(asterisk-#)
+map g#  <Plug>(incsearch-nohl)<Plug>(asterisk-g#)
+
+map z*  <Plug>(incsearch-nohl0)<Plug>(asterisk-z*)
+map gz* <Plug>(incsearch-nohl0)<Plug>(asterisk-gz*)
+map z#  <Plug>(incsearch-nohl0)<Plug>(asterisk-z#)
+map gz# <Plug>(incsearch-nohl0)<Plug>(asterisk-gz#)
+
+
+"=== Custom configurations
+source ~/.vim/coc.vim       " autocomplete for many languages
+source ~/.vim/lightline.vim " shows little bar at the bottom
+source ~/.vim/fzf.vim       " fast search by pressing F, H, B, R
+source ~/.vim/gutentags.vim " creates tag automatically
+source ~/.vim/nerdtree.vim  " show files and folders in current directory by pressing Ctrl+b
+source ~/.vim/tagbar.vim    " tagbar to show methods/variable by pressing F8
+source ~/.vim/snippets.vim  " language related snippets (ultisnips is the engine).
+source ~/.vim/switches.vim  " a collection of useful switches. ex true => false with Ctrl-A
+source ~/.vim/themes.vim    " themes
+source ~/.vim/vim-sneak.vim    " themes
+call plug#end()
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--General
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+set encoding=UTF-8
+" Set zsh aliases
+set shell=/bin/zsh\ -l
+let $BASH_ENV = "~/.dotfiles/zsh/aliases.zsh"
+
+" https://vim.fandom.com/wiki/Set_working_directory_to_the_current_file
+autocmd BufEnter * silent! lcd %:p:h
+
+" https://stackoverflow.com/questions/3676388/cursor-positioning-when-entering-insert-mode
+" end of line $ goes to after the last character, not before
+set virtualedit=onemore
+
+" Sets how many lines of history VIM has to remember
+set history=700
+
+" v$ doesn't select newline
+" https://vi.stackexchange.com/questions/12607/extend-visual-selection-til-the-last-character-on-the-line-excluding-the-new-li
+set selection=inclusive
+
+" Enable filetype plugins
+filetype plugin on
+filetype indent on
+
+" Set to auto read when a file is changed from the outside
+set autoread
+
+" With a map leader it's possible to do extra key combinations
+" like <leader>w saves the current file
+let mapleader = ","
+let g:mapleader = ","
+
+" https://www.reddit.com/r/vim/comments/1vdrxg/space_is_a_big_key_what_do_you_map_it_to/
+map <space> <leader>
+
+" shows where your cursor
+set cursorline
+
+" escape insert mode via 'aa'
+inoremap aa <ESC>
+"inoremap <Shift> <ESC>v
+" escape insert mode via 'Ctrl+Space'
+imap <C-Space> <Esc>
+
+" keep in visual mode after identing by shift+> in vim
+" https://superuser.com/questions/310417/how-to-keep-in-visual-mode-after-identing-by-shift-in-vim
+vnoremap < <gv
+vnoremap > >gv
+
+" Use <cr> to confirm completion, `<C-g>u` means break undo chain at current position.
+" Coc only does snippet and additional edit on confirm.
+inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
+
+" shortcut for :%s/.../.../g
+nnoremap s :%s///g<LEFT><LEFT><LEFT>
+xnoremap s :s///g<LEFT><LEFT><LEFT>
+
+" backup current file
+nnoremap <leader>bu :!cp % %.bak<CR><CR>:echomsg "Backed up" expand('%')<CR>
+
+" toggle wrap on current file
+nnoremap <leader>w :set wrap!<cr>
+
+set whichwrap+=<,>,h,l
+
+" Ignore case when searching
+set ignorecase
+
+" When searching try to be smart about cases
+set smartcase
+
+" Highlight search results
+set hlsearch
+
+" Makes search act like search in modern browsers
+set incsearch
+
+" Don't redraw while executing macros (good performance config)
+set lazyredraw
+
+" For regular expressions turn magic on
+set magic
+
+" Show matching brackets when text indicator is over them
+set showmatch
+
+" How many tenths of a second to blink when matching brackets
+set matchtime=5
+
+" No annoying sound on errors
+set noerrorbells
+set novisualbell
+set t_vb=
+set tm=500
+
+" Show the keys that vim is receiving (what you are typing) in command
+set showcmd
+
+" applies substitutions globally by default on lines. For example, instead of :%s/foo/bar/g you just type :%s/foo/bar/
+set gdefault
+
+" Setup undo history persistent
+set undofile                " Save undos after file closes
+set undolevels=1000                 " How many undos
+set undoreload=10000                " number of lines to save for undo
+set backup                          " enable backups
+set noswapfile                      " No creating .swap files
+set undodir=$HOME/.vim/tmp/undo     " undo files
+set backupdir=$HOME/.vim/tmp/backup " backups
+set directory=$HOME/.vim/tmp/swap   " swap files
+
+" Make those folders automatically if they don't already exist.
+if !isdirectory(expand(&undodir))
+	call mkdir(expand(&undodir), "p")
+endif
+if !isdirectory(expand(&backupdir))
+	call mkdir(expand(&backupdir), "p")
+endif
+if !isdirectory(expand(&directory))
+	call mkdir(expand(&directory), "p")
+endif
+
+
+" load fzf for vim
+set rtp+=~/.fzf
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--VIM user interface
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Set 7 lines to the cursor - when moving vertically using j/k
+set scrolloff=7
+
+" Turn on the WiLd menu
+set wildmenu
+set wildmode=longest:full,full
+
+" Ignore compiled files
+set wildignore=*.o,*~,*.pyc
+set wildignore+=*/tmp/*
+set wildignore+=*/target/*
+set wildignore+=*/build/*
+set wildignore+=*.so
+set wildignore+=*.o
+set wildignore+=*.class
+set wildignore+=*.swp
+set wildignore+=*.zip
+set wildignore+=*.pdf
+set wildignore+=*.pyc
+set wildignore+=*/node_modules/*
+set wildignore+=*/vendor/*
+set wildignore+=*/bower_components/*
+set wildignore+=*/dist/*
+
+" always show current position
+set ruler
+
+" Height of the command bar
+set cmdheight=2
+
+" Use tabs to switch between brackets
+nnoremap <tab> %
+vnoremap <tab> %
+
+" Go back and forth to cursor position
+map <Esc> <C-A-q>
+nnoremap <C-A-q> <C-O>
+map <Esc> <C-A-w>
+nnoremap <C-A-w> <C-I>
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--Buffer Settings
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" This allows buffers to be hidden if you've modified a buffer.
+" This is almost a must if you wish to use buffers in this way.
+set hidden
+
+" To open a new empty buffer
+" This replaces :tabnew which I used to bind to this mapping
+nnoremap <leader>T :enew<cr>
+
+" Move to the next buffer
+nnoremap <A-PageDown> :bnext<CR>
+
+" Move to the previous buffer
+nnoremap <A-PageUp> :bprevious<CR>
+
+" Close buffer like closing Chrome's tab
+function! CloseBuffer() abort
+	if &buftype ==? 'quickfix'
+		lclose
+		return 1
+	endif
+	let l:nerdtreeOpen = g:NERDTree.IsOpen()
+	let l:windowCount = winnr('$')
+	let l:command = 'bdelete'
+	let l:totalBuffers = len(getbufinfo({ 'buflisted': 1 }))
+	let l:isNerdtreeLast = l:nerdtreeOpen && l:windowCount ==? 2
+	let l:noSplits = !l:nerdtreeOpen && l:windowCount ==? 1
+	if l:totalBuffers > 1 && (l:isNerdtreeLast || l:noSplits)
+		let l:command = 'bprevious | bdelete #'
+	endif
+	if l:totalBuffers == 1 && (l:isNerdtreeLast || l:noSplits)
+		let l:command = 'quit'
+	endif
+	silent execute l:command
+endfunction
+nnoremap <C-w> :call CloseBuffer()<cr>
+
+" Show all open buffers and their status
+nnoremap <leader>bl :ls<CR>
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--Colors and Fonts
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Enable syntax highlighting
+syntax on
+syntax enable
+set background=dark
+set termguicolors
+let ayucolor="mirage"
+colorscheme ayu
+"color onedark
+
+highlight Pmenu guibg=white guifg=black gui=bold
+highlight Comment gui=bold
+highlight Normal gui=none
+
+set termencoding=utf-8
+" Set extra options when running in GUI mode
+if has("gui_running")
+	set guifont=IBM\ Plex\ Mono\ Semi-Bold\ 10
+	set guioptions=abegmrLtT
+	"set guioptions-=T
+	set guioptions+=e
+	set t_Co=256
+	set guitablabel=%M\ %t
+	" Show popup menu if right click.
+	set mousemodel=popup
+
+	" Allow using alt keys in vim for mapping for GUI only
+	set winaltkeys=no
+
+	" Don't focus the window when the mouse pointer is moved.
+	set nomousefocus
+	map <S-Insert> <MiddleMouse>
+	map! <S-Insert> <MiddleMouse>
+endif
+
+" Set utf8 as standard encoding and en_US as the standard language
+set encoding=utf8
+
+" Use Unix as the standard file type
+set ffs=unix,dos,mac
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--Text, tab and indent related
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Use tabs instead of spaces
+set autoindent
+set noexpandtab
+
+" Be smart when using tabs ;)
+set smarttab
+
+" 1 tab == 4 spaces
+set softtabstop=4
+set shiftwidth=4
+set tabstop=4
+
+" Linebreak on 500 characters
+set lbr
+set tw=500
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--Moving around, tabs, windows and buffers
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Treat long lines as break lines (useful when moving around in them)
+nnoremap <expr> k (v:count == 0 ? 'gk' : 'k')
+nnoremap <expr> j (v:count == 0 ? 'gj' : 'j')
+
+" Smart way to move between windows
+nnoremap <A-Right> <C-W>l
+nnoremap <A-Left> <C-W>h
+nnoremap <A-Up> <C-W>k
+nnoremap <A-Down> <C-W>j
+
+inoremap <A-Right> <C-W>l
+inoremap <A-Left> <C-W>h
+inoremap <A-Up> <C-W>k
+inoremap <A-Down> <C-W>j
+
+" Close the current buffer
+noremap <leader>bd :Bclose<cr>
+
+function! SaveCountOfTextOnRegister(text)
+let @c = GetCount(a:text)
+endfunction
+
+" see if new plugins were added
+function! InstallPlugins(text, code)
+call AutoPlaceMarkBasedOnText(a:text, a:code)
+
+let l:old_count = @c
+let l:new_count = GetCount("^Plug '")
+let @c = l:new_count
+if l:new_count > l:old_count
+	PlugInstall
+	"sleep 500m
+	"q
+	"wincmd w
+endif
+endfunction
+
+" auto place mark on file based on text
+function! AutoPlaceMarkBasedOnText(text, code)
+let l:new_position = search(a:text, 'nc')
+call setpos(a:code, [0,l:new_position,1,0])
+endfunction
+
+function! GetCount(pattern)
+let l:cnt = 0
+silent execute '%s/' . a:pattern . '/\=execute(''let l:cnt += 1'')/gn'
+return l:cnt
+endfunction
+
+" Automatically reload vimrc when it's saved
+augroup vimrc
+autocmd!
+autocmd BufWritePost *.vim,.vimrc :echom "Reloading .vimrc"
+autocmd BufWritePost *.vim,.vimrc :sleep 500m
+autocmd BufWritePost *.vim,.vimrc :source $MYVIMRC
+autocmd BufReadPost  .vimrc :call SaveCountOfTextOnRegister("^Plug '")
+autocmd BufWritePost .vimrc :call InstallPlugins('^call plug#end()', "'P")
+autocmd BufWritePost .vimrc :call AutoPlaceMarkBasedOnText('^augroup vimrc', "'a")
+augroup END
+
+" Close all the buffers
+noremap <leader>ba :1,1000 bd!<cr>
+
+" delete lines without copying it (use x to cut)
+nnoremap d "_d
+nnoremap D "_D
+xnoremap d "_d
+xnoremap D "_D
+nnoremap <Esc>[3~ "_x
+xnoremap <Esc>[3~ "_x
+
+
+" change lines without copying it (use x to cut)
+nnoremap c "_c
+vnoremap c "_c
+
+" Useful mappings for managing tabs
+noremap <leader>tn :tabnew<cr>
+noremap <leader>to :tabonly<cr>
+noremap <leader>tc :tabclose<cr>
+noremap <leader>tm :tabmove
+
+" Needed to fix up pasting (highlighted and paste right after cursor)
+" https://unix.stackexchange.com/questions/5056/cursor-position-after-pasting-in-vi-vim
+noremap p gp
+noremap P o<esc>gp
+noremap gp p
+noremap gP P
+
+" Yank current word with just y
+nnoremap y viwy<Esc>
+" Replace current word
+nnoremap x viwxi
+
+" Adds semicolon at the end of the line
+inoremap <C-S-L> <C-o>A;
+
+function! ReindentFile()
+let l:win_view = winsaveview()
+let l:old_query = getreg('/')
+execute "normal! gg=G"
+call winrestview(l:win_view)
+call setreg('/', l:old_query)
+endfunction
+map <Esc> <C-A-L>
+nnoremap <C-A-L> :call ReindentFile()<cr>
+
+" change current file to working directory
+nnoremap <leader>cd :cd %:p:h<CR>:pwd<CR>
+
+" Opens a new tab with the current buffer's path
+" Super useful when editing files in the same directory
+noremap <leader>te :tabedit <c-r>=expand("%:p:h")<cr>/
+
+" Specify the behavior when switching between buffers
+try
+set switchbuf=useopen,usetab,newtab
+set stal=2
+catch
+endtry
+
+" Return to last edit position when opening files (You want this!)
+autocmd BufReadPost *
+		\ if line("'\"") > 0 && line("'\"") <= line("$") |
+		\   exe "normal! g`\"" |
+		\ endif
+
+" Remember info about open buffers on close
+set viminfo^=%
+set viminfo+=n~/.vim/.viminfo
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--Editing mappings
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Remap VIM 1 to first non-blank character and 2 to the last non-blank character
+nnoremap 1 ^
+nnoremap 2 $
+
+" when searching, you can use Perl's regex rather than using vim's own regex system
+"nnoremap / /\v
+"vnoremap / /\v
+" Disable highlight when <leader><cr> is pressed
+noremap <silent> <leader><cr> :noh<cr>
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--Spell checking
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Pressing ,ss will toggle and untoggle spell checking
+noremap <leader>ss :setlocal spell!<cr>
+
+" Shortcuts using <leader>
+noremap <leader>sn ]s
+noremap <leader>sp [s
+noremap <leader>sa zg
+noremap <leader>s? z=
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--Misc
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" creates title banner
+nnoremap <leader>title 63i"<esc><esc>o"--<space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`oi<space>
+vnoremap <leader>title ydd63i"<esc><esc>o"--<space><space><esc>moi<cr><esc>63i"<esc><esc>a<cr><esc>`opi<bs>
+
+function! ReplaceTextUntil(char)
+	let l:line = getline('.')
+	let l:y = line('.')
+	let l:x = col('.')
+	let l:index = stridx(l:line, a:char, l:x)
+	let l:portion = strpart(l:line, l:x, l:index - l:x)
+	let l:bar = substitute(l:line, l:portion, "", "")
+	call setline(l:y, l:bar)
+	call cursor(l:y, l:x + 1)
+	call feedkeys('i')
+endfunc
+nnoremap w' :call ReplaceTextUntil("'")<cr>
+nnoremap w" :call ReplaceTextUntil('"')<cr>
+nnoremap w; :call ReplaceTextUntil(';')<cr>
+nnoremap w. :call ReplaceTextUntil('.')<cr>
+nnoremap w> :call ReplaceTextUntil('<')<cr>
+nnoremap w) :call ReplaceTextUntil(')')<cr>
+
+" copy current line
+function! PasteLineBelow(mode)
+	let l:y = line('.')
+	let l:x = col('.')
+	if a:mode ==? 'i'
+		execute "normal! yyp"
+		call cursor(l:y+1, l:x+1)
+		call feedkeys(a:mode)
+	elseif a:mode ==? 'n'
+		execute "normal! yyp"
+		call cursor(l:y+1, l:x)
+	else
+		let [ l:line_start, l:column_start, l:line_end, l:column_end ] = GetVisualSelectionLine()
+		let l:lines = VisualSelect()
+		if( l:line_end == l:line_start)
+			let l:line = getline('.')
+			let l:size = (l:column_end - l:column_start) + 1
+			let l:portion = strpart(l:line, l:column_start - 1, l:size)
+			let l:bar = substitute(l:line, l:portion, l:portion . l:portion, "")
+			call setline(l:line_start, l:bar)
+			call cursor(l:line_end, l:column_end + 1)
+			execute "normal! " . (l:size) . "v"
+			"call cursor(l:line_end, l:column_end + (l:size * 2) + 1)
+			"echom "l:column_start: " . l:column_start
+			"echom "l:column_end: " . l:column_end
+			"echom "l:line_start: " . l:line_start
+			"echom "l:line_end: " . l:line_end
+			"echom "l:portion: " . l:portion
+			"echom "l:size: " . l:size
+			"echom "l:bar: " . l:bar
+		else
+			"echom l:lines
+			let l:size = len(split(l:lines, "\n"))
+			call append(l:line_end, split(l:lines, "\n"))
+			call cursor(l:line_end+(l:size), l:x)
+		endif
+	endif
+endfunc
+inoremap <C-d> <esc>:call PasteLineBelow('i')<cr>
+nnoremap <C-d> <esc>:call PasteLineBelow('n')<cr>
+vnoremap <C-d> <esc>:call PasteLineBelow('v')<cr>
+inoremap <C-d> <esc>:call PasteLineBelow('i')<cr>
+" delete current line
+function! DeleteCurrentLine(mode)
+	let l:y = line('.')
+	let l:x = col('.')
+	if a:mode == 'i'
+		execute "normal! dd"
+		cal cursor(l:y, l:x+1)
+		call feedkeys(a:mode)
+	elseif a:mode == 'n'
+		execute "normal! dd"
+		cal cursor(l:y, l:x)
+	else
+		let [line_start, column_start] = getpos("'<")[1:2]
+		let [line_end, column_end] = getpos("'>")[1:2]
+		execute line_start . ",". line_end . "d"
+	endif
+endfunction
+inoremap <C-y> <esc>:call DeleteCurrentLine('i')<cr>
+nnoremap <C-y> <esc>:call DeleteCurrentLine('n')<cr>
+vnoremap <C-y> <esc>:call DeleteCurrentLine('v')<cr>
+
+" clears content from the cursor to the end while in insert mode
+"inoremap <C-c> <esc>lc$
+
+" runs macro based on selected lines
+function! ExecuteMacroOverVisualRange()
+	echo "@".getcmdline()
+	execute ":'<,'>normal @".nr2char(getchar())
+endfunction
+xnoremap @ :<C-u>call ExecuteMacroOverVisualRange()<CR>
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--Helper functions
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+function! GetVisualSelectionLine()
+	if mode()=="v"
+		let [line_start, column_start] = getpos("v")[1:2]
+		let [line_end, column_end] = getpos(".")[1:2]
+	else
+		let [line_start, column_start] = getpos("'<")[1:2]
+		let [line_end, column_end] = getpos("'>")[1:2]
+	end
+	if (line2byte(line_start)+column_start) > (line2byte(line_end)+column_end)
+		let [line_start, column_start, line_end, column_end] =
+					\   [line_end, column_end, line_start, column_start]
+	end
+	" 'selection' is a rarely-used option for overriding whether the last
+	" character is included in the selection. Bizarrely, it always affects the
+	" last character even when selecting from the end backwards.
+	if &selection !=# 'inclusive'
+		let column_end -= 1
+	endif
+	return [line_start, column_start, line_end, column_end]
+endfunction
+
+function! VisualSelect()
+	let [ line_start, column_start, line_end, column_end ] = GetVisualSelectionLine()
+	let lines = getline(line_start, line_end)
+	if len(lines) == 0
+		return ''
+	endif
+	let lines[-1] = lines[-1][: column_end - 1]
+	let lines[0] = lines[0][column_start - 1:]
+	return join(lines, "\n")
+endfunction
+
+
+function! VisualSelection(direction) range
+	let l:saved_reg = @"
+	execute "normal! vgvy"
+
+	let l:pattern = escape(@", '\\/.*$^~[]')
+	let l:pattern = substitute(l:pattern, "\n$", "", "")
+
+	if a:direction == 'b'
+		execute "normal ?" . l:pattern . "^M"
+	elseif a:direction == 'gv'
+		call CmdLine("vimgrep " . '/'. l:pattern . '/' . ' **/*.')
+	elseif a:direction == 'replace'
+		call CmdLine("%s" . '/'. l:pattern . '/')
+	elseif a:direction == 'f'
+		execute "normal /" . l:pattern . "^M"
+	endif
+
+	let @/ = l:pattern
+	let @" = l:saved_reg
+endfunction
+
+"  Raza's custom commands
+set showmode              " always show what mode we're currently editing in
+set nowrap                " don't wrap lines
+set shiftround            " use multiple of shiftwidth when indenting with '<' and '>'
+set copyindent            " copy the previous indentation on autoindenting
+set number                " always show line numbers
+set autowrite           " Save on buffer switch
+set clipboard=unnamedplus " register to global clipboard
+set notimeout             " don't timeout vim mappings
+set mouse=a               " enable mouse use in terminal
+set splitright            " splitting a window will put the new window right
+set pastetoggle=<F3>      " before pasting, press F3 to get into paste mode, not needed now
+
+" Move current line or visual block up/down
+nnoremap <C-S-Up> :m -2<CR>
+nnoremap <C-S-Down> :m +1<CR>
+inoremap <C-S-Up> :m -2<CR>
+inoremap <C-S-Down> :m +1<CR>
+"vnoremap <C-S-Up> :m '<-2<CR>gv=gv
+"vnoremap <C-S-Down> :m '>+1<CR>gv=gv
+vmap <C-S-Up>    <Plug>SchleppUp
+vmap <C-S-Down>  <Plug>SchleppDown
+"vmap <C-left>  <Plug>SchleppLeft
+"vmap <C-right> <Plug>SchleppRight
+
+nnoremap <leader>- :new<cr>
+nnoremap <leader><bar> :vnew<cr>
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--Yggdroot/indentLine
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" IndentLine {{
+let g:indentLine_char = ''
+let g:indentLine_first_char = ''
+let g:indentLine_showFirstIndentLevel = 1
+let g:indentLine_setColors = 0
+" }}
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--Rainbow Parentheses
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+let g:rainbow_active = 1
+let g:rainbow_conf = { 'operators': '_,\|=\|+\|\*\|-\|\.\|;\||\|&\|?\|:\|<\|>\|%\|/[^/]_' }
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--EasyAlign Configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Start interactive EasyAlign in visual mode (e.g. vipga)
+xmap ga <Plug>(EasyAlign)
+
+" Start interactive EasyAlign for a motion/text object (e.g. gaip)
+nmap ga <Plug>(EasyAlign)
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"--Nerdcommenter Configurations
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" _ is /
+map <C-_> <Plug>NERDCommenterToggle
+map <C-_> <Plug>NERDCommenterToggle
+
+" Lets you see nth revision ago of the current file
+function! PreviewRevision(n)
+	let @d = a:n
+	let l:commit = system('git log ' .  expand('%') . ' | grep "commit" | cut -d" " -f2 | sed -n ' . a:n . 'p')
+	execute "normal! :Gvdiffsplit " . l:commit . " <bar> :NERDTreeClose"
+endfunction
+
