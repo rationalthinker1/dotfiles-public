@@ -68,7 +68,7 @@ EXAMPLES:
   cd /root/.dotfiles && ./install.sh --fish
 
 NOTES:
-  • Script uses sudo for system operations (apt, chsh, fonts)
+  • Script uses sudo for system operations (apt/pacman, chsh, fonts)
   • Development tools are installed via mise for easy version management
   • Run 'mise upgrade' to update all managed tools later
   • Existing configs are backed up to ~/.dotfiles/backup/
@@ -134,6 +134,26 @@ readonly -a LINUX_PACKAGES=(
     strace gdb lsb-release shellcheck tree lsof ncdu  # Debugging & development tools
     pass gnupg2 pinentry-curses  # Secret management
 		libx11-dev libxt-dev libxpm-dev libgtk-3-dev
+    # NOTE: Python, Node.js, Go, Rust, Vim, Yarn, and uv are installed via mise
+)
+
+readonly -a ARCH_PACKAGES=(
+    # Arch Linux equivalents of LINUX_PACKAGES (Manjaro/EndeavourOS share pacman).
+    # base-devel already bundles autoconf/automake/libtool/pkgconf/make/gcc, but they
+    # are listed explicitly for parity; --needed makes the duplicates harmless.
+    base-devel git tmux htop curl wget zsh fish powerline-fonts
+    xclip p7zip zip unzip
+    unrar cmake ctags rsync
+    ncurses util-linux pcre2
+    autoconf automake libtool pkgconf
+    openssl zlib libffi readline  # Library dependencies (Arch ships headers with the lib)
+    bzip2 sqlite tk xz            # Python build dependencies (required for mise)
+    python                        # Python + headers (required for building vim with Python3)
+    man-db less openssh           # Essential utilities
+    strace gdb lsb-release shellcheck tree lsof ncdu  # Debugging & development tools
+    pass gnupg pinentry           # Secret management (gnupg provides gpg2, pinentry provides -curses)
+    libx11 libxt libxpm gtk3
+    # Not packaged in the official repos (AUR only): pdftk, wipe, software-properties-common
     # NOTE: Python, Node.js, Go, Rust, Vim, Yarn, and uv are installed via mise
 )
 
@@ -265,8 +285,26 @@ if [[ "${HOST_OS}" == "darwin" ]]; then
     if (( ${#failed_packages[@]} > 0 )); then
         echo "WARNING: The following packages failed to install: ${failed_packages[*]}"
     fi
-else
-    # Linux package installation
+elif command -v pacman &>/dev/null; then
+    # Arch Linux (and pacman-based derivatives: Manjaro, EndeavourOS, ...)
+    echo "Detected pacman — installing Arch Linux packages..."
+    # Refresh the keyring first so signature checks don't fail on long-idle systems.
+    sudo pacman -Sy --noconfirm --needed archlinux-keyring 2>/dev/null || true
+    # One transaction: sync DB + full upgrade + install. Arch does not support partial
+    # upgrades, so we never `-Sy` then `-S` separately. --needed makes it idempotent.
+    if ! sudo pacman -Syu --noconfirm --needed "${ARCH_PACKAGES[@]}"; then
+        echo "WARNING: Batch install failed (likely one bad/AUR-only package) — retrying individually..."
+        failed_packages=()
+        for pkg in "${ARCH_PACKAGES[@]}"; do
+            sudo pacman -S --noconfirm --needed "${pkg}" || failed_packages+=("${pkg}")
+        done
+        if (( ${#failed_packages[@]} > 0 )); then
+            echo "WARNING: The following packages failed to install: ${failed_packages[*]}"
+            echo "         (some may live in the AUR — install them with a helper, e.g. yay/paru)"
+        fi
+    fi
+elif command -v apt-get &>/dev/null; then
+    # Debian / Ubuntu
     export DEBIAN_FRONTEND=noninteractive
     export TZ=America/New_York
 
@@ -280,6 +318,8 @@ else
     if (( ${#failed_packages[@]} > 0 )); then
         echo "WARNING: The following packages failed to install: ${failed_packages[*]}"
     fi
+else
+    echo "WARNING: No supported package manager found (pacman/apt-get) — skipping system package installation"
 fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -475,13 +515,24 @@ fi
 # Install platform-specific tools (skip in containers)
 #---------------------------------------------------------------------------------------
 if [[ "${HOST_OS}" == "wsl" && "${IS_DEVCONTAINER}" != "true" ]] && ! command -v wslvar &>/dev/null; then
-    echo "Installing wslu from PPA..."
-    # Add PPA only if not already present
-    if ! grep -q "wslutilities/wslu" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
-        sudo add-apt-repository ppa:wslutilities/wslu -y
-        sudo apt-get update -y
+    if command -v apt-get &>/dev/null; then
+        echo "Installing wslu from PPA..."
+        # Add PPA only if not already present
+        if ! grep -q "wslutilities/wslu" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
+            sudo add-apt-repository ppa:wslutilities/wslu -y
+            sudo apt-get update -y
+        fi
+        sudo apt-get install -y wslu
+    elif command -v pacman &>/dev/null; then
+        # wslu is only in the AUR on Arch — install via a helper if one is present
+        if command -v yay &>/dev/null; then
+            yay -S --noconfirm --needed wslu || echo "⚠ wslu install failed (install manually from the AUR)"
+        elif command -v paru &>/dev/null; then
+            paru -S --noconfirm --needed wslu || echo "⚠ wslu install failed (install manually from the AUR)"
+        else
+            echo "⚠ wslu is in the AUR but no helper (yay/paru) was found — install wslu manually"
+        fi
     fi
-    sudo apt-get install -y wslu
 fi
 
 #---------------------------------------------------------------------------------------
