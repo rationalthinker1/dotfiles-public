@@ -2,7 +2,12 @@
 #
 # post-commit: Auto-sync commits from master → public branch
 #
-# Sensitive files are gitignored on public, so no pattern filtering needed.
+# Public-sensitive files are removed from the tree and gitignored on the public
+# branch. To guarantee they never reach the public repo, this hook:
+#   1. SKIPS any commit that touches a sensitive path (no manual NO_PUBLIC needed)
+#   2. Cherry-picks safe commits onto public
+#   3. Runs a SAFETY NET that aborts the push if any sensitive path is present
+#      in the public tree (defense-in-depth against a missed pattern)
 
 # Only run on master branch
 current_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
@@ -10,29 +15,40 @@ current_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
 
 commit_hash=$(git rev-parse HEAD)
 
-# Allow skipping public sync: NO_PUBLIC=1 git commit -m "..."
+# Manual override: NO_PUBLIC=1 git commit -m "..."
 if [[ -n "${NO_PUBLIC:-}" ]]; then
     print "[post-commit] Skipping public sync (NO_PUBLIC set)."
     exit 0
 fi
 
-# Skip if this commit touches files that should stay private
-private_files=(
-    "^git-hooks/post-commit$"
-    "^\.gitignore$"
+# Paths that must never reach the public repo. Keep this in sync with the
+# sanitized snapshot in install.sh and the public branch's .gitignore.
+# A commit touching ANY of these is skipped from public sync entirely.
+sensitive_patterns=(
+    '^git-hooks/post-commit$'   # the hook itself differs from public
+    '^\.gitignore$'             # public .gitignore differs from master
+    '^\.gitconfig$'             # personal git identity
+    '^\.ssh/'                   # SSH keys and config
+    '^\.aws/'                   # cloud config + credentials
+    '^password-store/'          # GPG-encrypted secret store
+    '^windows-terminal/settings\.json$'  # hostnames / usernames
+    '^zsh/references/aws\.md$'  # S3 bucket names
+    '^zsh/local\.zsh$'          # machine-specific overrides
+    '^fish/local\.fish$'        # machine-specific overrides (fish)
 )
 changed_files=$(git diff-tree --no-commit-id -r --name-only "$commit_hash")
-for pattern in "${private_files[@]}"; do
+for pattern in "${sensitive_patterns[@]}"; do
     if printf '%s\n' "$changed_files" | grep -qE "$pattern"; then
-        print "[post-commit] Skipping public sync — commit modifies private file(s)."
+        print "[post-commit] Skipping public sync — commit touches a private/sensitive path."
+        print "[post-commit]   (override intentionally with: git commit ... then sync manually)"
         exit 0
     fi
 done
 
 print "[post-commit] Syncing commit ${commit_hash:0:7} to public branch..."
 
-# Capture git identity now — .gitconfig is tracked on master but gitignored on public,
-# so switching branches removes it from the working tree (breaking ~/.gitconfig symlink).
+# Capture git identity now — .gitconfig is tracked on master but gitignored on
+# public, so switching branches removes it from the working tree.
 git_name=$(git config user.name)
 git_email=$(git config user.email)
 
@@ -47,6 +63,16 @@ git -c user.name="$git_name" -c user.email="$git_email" cherry-pick "$commit_has
     git checkout master
     exit 1
 }
+
+# SAFETY NET: never push if a sensitive path slipped into the public tree.
+leaked=$(git ls-files | grep -E '^(\.gitconfig$|\.ssh/|\.aws/|password-store/|windows-terminal/settings\.json$|zsh/references/aws\.md$)')
+if [[ -n "$leaked" ]]; then
+    print "[post-commit] ERROR: sensitive path(s) present in public tree — aborting (nothing pushed):" >&2
+    print "$leaked" >&2
+    git reset --hard HEAD~1 2>/dev/null   # drop the just-applied cherry-pick
+    git checkout master
+    exit 1
+fi
 
 git push public HEAD:master || {
     print "[post-commit] ERROR: Push to public failed — push manually" >&2
