@@ -29,6 +29,7 @@ relative_path() {
 # Argument parsing
 #=======================================================================================
 TARGET_SHELL="zsh"   # default shell to install/configure; override with --fish
+SKIP_FONTS=false     # set by --skip-fonts to bypass font installation
 
 while [[ $# -gt 0 ]]; do
     case "${1:-}" in
@@ -54,6 +55,7 @@ OPTIONS:
   --zsh         Install and configure zsh as the default shell (default)
   --fish        Install and configure fish as the default shell
                 (installs Fisher + the Tide prompt and sets fish as login shell)
+  --skip-fonts  Skip Powerline/Nerd font installation
   -h, --help    Show this help message
 
 EXAMPLES:
@@ -86,6 +88,10 @@ EOF
             TARGET_SHELL="zsh"
             shift
             ;;
+        --skip-fonts)
+            SKIP_FONTS=true
+            shift
+            ;;
         *)
             echo "Unknown option: ${1}" >&2
             echo "Run './install.sh --help' for usage." >&2
@@ -93,7 +99,7 @@ EOF
             ;;
     esac
 done
-readonly TARGET_SHELL
+readonly TARGET_SHELL SKIP_FONTS
 
 #=======================================================================================
 # Configuration
@@ -134,6 +140,26 @@ readonly -a LINUX_PACKAGES=(
     strace gdb lsb-release shellcheck tree lsof ncdu  # Debugging & development tools
     pass gnupg2 pinentry-curses  # Secret management
 		libx11-dev libxt-dev libxpm-dev libgtk-3-dev
+    # NOTE: Python, Node.js, Go, Rust, Vim, Yarn, and uv are installed via mise
+)
+
+readonly -a ARCH_PACKAGES=(
+    # Arch Linux equivalents of LINUX_PACKAGES (Manjaro/EndeavourOS share pacman).
+    # base-devel already bundles autoconf/automake/libtool/pkgconf/make/gcc, but they
+    # are listed explicitly for parity; --needed makes the duplicates harmless.
+    base-devel git tmux htop curl wget zsh fish powerline-fonts
+    xclip p7zip zip unzip
+    unrar cmake ctags rsync
+    ncurses util-linux pcre2
+    autoconf automake libtool pkgconf
+    openssl zlib libffi readline  # Library dependencies (Arch ships headers with the lib)
+    bzip2 sqlite tk xz            # Python build dependencies (required for mise)
+    python                        # Python + headers (required for building vim with Python3)
+    man-db less openssh           # Essential utilities
+    strace gdb lsb-release shellcheck tree lsof ncdu  # Debugging & development tools
+    pass gnupg pinentry           # Secret management (gnupg provides gpg2, pinentry provides -curses)
+    libx11 libxt libxpm gtk3
+    # Not packaged in the official repos (AUR only): pdftk, wipe, software-properties-common
     # NOTE: Python, Node.js, Go, Rust, Vim, Yarn, and uv are installed via mise
 )
 
@@ -538,7 +564,7 @@ fi
 #---------------------------------------------------------------------------------------
 # Install fonts (desktop Linux only)
 #---------------------------------------------------------------------------------------
-if [[ "${HOST_LOCATION}" == "desktop" && "${HOST_OS}" == "linux" ]]; then
+if [[ "${SKIP_FONTS}" != "true" && "${HOST_LOCATION}" == "desktop" && "${HOST_OS}" == "linux" ]]; then
     if [[ ! -f "${FONTS_DIR}/.installed" ]]; then
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo "  Installing fonts"
@@ -549,7 +575,7 @@ if [[ "${HOST_LOCATION}" == "desktop" && "${HOST_OS}" == "linux" ]]; then
 
         # Extract all font archives
         for zipfile in "${FONTS_DIR}"/*.zip; do
-            [[ -f "${zipfile}" ]] && unzip -q "${zipfile}" -d "${install_dir}"
+            [[ -f "${zipfile}" ]] && unzip -qo "${zipfile}" -d "${install_dir}"
         done
         
         install_font_folder() {
