@@ -1,0 +1,25 @@
+FROM dotfiles-test-base:latest
+
+# Install ubuntu-desktop-minimal package to trigger desktop detection
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ubuntu-desktop-minimal && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+USER ubuntu
+
+# Copy dotfiles into container
+COPY --chown=ubuntu:ubuntu . /home/ubuntu/.dotfiles
+
+# Set environment variables
+ENV HOME=/home/ubuntu
+ENV DEBUG=""
+
+WORKDIR /home/ubuntu
+
+# Note: WSL detection via /proc/sys/kernel/osrelease will be handled
+# by bind mounting the file in docker-compose.yml
+
+# Default command: run install.sh
+CMD ["/bin/bash", "/home/ubuntu/.dotfiles/install.sh"]

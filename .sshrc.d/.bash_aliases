@@ -1,0 +1,1 @@
+/home/canaan/.dotfiles/.bash_aliases

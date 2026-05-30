@@ -1,0 +1,48 @@
+services:
+  # Ubuntu Desktop (Linux with desktop packages)
+  ubuntu-desktop:
+    build:
+      context: ..
+      dockerfile: tests/docker/Dockerfile.ubuntu-desktop
+    image: dotfiles-test-ubuntu-desktop
+    container_name: dotfiles-test-ubuntu-desktop
+    volumes:
+      - ../tests/scripts/validate.sh:/home/ubuntu/validate.sh:ro
+    command: >
+      bash -c "
+        # Override /proc/sys/kernel/osrelease to simulate regular Linux (not WSL)
+        sudo mkdir -p /proc-custom/sys/kernel &&
+        echo '6.8.0-49-generic' | sudo tee /proc-custom/sys/kernel/osrelease > /dev/null &&
+        sudo mount --bind /proc-custom/sys/kernel/osrelease /proc/sys/kernel/osrelease &&
+        /home/ubuntu/.dotfiles/install.sh &&
+        bash /home/ubuntu/validate.sh linux-desktop
+      "
+    privileged: true
+    networks:
+      - testnet
+
+  # WSL Desktop (WSL with desktop packages)
+  wsl-desktop:
+    build:
+      context: ..
+      dockerfile: tests/docker/Dockerfile.wsl-desktop
+    image: dotfiles-test-wsl-desktop
+    container_name: dotfiles-test-wsl-desktop
+    volumes:
+      - ../tests/scripts/validate.sh:/home/ubuntu/validate.sh:ro
+    command: >
+      bash -c "
+        # Create mock /proc/sys/kernel/osrelease for WSL detection
+        sudo mkdir -p /proc-custom/sys/kernel &&
+        echo '5.15.167.4-microsoft-standard-WSL2' | sudo tee /proc-custom/sys/kernel/osrelease > /dev/null &&
+        sudo mount --bind /proc-custom/sys/kernel/osrelease /proc/sys/kernel/osrelease &&
+        /home/ubuntu/.dotfiles/install.sh &&
+        bash /home/ubuntu/validate.sh wsl-desktop
+      "
+    privileged: true
+    networks:
+      - testnet
+
+networks:
+  testnet:
+    driver: bridge

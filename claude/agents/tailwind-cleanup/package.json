@@ -1,0 +1,13 @@
+{
+  "name": "tailwind-cleanup",
+  "version": "0.1.0",
+  "description": "Portable Tailwind CSS class standardization toolkit. Audits arbitrary [bracket] utility values across a project and snaps them to a fixed ladder of named tokens defined in main.css.",
+  "type": "module",
+  "bin": {
+    "tw-cleanup": "./bin/tw-cleanup.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "private": true
+}

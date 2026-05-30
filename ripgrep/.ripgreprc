@@ -1,0 +1,74 @@
+# Don't let ripgrep vomit really long lines to my terminal, and show a preview.
+--max-columns=150
+--max-columns-preview
+
+# Add my 'web' type.
+# Usage: rg --type web 'querySelector'
+--type-add
+web:*.{html,css,scss,js,ts,tsx,jsx,vue}*
+
+# Add config type.
+# Usage: rg --type config 'DATABASE_URL'
+--type-add
+config:*.{json,yaml,yml,toml,ini,env}
+
+# Add log type.
+# Usage: rg --type log 'ERROR'
+--type-add
+log:*.{log,logs,out}
+
+# Using glob patterns to include/exclude files or folders
+--glob=!.git
+--glob=!node_modules
+--glob=!bower_components
+--glob=!vendor
+--glob=!build
+--glob=!bundle
+--glob=!oh-my-zsh
+--glob=!antigen
+--glob=!.npm
+--glob=!.cache
+--glob=!*.bak
+--glob=!*.zip
+--glob=!*.min.js
+--glob=!*.min.css
+--glob=!*.min.map
+--glob=!.tags
+--glob=!{package-lock.json}
+--glob=!*.{lock,svg,jpg,png,pdf,gif}
+--glob=!dist
+--glob=!coverage
+--glob=!.next
+--glob=!.nuxt
+--glob=!.yarn
+--glob=!.pnp.*
+--glob=!__pycache__
+--glob=!*.pyc
+--glob=!.venv
+
+# Set the colors.
+--colors=line:fg:yellow
+--colors=line:style:bold
+--colors=path:fg:0x66,0x99,0xFF
+--colors=path:style:bold
+--colors=match:fg:black
+--colors=match:bg:blue
+--colors=match:style:nobold
+
+# Only be case sensitive when pattern has capital
+--smart-case
+
+# Show hidden files
+--hidden
+
+# Match whole words
+#--word-regexp
+
+# to follow symlinks during searches
+--follow
+
+# Trim leading/trailing whitespace from matches
+--trim
+
+# Don't cross filesystem boundaries (prevents crawling /mnt/c/ in WSL)
+--one-file-system

@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "tailwind-cleanup project config",
+  "type": "object",
+  "required": ["scan", "scales"],
+  "additionalProperties": true,
+  "properties": {
+    "version": { "type": "string" },
+    "scan": {
+      "type": "object",
+      "properties": {
+        "paths": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "extensions": { "type": "array", "items": { "type": "string" } },
+        "excludeDirs": { "type": "array", "items": { "type": "string" } },
+        "excludeFiles": { "type": "array", "items": { "type": "string" } },
+        "css": {
+          "type": "object",
+          "properties": {
+            "include": { "type": "boolean" },
+            "recipesOnly": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "scales": {
+      "type": "object",
+      "description": "All value-to-token-suffix maps. Each is an object whose keys are normalized values (e.g. '0.625rem', '1.05', '120ms') and values are token suffixes (e.g. '1', 'fast', 'xxs').",
+      "properties": {
+        "text":     { "type": "object", "additionalProperties": { "type": "string" } },
+        "tracking": { "type": "object", "additionalProperties": { "type": "string" } },
+        "leading":  { "type": "object", "additionalProperties": { "type": "string" } },
+        "spacing": {
+          "type": "object",
+          "properties": {
+            "rem": { "type": "object", "additionalProperties": { "type": "string" } },
+            "px":  { "type": "object", "additionalProperties": { "type": "string" } },
+            "ch":  { "type": "object", "additionalProperties": { "type": "string" } }
+          }
+        },
+        "gap":     { "type": "object", "properties": { "px": { "type": "object", "additionalProperties": { "type": "string" } } } },
+        "breakpoints": { "type": "object", "properties": { "px": { "type": "object", "additionalProperties": { "type": "string" } } } },
+        "radius":  { "type": "object", "properties": { "px": { "type": "object", "additionalProperties": { "type": "string" } } } },
+        "borderWidths": {
+          "type": "object",
+          "properties": { "px": { "type": "array", "items": { "type": "string" } } }
+        },
+        "z":         { "type": "object", "additionalProperties": { "type": "string" } },
+        "duration":  { "type": "object", "properties": { "ms": { "type": "object", "additionalProperties": { "type": "string" } } } }
+      }
+    },
+    "snap": {
+      "type": "object",
+      "description": "Pre-token normalization tables. Each is a px (or em) value -> nearest scale value. Used by the first pass to collapse near-numeric variants before mapping to tokens.",
+      "properties": {
+        "px": {
+          "type": "object",
+          "properties": {
+            "text":    { "type": "object", "additionalProperties": { "type": "string" } },
+            "spacing": { "type": "object", "additionalProperties": { "type": "string" } },
+            "gap":     { "type": "object", "additionalProperties": { "type": "string" } }
+          }
+        },
+        "em": {
+          "type": "object",
+          "properties": {
+            "tracking": { "type": "object", "additionalProperties": { "type": "string" } }
+          }
+        },
+        "unitless": {
+          "type": "object",
+          "properties": {
+            "leading": { "type": "object", "additionalProperties": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "colors": {
+      "type": "object",
+      "properties": {
+        "rgbMap": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Map from 'r,g,b' (no spaces) to a Tailwind color name. Used by standardize:colors to convert [rgba(r,g,b,a)] to {name}/{alphaBucket}."
+        },
+        "alphaBuckets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["maxAlpha", "bucket"],
+            "properties": {
+              "maxAlpha": { "type": "number" },
+              "bucket": { "type": "number" }
+            }
+          }
+        },
+        "numericAliases": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Map from digit suffix to semantic color name, used by standardize:colors to rename bg-color-N -> bg-{name}."
+        }
+      }
+    },
+    "verify": {
+      "type": "object",
+      "properties": {
+        "command": { "type": "string" }
+      }
+    },
+    "reports": {
+      "type": "object",
+      "properties": {
+        "dir": { "type": "string" }
+      }
+    }
+  }
+}

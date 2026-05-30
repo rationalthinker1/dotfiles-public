@@ -1,0 +1,58 @@
+#!/usr/bin/env zsh
+#
+# post-commit: Auto-sync commits from master → public branch
+#
+# Sensitive files are gitignored on public, so no pattern filtering needed.
+
+# Only run on master branch
+current_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+[[ "$current_branch" != "master" ]] && exit 0
+
+commit_hash=$(git rev-parse HEAD)
+
+# Allow skipping public sync: NO_PUBLIC=1 git commit -m "..."
+if [[ -n "${NO_PUBLIC:-}" ]]; then
+    print "[post-commit] Skipping public sync (NO_PUBLIC set)."
+    exit 0
+fi
+
+# Skip if this commit touches files that should stay private
+private_files=(
+    "^git-hooks/post-commit$"
+    "^\.gitignore$"
+)
+changed_files=$(git diff-tree --no-commit-id -r --name-only "$commit_hash")
+for pattern in "${private_files[@]}"; do
+    if printf '%s\n' "$changed_files" | grep -qE "$pattern"; then
+        print "[post-commit] Skipping public sync — commit modifies private file(s)."
+        exit 0
+    fi
+done
+
+print "[post-commit] Syncing commit ${commit_hash:0:7} to public branch..."
+
+# Capture git identity now — .gitconfig is tracked on master but gitignored on public,
+# so switching branches removes it from the working tree (breaking ~/.gitconfig symlink).
+git_name=$(git config user.name)
+git_email=$(git config user.email)
+
+git checkout public 2>/dev/null || {
+    print "[post-commit] ERROR: Could not checkout public branch" >&2
+    exit 1
+}
+
+git -c user.name="$git_name" -c user.email="$git_email" cherry-pick "$commit_hash" 2>/dev/null || {
+    print "[post-commit] ERROR: Cherry-pick failed — resolve manually, then push public" >&2
+    git cherry-pick --abort 2>/dev/null
+    git checkout master
+    exit 1
+}
+
+git push public HEAD:master || {
+    print "[post-commit] ERROR: Push to public failed — push manually" >&2
+    git checkout master
+    exit 1
+}
+
+git checkout master
+print "[post-commit] Done — commit synced to public."
