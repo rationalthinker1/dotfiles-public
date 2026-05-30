@@ -302,19 +302,32 @@ This repo maintains two remotes serving different audiences:
 
 `git-hooks/post-commit` automatically cherry-picks every `master` commit to `public` and pushes. It is symlinked into `.git/hooks/` by `install.sh`.
 
-**Skip conditions (hook exits without syncing):**
-- `NO_PUBLIC=1` env var is set
-- Commit touches `git-hooks/post-commit`
-- Commit touches `.gitignore`
+**Skip conditions (hook exits without syncing — no manual action needed):**
+- `NO_PUBLIC=1` env var is set (manual override)
+- Commit touches any **sensitive path** — auto-detected, you do NOT need `NO_PUBLIC`:
+  `.gitconfig`, `.ssh/`, `.aws/`, `password-store/`, `windows-terminal/settings.json`,
+  `zsh/references/aws.md`, `zsh/local.zsh`, `fish/local.fish`
+- Commit touches `git-hooks/post-commit` or `.gitignore` (these differ between branches)
+
+**Safety net:** even for a commit that *does* sync, the hook scans the public tree after the
+cherry-pick and **aborts the push** (rolling back, returning to `master`) if any sensitive path
+is present — so a missed pattern can never leak secrets to the public repo.
 
 **Usage:**
 ```zsh
 # Normal commit — auto-syncs to public
 git commit -m "add aliases"
 
-# Skip public sync for a specific commit
-NO_PUBLIC=1 git commit -m "update .gitconfig"
+# A commit touching .gitconfig/.aws/.ssh/etc. is skipped automatically — no flag needed.
+git commit -m "update aws config"
+
+# Force-skip any commit explicitly:
+NO_PUBLIC=1 git commit -m "wip"
 ```
+
+**Mixed commits:** because a sensitive-touching commit is skipped *entirely*, don't bundle
+sensitive-file edits with normal changes you want public — split them so the public-safe part
+syncs on its own commit.
 
 **On failure:** the hook aborts the cherry-pick, returns to `master`, and prints an actionable error. Manual resolution:
 ```zsh
@@ -326,10 +339,10 @@ git checkout master
 
 ### What to sync vs. skip
 
-| Sync to public | Skip (use NO_PUBLIC=1) |
-|----------------|------------------------|
-| Plugin additions, aliases, ZSH functions | Commits touching `.gitconfig` |
-| Tool configurations (kitty, tmux, nvim) | Commits touching `.aws/` |
-| `install.sh` improvements | Commits with hostnames, IPs, usernames |
-| Documentation updates | Commits touching `windows-terminal/settings.json` |
-| | Commits touching `git-hooks/post-commit` or `.gitignore` (auto-skipped) |
+| Sync to public | Auto-skipped (no `NO_PUBLIC` needed) |
+|----------------|--------------------------------------|
+| Plugin additions, aliases, ZSH/fish functions | Commits touching `.gitconfig`, `.ssh/`, `.aws/` |
+| Tool configurations (kitty, tmux, nvim) | Commits touching `password-store/` |
+| `install.sh` improvements | Commits touching `windows-terminal/settings.json` |
+| Documentation updates | Commits touching `zsh/references/aws.md` |
+| | Commits touching `git-hooks/post-commit` or `.gitignore` |
