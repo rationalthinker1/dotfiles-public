@@ -163,26 +163,6 @@ readonly -a ARCH_PACKAGES=(
     # NOTE: Python, Node.js, Go, Rust, Vim, Yarn, and uv are installed via mise
 )
 
-readonly -a ARCH_PACKAGES=(
-    # Arch Linux equivalents of LINUX_PACKAGES (Manjaro/EndeavourOS share pacman).
-    # base-devel already bundles autoconf/automake/libtool/pkgconf/make/gcc, but they
-    # are listed explicitly for parity; --needed makes the duplicates harmless.
-    base-devel git tmux htop curl wget zsh fish powerline-fonts
-    xclip p7zip zip unzip
-    unrar cmake ctags rsync
-    ncurses util-linux pcre2
-    autoconf automake libtool pkgconf
-    openssl zlib libffi readline  # Library dependencies (Arch ships headers with the lib)
-    bzip2 sqlite tk xz            # Python build dependencies (required for mise)
-    python                        # Python + headers (required for building vim with Python3)
-    man-db less openssh           # Essential utilities
-    strace gdb lsb-release shellcheck tree lsof ncdu  # Debugging & development tools
-    pass gnupg pinentry           # Secret management (gnupg provides gpg2, pinentry provides -curses)
-    libx11 libxt libxpm gtk3
-    # Not packaged in the official repos (AUR only): pdftk, wipe, software-properties-common
-    # NOTE: Python, Node.js, Go, Rust, Vim, Yarn, and uv are installed via mise
-)
-
 # Symlink mappings
 #
 # Links are split so `--zsh` and `--fish` install only their own shell config,

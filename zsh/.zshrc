@@ -620,13 +620,18 @@ zi load chmln/sd
 # 🧠 JQ - Command-line JSON processor
 # Usage: `echo '{"key":"value"}' | jq .key` - extract JSON fields
 # Works with jq-zsh-plugin for interactive query building (Alt+J)
-zi ice wait'2' lucid as'program' from'gh-r' mv'jq* -> jq' nocompile'!'
+# jqlang/jq ships a raw, uncompressed binary (jq-linux-amd64) as its release asset,
+# so as'null' skips zinit's auto-ziextract and sbin (bin-gem-node annex) exposes it.
+# The jq* glob keeps it CPU-arch-agnostic across gh-r's per-arch picks (Arch x86_64, etc.)
+zi ice wait'2' lucid from'gh-r' as'null' sbin'jq* -> jq' nocompile'!'
 zi load jqlang/jq
 
 # 💥 UP - Interactive pipe builder for shell commands
 # Usage: `up` - opens visual editor to build/test pipelines interactively
 # Helps construct complex command pipelines with live preview
-zi ice wait'2' lucid from'gh-r' as'command' nocompile'!'
+# akavel/up ships a raw binary named `up` (no archive), so skip extraction (as'null')
+# and let sbin expose it; mirrors the jqlang/jq handling above.
+zi ice wait'2' lucid from'gh-r' as'null' sbin'up* -> up' nocompile'!'
 zi load akavel/up
 
 # 📊 QSV - Ultra-fast CSV toolkit with Python integration
