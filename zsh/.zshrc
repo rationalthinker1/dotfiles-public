@@ -620,18 +620,18 @@ zi load chmln/sd
 # 🧠 JQ - Command-line JSON processor
 # Usage: `echo '{"key":"value"}' | jq .key` - extract JSON fields
 # Works with jq-zsh-plugin for interactive query building (Alt+J)
-# jqlang/jq ships a raw, uncompressed binary (jq-linux-amd64) as its release asset,
-# so as'null' skips zinit's auto-ziextract and sbin (bin-gem-node annex) exposes it.
-# The jq* glob keeps it CPU-arch-agnostic across gh-r's per-arch picks (Arch x86_64, etc.)
-zi ice wait'2' lucid from'gh-r' as'null' sbin'jq* -> jq' nocompile'!'
+# jqlang/jq ships a raw, uncompressed binary (jq-linux-amd64) as its release asset.
+# as'program' adds the plugin dir to PATH; mv'jq* -> jq' normalizes the per-arch asset
+# name (jq-linux-amd64, jq-macos-arm64, …) to plain `jq`, keeping it arch-agnostic.
+zi ice wait'2' lucid from'gh-r' as'program' mv'jq* -> jq' pick'jq' nocompile'!'
 zi load jqlang/jq
 
 # 💥 UP - Interactive pipe builder for shell commands
 # Usage: `up` - opens visual editor to build/test pipelines interactively
 # Helps construct complex command pipelines with live preview
-# akavel/up ships a raw binary named `up` (no archive), so skip extraction (as'null')
-# and let sbin expose it; mirrors the jqlang/jq handling above.
-zi ice wait'2' lucid from'gh-r' as'null' sbin'up* -> up' nocompile'!'
+# akavel/up ships a raw per-arch binary (up_linux, …); as'program' puts the plugin
+# dir on PATH and mv'up* -> up' normalizes the name. Mirrors the jqlang/jq handling above.
+zi ice wait'2' lucid from'gh-r' as'program' mv'up* -> up' pick'up' nocompile'!'
 zi load akavel/up
 
 # 📊 QSV - Ultra-fast CSV toolkit with Python integration
@@ -662,11 +662,6 @@ zi light atuinsh/atuin
 # 📊 Bottom - Modern system monitor
 zi ice wait'2' lucid from'gh-r' as'command' pick='*/btm' nocompile='!'
 zi load ClementTsang/bottom
-
-# 🔥 Tokei - Fast code statistics
-zi ice wait'2' lucid from'gh' as'program' pick'target/release/tokei' \
-    atclone'cargo build --release --locked' atpull'%atclone'
-zi light XAMPPRocky/tokei
 
 # ⚡ Hyperfine - Command benchmarking
 zi ice wait'2' lucid from'gh-r' as'command' pick='*/hyperfine' nocompile='!'

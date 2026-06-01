@@ -42,7 +42,6 @@ abbr -a lg lazygit
 abbr -a lzd lazydocker
 abbr -a pps procs
 abbr -a bench hyperfine
-abbr -a cloc tokei
 abbr -a myip 'curl -s https://ipecho.net/plain && echo'
 abbr -a myip_public 'curl -s https://api.ipify.org && echo'
 
