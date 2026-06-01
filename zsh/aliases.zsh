@@ -1335,6 +1335,3 @@ function dog() { command dog "$@"; }  # Modern dig
 
 # Benchmarking - function for lazy-loading
 function bench() { hyperfine "$@"; }
-
-# Code statistics - function for lazy-loading
-function cloc() { tokei "$@"; }
