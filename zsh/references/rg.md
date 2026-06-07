@@ -8,7 +8,8 @@ rg "pattern" path/          # Search in specific path
 rg -i "pattern"             # Case-insensitive search
 rg -w "pattern"             # Match whole word
 rg -F "pattern"             # Treat pattern as literal string
-```
+rg -uuu "pattern"           # Search absolutely everything
+``
 
 ## 📁 File and Directory Control
 
