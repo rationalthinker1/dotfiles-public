@@ -17,6 +17,11 @@ config:*.{json,yaml,yml,toml,ini,env}
 --type-add
 log:*.{log,logs,out}
 
+# Add data type.
+# Usage: rg --type data 'John'
+--type-add
+data:*.{json,csv}
+
 # Using glob patterns to include/exclude files or folders
 --glob=!.git
 --glob=!node_modules
