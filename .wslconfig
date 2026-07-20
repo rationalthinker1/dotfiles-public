@@ -1,6 +1,11 @@
 [wsl2]
 autoProxy = true
-firewall = false
+firewall = true
+
+# Memory: cap at 20GB (host has 32GB; autoMemoryReclaim returns unused RAM to Windows).
+# Swap raised from default 4GB — the freezes were the VM exhausting RAM+swap and thrashing.
+memory = 20GB
+swap = 32GB
 
 # disabled due to docker not working with localhost
 #networkingMode = "mirrored"
@@ -10,5 +15,5 @@ localhostForwarding = true
 
 [experimental]
 autoMemoryReclaim = "gradual"
-hostAddressLoopback = true
-useWindowsDnsCache = true
+# no-op unless networkingMode = "mirrored" is re-enabled
+#hostAddressLoopback = true
