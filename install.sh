@@ -185,6 +185,8 @@ declare -A SHARED_LINKS=(
     [.Xresources]="${HOME}/.Xresources"
     [rc.sh]="${HOME}/.ssh/rc"
     [claude/commands]="${CLAUDE_CONFIG_DIR}/commands"
+    [claude/agents]="${CLAUDE_CONFIG_DIR}/agents"
+    [claude/skills]="${CLAUDE_CONFIG_DIR}/skills"
     [password-store]="${PASSWORD_STORE_DIR}"
 )
 
