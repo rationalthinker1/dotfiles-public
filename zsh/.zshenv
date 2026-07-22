@@ -70,6 +70,45 @@ export AWS_CONFIG_FILE="${XDG_CONFIG_HOME}/.aws/config"
 export AWS_SHARED_CREDENTIALS_FILE="${XDG_CONFIG_HOME}/.aws/credentials"
 
 # ==============================================================================
+# XDG-compliant home migrations
+# ==============================================================================
+# Node.js / npm
+export NPM_CONFIG_USERCONFIG="${XDG_CONFIG_HOME}/npm/npmrc"
+export NPM_CONFIG_CACHE="${XDG_CACHE_HOME}/npm"
+export NPM_CONFIG_PREFIX="${XDG_DATA_HOME}/npm"
+
+# Yarn (yarn 1 is already XDG-native on Linux: global folder lives in
+# ${XDG_DATA_HOME}/yarn; only the cache location is worth pinning)
+export YARN_CACHE_FOLDER="${XDG_CACHE_HOME}/yarn"
+
+# Python / IPython
+export PYTHONSTARTUP="${XDG_CONFIG_HOME}/python/startup.py"
+export IPYTHONDIR="${XDG_CONFIG_HOME}/ipython"
+
+# Keras
+export KERAS_HOME="${XDG_CONFIG_HOME}/keras"
+
+# Docker
+export DOCKER_CONFIG="${XDG_CONFIG_HOME}/docker"
+
+# GNU Parallel
+export PARALLEL_HOME="${XDG_CONFIG_HOME}/parallel"
+
+# Wget
+export WGETRC="${XDG_CONFIG_HOME}/wget/wgetrc"
+
+# Mise
+export MISE_CONFIG_FILE="${XDG_CONFIG_HOME}/mise/config.toml"
+# Git
+export GIT_CONFIG_GLOBAL="${XDG_CONFIG_HOME}/git/config"
+# Go workspace
+export GOPATH="${XDG_DATA_HOME}/go"
+export GOBIN="${GOPATH}/bin"
+
+# Atuin
+export ATUIN_CONFIG_DIR="${XDG_CONFIG_HOME}/atuin"
+
+# ==============================================================================
 # Detect Host OS & Environment
 # ==============================================================================
 if [[ -f "${ZDOTDIR}/functions/detect_os.sh" ]]; then
@@ -84,8 +123,8 @@ path=(
   "${CARGO_HOME}/bin"
   "${HOME}/.local/bin"
   "/usr/local/go/bin"
-  "${HOME}/.yarn/bin"
-  "${XDG_CONFIG_HOME}/yarn/global/node_modules/.bin"
+  "${NPM_CONFIG_PREFIX}/bin"
+  "${XDG_DATA_HOME}/yarn/global/node_modules/.bin"
   "${BUN_INSTALL}/bin"
   "${PNPM_HOME}/bin"
   $path
