@@ -462,7 +462,9 @@ if [[ -f "${ZINIT_HOME}/zinit.zsh" ]]; then
 fi
 
 # Initialize ZSH completion system before any plugins that depend on it (e.g. fzf-tab)
-autoload -Uz compinit; compinit
+# compinit silently fails to save its dump if the parent directory is missing
+[[ -d "${XDG_CACHE_HOME}/zsh" ]] || mkdir -p "${XDG_CACHE_HOME}/zsh"
+autoload -Uz compinit; compinit -d "${XDG_CACHE_HOME}/zsh/zcompdump"
 
 # ==============================================================================
 # THEMING

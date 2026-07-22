@@ -172,7 +172,6 @@ readonly -a ARCH_PACKAGES=(
 declare -A SHARED_LINKS=(
     [.vimrc]="${HOME}/.vimrc"
     [.vim]="${HOME}/.vim"
-    [.gitconfig]="${HOME}/.gitconfig"
     [.aws]="${XDG_CONFIG_HOME:-${HOME}/.config}/.aws"
     [zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/zsh"
     [ranger]="${XDG_CONFIG_HOME:-${HOME}/.config}/ranger"
@@ -643,6 +642,13 @@ if [[ ! -d "${GNUPGHOME}" ]]; then
     mkdir -p "${GNUPGHOME}"
     chmod 700 "${GNUPGHOME}"
     echo "✓ Created GNUPGHOME at ${GNUPGHOME}"
+fi
+
+# wget aborts every invocation if WGETRC (set in zsh/.zshenv) points to a missing file
+if [[ ! -f "${XDG_CONFIG_HOME}/wget/wgetrc" ]]; then
+    mkdir -p "${XDG_CONFIG_HOME}/wget"
+    touch "${XDG_CONFIG_HOME}/wget/wgetrc"
+    echo "✓ Created empty wgetrc at ${XDG_CONFIG_HOME}/wget/wgetrc"
 fi
 
 # Compose the active link set: SHARED_LINKS always, plus the selected shell's.

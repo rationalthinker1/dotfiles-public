@@ -13,6 +13,19 @@
 "source $VIMRUNTIME/mswin.vim
 "source ~/.vim/custom-mswin.vim
 "behave mswin
+" XDG-compliant paths
+if empty($XDG_CACHE_HOME)
+  let $XDG_CACHE_HOME = expand('~/.cache')
+endif
+if empty($XDG_DATA_HOME)
+  let $XDG_DATA_HOME = expand('~/.local/share')
+endif
+let g:netrw_home = $XDG_DATA_HOME . '/vim'
+" viminfo/netrw dir — vim errors on exit (E886) if it doesn't exist
+if !isdirectory($XDG_DATA_HOME . '/vim')
+  call mkdir($XDG_DATA_HOME . '/vim', "p", 0700)
+endif
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "--Vim-Plug Configurations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -378,9 +391,9 @@ set undolevels=1000                 " How many undos
 set undoreload=10000                " number of lines to save for undo
 set backup                          " enable backups
 set noswapfile                      " No creating .swap files
-set undodir=$HOME/.vim/tmp/undo     " undo files
-set backupdir=$HOME/.vim/tmp/backup " backups
-set directory=$HOME/.vim/tmp/swap   " swap files
+set undodir=$XDG_CACHE_HOME/vim/undo     " undo files
+set backupdir=$XDG_CACHE_HOME/vim/backup " backups
+set directory=$XDG_CACHE_HOME/vim/swap   " swap files
 
 " Make those folders automatically if they don't already exist.
 if !isdirectory(expand(&undodir))
@@ -676,7 +689,7 @@ autocmd BufReadPost *
 
 " Remember info about open buffers on close
 set viminfo^=%
-set viminfo+=n~/.vim/.viminfo
+set viminfo+=n$XDG_DATA_HOME/vim/viminfo
 
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
