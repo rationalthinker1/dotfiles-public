@@ -192,8 +192,6 @@ abbr -a duh 'du -h --max-depth=1 | sort -hr'
 abbr -a ports 'netstat -tulanp'
 abbr -a lsp 'sudo lsof -iTCP -sTCP:LISTEN -n -P'
 abbr -a hiberate 'sudo pm-suspend'
-abbr -a update-zi 'zi update --all'
-abbr -a update-all 'zi update --all && rustup update && sudo apt-get update && sudo apt-get upgrade -y'
 
 # --- OS-specific local IP ---
 if test "$HOST_OS" = darwin

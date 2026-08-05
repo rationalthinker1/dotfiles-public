@@ -1,0 +1,119 @@
+#!/usr/bin/env zsh
+# ==============================================================================
+# zinit-reset — wipe every installed zinit object and reinstall from .zshrc
+#
+# Why this exists: zinit snapshots a plugin's ices into <plugin>/._zinit/ at
+# install time and replays *those* on every `zi update`, forever. Editing an ice
+# in .zshrc does nothing to an already-installed plugin, so machines silently
+# drift — a repo that once used from'gh' + atclone'cargo build' keeps compiling
+# from source long after .zshrc switched it to from'gh-r'. Only deleting the
+# plugin dir (and its ._zinit/) rewrites that metadata.
+#
+# Run it directly — this dir is not in fpath (detect_os.sh is explicitly sourced from
+# .zshenv), and there is nothing to wire up: zsh accepts local/return at script level.
+#
+# Usage:
+#   ./zsh/functions/zinit-reset                  # dry run — print what would be removed
+#   ./zsh/functions/zinit-reset --go             # wipe, then reinstall (turbo burst)
+#   ./zsh/functions/zinit-reset --go --no-install  # wipe only; reinstall on next shell
+# ==============================================================================
+
+emulate -L zsh
+setopt extended_glob no_unset warn_create_global
+
+local zinit_home="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit"
+local cache_home="${XDG_CACHE_HOME:-${HOME}/.cache}"
+local -i dry_run=1 do_install=1
+local arg
+
+for arg in "$@"; do
+    case "${arg}" in
+        (--go)         dry_run=0 ;;
+        (--no-install) do_install=0 ;;
+        (-h|--help)
+            print -r -- "usage: zinit-reset [--go] [--no-install]"
+            return 0
+            ;;
+        (*)
+            print -ru2 -- "zinit-reset: unknown option '${arg}'"
+            return 2
+            ;;
+    esac
+done
+
+if [[ ! -d "${zinit_home}" ]]; then
+    print -ru2 -- "zinit-reset: zinit home not found: ${zinit_home}"
+    return 1
+fi
+
+function _zr_run() {
+    if (( dry_run )); then
+        print -r -- "  [dry-run] $*"
+    else
+        print -r -- "  ==> $*"
+        "$@"
+    fi
+}
+
+# "<n> entries, <size>" for a path, or "absent" — so a dry run shows the payoff.
+function _zr_stat() {
+    local target="$1"
+    [[ -e "${target}" ]] || { print -rn -- "absent"; return }
+    print -rn -- "$(ls -1A -- "${target}" 2>/dev/null | wc -l) entries, $(du -sh -- "${target}" 2>/dev/null | cut -f1)"
+}
+
+print -r -- ""
+print -r -- "zinit home:   ${zinit_home}"
+print -r -- "current size: $(du -sh -- "${zinit_home}" 2>/dev/null | cut -f1)"
+(( dry_run )) \
+    && print -r -- "mode:         DRY RUN (pass --go to execute)" \
+    || print -r -- "mode:         EXECUTING"
+print -r -- ""
+
+# Plugins — including orphans no longer referenced by .zshrc. Bulk `zi update`
+# walks this directory rather than the config, so anything left here is updated
+# (and rebuilt) forever. The ._zinit/ metadata inside each dir goes with it.
+print -r -- "[1/5] plugins      ($(_zr_stat "${zinit_home}/plugins"))"
+_zr_run rm -rf -- "${zinit_home}/plugins"
+
+print -r -- "[2/5] snippets     ($(_zr_stat "${zinit_home}/snippets"))"
+_zr_run rm -rf -- "${zinit_home}/snippets"
+
+# Symlinks into plugin dirs; every one dangles once the plugins are gone.
+print -r -- "[3/5] completions  ($(_zr_stat "${zinit_home}/completions"))"
+_zr_run rm -rf -- "${zinit_home}/completions"
+
+# polaris is $ZPFX, the install prefix for make'PREFIX=$ZPFX' plugins such as
+# tj/git-extras (~78 git-* scripts). `zi delete --all` does NOT clean this, so
+# stale binaries survive a wipe and keep shadowing newer ones on PATH.
+print -r -- "[4/5] polaris/\$ZPFX ($(_zr_stat "${zinit_home}/polaris"))"
+_zr_run rm -rf -- "${zinit_home}/polaris"
+
+# A compdump referencing deleted completions makes the first post-wipe shell
+# throw completion errors; stale .zwc bytecode does the same.
+print -r -- "[5/5] zsh cache    ($(_zr_stat "${cache_home}/zsh"))"
+_zr_run rm -f -- "${cache_home}/zsh/zcompdump"(N) "${cache_home}/zsh/zcompdump.zwc"(N)
+
+unfunction _zr_run _zr_stat
+
+print -r -- ""
+if (( dry_run )); then
+    print -r -- "Dry run complete. Re-run with --go to execute."
+    return 0
+fi
+
+if (( ! do_install )); then
+    print -r -- "Wipe complete. Plugins reinstall on your next shell start."
+    return 0
+fi
+
+# Turbo (wait'…') defers loading to precmd, which never fires in a script.
+# @zinit-scheduler burst marks every pending task as timed-out and runs them
+# immediately — the supported way to drive installs non-interactively.
+print -r -- "Wipe complete. Reinstalling (turbo burst; this downloads a lot)…"
+print -r -- ""
+zsh -ic '@zinit-scheduler burst'
+
+print -r -- ""
+print -r -- "Done. New size: $(du -sh -- "${zinit_home}" 2>/dev/null | cut -f1)"
+print -r -- "Verify with: zi list  |  command -v qsv fd rg bat delta lazygit gh doggo"

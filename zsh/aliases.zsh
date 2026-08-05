@@ -1160,7 +1160,7 @@ function killport() {
   fi
 }
 
-# Smart package manager runner - detects npm/yarn/pnpm
+# Smart package manager runner - detects npm/yarn/pnpm/bun
 function run() {
   if [ $# -lt 1 ]; then
     echo "Usage: run <script>"
@@ -1168,7 +1168,13 @@ function run() {
     return 1
   fi
 
-  if [[ -f "yarn.lock" ]]; then
+  # bun is checked first: it writes bun.lockb (<1.2) or bun.lock (1.2+), but bun
+  # projects frequently still carry a package-lock.json from before the switch, which
+  # would otherwise fall through to npm below.
+  if [[ -f "bun.lockb" ]] || [[ -f "bun.lock" ]]; then
+    echo "📦 Using Bun"
+    bun run "$@"
+  elif [[ -f "yarn.lock" ]]; then
     echo "📦 Using Yarn"
     yarn "$@"
   elif [[ -f "pnpm-lock.yaml" ]]; then
@@ -1311,27 +1317,131 @@ function note() {
 # Modern CLI Tool Aliases
 # =======================================================================================
 
-# Update all package managers
-alias update-all="zi update --all && rustup update && sudo apt-get update && sudo apt-get upgrade -y"
-alias update-zi="zi update --all"
+# Full zinit reset: wipe every plugin/snippet/completion + polaris and reinstall from
+# .zshrc. Preferred over a plain `zi update`, which snapshots a plugin's ices into
+# <plugin>/._zinit/ at install time and replays *those* forever — editing an ice in
+# .zshrc does nothing to an already-installed plugin, so an update will happily keep
+# rebuilding a repo from source long after the config switched it to a prebuilt binary.
+# Only deleting the plugin dir rewrites that metadata.
+# Dry run by default; pass --go to execute. Args pass straight through.
+alias zi-update="\"${ZDOTDIR}/functions/zinit-reset\""
 
-# Lazygit/Lazydocker TUIs - functions for lazy-loading
-function lg() { lazygit "$@"; }
-function lzd() { lazydocker "$@"; }
+# Update everything in one pass: system packages, shell plugins, then toolchains.
+#
+# The zinit step is deliberately a full wipe+reinstall (zi-update above) and there is no
+# in-place fast path, because `zinit update` replays the ices each plugin saved into
+# <plugin>/._zinit/ at install time rather than the ones .zshrc declares now. That
+# divergence is silent and unbounded: it is what kept rebuilding qsv/yazi from source
+# after they were switched to prebuilt binaries, what kept updating plugins long since
+# deleted from the config, and what hangs tj/git-extras forever on an invisible
+# `read -p` prompt. It also only bites once an update actually pulls new commits, so it
+# passes for weeks and then fails. Re-downloading ~400MB is the cheaper failure.
+#
+# If you knowingly want the fast path on a machine you just reset, run
+# `zinit update --parallel` directly — don't wire it back in here as a default.
+function update-all() {
+    local arg
 
-# System monitoring aliases (use 'command htop' or 'command top' for original)
-alias htop="btm"
-alias top="btm"
+    for arg in "$@"; do
+        case "${arg}" in
+            (-h|--help)
+                print -r -- "Usage: update-all"
+                print -r -- "  Updates system packages, zinit plugins (full reinstall), and toolchains."
+                return 0
+                ;;
+            (*)
+                print -ru2 -- "update-all: unknown option '${arg}'"
+                return 2
+                ;;
+        esac
+    done
 
-# Disk usage aliases (use 'command df' or 'command ncdu' for original)
-alias df="duf"
-alias ncdu="dust"
+    # System packages first so any sudo prompt lands while you're still at the keyboard,
+    # rather than ten minutes into what should be an unattended run.
+    if [[ "${HOST_OS}" == "darwin" ]] && (( $+commands[brew] )); then
+        print -r -- $'\n▸ homebrew'
+        brew update && brew upgrade && brew cleanup
+    elif (( $+commands[apt-get] && $+commands[sudo] )); then
+        print -r -- $'\n▸ apt'
+        sudo apt-get update && sudo apt-get upgrade -y
+    fi
 
-# Process viewer - function for lazy-loading
-function pps() { procs "$@"; }  # Use pps for procs, keep ps as fallback
+    print -r -- $'\n▸ zinit plugins'
+    "${ZDOTDIR}/functions/zinit-reset" --go
 
-# DNS lookup - function for lazy-loading
-function dog() { command dog "$@"; }  # Modern dig
+    # mise owns node/python/rust/uv/yarn/vim here, so it covers most language runtimes;
+    # rustup still updates the actual toolchains mise symlinks to.
+    (( $+commands[mise] ))   && { print -r -- $'\n▸ mise';           mise upgrade }
+    (( $+commands[rustup] )) && { print -r -- $'\n▸ rustup';         rustup update }
+    (( $+commands[bun] ))    && { print -r -- $'\n▸ bun';            bun upgrade }
+    (( $+commands[npm] ))    && { print -r -- $'\n▸ npm globals';    npm update -g }
+    (( $+commands[gh] ))     && { print -r -- $'\n▸ gh extensions';  gh extension upgrade --all }
 
-# Benchmarking - function for lazy-loading
-function bench() { hyperfine "$@"; }
+    print -r -- $'\n✅ update-all complete'
+}
+
+# ---------------------------------------------------------------------------------
+# Modern tool wrappers, with availability checks and fallbacks.
+#
+# The check MUST happen at call time, not at source time. Every tool below is installed
+# by zinit turbo (wait'2'), so none of them are on PATH yet when this file is sourced —
+# a guard like `(( $+commands[btm] )) && alias top='btm'` evaluates false during .zshrc
+# and the alias silently never gets defined. Functions defer the lookup until the
+# command is actually run, by which point turbo has finished. This is the same reason
+# cat() and ls() above test inside the function body rather than around it.
+#
+# Aliases that shadow a real system command (top, df, ncdu) fall back to that command,
+# so a machine missing the modern tool degrades to standard behaviour instead of
+# "command not found". Use `command <name>` to force the original either way.
+# ---------------------------------------------------------------------------------
+
+# System monitoring
+function top() {
+	(( $+commands[btm] )) && { btm "$@"; return }
+	command top "$@"
+}
+
+# Disk usage
+function df() {
+	(( $+commands[duf] )) && { duf "$@"; return }
+	command df "$@"
+}
+
+function ncdu() {
+	(( $+commands[dust] )) && { dust "$@"; return }
+	(( $+commands[ncdu] )) && { command ncdu "$@"; return }
+	print -ru2 -- "ncdu: neither dust nor ncdu is installed"
+	return 127
+}
+
+# Process viewer - procs, falling back to ps
+function pps() {
+	(( $+commands[procs] )) && { procs "$@"; return }
+	command ps "$@"
+}
+
+# DNS lookup - doggo (mr-karan/doggo). The old `dog` binary came from ogham/dog, which
+# is no longer declared in .zshrc, so a bare `command dog` here fails on a clean install.
+function dog() {
+	(( $+commands[doggo] )) && { doggo "$@"; return }
+	(( $+commands[dig] ))   && { command dig "$@"; return }
+	print -ru2 -- "dog: neither doggo nor dig is installed"
+	return 127
+}
+
+# Benchmarking - no meaningful fallback, so fail loudly rather than silently
+function bench() {
+	(( $+commands[hyperfine] )) || { print -ru2 -- "bench: hyperfine is not installed"; return 127 }
+	hyperfine "$@"
+}
+
+# Lazygit/Lazydocker TUIs - no fallback, but report the reason
+function lg() {
+	(( $+commands[lazygit] )) || { print -ru2 -- "lg: lazygit is not installed"; return 127 }
+	lazygit "$@"
+}
+
+function lzd() {
+	(( $+commands[lazydocker] )) || { print -ru2 -- "lzd: lazydocker is not installed"; return 127 }
+	lazydocker "$@"
+}

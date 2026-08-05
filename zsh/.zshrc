@@ -587,7 +587,18 @@ zi load eza-community/eza
 zi ice wait'2' lucid from'gh-r' as'command' nocompile'!'
 zi load solidiquis/erdtree
 
-zi ice wait'2' lucid from'gh-r' as'program' pick'*/dua' nocompile'!'
+# Byron/dua-cli publishes TWO release series from one repo: `dua-core-vX.Y.Z` library
+# tags (no binary assets) and `vX.Y.Z` binary tags. zinit resolves /releases/latest,
+# which lands on the assetless library tag and fails with "gh-r: No release assets
+# found"; there is no ice to skip assetless releases and `ver` would pin us to a tag
+# that silently never updates. So this one builds from source instead.
+# `cargo clean` after copying the binary out is load-bearing: target/ is ~340MB for a
+# 4.3MB binary. With it the whole plugin dir is ~7MB. Requires cargo (mise pins rust
+# in mise/config.toml). Rebuild (~1min, longer on a small VPS) only runs when a `zi
+# update` actually pulls new commits — zinit skips hooks otherwise unless --urge.
+zi ice wait'2' lucid depth'1' as'program' pick'dua' nocompile'!' \
+    atclone'cargo build --release --locked && cp -f target/release/dua . && cargo clean' \
+    atpull'%atclone'
 zi load Byron/dua-cli
 
 # Note: zshmarks removed - use zoxide for directory jumping (z <pattern>)
@@ -619,7 +630,9 @@ zi load sharkdp/fd
 # 🧼 SD - Intuitive find & replace CLI (better than sed)
 # Usage: `sd before after file.txt` - simpler syntax than sed
 # `sd '\d+' '[$0]' file.txt` - regex with capture groups
-zi ice wait'2' lucid from'gh-r' as'command' nocompile'!'
+# The release tarball nests the binary in sd-vX.Y.Z-<triple>/, so `pick` is required
+# for zinit to find it — without it the plugin installs but `sd` never reaches PATH.
+zi ice wait'2' lucid from'gh-r' as'command' pick='*/sd' nocompile'!'
 zi load chmln/sd
 
 # 🧠 JQ - Command-line JSON processor
@@ -642,7 +655,12 @@ zi load akavel/up
 # 📊 QSV - Ultra-fast CSV toolkit with Python integration
 # Usage: `qsv stats data.csv` - advanced CSV statistics and operations
 # More features than xsv: SQL queries, Python expressions, etc.
-zi ice wait'2' lucid from'gh-r' as'program' pick'qsv' nocompile'!'
+# The release archive ships 11 executables (~1.1GB): qsv plus the dp/lite/mcp/p/py31x
+# variants. `pick` only selects what lands on PATH, it does not stop extraction, and
+# ziextract additionally parks the previous version in ._backup on every update — which
+# is how this one plugin reached 2.2GB. atclone prunes both; atpull repeats it per update.
+zi ice wait'2' lucid from'gh-r' as'program' pick'qsv' nocompile'!' \
+    atclone'rm -rf ._backup; rm -f qsv[a-z]*(N)' atpull'%atclone'
 zi load dathere/qsv
 
 zi ice wait'2' lucid from'gh-r' as'program' pick'*/yazi' nocompile'!'
@@ -685,8 +703,21 @@ zi ice wait'2' lucid from'gh-r' as'command' pick='*/duf' nocompile='!'
 zi load muesli/duf
 
 # 🐶 Doggo - Modern dig alternative with better output
-zi ice wait'2' lucid from'gh-r' as'command' pick='doggo' nocompile='!'
-zi load mr-karan/doggo
+# v1.2.0 renamed its release assets (doggo_1.1.7_Linux_x86_64.tar.gz ->
+# doggo-linux-x86_64.tar.gz). zinit's auto-detection still infers the old capitalized
+# form and errors with "bpick ice found no release assets", so pin bpick explicitly.
+# Anonymous function scopes the os/arch locals instead of leaking them into the shell.
+function () {
+    local os arch
+    [[ "${OSTYPE}" == darwin* ]] && os='darwin' || os='linux'
+    case "${CPUTYPE}" in
+        (aarch64|arm64) arch='aarch64' ;;
+        (*)             arch='x86_64'  ;;
+    esac
+    zi ice wait'2' lucid from'gh-r' as'command' \
+        bpick"*-${os}-${arch}.tar.gz" pick='doggo' nocompile='!'
+    zi load mr-karan/doggo
+}
 
 # 🦎 Lazygit - TUI for git
 zi ice wait'2' lucid from'gh-r' as'command' pick='lazygit' nocompile='!'
@@ -722,7 +753,21 @@ zi light paulirish/git-open
 # Usage: `git summary` - repo summary, `git effort` - show file activity
 # `git changelog` - generate changelog, `git ignore` - add to .gitignore
 # Full list: https://github.com/tj/git-extras/blob/master/Commands.md
-zi ice wait'2' lucid depth'1' as'program' pick'$ZPFX/bin/git-*' make'PREFIX=$ZPFX' nocompile
+# SKIP_CONFLICT_CHECK is load-bearing: the Makefile's install target diffs the command
+# list against `git config --get-regexp alias.*` and runs `read -p "… still install it?
+# [y/n]"` for every collision. Our tracked git/aliases.gitconfig defines `undo` and
+# `sync`, both of which are also git-extras commands, so it always prompts — and zinit
+# runs make with output redirected to /dev/null, making the prompt invisible. The
+# install then blocks on stdin forever. It only appears to work on a machine where
+# stdin is not a tty (read hits EOF immediately).
+#
+# atclone rather than make'…': zinit's make ice always fires a bare default-target
+# build FIRST, without the ice's arguments. git-extras' Makefile uses `PREFIX ?=`, which
+# zinit's `grep -w "PREFIX ="` misses, so that first pass keeps PREFIX=/usr/local and
+# dies with "Build returned 2" on permissions. One explicit atclone avoids both.
+# (Installing git-sync/git-undo is harmless: `git undo` still resolves the alias first.)
+zi ice wait'2' lucid depth'1' as'program' pick'$ZPFX/bin/git-*' nocompile \
+    atclone'make PREFIX=$ZPFX SKIP_CONFLICT_CHECK=yes install' atpull'%atclone'
 zi light tj/git-extras
 
 # ==============================================================================
