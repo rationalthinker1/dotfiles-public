@@ -533,12 +533,17 @@ zi light Freed-Wu/fzf-tab-source
 # 🔄 ZSH Autosuggestions - Fish-like command suggestions from history
 # Usage: Type command, press → (right arrow) to accept suggestion
 # Shows grayed-out suggestion based on command history as you type
-zi ice lucid depth'1'
+# Turbo-loaded; atload'!_zsh_autosuggest_start' rebinds the widgets it needs after
+# the deferred load (the ! makes zinit track the atload for proper unloading)
+zi ice wait lucid depth'1' atload'!_zsh_autosuggest_start'
 zi light zsh-users/zsh-autosuggestions
 
 # 🔁 ZSH Completions - Additional completion definitions for 1000+ commands
 # Provides tab completions for commands not covered by default ZSH
-zi ice depth'1'
+# blockf: don't let the plugin prepend to fpath (compinit already ran above, so a
+# late fpath entry would never be seen). Instead zinit creinstalls the completion
+# files into its own completions dir, which IS in fpath before compinit.
+zi ice blockf depth'1' atpull'zi creinstall -q .'
 zi light zsh-users/zsh-completions
 
 # 🫵 You-Should-Use - Reminds you of existing aliases when you use full commands
@@ -555,7 +560,8 @@ zi light reegnz/jq-zsh-plugin
 
 # 🔥 Fancy Completions - Enhanced completions for modern CLI tools
 # Provides smart completions for gh (GitHub CLI), docker, kubectl, etc.
-zi ice lucid depth'1' branch'main'
+# blockf + creinstall for the same post-compinit reason as zsh-completions above
+zi ice lucid blockf depth'1' branch'main' atpull'zi creinstall -q .'
 zi light z-shell/zsh-fancy-completions
 
 # ==============================================================================
@@ -1195,8 +1201,11 @@ source_if_exists "${ZDOTDIR}/hooks.zsh"
 # Compile configuration files for faster loading
 function compile_if_needed() {
     local source_file="${1}"
-    [[ ! -f "${source_file}" ]] && return
+    [[ ! -f "${source_file}" ]] && return 0
     [[ "${source_file}" -nt "${source_file}.zwc" ]] && zcompile "${source_file}"
+    # Always succeed: this runs last in .zshrc, and a leftover non-zero status here
+    # would surface as an error indicator ($?) on the very first prompt.
+    return 0
 }
 
 compile_if_needed "${ZDOTDIR}/.zshenv"
@@ -1208,6 +1217,3 @@ compile_if_needed "${ZDOTDIR}/local.zsh"
 
 # If zsh is really slow, enable profiling via zprof, uncomment the line above and line 2
 # zprof
-
-# bun completions
-[ -s "/home/razaf/.config/bun/_bun" ] && source "/home/razaf/.config/bun/_bun"

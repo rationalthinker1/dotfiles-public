@@ -18,10 +18,12 @@
 # ==============================================================================
 # Configuration Constants
 # ==============================================================================
-readonly DEFAULT_FS_LIMIT=50        # Default limit for fs() function
-readonly DEFAULT_DS_LIMIT=50        # Default limit for ds() function
-readonly DEFAULT_WCSV_LIMIT=10      # Default limit for wcsv() function
-readonly WSLPATH_CACHE_MAX_ENTRIES=100  # Max WSL path cache entries
+# typeset -g (not readonly): this file is re-sourced by reload_zsh/vpr, and a
+# second readonly assignment errors with "read-only variable".
+typeset -g DEFAULT_FS_LIMIT=50        # Default limit for fs() function
+typeset -g DEFAULT_DS_LIMIT=50        # Default limit for ds() function
+typeset -g DEFAULT_WCSV_LIMIT=10      # Default limit for wcsv() function
+typeset -g WSLPATH_CACHE_MAX_ENTRIES=100  # Max WSL path cache entries
 
 # ==============================================================================
 # ZSH Configuration
@@ -150,7 +152,7 @@ function y() {
 	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
 	command yazi "$@" --cwd-file="$tmp"
 	IFS= read -r -d '' cwd < "$tmp"
-	[ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
+	[[ -n "$cwd" && "$cwd" != "$PWD" ]] && builtin cd -- "$cwd"
 	rm -f -- "$tmp"
 }
 
@@ -244,25 +246,34 @@ function grep() {
 	command grep --color=auto "$@"
 }
 
+# egrep/fgrep binaries are deprecated (GNU grep >= 3.8 warns on every use);
+# delegate to `grep -E` / `grep -F` instead.
 function egrep() {
-	# Only add color in interactive shells; use plain egrep for scripts
-	[[ -o interactive ]] || { command egrep "$@"; return; }
+	# Only add color in interactive shells; use plain grep for scripts
+	[[ -o interactive ]] || { command grep -E "$@"; return; }
 
-	command egrep --color=auto "$@"
+	command grep -E --color=auto "$@"
 }
 
 function fgrep() {
-	# Only add color in interactive shells; use plain fgrep for scripts
-	[[ -o interactive ]] || { command fgrep "$@"; return; }
+	# Only add color in interactive shells; use plain grep for scripts
+	[[ -o interactive ]] || { command grep -F "$@"; return; }
 
-	command fgrep --color=auto "$@"
+	command grep -F --color=auto "$@"
 }
 
 # Create parent dirs if they don't exist
 alias mkdir="mkdir -pv"
 
-# Repeat the previous command with sudo
-alias pls="sudo !!"
+# Repeat the previous command with sudo.
+# A function, not `alias pls="sudo !!"`: history expansion runs while the line is
+# read, BEFORE alias expansion, so `!!` inside an alias body is never expanded.
+# (OMZP::sudo's double-ESC covers the interactive case too.)
+function pls() {
+    local last="$(fc -ln -1)"
+    print -ru2 -- "sudo ${last}"
+    sudo "${(z)last[@]}"
+}
 
 # Preserve PATH when using sudo
 function sudoi() {
@@ -274,8 +285,9 @@ function sshfs() {
     command sshfs -o allow_other,uid="$(id -u)",gid="$(id -g)" "$@"
 }
 
-# Hiberate
-alias hiberate="sudo pm-suspend"
+# Suspend / hibernate (pm-utils is long gone; systemd owns power management now)
+alias suspend-now="systemctl suspend"
+alias hibernate="systemctl hibernate"
 
 # Show processes by name
 # example: psg bash
@@ -290,30 +302,30 @@ function psg() {
 # Append -c to continue the download in case of problems
 #alias wget='wget -c'
 
-# Prints out your public IP
-alias myip="curl -s https://ipecho.net/plain && echo"
+# Prints out your public IP (myip_public in Power User section is the same thing)
+alias myip="curl -s https://api.ipify.org && echo"
 
 # Searches up history commands
 alias hgrep="history | grep"
 
 alias br="broot"
 
-# Define fd exclusion patterns with fallback (in case .zshenv didn't load)
-if [[ -z "${FD_EXCLUDE_PATTERN}" ]]; then
-    FD_EXCLUDE_PATTERN="{"
-    FD_EXCLUDE_PATTERN+=.cargo,
-    FD_EXCLUDE_PATTERN+=node_modules,
-    FD_EXCLUDE_PATTERN+=.git,
-    FD_EXCLUDE_PATTERN+=.cache,
-    FD_EXCLUDE_PATTERN+=cache,
-    FD_EXCLUDE_PATTERN+=vendor,
-    FD_EXCLUDE_PATTERN+=tmp,
-    FD_EXCLUDE_PATTERN+=.npm,
-    FD_EXCLUDE_PATTERN+="*.bak,"
-    FD_EXCLUDE_PATTERN+=bundles,
-    FD_EXCLUDE_PATTERN+=build,
-    FD_EXCLUDE_PATTERN+="}"
-fi
+# fd exclusion patterns used by fdf/fdd below (defined only here, not in .zshenv)
+typeset -ga _fd_excludes=(
+    .cargo
+    node_modules
+    .git
+    .cache
+    cache
+    vendor
+    tmp
+    .npm
+    "*.bak"
+    bundles
+    build
+)
+typeset -g FD_EXCLUDE_PATTERN="{${(j:,:)_fd_excludes}}"
+unset _fd_excludes
 
 # Find files with fd (enhanced find for files)
 # Usage: fdf <pattern>
@@ -761,16 +773,13 @@ alias -s log="${EDITOR}"
 alias -s vim="${EDITOR}"
 alias -s deb="sudo dpkg -i"
 alias -s {c,py,cpp,r,rb,go,js,jsx,ts,java,sql,hs,md}="vim"
-alias -s {xml,json,toml,yaml,yml,ini,conf,log}="vim"
+alias -s {xml,json,toml,yaml,yml,ini,conf}="vim"  # (log already mapped to ${EDITOR} above)
 alias -s {gz,tgz,zip,lzh,bz2,tbz,Z,tar,arj,xz,7z}="extract"
 
 # =======================================================================================
 # Global Aliases
 # =======================================================================================
-alias -g A="| a"
-alias -g B="| bcat"
 alias -g C="| wc -l"
-alias -g D="| dump"
 alias -g G="| grep"
 alias -g F="| fzf"
 alias -g H="| head"
@@ -908,7 +917,7 @@ function dce() {
 function dcu() {
 	if [[ -e "docker/docker.sh" ]]; then
 		./docker/docker.sh "$@"
-	elif [ -e "docker.sh" ]; then
+	elif [[ -e "docker.sh" ]]; then
 		./docker.sh "$@"
 	else
 		dc up -d
@@ -944,11 +953,11 @@ function drexec() { docker exec --user root:root -it $(dc ps -q $1) $2; }
 # Example: dceb php /bin/bash
 function dceb() {
 	local script="/bin/bash"
-	if [ $# -lt 1 ]; then
-		echo "Usage: ${FUNCNAME[0]} CONTAINER_ID"
+	if [[ $# -lt 1 ]]; then
+		echo "Usage: ${funcstack[1]} CONTAINER_ID"
 		return 1
 	fi
-	if [ -n "$2" ]; then
+	if [[ -n "$2" ]]; then
 		script="$2"
 	fi
 
@@ -960,11 +969,11 @@ function dceb() {
 # Example: dcebr php /bin/bash
 function dcebr() {
 	local script="/bin/bash"
-	if [ $# -lt 1 ]; then
-		echo "Usage: ${FUNCNAME[0]} CONTAINER_ID"
+	if [[ $# -lt 1 ]]; then
+		echo "Usage: ${funcstack[1]} CONTAINER_ID"
 		return 1
 	fi
-	if [ -n "$2" ]; then
+	if [[ -n "$2" ]]; then
 		script="$2"
 	fi
 
@@ -1043,8 +1052,8 @@ function dbu() { docker build -t=$1 .; }
 # Usage: dexbash <container-id>
 # Example: dexbash abc123
 function dexbash() {
-	if [ $# -ne 1 ]; then
-		echo "Usage: ${FUNCNAME[0]} CONTAINER_ID"
+	if [[ $# -ne 1 ]]; then
+		echo "Usage: ${funcstack[1]} CONTAINER_ID"
 		return 1
 	fi
 
@@ -1055,14 +1064,14 @@ function dexbash() {
 # Usage: dbt <dirname> [tag1...]
 # Example: dbt ./app myapp:v1.0
 function dbt() {
-	if [ $# -lt 1 ]; then
+	if [[ $# -lt 1 ]]; then
 		echo "Usage ${funcstack[1]} DIRNAME [TAGNAME ...]"
 		return 1
 	fi
 
 	local -a args=("$1")
 	shift
-	if [ $# -ge 1 ]; then
+	if [[ $# -ge 1 ]]; then
 		args+=(-t "$@")
 	fi
 
@@ -1118,7 +1127,7 @@ alias lsp="sudo lsof -iTCP -sTCP:LISTEN -n -P"
 function killp() {
   local pid
   local confirm
-  pid=$(ps aux | fzf | awk '{print $2}')
+  pid=$(ps aux | fzf --header-lines=1 | awk '{print $2}')
   if [[ -n "$pid" ]]; then
     read -r "confirm?Kill PID ${pid} with SIGKILL? (y/n): "
     [[ "${confirm}" == "y" ]] && kill -9 "$pid"
@@ -1136,7 +1145,7 @@ alias duh="du -h --max-depth=1 | sort -hr"
 
 # Network shortcuts
 alias ports="netstat -tulanp"
-alias myip_public="curl -s https://api.ipify.org && echo"
+alias myip_public="myip"
 
 # macOS uses BSD grep, Linux uses GNU grep
 if [[ "$HOST_OS" == "darwin" ]]; then
@@ -1151,7 +1160,7 @@ fi
 
 # Kill process by port number
 function killport() {
-  if [ $# -lt 1 ]; then
+  if [[ $# -lt 1 ]]; then
     echo "Usage: killport <port>"
     echo "Example: killport 3000"
     return 1
@@ -1177,7 +1186,7 @@ function killport() {
 
 # Smart package manager runner - detects npm/yarn/pnpm/bun
 function run() {
-  if [ $# -lt 1 ]; then
+  if [[ $# -lt 1 ]]; then
     echo "Usage: run <script>"
     echo "Example: run dev"
     return 1
@@ -1221,7 +1230,7 @@ function docker-clean() {
 # Usage: replace-in-files <search> <replace> [file-pattern]
 # Example: replace-in-files "oldName" "newName" "*.js"
 function replace-in-files() {
-  if [ $# -lt 2 ]; then
+  if [[ $# -lt 2 ]]; then
     echo "Usage: replace-in-files <search> <replace> [file-pattern]"
     echo "Example: replace-in-files 'oldName' 'newName' '*.js'"
     return 1
@@ -1255,7 +1264,7 @@ function replace-in-files() {
 
 # Quick directory size check
 function dirsize() {
-  if [ $# -lt 1 ]; then
+  if [[ $# -lt 1 ]]; then
     du -sh *
   else
     du -sh "$@"
@@ -1320,7 +1329,7 @@ function note() {
   local notes_dir="${HOME}/notes"
   mkdir -p "${notes_dir}"
 
-  if [ $# -eq 0 ]; then
+  if [[ $# -eq 0 ]]; then
     # Show recent notes
     echo "📝 Recent notes:"
     ls -lt "${notes_dir}" | head -10
