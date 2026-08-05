@@ -61,7 +61,17 @@ function cat() {
 	bat "$@"
 }
 alias rcat='command cat'
+# Kept for the man() fallback below: when batman (bat-extras) isn't installed,
+# plain man still renders through bat via this pager.
 export MANPAGER="sh -c 'col -bx | bat -l man -p'"
+
+# 📖 Man pages via batman (bat-extras) - proper bat rendering without the col hack.
+# Guarded like cat(): piped calls (`man ls | grep`) reach the real man.
+function man() {
+	[[ -o interactive && -t 1 ]] || { command man "$@"; return }
+	(( $+commands[batman] )) && { batman "$@"; return }
+	command man "$@"
+}
 
 # 🔍 FZF + Zoxide: Enhanced cd with enhancd-style features
 # cd (no args) - fuzzy select from zoxide history (if available) or recent dirs
@@ -440,8 +450,14 @@ function ds() {
 # Search current directory recursively with grep
 # Usage: scd <pattern>
 # Example: scd "TODO"
+# On a terminal this uses batgrep (bat-extras: ripgrep hits with syntax-highlighted
+# context); piped/scripted calls keep the original parseable grep -ir output.
 function scd() {
-	grep -ir "$@" ./
+	if [[ -o interactive && -t 1 ]] && (( $+commands[batgrep] )); then
+		batgrep -i "$@"
+	else
+		grep -ir "$@" ./
+	fi
 }
 
 # Download and preview first N lines of a file
@@ -1562,4 +1578,24 @@ function http() {
 function https() {
 	(( $+commands[xh] )) && { xh --https "$@"; return }
 	command curl "$@"
+}
+
+# batgrep directly (bat-extras) - ripgrep results with highlighted context,
+# falling back to paged rg with context lines
+function bgrep() {
+	(( $+commands[batgrep] )) && { batgrep "$@"; return }
+	command rg -p -C 2 "$@" | less -RFX
+}
+
+# batdiff (bat-extras) - working-tree git diff via bat; delta still owns the
+# configured git pager, this is just a quick standalone view
+function bdiff() {
+	(( $+commands[batdiff] )) && { batdiff "$@"; return }
+	git diff "$@"
+}
+
+# batwatch (bat-extras) - re-render a file with highlighting whenever it changes
+function bwatch() {
+	(( $+commands[batwatch] )) || { print -ru2 -- "bwatch: batwatch (bat-extras) is not installed"; return 127 }
+	batwatch "$@"
 }
