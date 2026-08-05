@@ -48,6 +48,7 @@ export CLAUDE_CONFIG_DIR="${XDG_CONFIG_HOME}/claude"
 export CODEX_HOME="${XDG_CONFIG_HOME}/codex"
 export GNUPGHOME="${XDG_CONFIG_HOME}/gnupg"
 export PASSWORD_STORE_DIR="${XDG_CONFIG_HOME}/password-store"
+export FNM_PATH="${XDG_CONFIG_HOME}/.fnm"
 
 # 🖥️ Terminal & editor defaults
 export EDITOR="vim"
@@ -108,6 +109,9 @@ export GOBIN="${GOPATH}/bin"
 # Atuin
 export ATUIN_CONFIG_DIR="${XDG_CONFIG_HOME}/atuin"
 
+# gf patterns
+export GF_PATH="${XDG_CONFIG_HOME}/gf"
+
 # ==============================================================================
 # Detect Host OS & Environment
 # ==============================================================================
@@ -127,6 +131,7 @@ path=(
   "${XDG_DATA_HOME}/yarn/global/node_modules/.bin"
   "${BUN_INSTALL}/bin"
   "${PNPM_HOME}/bin"
+  "${FNM_PATH}"
   $path
 )
 
