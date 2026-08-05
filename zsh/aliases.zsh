@@ -518,11 +518,17 @@ fi
 # Unzip file into directory named after the file
 # Usage: unzipd <file.zip>
 # Example: unzipd archive.zip
+# Prefers ouch (works for any archive type, -d pins the exact output dir), falling
+# back to plain unzip when it isn't on PATH yet (turbo load) or not installed.
 function unzipd() {
-	filename="${1}"
-	directory="${filename%.zip}"
+	local filename="${1}"
+	local directory="${filename%.zip}"
 	directory="${directory##*/}"
-	unzip "${filename}" -d "${directory}"
+	if (( $+commands[ouch] )); then
+		ouch decompress "${filename}" --dir "${directory}"
+	else
+		unzip "${filename}" -d "${directory}"
+	fi
 }
 
 # =======================================================================================
@@ -784,6 +790,8 @@ alias -g G="| grep"
 alias -g F="| fzf"
 alias -g H="| head"
 alias -g J="| jq"
+alias -g JL="| jless"   # browse JSON interactively (e.g. `xh :3000/api JL`)
+alias -g JN="| jnv"     # build a jq filter interactively over the JSON
 alias -g L="| less"
 alias -g P="| ${PAGER}"
 alias -g S="| sort -n"
@@ -1274,6 +1282,9 @@ function dirsize() {
 # Extract any archive type
 # Prefers ouch (universal decompressor, installed via zinit) and falls back to the
 # per-format toolbox below when it isn't on PATH yet (turbo load) or not installed.
+# Note: ouch smart-unpacks — multi-entry archives land in a basename-derived
+# subdirectory instead of littering the cwd (tarbomb protection); pass --dir . for
+# the raw tar/unzip behavior.
 function extract() {
     if [[ $# -lt 1 ]]; then
         echo "Usage: extract <file>"
@@ -1534,5 +1545,11 @@ function rga() {
 # HTTP client - xh (HTTPie syntax), falling back to curl
 function http() {
 	(( $+commands[xh] )) && { xh "$@"; return }
+	command curl "$@"
+}
+
+# Same, but force HTTPS when the URL doesn't spell out a scheme
+function https() {
+	(( $+commands[xh] )) && { xh --https "$@"; return }
 	command curl "$@"
 }
