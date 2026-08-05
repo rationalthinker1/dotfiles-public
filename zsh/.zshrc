@@ -201,47 +201,26 @@ setopt HIST_VERIFY                # Verify history expansions before execution (
 setopt HIST_FCNTL_LOCK            # Use fcntl() for safer history file locking across concurrent sessions
 
 # ==============================================================================
-# Vi Mode Visual Indicators
+# Cursor Shape
 # ==============================================================================
-
-# Change cursor shape for different vi modes
-# Skip cursor changes in tmux (can cause glitches in some terminals)
+# Beam cursor while editing, block cursor while a command runs.
+# Skip in tmux (cursor-shape escapes can glitch some terminals there); outside tmux
+# the reset_cursor precmd hook in hooks.zsh restores the beam on every new prompt.
 if [[ -z "${TMUX}" ]]; then
-    function zle-keymap-select() {
-        case $KEYMAP in
-            vicmd)      echo -ne '\e[1 q' ;;  # Block cursor (NORMAL mode)
-            viins|main) echo -ne '\e[5 q' ;;  # Beam cursor (INSERT mode)
-        esac
-        zle reset-prompt
-    }
-    
-    function zle-line-init() {
-        echo -ne '\e[5 q'  # Start with beam cursor (INSERT mode)
-        zle -K viins       # Start in insert mode
-    }
-    
     function zle-line-finish() {
-        echo -ne '\e[1 q'  # Block cursor when command finishes
+        echo -ne '\e[1 q'  # Block cursor when command runs
     }
-    
-    zle -N zle-keymap-select
-    zle -N zle-line-init
     zle -N zle-line-finish
-    
-else
-    # Simpler setup for tmux (no cursor shape changes)
-    function zle-line-init() {
-        zle -K viins       # Start in insert mode
-    }
-    
-    zle -N zle-line-init
 fi
 
 # ==============================================================================
-# Enhanced Keybindings (Vi mode with Emacs conveniences)
+# Keybindings (Emacs mode)
 # ==============================================================================
 
-# ⌨️ Ctrl-based navigation (works in both insert and normal mode)
+# Use emacs keymap (vi-mode config was removed - see git history if reviving it)
+bindkey -e
+
+# ⌨️ Ctrl-based navigation
 bindkey '^a' beginning-of-line        # Ctrl+A: Go to beginning of line
 bindkey '^e' end-of-line              # Ctrl+E: Go to end of line
 bindkey '^u' backward-kill-line       # Ctrl+U: Delete to start of line
@@ -282,79 +261,17 @@ zle -N down-line-or-beginning-search
 
 bindkey '^[[A' up-line-or-beginning-search     # Up arrow
 bindkey '^[[B' down-line-or-beginning-search   # Down arrow
-bindkey '^P' up-line-or-beginning-search       # Ctrl+P (vi-style)
-bindkey '^N' down-line-or-beginning-search     # Ctrl+N (vi-style)
-
-# Vi mode: k/j also search by prefix
-bindkey -M vicmd 'k' up-line-or-beginning-search
-bindkey -M vicmd 'j' down-line-or-beginning-search
+bindkey '^P' up-line-or-beginning-search       # Ctrl+P
+bindkey '^N' down-line-or-beginning-search     # Ctrl+N
 
 # ==============================================================================
-# Edit Command Line in $EDITOR (Ctrl+X Ctrl+E or v in vi normal mode)
+# Edit Command Line in $EDITOR (Ctrl+X Ctrl+E)
 # ==============================================================================
 autoload -Uz edit-command-line
 zle -N edit-command-line
 bindkey '^x^e' edit-command-line      # Ctrl+X Ctrl+E: Open in $EDITOR
-bindkey -M vicmd 'v' edit-command-line # v in normal mode: Open in $EDITOR
 
-# ==============================================================================
-# Vi Mode Enhancements
-# ==============================================================================
-#=======================================================================================
-# Setting up home/end keys for keyboard
-# https://unix.stackexchange.com/questions/20298/home-key-not-working-in-terminal
-#=======================================================================================
-# Vi mode
-# bindkey -v  # DISABLED - Vim mode disabled
-
-# Use emacs mode instead (default zsh mode)
-bindkey -e
-
-# Reduce ESC delay to 10ms for faster vi mode switching (default: 400ms)
-# export KEYTIMEOUT=1  # Not needed in emacs mode
-
-# Better undo/redo
-bindkey -M vicmd 'u' undo
-bindkey -M vicmd '^r' redo
-
-# Increment/decrement numbers (like vim's Ctrl+A/X)
-autoload -Uz incarg
-zle -N incarg
-bindkey -M vicmd '^a' incarg
-
-# Text objects improvement (ci", ci', ci(, etc. work better)
-autoload -Uz select-quoted select-bracketed surround
-zle -N select-quoted
-zle -N select-bracketed
-zle -N delete-surround surround
-zle -N add-surround surround
-zle -N change-surround surround
-
-# Bind text objects for vi mode
-for m in visual viopp; do
-    for c in {a,i}${(s..)^:-\'\"\`\|,./:;=+@}; do
-        bindkey -M "${m}" "${c}" select-quoted
-    done
-    for c in {a,i}${(s..)^:-'()[]{}<>bB'}; do
-        bindkey -M "${m}" "${c}" select-bracketed
-    done
-done
-
-# Surround operations (like vim-surround)
-bindkey -M vicmd 'cs' change-surround
-bindkey -M vicmd 'ds' delete-surround
-bindkey -M vicmd 'ys' add-surround
-bindkey -M visual 'S' add-surround
-
-# ==============================================================================
-# Incremental Search Improvements
-# ==============================================================================
-
-# Ctrl+R: Reverse incremental search - DISABLED (overridden by atuin plugin at line 797)
-# atuin provides superior history search with sync, stats, and SQLite backend
-# bindkey '^r' history-incremental-search-backward
-# bindkey -M vicmd '/' history-incremental-search-backward
-# bindkey -M vicmd '?' history-incremental-search-forward
+# Ctrl+R reverse history search is provided by the atuin plugin (loaded below)
 
 # ==============================================================================
 # ZSH Settings
