@@ -1451,8 +1451,18 @@ function update-all() {
         sudo apt-get update && sudo apt-get upgrade -y
     fi
 
+    # gh runs BEFORE the zinit wipe: gh is zinit-managed at a VERSIONED path
+    # (cli---cli/gh_<ver>_linux_amd64/bin/gh). The wipe+reinstall happens in a child
+    # shell, so this shell's PATH entry and command hash still point at the old
+    # version's directory — which no longer exists once the reinstall pulls a newer
+    # gh. The $+commands guard then passes on the stale hash and execution dies with
+    # "command not found". Every other tool below lives at a stable path.
+    (( $+commands[gh] ))     && { print -r -- $'\n▸ gh extensions';  gh extension upgrade --all }
+
     print -r -- $'\n▸ zinit plugins'
     "${ZDOTDIR}/functions/zinit-reset" --go
+    # Drop stale command-hash entries pointing into the pre-wipe plugin dirs
+    rehash
 
     # mise owns node/python/rust/uv/yarn/vim here, so it covers most language runtimes;
     # rustup still updates the actual toolchains mise symlinks to.
@@ -1466,9 +1476,9 @@ function update-all() {
         print -r -- $'\n▸ yarn globals'
         yarn global upgrade
     fi
-    (( $+commands[gh] ))     && { print -r -- $'\n▸ gh extensions';  gh extension upgrade --all }
 
     print -r -- $'\n✅ update-all complete'
+    print -r -- "   Run 'exec zsh' to pick up new plugin paths in this shell."
 }
 
 # 🛠️ mise wrapper: inject the vim build env only when mise might compile vim.
