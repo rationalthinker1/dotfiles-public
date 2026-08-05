@@ -104,6 +104,14 @@ export ATUIN_CONFIG_DIR="${XDG_CONFIG_HOME}/atuin"
 # gf patterns
 export GF_PATH="${XDG_CONFIG_HOME}/gf"
 
+# Modern CLI tools (zinit-managed). These are XDG-native on Linux already; the
+# pins force the same layout on macOS (which would otherwise use ~/Library).
+# The rest of the set (jless, ouch, gping, hexyl, grex, pastel, jnv, rga) either
+# has no config file or no env override to pin.
+export TEALDEER_CONFIG_DIR="${XDG_CONFIG_HOME}/tealdeer"
+export TEALDEER_CACHE_DIR="${XDG_CACHE_HOME}/tealdeer"
+export XH_CONFIG_DIR="${XDG_CONFIG_HOME}/xh"
+
 # ==============================================================================
 # Detect Host OS & Environment
 # ==============================================================================
