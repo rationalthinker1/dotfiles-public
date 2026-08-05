@@ -1390,6 +1390,12 @@ function update-all() {
     (( $+commands[rustup] )) && { print -r -- $'\n▸ rustup';         rustup update }
     (( $+commands[bun] ))    && { print -r -- $'\n▸ bun';            bun upgrade }
     (( $+commands[npm] ))    && { print -r -- $'\n▸ npm globals';    npm update -g }
+    # `yarn global` is Yarn 1.x (classic) only — Berry (v2+) removed the command
+    # entirely, so guard on the major version rather than just on yarn existing.
+    if (( $+commands[yarn] )) && [[ "$(yarn --version 2>/dev/null)" == 1.* ]]; then
+        print -r -- $'\n▸ yarn globals'
+        yarn global upgrade
+    fi
     (( $+commands[gh] ))     && { print -r -- $'\n▸ gh extensions';  gh extension upgrade --all }
 
     print -r -- $'\n✅ update-all complete'
