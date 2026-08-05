@@ -467,7 +467,18 @@ fi
 # Initialize ZSH completion system before any plugins that depend on it (e.g. fzf-tab)
 # compinit silently fails to save its dump if the parent directory is missing
 [[ -d "${XDG_CACHE_HOME}/zsh" ]] || mkdir -p "${XDG_CACHE_HOME}/zsh"
-autoload -Uz compinit; compinit -d "${XDG_CACHE_HOME}/zsh/zcompdump"
+autoload -Uz compinit
+# Run the full compinit (which security-audits every fpath dir) at most once every
+# 24h; otherwise trust the existing dump with -C. The (#q...) glob qualifier needs
+# EXTENDED_GLOB (set above): N = nullglob, mh+24 = modified more than 24 hours ago.
+typeset _zcompdump="${XDG_CACHE_HOME}/zsh/zcompdump"
+if [[ ! -f "${_zcompdump}" || -n ${_zcompdump}(#qN.mh+24) ]]; then
+    compinit -d "${_zcompdump}"
+    touch "${_zcompdump}"  # Refresh mtime even when the dump content was unchanged
+else
+    compinit -C -d "${_zcompdump}"
+fi
+unset _zcompdump
 
 # ==============================================================================
 # THEMING
@@ -511,14 +522,12 @@ export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-ran
 # meaning: bare `nocompile` never compiles, while `nocompile'!'` (used on the gh-r
 # binaries below) merely DEFERS compilation until after atclone/atpull — it would not
 # silence this. Nothing is lost: the hook found nothing to compile either way.
+# Keybindings (Ctrl+T, Alt+C) + completion come from `fzf --zsh` (built-in since
+# fzf 0.48) in the same atload — replaces the old key-bindings.zsh + /dev/null
+# snippet hack. Ctrl+R is later rebound by atuin, which loads after this.
 zi ice lucid wait'0' depth'1' nocompile atclone'./install --bin' atpull'%atclone' \
-    atload'add_to_path_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/bin"'
+    atload'add_to_path_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/bin"; source <(fzf --zsh)'
 zi light junegunn/fzf
-
-# 🧠 FZF keybindings (Ctrl+T, Alt+C, Ctrl+R)
-# NOTE: Lazy load to improve startup time
-zi ice lucid wait'1' atload'source_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/shell/key-bindings.zsh"'
-zi snippet /dev/null
 
 # 📂 FZF-Tab - Replaces tab completion with FZF interface
 # Usage: Press TAB for fuzzy-searchable completion menu with previews
@@ -910,11 +919,20 @@ autoload -Uz zmv
 # ==============================================================================
 
 # Auto-start Docker on WSL if not running (skip on SSH sessions)
+# Attempted once per boot: /run/user/${UID} is a tmpfs wiped on reboot, so the flag
+# file self-resets. This removes a systemctl+sudo spawn from every later shell.
+# (Long-term: with systemd enabled in wsl.conf, `sudo systemctl enable docker`
+# makes this whole block unnecessary.)
 if [[ "${HOST_OS}" == "wsl" && -z "${SSH_TTY:-}" ]] && (( $+commands[systemctl] )); then
-    if ! systemctl is-active --quiet docker 2>/dev/null; then
-        # Start Docker without password prompt (requires sudoers NOPASSWD for systemctl)
-        sudo -n systemctl start docker 2>/dev/null && echo "✓ Docker started" || true
+    typeset _docker_flag="/run/user/${UID}/.docker-autostart-attempted"
+    if [[ ! -e "${_docker_flag}" ]] && : >| "${_docker_flag}" 2>/dev/null; then
+        if ! systemctl is-active --quiet docker 2>/dev/null; then
+            # Start Docker without password prompt (requires sudoers NOPASSWD for systemctl)
+            # stderr, not stdout: startup output would trigger p10k instant-prompt warnings
+            sudo -n systemctl start docker 2>/dev/null && print -ru2 -- "✓ Docker started" || true
+        fi
     fi
+    unset _docker_flag
 fi
 
 # 🗂️ broot (directory visualizer)
@@ -964,7 +982,17 @@ fi
 # If you need manual completions for doctl, rustup, bat, fd, or rg, see git history
 
 # VSCode Integration
-[[ "${TERM_PROGRAM}" == "vscode" ]] && source "$(code --locate-shell-integration-path zsh)"
+# Cache the integration path: `code --locate-shell-integration-path` spawns the
+# Windows Code.exe shim on WSL (~hundreds of ms) on every VSCode terminal startup.
+# Regenerated when the `code` launcher is newer than the cache (VS Code update).
+if [[ "${TERM_PROGRAM}" == "vscode" ]] && (( $+commands[code] )); then
+    typeset _vsc_cache="${ZSH_CACHE_DIR}/vscode_shell_integration_path"
+    if [[ ! -s "${_vsc_cache}" || "${commands[code]}" -nt "${_vsc_cache}" ]]; then
+        code --locate-shell-integration-path zsh >| "${_vsc_cache}" 2>/dev/null
+    fi
+    [[ -s "${_vsc_cache}" ]] && source_if_exists "$(<"${_vsc_cache}")"
+    unset _vsc_cache
+fi
 
 #[ ! -f "$HOME/.x-cmd.root/X" ] || . "$HOME/.x-cmd.root/X" # boot up x-cmd.
 

@@ -54,17 +54,9 @@ export FNM_PATH="${XDG_CONFIG_HOME}/.fnm"
 export EDITOR="vim"
 export LESS="-XRF"
 
-# 🛠️ Vim build configuration for mise (with Python3 support)
-# These ensure vim builds with Python3 support during 'mise install' and 'mise upgrade'
-if command -v python3 &>/dev/null && command -v python3-config &>/dev/null; then
-  PYTHON_PREFIX=$(python3 -c "import sys; print(sys.prefix)" 2>/dev/null)
-  PY3_FILE_LOCATION=$(which python3 2>/dev/null)
-  if [[ -n "$PY3_FILE_LOCATION" && -n "$PYTHON_PREFIX" ]]; then
-    export ASDF_VIM_CONFIG="--with-tlib=ncurses --with-compiledby=mise --enable-multibyte --enable-cscope --enable-terminal --enable-python3interp --with-python3-command=$PY3_FILE_LOCATION --enable-fail-if-missing --enable-gui=no --without-x"
-    # Embed Python library path into vim binary using rpath (no need for runtime LD_LIBRARY_PATH)
-    export LDFLAGS="-L${PYTHON_PREFIX}/lib -Wl,-rpath,${PYTHON_PREFIX}/lib ${LDFLAGS:-}"
-  fi
-fi
+# 🛠️ Vim build configuration for mise (ASDF_VIM_CONFIG / LDFLAGS) moved to the
+# mise() wrapper in aliases.zsh: computing it spawned python3 twice on EVERY zsh
+# invocation (including scripts), but it is only needed when mise compiles vim.
 
 # ☁️ AWS
 export AWS_CONFIG_FILE="${XDG_CONFIG_HOME}/.aws/config"

@@ -1417,6 +1417,36 @@ function update-all() {
     print -r -- $'\n✅ update-all complete'
 }
 
+# 🛠️ mise wrapper: inject the vim build env only when mise might compile vim.
+# ASDF_VIM_CONFIG/LDFLAGS used to be computed in .zshenv, spawning python3 twice on
+# EVERY zsh invocation (including scripts). Only `mise install/upgrade` needs them.
+# `mise activate zsh` (run earlier in .zshrc) already defines a mise() function for
+# shell integration, so we save a copy and chain to it instead of clobbering it.
+if (( $+functions[mise] )) && ! (( $+functions[_mise_activate_orig] )); then
+    functions -c mise _mise_activate_orig
+fi
+function mise() {
+    case "${1:-}" in
+        (install|i|upgrade|up)
+            if (( $+commands[python3] && $+commands[python3-config] )); then
+                local python_prefix
+                python_prefix="$(python3 -c 'import sys; print(sys.prefix)' 2>/dev/null)"
+                if [[ -n "${python_prefix}" ]]; then
+                    export ASDF_VIM_CONFIG="--with-tlib=ncurses --with-compiledby=mise --enable-multibyte --enable-cscope --enable-terminal --enable-python3interp --with-python3-command=${commands[python3]} --enable-fail-if-missing --enable-gui=no --without-x"
+                    # rpath embeds the Python lib path into the vim binary (no runtime LD_LIBRARY_PATH)
+                    export LDFLAGS="-L${python_prefix}/lib -Wl,-rpath,${python_prefix}/lib ${LDFLAGS:-}"
+                fi
+            fi
+            ;;
+    esac
+
+    if (( $+functions[_mise_activate_orig] )); then
+        _mise_activate_orig "$@"
+    else
+        command mise "$@"
+    fi
+}
+
 # ---------------------------------------------------------------------------------
 # Modern tool wrappers, with availability checks and fallbacks.
 #
