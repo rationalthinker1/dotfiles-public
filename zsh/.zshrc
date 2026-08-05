@@ -504,7 +504,14 @@ export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND}"
 export FZF_ALT_C_COMMAND="fd --type d"
 export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --info=inline"
 export FZF_CTRL_T_OPTS="--preview 'bat --style=numbers --color=always --line-range :500 {}'"
-zi ice lucid wait'0' depth'1' atclone'./install --bin' atpull'%atclone' \
+# `nocompile` (bare, NOT nocompile'!') silences "No files for compilation found" +
+# "∞zinit-compile-plugin-hook hook returned with 1". fzf's repo root holds no
+# *.plugin.zsh for zwc byte-compilation, but with an atclone present and no nocompile
+# ice zinit still runs the compile hook first and fails. Note the ice values differ in
+# meaning: bare `nocompile` never compiles, while `nocompile'!'` (used on the gh-r
+# binaries below) merely DEFERS compilation until after atclone/atpull — it would not
+# silence this. Nothing is lost: the hook found nothing to compile either way.
+zi ice lucid wait'0' depth'1' nocompile atclone'./install --bin' atpull'%atclone' \
     atload'add_to_path_if_exists "${XDG_DATA_HOME}/zinit/plugins/junegunn---fzf/bin"'
 zi light junegunn/fzf
 
@@ -641,16 +648,29 @@ zi load chmln/sd
 # jqlang/jq ships a raw, uncompressed binary (jq-linux-amd64) as its release asset.
 # as'program' adds the plugin dir to PATH; mv'jq* -> jq' normalizes the per-arch asset
 # name (jq-linux-amd64, jq-macos-arm64, …) to plain `jq`, keeping it arch-agnostic.
-zi ice wait'2' lucid from'gh-r' as'program' mv'jq* -> jq' pick'jq' nocompile'!'
+# extract'' (empty) suppresses "[ziextract] Error: didn't recognize archive type" —
+# gh-r unconditionally runs ziextract unless the extract ice is *set at all*, and this
+# asset is a bare binary with nothing to unpack. Cosmetic only; the mv still runs.
+zi ice wait'2' lucid from'gh-r' as'program' extract'' mv'jq* -> jq' pick'jq' nocompile'!'
 zi load jqlang/jq
 
 # 💥 UP - Interactive pipe builder for shell commands
 # Usage: `up` - opens visual editor to build/test pipelines interactively
 # Helps construct complex command pipelines with live preview
-# akavel/up ships a raw per-arch binary (up_linux, …); as'program' puts the plugin
-# dir on PATH and mv'up* -> up' normalizes the name. Mirrors the jqlang/jq handling above.
-zi ice wait'2' lucid from'gh-r' as'program' mv'up* -> up' pick'up' nocompile'!'
-zi load akavel/up
+# akavel/up ships raw per-OS binaries. The Linux asset is named plain `up`; the others
+# carry a suffix (up-darwin, up-freebsd, …). So the mv is needed only off Linux — an
+# unconditional mv'up* -> up' self-renames on Linux ("mv: 'up' and 'up' are the same
+# file"), and narrowing it to mv'up-* -> up' instead warns "mv ice didn't match any
+# file" there. Selecting the ice per-OS is the only form that is quiet on both.
+# extract'' suppresses the bogus ziextract error, as with jqlang/jq above.
+function () {
+    if [[ "${OSTYPE}" == darwin* ]]; then
+        zi ice wait'2' lucid from'gh-r' as'program' extract'' mv'up-* -> up' pick'up' nocompile'!'
+    else
+        zi ice wait'2' lucid from'gh-r' as'program' extract'' pick'up' nocompile'!'
+    fi
+    zi load akavel/up
+}
 
 # 📊 QSV - Ultra-fast CSV toolkit with Python integration
 # Usage: `qsv stats data.csv` - advanced CSV statistics and operations
@@ -1116,3 +1136,6 @@ compile_if_needed "${ZDOTDIR}/local.zsh"
 
 # If zsh is really slow, enable profiling via zprof, uncomment the line above and line 2
 # zprof
+
+# bun completions
+[ -s "/home/razaf/.config/bun/_bun" ] && source "/home/razaf/.config/bun/_bun"
