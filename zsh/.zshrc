@@ -184,6 +184,8 @@ setopt NOTIFY                     # Report background job status immediately
 setopt NO_HUP                     # Don't kill background jobs on shell exit
 setopt NO_CHECK_JOBS              # Don't warn about running jobs when exiting
 setopt NUMERIC_GLOB_SORT          # Sort globs numerically (file1, file2, file10 instead of file1, file10, file2)
+setopt NO_CASE_GLOB               # Case-insensitive globbing (*.JPG matches *.jpg)
+unsetopt NOMATCH                  # Pass through unmatched globs literally instead of erroring (e.g. `git show HEAD^`, `scp host:*.log`)
 
 # 🧠 History behavior
 setopt BANG_HIST                  # !foo expands to last "foo" command
@@ -196,6 +198,7 @@ setopt HIST_FIND_NO_DUPS          # Don't show duplicate results when searching
 setopt HIST_IGNORE_ALL_DUPS       # Remove all previous dups when adding new one (implies HIST_IGNORE_DUPS)
 setopt HIST_SAVE_NO_DUPS          # Never save duplicates to history file
 setopt HIST_VERIFY                # Verify history expansions before execution (prevents accidental !! or !foo)
+setopt HIST_FCNTL_LOCK            # Use fcntl() for safer history file locking across concurrent sessions
 
 # ==============================================================================
 # Vi Mode Visual Indicators
@@ -786,6 +789,15 @@ source_if_exists "${ZDOTDIR}/.p10k.zsh"
 # source_if_exists "${XDG_CONFIG_HOME}/envman/load.sh"
 
 # 🧅 Bun – Fast JavaScript runtime and package manager
+# Auto-install on first interactive shell if missing (honors $BUN_INSTALL from .zshenv,
+# so the binary lands in ${BUN_INSTALL}/bin which is already on PATH). Idempotent: the
+# command check below skips this once bun is present.
+if (( ! $+commands[bun] )) && [[ ! -x "${BUN_INSTALL}/bin/bun" ]] && (( $+commands[curl] )); then
+    echo "🧅 Installing bun to ${BUN_INSTALL}..." >&2
+    curl -fsSL https://bun.sh/install | bash
+    # Make bun available in the current session without restarting the shell
+    add_to_path_if_exists "${BUN_INSTALL}/bin"
+fi
 source_if_exists "${BUN_INSTALL}/_bun"
 
 # 🐱 Kitty terminal config + completions

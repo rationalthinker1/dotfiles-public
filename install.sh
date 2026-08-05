@@ -173,6 +173,7 @@ declare -A SHARED_LINKS=(
     [.vimrc]="${HOME}/.vimrc"
     [.vim]="${HOME}/.vim"
     [.aws]="${XDG_CONFIG_HOME:-${HOME}/.config}/.aws"
+    [atuin]="${XDG_CONFIG_HOME:-${HOME}/.config}/atuin"
     [zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/zsh"
     [ranger]="${XDG_CONFIG_HOME:-${HOME}/.config}/ranger"
     [sheldon]="${XDG_CONFIG_HOME:-${HOME}/.config}/sheldon"
@@ -181,6 +182,11 @@ declare -A SHARED_LINKS=(
     [broot]="${XDG_CONFIG_HOME:-${HOME}/.config}/broot"
     [alacritty]="${XDG_CONFIG_HOME:-${HOME}/.config}/alacritty"
     [tmux]="${XDG_CONFIG_HOME:-${HOME}/.config}/tmux"
+    [mise/config.toml]="${XDG_CONFIG_HOME:-${HOME}/.config}/mise/config.toml"
+    [gh/config.yml]="${XDG_CONFIG_HOME:-${HOME}/.config}/gh/config.yml"
+    [git/ignore]="${XDG_CONFIG_HOME:-${HOME}/.config}/git/ignore"
+    [git/aliases.gitconfig]="${XDG_CONFIG_HOME:-${HOME}/.config}/git/aliases.gitconfig"
+    [mimeapps.list]="${XDG_CONFIG_HOME:-${HOME}/.config}/mimeapps.list"
     [.Xresources]="${HOME}/.Xresources"
     [rc.sh]="${HOME}/.ssh/rc"
     [claude/commands]="${CLAUDE_CONFIG_DIR}/commands"
@@ -315,7 +321,10 @@ elif command -v apt-get &>/dev/null; then
     export DEBIAN_FRONTEND=noninteractive
     export TZ=America/New_York
 
-    sudo apt-get -y update || { echo "ERROR: apt-get update failed"; exit 1; }
+    # --allow-releaseinfo-change: accept benign repo metadata changes (Label/Origin)
+    # unattended — signatures are still verified. Without it, a PPA renaming itself
+    # hard-fails the whole install (e.g. ondrej/php in 2026).
+    sudo apt-get -y update --allow-releaseinfo-change || { echo "ERROR: apt-get update failed"; exit 1; }
     # Install packages (apt automatically skips already-installed packages)
     echo "Installing Linux packages..."
     failed_packages=()
@@ -362,7 +371,10 @@ if ! command -v mise &>/dev/null; then
     echo "Installing mise to ${HOME}/.local/bin..."
     curl -fsSL https://mise.run | sh
 else
-    echo "✓ mise already installed"
+    # A stale mise can't install current tool releases (e.g. python-build-standalone
+    # layout changes), so keep the binary itself updated on reruns
+    echo "✓ mise already installed — checking for updates..."
+    mise self-update -y 2>/dev/null || echo "    (self-update unavailable — mise managed externally)"
 fi
 
 # Activate mise for the current script session
@@ -524,12 +536,15 @@ fi
 if [[ "${HOST_OS}" == "wsl" && "${IS_DEVCONTAINER}" != "true" ]] && ! command -v wslvar &>/dev/null; then
     if command -v apt-get &>/dev/null; then
         echo "Installing wslu from PPA..."
-        # Add PPA only if not already present
-        if ! grep -q "wslutilities/wslu" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
-            sudo add-apt-repository ppa:wslutilities/wslu -y
-            sudo apt-get update -y
-        fi
-        sudo apt-get install -y wslu
+        # Run in a subshell so a failure here doesn't abort the whole script (set -e)
+        (
+            # Add PPA only if not already present
+            if ! grep -q "wslutilities/wslu" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
+                sudo add-apt-repository ppa:wslutilities/wslu -y
+                sudo apt-get update -y --allow-releaseinfo-change
+            fi
+            sudo apt-get install -y wslu
+        ) || echo "⚠ wslu install failed — continuing (install manually with: sudo apt-get install wslu)"
     elif command -v pacman &>/dev/null; then
         # wslu is only in the AUR on Arch — install via a helper if one is present
         if command -v yay &>/dev/null; then
@@ -628,6 +643,49 @@ if [[ "${SKIP_FONTS}" != "true" && "${HOST_LOCATION}" == "desktop" && "${HOST_OS
 fi
 
 #---------------------------------------------------------------------------------------
+# Migrate legacy dotfile locations to XDG paths
+#---------------------------------------------------------------------------------------
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Migrating legacy paths to XDG locations"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# zsh/.zshenv redirects these tools to XDG paths. Without moving the existing
+# files, a machine pulling that change silently loses git identity, npm auth
+# tokens, docker logins, GPG keyrings, etc. — the env var points at an empty
+# location while the real data sits abandoned at the old path.
+migrate_to_xdg() {
+    local old="${1}" new="${2}"
+    # Symlinked old paths belong to a previous symlink scheme — leave them alone
+    [[ -L "${old}" || ! -e "${old}" ]] && return 0
+    if [[ -e "${new}" ]]; then
+        echo "⚠ Skipped ${old} — ${new} already exists, reconcile manually"
+        return 0
+    fi
+    mkdir -p "$(dirname "${new}")"
+    mv "${old}" "${new}"
+    echo "✓ Migrated ${old} → ${new}"
+}
+
+migrate_to_xdg "${HOME}/.gitconfig"      "${XDG_CONFIG_HOME}/git/config"
+migrate_to_xdg "${HOME}/.npmrc"          "${XDG_CONFIG_HOME}/npm/npmrc"
+migrate_to_xdg "${HOME}/.npm"            "${XDG_CACHE_HOME:-${HOME}/.cache}/npm"
+migrate_to_xdg "${HOME}/.docker"         "${XDG_CONFIG_HOME}/docker"
+migrate_to_xdg "${HOME}/.wgetrc"         "${XDG_CONFIG_HOME}/wget/wgetrc"
+migrate_to_xdg "${HOME}/.viminfo"        "${XDG_DATA_HOME:-${HOME}/.local/share}/vim/viminfo"
+migrate_to_xdg "${HOME}/.vim/tmp/undo"   "${XDG_CACHE_HOME:-${HOME}/.cache}/vim/undo"
+migrate_to_xdg "${HOME}/.vim/tmp/backup" "${XDG_CACHE_HOME:-${HOME}/.cache}/vim/backup"
+migrate_to_xdg "${HOME}/.vim/tmp/swap"   "${XDG_CACHE_HOME:-${HOME}/.cache}/vim/swap"
+migrate_to_xdg "${HOME}/.gnupg"          "${GNUPGHOME}"
+migrate_to_xdg "${HOME}/.cargo"          "${XDG_CONFIG_HOME}/.cargo"
+migrate_to_xdg "${HOME}/.rustup"         "${XDG_CONFIG_HOME}/.rustup"
+migrate_to_xdg "${HOME}/go"              "${XDG_DATA_HOME:-${HOME}/.local/share}/go"
+
+# npm config may carry a registry auth token — keep it private
+[[ -f "${XDG_CONFIG_HOME}/npm/npmrc" ]] && chmod 600 "${XDG_CONFIG_HOME}/npm/npmrc"
+# Remove the old vim tmp dir once its contents have moved
+rmdir "${HOME}/.vim/tmp" 2>/dev/null || true
+
+#---------------------------------------------------------------------------------------
 # Create dotfile symlinks
 #---------------------------------------------------------------------------------------
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -704,6 +762,23 @@ for source_path in "${!DOTFILE_LINKS[@]}"; do
 done
 
 echo "✓ Dotfile symlinks installed"
+
+#---------------------------------------------------------------------------------------
+# Git aliases: portable aliases (diffplus/diffminus) ship as a TRACKED include, while
+# identity stays in the per-machine, untracked ${XDG_CONFIG_HOME}/git/config. This block
+# is idempotent and also migrates older machines that defined these aliases inline.
+#---------------------------------------------------------------------------------------
+git_config_file="${XDG_CONFIG_HOME}/git/config"
+if [[ -f "${DOTFILES_ROOT}/git/aliases.gitconfig" ]]; then
+    # Wire the include once (git config --add creates the file if it doesn't exist yet)
+    if ! git config --file "${git_config_file}" --get-all include.path 2>/dev/null | grep -qx "aliases.gitconfig"; then
+        git config --file "${git_config_file}" --add include.path "aliases.gitconfig"
+        echo "✓ Linked tracked git aliases via include.path"
+    fi
+    # Drop any inline copies so the tracked include is the single source of truth
+    git config --file "${git_config_file}" --unset-all alias.diffplus  2>/dev/null || true
+    git config --file "${git_config_file}" --unset-all alias.diffminus 2>/dev/null || true
+fi
 
 #---------------------------------------------------------------------------------------
 # Fish: Fisher plugin manager + Tide prompt (only for --fish)
