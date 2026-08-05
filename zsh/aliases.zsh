@@ -1474,13 +1474,17 @@ function mise() {
 # ---------------------------------------------------------------------------------
 
 # System monitoring
+# Guarded like cat()/ls(): pipelines and command substitutions (`top -bn1 | head`)
+# must reach the real binary - btm is a TUI with incompatible output.
 function top() {
+	[[ -o interactive && -t 1 ]] || { command top "$@"; return }
 	(( $+commands[btm] )) && { btm "$@"; return }
 	command top "$@"
 }
 
-# Disk usage
+# Disk usage - scripts parse `df -h` output, so only substitute duf on a terminal
 function df() {
+	[[ -o interactive && -t 1 ]] || { command df "$@"; return }
 	(( $+commands[duf] )) && { duf "$@"; return }
 	command df "$@"
 }
@@ -1524,14 +1528,20 @@ function lzd() {
 	lazydocker "$@"
 }
 
-# Ping - gping graph TUI, falling back to system ping
+# Ping - gping graph TUI, falling back to system ping.
+# The tty check is load-bearing: gping never exits and prints no parseable output,
+# so `ping -c1 host | grep ...` or $(ping ...) must reach the real ping.
 function ping() {
+	[[ -o interactive && -t 1 ]] || { command ping "$@"; return }
 	(( $+commands[gping] )) && { gping "$@"; return }
 	command ping "$@"
 }
 
-# Hex viewer - hexyl, falling back to xxd
+# Hex viewer - hexyl, falling back to xxd.
+# hexyl's output format is not xxd-compatible (and has no -r reverse mode), so
+# anything piping or substituting xxd output gets the real binary.
 function xxd() {
+	[[ -o interactive && -t 1 ]] || { command xxd "$@"; return }
 	(( $+commands[hexyl] )) && { hexyl "$@"; return }
 	command xxd "$@"
 }
