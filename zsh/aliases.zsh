@@ -154,21 +154,36 @@ function y() {
 	rm -f -- "$tmp"
 }
 
-# 🔍 FZF + Vim: Fuzzy find and edit files with preview using zoxide
+# 🔍 FZF + Vim: two-stage picker - choose a directory, then a file inside it, then edit.
+# Stage 1 lists directories from zoxide's history (zoxide only indexes directories, not
+# files, hence the two stages), previewed with eza; stage 2 lists that directory's files,
+# previewed with bat. Falls back to fd for stage 1 when zoxide is missing.
 # Function name 'kkk' is intentionally short for quick access (triple k shortcut)
 function kkk() {
-	local dir
+	local dir file lister
+
 	if (( $+commands[zoxide] )); then
 		dir=$(zoxide query -l | fzf --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview="eza -la {}")
 	else
 		# Fallback: find directories from common locations
 		dir=$(fd --type d --max-depth 3 --hidden --exclude .git --exclude node_modules . ~ 2>/dev/null | fzf --height=40% --inline-info --reverse --preview="eza -la {}")
 	fi
-	if [[ -n "$dir" ]]; then
-		local file
-		file=$(cd "$dir" && fzf --preview="bat --color=always {}")
-		[[ -n "$file" ]] && vim "$dir/$file"
+	[[ -n "${dir}" ]] || return 0
+
+	# List the directory explicitly rather than `cd`-ing into it. A cd here would run
+	# inside a command substitution and fire the chpwd hooks, whose stdout would be
+	# captured into ${file} and corrupt the path handed to vim. Listing also yields
+	# paths already prefixed with ${dir}, so no concatenation is needed.
+	if (( $+commands[rg] )); then
+		lister=(rg --files "${dir}")
+	elif (( $+commands[fd] )); then
+		lister=(fd --type f --hidden --exclude .git --exclude node_modules . "${dir}")
+	else
+		lister=(find "${dir}" -type f)
 	fi
+
+	file=$("${lister[@]}" 2>/dev/null | fzf --preview="bat --color=always {}")
+	[[ -n "${file}" ]] && vim "${file}"
 }
 
 ## 📁 Eza: Modern ls replacement with colors and icons
