@@ -21,18 +21,17 @@ function _set_terminal_title() {
 precmd_functions+=(_set_terminal_title)
 
 # 🐍 Smart directory context hook - Works with Enhancd
-# Automatically activates Python venv and shows README after cd
+# Automatically activates a Python venv after cd
 # This uses chpwd hook instead of overriding cd, so it works with Enhancd
 # Note: May conflict with direnv - disable if using direnv
+#
+# Keep this hook silent on stdout. chpwd fires inside command substitutions too, so
+# anything echoed here is captured by callers such as `x=$(cd "$dir" && some-command)`
+# and corrupts their result. Anything informational belongs on stderr (>&2).
 function _context_aware_chpwd() {
   # Auto-activate Python venv
   if [[ -d .venv/bin ]]; then
     [[ -z "$VIRTUAL_ENV" ]] && source .venv/bin/activate
-  fi
-
-  # Show project info if README exists
-  if [[ -f README.md ]]; then
-    echo "📄 README.md present"
   fi
 }
 
@@ -51,9 +50,11 @@ function load-local-conf() {
       source "$dirrc"
     ;;
     *)
-      # Warn about untrusted .dirrc files
-      print -P "%F{yellow}⚠️  Found .dirrc in untrusted location: %F{cyan}$PWD%f"
-      print -P "%F{yellow}Run 'source .dirrc' to load it manually%f"
+      # Warn about untrusted .dirrc files. Written to stderr (-u2): this runs from a
+      # chpwd hook, which also fires inside command substitutions, so anything on
+      # stdout here would be captured by the caller instead of shown to the user.
+      print -Pu2 "%F{yellow}⚠️  Found .dirrc in untrusted location: %F{cyan}$PWD%f"
+      print -Pu2 "%F{yellow}Run 'source .dirrc' to load it manually%f"
     ;;
   esac
 }
