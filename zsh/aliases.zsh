@@ -1263,10 +1263,17 @@ function dirsize() {
 }
 
 # Extract any archive type
+# Prefers ouch (universal decompressor, installed via zinit) and falls back to the
+# per-format toolbox below when it isn't on PATH yet (turbo load) or not installed.
 function extract() {
     if [[ $# -lt 1 ]]; then
         echo "Usage: extract <file>"
         return 1
+    fi
+
+    if (( $+commands[ouch] )) && [[ -f "${1}" ]]; then
+        ouch decompress "${1}"
+        return
     fi
 
     if [[ -f "${1}" ]]; then
@@ -1465,4 +1472,28 @@ function lg() {
 function lzd() {
 	(( $+commands[lazydocker] )) || { print -ru2 -- "lzd: lazydocker is not installed"; return 127 }
 	lazydocker "$@"
+}
+
+# Ping - gping graph TUI, falling back to system ping
+function ping() {
+	(( $+commands[gping] )) && { gping "$@"; return }
+	command ping "$@"
+}
+
+# Hex viewer - hexyl, falling back to xxd
+function xxd() {
+	(( $+commands[hexyl] )) && { hexyl "$@"; return }
+	command xxd "$@"
+}
+
+# rga - ripgrep-all when installed, plain rg otherwise (same flags for simple searches)
+function rga() {
+	(( $+commands[rga] )) && { command rga "$@"; return }
+	command rg "$@"
+}
+
+# HTTP client - xh (HTTPie syntax), falling back to curl
+function http() {
+	(( $+commands[xh] )) && { xh "$@"; return }
+	command curl "$@"
 }

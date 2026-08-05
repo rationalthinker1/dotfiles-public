@@ -751,6 +751,78 @@ zi load jesseduffield/lazydocker
 zi ice wait'2' lucid from'gh-r' as'command' pick='procs' nocompile='!'
 zi load dalance/procs
 
+# 📚 Tealdeer - fast tldr client (community usage examples for CLI commands)
+# Usage: `tldr tar` shows worked examples; `tldr --update` refreshes the page cache
+# Ships a raw per-arch binary (tealdeer-linux-x86_64-musl, no archive): extract''
+# suppresses the bogus ziextract error (same as jq above) and mv normalizes to `tldr`.
+# Linux x86_64 pinned like atuin below; adjust bpick on other platforms.
+zi ice wait'2' lucid from'gh-r' as'program' extract'' bpick'tealdeer-linux-x86_64-musl' \
+    mv'tealdeer* -> tldr' pick'tldr' nocompile'!'
+zi load tealdeer-rs/tealdeer
+
+# 🌐 xh - HTTPie-style HTTP client in Rust; http() in aliases.zsh prefers it
+# Usage: `xh :3000/api/users name=raza` POSTs JSON; `xh -d example.com/file.zip` downloads
+zi ice wait'2' lucid from'gh-r' as'command' pick'*/xh' nocompile'!'
+zi load ducaale/xh
+
+# 🔎 jless - interactive JSON viewer/pager
+# Usage: `jless data.json` or `curl -s api | jless`; hjkl/arrows navigate, / searches
+# The zip holds the binary at its root, so a bare pick suffices.
+zi ice wait'2' lucid from'gh-r' as'command' pick'jless' nocompile'!'
+zi load PaulJuliusMartinez/jless
+
+# 🧭 jnv - interactive jq playground (live filter over a JSON document)
+# Usage: `jnv data.json` or `curl -s api | jnv`; type a jq filter, see results live
+# bpick avoids dist-manifest.json/installer assets; tar.xz nests jnv-<triple>/jnv.
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.xz' \
+    pick'*/jnv' nocompile'!'
+zi load ynqa/jnv
+
+# 📦 Ouch - universal (de)compressor; extract() in aliases.zsh prefers it
+# Usage: `ouch d file.tar.zst` extracts, `ouch c dir out.tar.gz` compresses,
+#        `ouch l archive.zip` lists contents
+zi ice wait'2' lucid from'gh-r' as'command' pick'*/ouch' nocompile'!'
+zi load ouch-org/ouch
+
+# 🦇 bat-extras - batman/batgrep/batdiff/batwatch built on bat
+# Usage: `batman ls` (man pages via bat), `batgrep pattern` (ripgrep + bat preview),
+#        `batdiff` (git diff via bat/delta)
+# The release zip ships every script in bin/; pick'bin/batman' puts bin/ on PATH and
+# the atclone chmod makes the sibling scripts executable too.
+zi ice wait'2' lucid from'gh-r' as'program' pick'bin/batman' \
+    atclone'chmod +x bin/*' atpull'%atclone' nocompile'!'
+zi load eth-p/bat-extras
+
+# 📈 Gping - ping with a live latency graph; ping() in aliases.zsh prefers it
+# Usage: `gping example.com cloudflare.com` graphs both hosts side by side
+# Assets are named gping-Linux-gnu-x86_64.tar.gz (capitalized OS); pin bpick like atuin.
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*Linux-gnu-x86_64*' pick'gping' nocompile'!'
+zi load orf/gping
+
+# 🔍 ripgrep-all (rga) - rg across PDFs, sqlite, zip, docx, subtitles; rga() in
+# aliases.zsh falls back to plain rg when this isn't installed yet
+# Usage: `rga "invoice 2024" ~/Documents`; `rga --rg-help` for rg passthrough flags
+# The tarball nests rga + its required rga-preproc helper in a versioned dir; pick
+# puts that dir on PATH so both resolve.
+zi ice wait'2' lucid from'gh-r' as'program' pick'*/rga' nocompile'!'
+zi load phiresky/ripgrep-all
+
+# 🔢 Hexyl - hex viewer with colored output; xxd() in aliases.zsh prefers it
+# Usage: `hexyl file.bin | head`, `hexyl -n 128 file` for just the first 128 bytes
+zi ice wait'2' lucid from'gh-r' as'command' pick'*/hexyl' nocompile'!'
+zi load sharkdp/hexyl
+
+# 🧩 Grex - build a regex from example strings (pemistahl/grex)
+# Usage: `grex 2026-08-05 2025-12-31` → a pattern matching both; add more examples
+#        to generalize it
+zi ice wait'2' lucid from'gh-r' as'command' pick'grex' nocompile'!'
+zi load pemistahl/grex
+
+# 🎨 Pastel - generate, convert, and inspect terminal colors (sharkdp)
+# Usage: `pastel color ff8800`, `pastel distinct 5`, `pastel gradient red blue`
+zi ice wait'2' lucid from'gh-r' as'command' pick'*/pastel' nocompile'!'
+zi load sharkdp/pastel
+
 # ==============================================================================
 # GIT ENHANCEMENTS
 # ==============================================================================

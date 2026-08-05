@@ -1235,3 +1235,56 @@ Based on typical seedbox workflows:
 ---
 
 **Note:** Some tools require compilation or system libraries. Pre-compiled static binaries (musl-based) are recommended for the restricted seedbox environment.
+
+---
+
+# Modern CLI Candidates (2026)
+
+Shortlist from the Aug 2026 improvement pass.
+
+**Installed via zinit in `.zshrc` (see the ADDITIONAL MODERN CLI TOOLS section):**
+tealdeer (`tldr`), xh (+ `http()` wrapper), jless, jnv, ouch (preferred by
+`extract()`), bat-extras (batman/batgrep/batdiff — aliases intentionally not
+rewired yet), gping (+ `ping()` wrapper), ripgrep-all (+ `rga()` wrapper),
+hexyl (+ `xxd()` wrapper), grex, pastel.
+
+## Still candidates — NOT installed
+
+### fx — JSON viewer/processor alternative
+Overlaps with jq + jless + jnv; only add if the interactive workflow feels lacking.
+```zsh
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*linux_amd64*' mv'fx* -> fx' pick'fx' nocompile'!'
+zi load antonmedv/fx
+```
+
+### just — command runner (saner Makefile)
+Per-project `justfile`; `run()` in aliases.zsh could learn to detect it.
+```zsh
+zi ice wait'2' lucid from'gh-r' as'command' pick'just' nocompile'!'
+zi load casey/just
+```
+
+### watchexec — run a command on file change
+```zsh
+zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu*' pick'*/watchexec' nocompile'!'
+zi load watchexec/watchexec
+```
+
+### fast-syntax-highlighting — swap for zsh-users/zsh-syntax-highlighting
+Already stubbed (commented) in .zshrc. The WSL PATH filtering that motivated
+disabling highlighting is long since done — F-Sy-H is faster per keystroke and
+higher fidelity. Swap the two blocks and compare typing latency.
+
+## Lower priority / bigger commitments
+
+- **television (tv)** — general-purpose fuzzy-finder TUI (files, env, git, …);
+  overlaps heavily with existing fzf+zoxide muscle memory. Watch, don't adopt yet.
+- **zellij** — tmux alternative with floating panes + layouts. Big workflow change;
+  tmux config is already dialed in.
+- **fastfetch** — neofetch successor; cosmetic.
+- **direnv** — industry-standard per-project env with `direnv allow` gating. The
+  hook stub is already commented in .zshrc. Would supersede the custom `.dirrc`
+  chpwd hook (and fix its trust model: anything under $HOME is currently trusted,
+  including freshly cloned repos). Revisit if .dirrc ever feels limiting.
+- **eget** — one-shot GitHub-release binary installer; useful on machines where
+  zinit isn't bootstrapped (e.g. the restricted seedbox above).
