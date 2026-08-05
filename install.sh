@@ -28,7 +28,6 @@ relative_path() {
 #=======================================================================================
 # Argument parsing
 #=======================================================================================
-TARGET_SHELL="zsh"   # default shell to install/configure; override with --fish
 SKIP_FONTS=false     # set by --skip-fonts to bypass font installation
 
 while [[ $# -gt 0 ]]; do
@@ -41,51 +40,40 @@ while [[ $# -gt 0 ]]; do
 
 DESCRIPTION:
   Installs and configures a development environment with:
-  • Essential system packages (git, tmux, zsh, fish, etc.)
+  • Essential system packages (git, tmux, zsh, etc.)
   • Development tools via mise (Node.js, Python, Rust, Vim, etc.)
   • Claude Code (AI-powered coding assistant)
   • Dotfile symlinks (shell, vim, git, tmux configs)
   • Powerline fonts
-  • Shell configuration (zsh by default, or fish with --fish)
+  • ZSH configuration (zinit plugins, Powerlevel10k prompt)
 
 USAGE:
   ./install.sh [OPTIONS]
 
 OPTIONS:
-  --zsh         Install and configure zsh as the default shell (default)
-  --fish        Install and configure fish as the default shell
-                (installs Fisher + the Tide prompt and sets fish as login shell)
   --skip-fonts  Skip Powerline/Nerd font installation
   -h, --help    Show this help message
 
 EXAMPLES:
-  # Standard installation (zsh)
+  # Standard installation
   ./install.sh
-
-  # Fish installation
-  ./install.sh --fish
 
   # Test in Docker (Ubuntu 24.04)
   docker run -it --rm -v "$(pwd)":/root/.dotfiles ubuntu:24.04 bash
-  cd /root/.dotfiles && ./install.sh --fish
+  cd /root/.dotfiles && ./install.sh
 
 NOTES:
   • Script uses sudo for system operations (apt/pacman, chsh, fonts)
   • Development tools are installed via mise for easy version management
   • Run 'mise upgrade' to update all managed tools later
   • Existing configs are backed up to ~/.dotfiles/backup/
-  • --zsh and --fish are additive across runs (run both to set up both shells)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 EOF
             exit 0
             ;;
-        --fish)
-            TARGET_SHELL="fish"
-            shift
-            ;;
         --zsh)
-            TARGET_SHELL="zsh"
+            # Accepted for backwards compatibility (zsh is the only shell now)
             shift
             ;;
         --skip-fonts)
@@ -99,7 +87,7 @@ EOF
             ;;
     esac
 done
-readonly TARGET_SHELL SKIP_FONTS
+readonly SKIP_FONTS
 
 #=======================================================================================
 # Configuration
@@ -115,7 +103,7 @@ export GNUPGHOME="${XDG_CONFIG_HOME}/gnupg"
 
 # Package definitions
 readonly -a DARWIN_PACKAGES=(
-    git grep wget curl zsh fish fontconfig
+    git grep wget curl zsh fontconfig
     csvkit xclip htop p7zip rename unzip
     pdftk  # PDF manipulation tool
     glances ctags up pcre2-utils rsync
@@ -127,7 +115,7 @@ readonly -a DARWIN_PACKAGES=(
 )
 
 readonly -a LINUX_PACKAGES=(
-    build-essential git tmux htop curl wget zsh fish fonts-powerline
+    build-essential git tmux htop curl wget zsh fonts-powerline
     xclip p7zip-full zip unzip
     pdftk-java  # PDF manipulation tool
     unrar wipe cmake exuberant-ctags rsync
@@ -147,7 +135,7 @@ readonly -a ARCH_PACKAGES=(
     # Arch Linux equivalents of LINUX_PACKAGES (Manjaro/EndeavourOS share pacman).
     # base-devel already bundles autoconf/automake/libtool/pkgconf/make/gcc, but they
     # are listed explicitly for parity; --needed makes the duplicates harmless.
-    base-devel git tmux htop curl wget zsh fish powerline-fonts
+    base-devel git tmux htop curl wget zsh powerline-fonts
     xclip p7zip zip unzip
     unrar cmake ctags rsync
     ncurses util-linux pcre2
@@ -164,11 +152,6 @@ readonly -a ARCH_PACKAGES=(
 )
 
 # Symlink mappings
-#
-# Links are split so `--zsh` and `--fish` install only their own shell config,
-# while SHARED_LINKS (incl. the zsh/ directory, which carries the shared command
-# references + detect_os.sh used by both shells) are always installed. The active
-# set is composed in the symlink section based on ${TARGET_SHELL}.
 declare -A SHARED_LINKS=(
     [.vimrc]="${HOME}/.vimrc"
     [.vim]="${HOME}/.vim"
@@ -203,10 +186,6 @@ declare -A ZSH_LINKS=(
     [zsh/.zlogout]="${HOME}/.zlogout"
     [fzf/fzf.zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/fzf/fzf.zsh"
     [zi/init.zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/zi/init.zsh"
-)
-
-declare -A FISH_LINKS=(
-    [fish]="${XDG_CONFIG_HOME:-${HOME}/.config}/fish"
 )
 
 
@@ -509,17 +488,17 @@ else
     fi
 fi
 
-# Configure the chosen shell as default (skip in containers - shell is pre-configured)
+# Configure zsh as the default shell (skip in containers - shell is pre-configured)
 if [[ "${IS_DEVCONTAINER}" != "true" ]]; then
-    target_shell_path="$(command -v "${TARGET_SHELL}" || true)"
+    target_shell_path="$(command -v zsh || true)"
     if [[ -n "${target_shell_path}" ]]; then
         if ! grep -qxF "${target_shell_path}" /etc/shells 2>/dev/null; then
             echo "${target_shell_path}" | sudo tee -a /etc/shells >/dev/null
         fi
         sudo chsh -s "${target_shell_path}" "${USER}" 2>/dev/null || true
-        echo "✓ Default shell set to ${TARGET_SHELL}"
+        echo "✓ Default shell set to zsh"
     else
-        echo "⚠ ${TARGET_SHELL} not found on PATH - skipping default-shell change"
+        echo "⚠ zsh not found on PATH - skipping default-shell change"
     fi
 else
     echo "✓ Skipping shell change (container environment)"
@@ -709,21 +688,14 @@ if [[ ! -f "${XDG_CONFIG_HOME}/wget/wgetrc" ]]; then
     echo "✓ Created empty wgetrc at ${XDG_CONFIG_HOME}/wget/wgetrc"
 fi
 
-# Compose the active link set: SHARED_LINKS always, plus the selected shell's.
-# (Sets are additive across runs; running --zsh then --fish installs both.)
+# Compose the active link set: SHARED_LINKS plus ZSH_LINKS.
 declare -A DOTFILE_LINKS=()
 for source_path in "${!SHARED_LINKS[@]}"; do
     DOTFILE_LINKS["${source_path}"]="${SHARED_LINKS[${source_path}]}"
 done
-if [[ "${TARGET_SHELL}" == "fish" ]]; then
-    for source_path in "${!FISH_LINKS[@]}"; do
-        DOTFILE_LINKS["${source_path}"]="${FISH_LINKS[${source_path}]}"
-    done
-else
-    for source_path in "${!ZSH_LINKS[@]}"; do
-        DOTFILE_LINKS["${source_path}"]="${ZSH_LINKS[${source_path}]}"
-    done
-fi
+for source_path in "${!ZSH_LINKS[@]}"; do
+    DOTFILE_LINKS["${source_path}"]="${ZSH_LINKS[${source_path}]}"
+done
 
 for source_path in "${!DOTFILE_LINKS[@]}"; do
     dotfile_source="${DOTFILES_ROOT}/${source_path}"
@@ -778,60 +750,6 @@ if [[ -f "${DOTFILES_ROOT}/git/aliases.gitconfig" ]]; then
     # Drop any inline copies so the tracked include is the single source of truth
     git config --file "${git_config_file}" --unset-all alias.diffplus  2>/dev/null || true
     git config --file "${git_config_file}" --unset-all alias.diffminus 2>/dev/null || true
-fi
-
-#---------------------------------------------------------------------------------------
-# Fish: Fisher plugin manager + Tide prompt (only for --fish)
-#---------------------------------------------------------------------------------------
-# Runs after symlinks so ~/.config/fish/fish_plugins is in place for `fisher update`.
-# CLI binaries (bat, eza, fd, rg, delta, zoxide, atuin, ...) are declared as zinit
-# turbo plugins in zsh/.zshrc; the zsh bootstrap step below drives one headless zsh
-# run so those tools get fetched and become available to fish too.
-if [[ "${TARGET_SHELL}" == "fish" ]]; then
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  Configuring fish (Fisher + Tide)"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-    if command -v fish &>/dev/null; then
-        # Install Fisher if missing (idempotent)
-        if ! fish -c 'type -q fisher' 2>/dev/null; then
-            echo "Installing Fisher..."
-            fish -c 'curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source && fisher install jorgebucaran/fisher' || true
-        else
-            echo "✓ Fisher already installed"
-        fi
-
-        # Install/update the plugins listed in ~/.config/fish/fish_plugins
-        echo "Installing fish plugins (tide, autopair)..."
-        fish -c 'fisher update' || true
-
-        # Configure the Tide prompt non-interactively (only once)
-        if fish -c 'type -q tide' 2>/dev/null && ! fish -c 'set -q tide_left_prompt_items' 2>/dev/null; then
-            echo "Configuring Tide prompt..."
-            fish -c 'tide configure --auto --style=Lean --prompt_colors="True color" --show_time="24-hour format" --lean_prompt_height="Two lines" --prompt_connection=Disconnected --prompt_spacing=Sparse --icons="Many icons" --transient=No' || true
-        else
-            echo "✓ Tide already configured"
-        fi
-    else
-        echo "⚠ fish not found on PATH - skipping Fisher/Tide setup"
-    fi
-
-    #-----------------------------------------------------------------------------------
-    # Bootstrap zinit-managed CLI tools so they are available to fish
-    #-----------------------------------------------------------------------------------
-    # bat/eza/fd/rg/delta/zoxide/atuin/... are turbo (`wait`) plugins that only fetch
-    # when zsh runs. Feed a headless interactive zsh a series of no-op commands so its
-    # precmd-driven turbo scheduler fires and installs them. ZDOTDIR points at the
-    # shared, already-symlinked config; zsh itself stays installed but is not the
-    # default shell.
-    if command -v zsh &>/dev/null && [[ -f "${XDG_CONFIG_HOME}/zsh/.zshrc" ]]; then
-        echo "Bootstrapping zinit-managed CLI tools via a one-time zsh run (may take a few minutes)..."
-        # Each piped 'sleep 1' is a separate prompt cycle -> precmd -> scheduler tick,
-        # letting the wait'0/1/2' plugins load. `|| true` since SIGPIPE/timeout are expected.
-        yes 'sleep 1' | head -n 60 \
-            | ZDOTDIR="${XDG_CONFIG_HOME}/zsh" timeout 600 zsh -i >/dev/null 2>&1 || true
-        echo "✓ zinit tool bootstrap complete"
-    fi
 fi
 
 #---------------------------------------------------------------------------------------
