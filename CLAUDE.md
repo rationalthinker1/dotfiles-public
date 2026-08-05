@@ -24,14 +24,7 @@ Modern ZSH configuration with 40+ plugins, synchronized across multiple environm
 │   ├── hooks.zsh        # Shell hooks (chpwd, precmd, etc.)
 │   ├── local.zsh        # Machine-specific config (not in git)
 │   ├── functions/       # Custom ZSH functions
-│   └── references/      # Command reference files (fd, rg, etc.) — shared with fish
-├── fish/                # Fish port of the shell config (installed via ./install.sh --fish)
-│   ├── config.fish      # Entry point (runs after plugins load)
-│   ├── fish_plugins     # Fisher manifest (fisher, tide, autopair)
-│   ├── conf.d/          # Auto-sourced units (00-env, 05-plugins, 10-options,
-│   │                    #   20-tools, 30-abbr, 40-keybindings, 50-hooks, 90-local)
-│   ├── functions/       # Lazily-autoloaded functions (one per file)
-│   └── local.example.fish  # Template → copy to local.fish (gitignored)
+│   └── references/      # Command reference files (fd, rg, etc.)
 ├── git-hooks/           # Tracked git hooks (symlinked into .git/hooks by install.sh)
 │   └── post-commit      # Auto-syncs commits from master → public branch
 ├── zi/                  # zi plugin manager (auto-generated, DO NOT REVIEW)
@@ -57,20 +50,6 @@ only `config.yml` is tracked — `hosts.yml` (OAuth token) is deliberately left 
 - `zi/init.zsh` - Generated initialization file from zi-shell
 - `*.zwc` - Compiled ZSH files (machine-specific, gitignored)
 - `zsh/local.zsh` - Machine-specific configuration (gitignored)
-- `fish/local.fish` / `fish/fish_variables` - Machine-specific / generated (gitignored)
-
-**Dual-Shell Support (zsh default, fish optional):**
-- `./install.sh` (or `--zsh`) installs the zsh config; `./install.sh --fish` installs the
-  fish config and sets fish as the default login shell. The two are additive across runs.
-- The `fish/` tree mirrors the zsh experience pragmatically: env/PATH (`conf.d/00-env.fish`),
-  abbreviations (replacing simple aliases + you-should-use), autoloaded functions, and tool
-  init (zoxide/mise/atuin/fzf). Fish's built-in autosuggestions, syntax highlighting, and
-  completions replace the zsh-users plugins; the prompt is **Tide** (zsh keeps Powerlevel10k).
-- CLI binaries (bat, eza, fd, rg, delta, zoxide, atuin, …) are still provisioned by **zinit**
-  on first zsh launch; `install.sh` clones zinit in both modes so those tools stay on `PATH`
-  for fish. Fisher (redirected to `~/.local/share/fisher`) only manages fish-native plugins.
-- **Intentionally not ported:** zstyle completion styling, suffix aliases, the `fc`-based
-  fuzzy `cd()` history parsing, and the heavy WSL `sync_*` PowerShell helpers.
 
 **Sensitive Files — must NEVER reach `public`:**
 
@@ -81,7 +60,7 @@ gitignores them. Whatever their handling on `master`, they must never be synced 
 - `password-store/` - GPG-encrypted secret store
 - `windows-terminal/settings.json` - SSH hostnames/usernames
 - `zsh/references/aws.md` - S3 bucket names
-- `zsh/local.zsh` / `fish/local.fish` - Machine-specific overrides (not in git)
+- `zsh/local.zsh` - Machine-specific overrides (not in git)
 
 **Git identity is not in the repo** — it lives in `~/.config/git/config` (XDG, per-machine).
 Portable git *aliases* contain no identity and ARE tracked (`git/aliases.gitconfig`), pulled
@@ -325,7 +304,7 @@ This repo maintains two remotes serving different audiences:
 - `NO_PUBLIC=1` env var is set (manual override)
 - Commit touches any **sensitive path** — auto-detected, you do NOT need `NO_PUBLIC`:
   `.gitconfig`, `.ssh/`, `.aws/`, `password-store/`, `windows-terminal/settings.json`,
-  `zsh/references/aws.md`, `zsh/local.zsh`, `fish/local.fish`
+  `zsh/references/aws.md`, `zsh/local.zsh`
 - Commit touches `git-hooks/post-commit` or `.gitignore` (these differ between branches)
 
 **Safety net:** even for a commit that *does* sync, the hook scans the public tree after the
@@ -368,7 +347,7 @@ git checkout master
 
 | Sync to public | Auto-skipped (no `NO_PUBLIC` needed) |
 |----------------|--------------------------------------|
-| Plugin additions, aliases, ZSH/fish functions | Commits touching `.gitconfig`, `.ssh/`, `.aws/` |
+| Plugin additions, aliases, ZSH functions | Commits touching `.gitconfig`, `.ssh/`, `.aws/` |
 | Tool configurations (kitty, tmux, nvim) | Commits touching `password-store/` |
 | `install.sh` improvements | Commits touching `windows-terminal/settings.json` |
 | Documentation updates | Commits touching `zsh/references/aws.md` |
