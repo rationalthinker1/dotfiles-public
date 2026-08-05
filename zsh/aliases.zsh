@@ -350,10 +350,37 @@ function fdd() {
 	fd --hidden --ignore-case --follow --type d --exclude "${FD_EXCLUDE_PATTERN}" "$@"
 }
 
-# 📄 Ripgrep: Enhanced grep with automatic paging
-# Override 'rg' to automatically pipe output through less when in terminal
-# Use 'command rg' to access original ripgrep without paging
+# 📄 Ripgrep: batgrep (bat-extras) on a terminal for syntax-highlighted context
+# blocks, falling back to paged rg. Piped/captured calls always reach plain rg so
+# scripts and things like kkk()'s `rg --files` capture keep parseable output.
+#
+# batgrep only understands a small subset of rg's flags (-i/-s/-S, -A/-B/-C, -F,
+# -U, -P), so it is used ONLY when every given flag is in that subset. Anything
+# else (-t, -w, -v, -g, --files, -l, --json, ...) gets the classic paged rg -
+# same behavior as before batgrep existed.
+# Use 'command rg' for the raw tool; rgp always gives the classic paged view.
 function rg() {
+	[[ -t 1 ]] || { command rg "$@"; return }
+
+	if (( $+commands[batgrep] )); then
+		local arg batgrep_ok=1
+		for arg in "$@"; do
+			[[ "${arg}" == -* ]] || continue
+			case "${arg}" in
+				(-i|--ignore-case|-s|--case-sensitive|-S|--smart-case) ;;
+				(-[ABC]|-[ABC][0-9]*|--after-context*|--before-context*|--context*) ;;
+				(-F|--fixed-strings|-U|--multiline|-P|--pcre2) ;;
+				(*) batgrep_ok=0; break ;;
+			esac
+		done
+		(( batgrep_ok )) && { batgrep "$@"; return }
+	fi
+
+	command rg -p "$@" | less -RFX
+}
+
+# Classic paged ripgrep view (pre-batgrep behavior)
+function rgp() {
 	if [[ -t 1 ]]; then
 		command rg -p "$@" | less -RFX
 	else
