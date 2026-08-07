@@ -162,42 +162,79 @@ HISTFILE="${ZDOTDIR}/.zsh_history"
 WORDCHARS=''  # Fix weird behavior with word movement (https://github.com/ohmyzsh/ohmyzsh/issues/5108)
 
 # 📖 Zsh options (behavior tweaks)
+# e.g. typing "gti status" → zsh offers: correct 'gti' to 'git' [nyae]?
 setopt CORRECT                    # Auto-correct misspelled commands
+# e.g. typing "projects" at the prompt runs "cd projects"
 setopt AUTO_CD                    # Just type folder name to cd into it
+# e.g. "cd Doc<Tab>" immediately lists "Documents/  Downloads/  ..."
 setopt AUTO_LIST                  # Show completion options automatically
+# e.g. pressing <Tab> a second time opens a menu you can arrow through
 setopt AUTO_MENU                  # Show menu on multiple tab presses
+# e.g. after "cd /var/log", running "popd" jumps back to where you were
 setopt AUTO_PUSHD                 # Automatically push dirs onto directory stack
+# e.g. cd-ing into /tmp twice stores it only once in "dirs" output
 setopt PUSHD_IGNORE_DUPS          # Avoid duplicate directories in pushd stack
+# e.g. "cd -2" jumps to the 2nd most recent dir on the stack
 setopt PUSHD_MINUS                # Swap meaning of pushd +1 and -1
+# e.g. "popd" prints nothing instead of echoing the whole dir stack
 setopt PUSHD_SILENT               # Don't print directory stack after pushd/popd
+# e.g. "cd /us|/local" (cursor at |) + <Tab> completes to /usr/local
 setopt COMPLETE_IN_WORD           # Complete words in the middle
+# e.g. completing "cd /usr/lo|cal" moves the cursor to the end of the word
 setopt ALWAYS_TO_END              # Cursor jumps to end after completion
+# e.g. "rm ^*.bak" deletes everything EXCEPT *.bak files
 setopt EXTENDED_GLOB              # Enhanced globbing (wildcards, etc.)
+# e.g. "rm -r build/*" also removes hidden files like build/.cache
 setopt GLOB_DOTS                  # Include hidden files in glob matches (no need for .*)
+# e.g. "ls -la  # show details" — the # part is ignored at the prompt
 setopt INTERACTIVE_COMMENTS       # Allow comments in interactive shell
+# e.g. "make > build.log > /dev/tty" writes output to file AND terminal (tee-like)
 setopt MULTIOS                    # Allow tee-like behavior with pipes
+# e.g. <Tab> with no completions stays silent instead of beeping
 setopt NO_BEEP                    # Silence the annoying bell
+# e.g. Ctrl+S no longer freezes the terminal (frees it for fwd-search bindings)
 setopt NO_FLOW_CONTROL            # Disable Ctrl+S/Ctrl+Q flow control (frees up Ctrl+S for fwd search)
+# e.g. PROMPT='$(git branch --show-current) %# ' re-evaluates on every redraw
 setopt PROMPT_SUBST               # Allow prompt string substitution
+# e.g. "jobs" shows "[1]  + 12345 running    npm run dev" (includes PID)
 setopt LONG_LIST_JOBS             # Show PID in jobs list
+# e.g. "sleep 5 &" prints "[1] + done sleep 5" the moment it finishes
 setopt NOTIFY                     # Report background job status immediately
+# e.g. closing the terminal keeps "npm run dev &" running instead of killing it
 setopt NO_HUP                     # Don't kill background jobs on shell exit
+# e.g. "exit" closes the shell even with a suspended vim (no warning printed)
 setopt NO_CHECK_JOBS              # Don't warn about running jobs when exiting
+# e.g. "ls log*" → log1 log2 log10 (instead of log1 log10 log2)
 setopt NUMERIC_GLOB_SORT          # Sort globs numerically (file1, file2, file10 instead of file1, file10, file2)
+# e.g. "code *.jpg" also matches PHOTO.JPG and pic.Jpg
 setopt NO_CASE_GLOB               # Case-insensitive globbing (*.JPG matches *.jpg)
+# e.g. "git show HEAD^" or "scp host:*.log ." passes the pattern through untouched
 unsetopt NOMATCH                  # Pass through unmatched globs literally instead of erroring (e.g. `git show HEAD^`, `scp host:*.log`)
+# e.g. files="a b c"; "for f in $files" loops 3 times (default zsh: 1 time)
+setopt SH_WORD_SPLIT              # Word-split unquoted $VAR expansions on IFS (bash-like behavior)
 
 # 🧠 History behavior
+# e.g. "sudo !!" re-runs the previous command as root; "!ssh" re-runs your last ssh
 setopt BANG_HIST                  # !foo expands to last "foo" command
+# e.g. history file stores ": 1718736000:3;make deploy" (timestamp + duration)
 setopt EXTENDED_HISTORY           # Save timestamp + duration in history
+# e.g. run "ls" in terminal A, press Up in terminal B — it's already there
 setopt SHARE_HISTORY              # Share history across sessions (implies INC_APPEND_HISTORY + INC_APPEND_HISTORY_TIME)
+# e.g. " export TOKEN=abc123" (leading space) is never written to history
 setopt HIST_IGNORE_SPACE          # Don't save commands starting with space
+# e.g. "git   commit" is saved in history as "git commit"
 setopt HIST_REDUCE_BLANKS         # Collapse multiple spaces
+# e.g. history full at 50000 lines → duplicate commands are dropped before unique ones
 setopt HIST_EXPIRE_DUPS_FIRST     # Expire old dupes before new entries
+# e.g. Ctrl+R "ssh" cycles through distinct matches, skipping repeats
 setopt HIST_FIND_NO_DUPS          # Don't show duplicate results when searching
+# e.g. running "ls" again deletes the older "ls" entry (history keeps only one)
 setopt HIST_IGNORE_ALL_DUPS       # Remove all previous dups when adding new one (implies HIST_IGNORE_DUPS)
+# e.g. pressing Up after running "ls" 10 times shows "ls" only once
 setopt HIST_SAVE_NO_DUPS          # Never save duplicates to history file
+# e.g. "!!" expands the command inline first; press Enter again to execute
 setopt HIST_VERIFY                # Verify history expansions before execution (prevents accidental !! or !foo)
+# e.g. two terminals exiting at once can't corrupt ~/.zsh_history
 setopt HIST_FCNTL_LOCK            # Use fcntl() for safer history file locking across concurrent sessions
 
 # ==============================================================================
@@ -362,6 +399,7 @@ zstyle ':completion:*:*:*:users' ignored-patterns \
 # This prevents pasted text from being executed immediately
 # Note: Bracketed paste is enabled automatically in modern ZSH
 if (( ${+options[bracketed_paste]} )); then
+    # e.g. pasting "rm -rf /tmp/junk<Enter>" lands on the prompt unexecuted
     setopt BRACKETED_PASTE
 fi
 autoload -Uz bracketed-paste-magic
