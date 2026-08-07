@@ -591,6 +591,14 @@ export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME}/ripgrep/.ripgreprc"
 zi ice wait'2' lucid from'gh-r' as'command' pick='*/rg' nocompile'!'
 zi load BurntSushi/ripgrep
 
+# 🌳 ast-grep - AST-based structural code search, lint, and rewriting (Rust, 20+ languages)
+# Usage: `ast-grep -p 'console.log($MSG)'` - find code by AST structure, not text
+#        `ast-grep -p '$A && $A()' -r '$A?.()' -l ts` - rewrite code structurally
+#        `ast-grep scan` - lint a project with custom YAML rules (sgconfig.yml)
+# Note: the old `sg` short name is deprecated upstream - use `ast-grep`
+zi ice wait'2' lucid from'gh-r' as'program' sbin'**/ast-grep' nocompile'!'
+zi load ast-grep/ast-grep
+
 # 🦇 Bat - Cat clone with syntax highlighting and git integration
 # Usage: Already aliased to `cat` - shows line numbers and syntax colors
 # Original cat available as `rcat`
