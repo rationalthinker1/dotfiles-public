@@ -104,12 +104,15 @@ export ATUIN_CONFIG_DIR="${XDG_CONFIG_HOME}/atuin"
 # gf patterns
 export GF_PATH="${XDG_CONFIG_HOME}/gf"
 
-# Modern CLI tools (zinit-managed). These are XDG-native on Linux already; the
-# pins force the same layout on macOS (which would otherwise use ~/Library).
+# Modern CLI tools (zinit-managed). Config dirs are pinned to XDG; macOS would
+# otherwise use ~/Library. Cache dirs are left to each tool's own default:
+# tealdeer deprecated TEALDEER_CACHE_DIR in 1.8 (it warns on every invocation),
+# and on Linux its default already honours XDG_CACHE_HOME, so the pin bought
+# nothing. Its replacement — `cache_dir` in config.toml — expands neither ~ nor
+# $HOME, so it cannot be tracked portably across /home and /Users.
 # The rest of the set (jless, ouch, gping, hexyl, grex, pastel, jnv, rga) either
 # has no config file or no env override to pin.
 export TEALDEER_CONFIG_DIR="${XDG_CONFIG_HOME}/tealdeer"
-export TEALDEER_CACHE_DIR="${XDG_CACHE_HOME}/tealdeer"
 export XH_CONFIG_DIR="${XDG_CONFIG_HOME}/xh"
 
 # ==============================================================================
