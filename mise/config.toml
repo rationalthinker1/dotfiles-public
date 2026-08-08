@@ -12,6 +12,12 @@ uv = "latest"
 # Depends: on vim, so removing it uninstalls the ubuntu-wsl metapackage too.
 # The ~40MB of distro vim is the correct price; leave it installed.
 #
+# Pinned to the 9.2 series rather than "latest" so a future 9.3 cannot land mid-run and
+# break the plugins this is here for. Note this does NOT reduce rebuild churn: vim tags
+# patches almost daily (9.2.0921...9.2.0926 within days), and mise compiles vim from
+# source — see the mise wrapper in aliases.zsh that injects the vim build env. Pin a
+# concrete patch (e.g. "9.2.0926") if the rebuilds ever become the annoyance.
+#
 # Superseded mise versions are reclaimed by `mise prune` in maintain phase 5.
-vim = "latest"
+vim = "9.2"
 yarn = "1"
