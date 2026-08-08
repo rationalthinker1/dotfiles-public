@@ -1737,6 +1737,14 @@ function maintain::run() {
 
     (( $+commands[tldr] )) && { print -r -- "  • Updating tldr pages"; tldr --update || failures+=("tldr") }
 
+    # mise never garbage-collects on its own: every `mise up` leaves the previous version
+    # installed forever, so ~/.local/share/mise grows without bound (node/python runtimes
+    # are 200-450MB each). prune keeps whatever is current per tracked config and drops the
+    # superseded versions. It only removes versions no config still references, so it is
+    # safe to run unattended — but note it will also drop tools you installed ad-hoc and
+    # never pinned in mise/config.toml.
+    (( $+commands[mise] )) && { print -r -- "  • mise (prune superseded tool versions)"; mise prune -y || failures+=("mise prune") }
+
     # Nix store garbage collection (only when nix is installed)
     (( $+commands[nix-collect-garbage] )) && { print -r -- "  • Nix store garbage collection"; nix-collect-garbage -d || failures+=("nix gc") }
 
