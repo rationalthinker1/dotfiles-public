@@ -3,5 +3,15 @@ node = "lts"
 python = "latest"
 rust = "latest"
 uv = "latest"
+# mise owns vim because some plugins require 9.2 and Ubuntu 24.04 caps out at
+# 9.1.0016 (noble-updates; backports has nothing newer) — do not drop this back to
+# the distro vim. mise's vim wins on PATH, shadowing 8 commands:
+# vim/view/rvim/rview/ex/vimdiff/vimtutor/xxd.
+#
+# DO NOT `apt remove vim` to clear that duplication: ubuntu-wsl has a hard
+# Depends: on vim, so removing it uninstalls the ubuntu-wsl metapackage too.
+# The ~40MB of distro vim is the correct price; leave it installed.
+#
+# Superseded mise versions are reclaimed by `mise prune` in maintain phase 5.
 vim = "latest"
 yarn = "1"
