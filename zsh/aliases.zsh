@@ -1605,7 +1605,7 @@ function maintain::run() {
         # Apple's recommended (security/point-release) set.
         (( can_sudo )) && { print -r -- "  • macOS system updates (softwareupdate, recommended only)"; "${sudo_cmd[@]}" softwareupdate -ir || failures+=("softwareupdate") }
     elif [[ "${in_container}" != "true" ]] && (( $+commands[apt-get] && can_sudo )); then
-        print -r -- "  • Apt (update, upgrade, autoremove, autoclean)"
+        print -r -- "  • Apt (update, upgrade, autoremove, clean)"
         # A debconf dialog here is unrecoverable, not merely awkward: maintain::run's
         # stdout is a PIPE (the tee wrapper), so whiptail's cursor-positioning escapes
         # interleave with the log stream and paint an unusable screen, while stdin is
@@ -1623,10 +1623,16 @@ function maintain::run() {
         # Quoting is load-bearing: unquoted, zsh's EQUALS expansion fires on the `=--force-…`
         # tail and dies with "--force-confold not found".
         local -a apt_opts=( -o 'Dpkg::Options::=--force-confold' -o 'Dpkg::Options::=--force-confdef' )
+        # `clean`, not `autoclean`: autoclean only drops .debs that can no longer be
+        # downloaded from any configured repo, so on a machine whose repos are all current
+        # it deletes nothing — /var/cache/apt/archives had grown to 1020M across 632 files
+        # (a 134M chrome, two docker-ce builds) while autoclean reported 0 removals every
+        # run. Every cached .deb is re-downloadable on demand, so the only cost is
+        # re-fetching a package you happen to reinstall soon after.
         { "${sudo_cmd[@]}" "${apt_env[@]}" apt-get update \
             && "${sudo_cmd[@]}" "${apt_env[@]}" apt-get "${apt_opts[@]}" upgrade -y \
             && "${sudo_cmd[@]}" "${apt_env[@]}" apt-get autoremove -y \
-            && "${sudo_cmd[@]}" "${apt_env[@]}" apt-get autoclean } || failures+=("apt")
+            && "${sudo_cmd[@]}" "${apt_env[@]}" apt-get clean } || failures+=("apt")
     fi
 
     # Universal Linux distribution packages
