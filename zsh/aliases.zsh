@@ -1455,6 +1455,11 @@ function maintain::usage() {
     print -r -- "  5. System cleanup & docs (tldr, TRIM, journal, nix gc, trash/thumbnails >30d)"
     print -r -- "  6. Health checks & audits (brew/mise doctor, server status report)"
     print -r -- ""
+    print -r -- "Before the phases begin, asks whether to run the dotfiles install.sh"
+    print -r -- "bootstrap first (default N — a bare Enter skips it). The prompt is"
+    print -r -- "suppressed entirely when stdin is not a terminal, so scripted and cron"
+    print -r -- "runs always skip it."
+    print -r -- ""
     print -r -- "Primes sudo up front and keeps it alive so the run is unattended"
     print -r -- "(root shells run sudo-free). Devcontainers skip OS-level steps."
     print -r -- "Skips any tool that isn't installed; records (never aborts on) failures"
@@ -1491,6 +1496,26 @@ function maintain() {
                 ;;
         esac
     done
+
+    # Optional bootstrap re-run, asked HERE rather than inside maintain::run: that
+    # function's stdout is the tee pipe, and a prompt written into a pipe is exactly the
+    # trap that made the apt/debconf dialog unsteerable. Up here stdout is still the
+    # terminal, and asking before the long unattended phases start mirrors why sudo is
+    # primed up front — every question lands now, not ten minutes in.
+    #
+    # ZDOTDIR is ~/.config/zsh, a symlink into the repo, so :A resolves it before :h
+    # takes the parent — a bare ${ZDOTDIR:h} would look in ~/.config and miss.
+    #
+    # Default is N: a bare Enter, EOF, or a non-tty stdin (cron, CI, `maintain < /dev/null`)
+    # all mean skip. run_install/install_script are locals here; zsh's dynamic scoping
+    # lets maintain::run see them through the pipeline subshell, same as log_file.
+    local install_script="${ZDOTDIR:A:h}/install.sh"
+    local run_install=0
+    if [[ -t 0 && -r "${install_script}" ]]; then
+        local reply=""
+        read -r "reply?▸ Run dotfiles install.sh as part of this run? [y/N] "
+        [[ "${reply}" == [yY]* ]] && run_install=1
+    fi
 
     local log_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/logs/maintain"
     mkdir -p "${log_dir}"
@@ -1539,6 +1564,19 @@ function maintain::run() {
             sudo_keepalive_pid=${!}
             trap '[[ -n "${sudo_keepalive_pid}" ]] && kill "${sudo_keepalive_pid}" 2>/dev/null' EXIT INT TERM
         fi
+    fi
+
+    # Dotfiles bootstrap, opt-in via the wrapper's prompt (default N). Unnumbered, like
+    # the sudo prime above, because it is not one of the six phases.
+    #
+    # Runs BEFORE the package phases on purpose: install.sh is idempotent and may install
+    # new tools, and anything it adds then gets updated by phases 1-3 in the same pass.
+    # It also inherits the sudo credential primed just above, so its privileged steps do
+    # not re-prompt. Failure is recorded, never fatal — same contract as every other step.
+    if (( run_install )); then
+        print -r -- $'\n▸ Running dotfiles bootstrap (install.sh)'
+        print -r -- "  • ${install_script}"
+        "${install_script}" || failures+=("install.sh")
     fi
 
     # ----------------------------------------------------
