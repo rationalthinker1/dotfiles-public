@@ -1453,7 +1453,7 @@ function maintain::usage() {
     print -r -- "  3. Global packages & language build caches (npm, bun, uv, pipx, composer, go, cargo)"
     print -r -- "  4. Container hygiene (docker/podman prune, safe mode)"
     print -r -- "  5. System cleanup & docs (tldr, TRIM, journal, nix gc, trash/thumbnails >30d)"
-    print -r -- "  6. Health checks & audits (brew/mise doctor, server status report)"
+    print -r -- "  6. Health checks & audits (brew/mise doctor, PATH shadow scan, server report)"
     print -r -- ""
     print -r -- "Before the phases begin, asks whether to run the dotfiles install.sh"
     print -r -- "bootstrap first (default N — a bare Enter skips it). The prompt is"
@@ -1467,6 +1467,57 @@ function maintain::usage() {
     print -r -- "Every run is logged to \${XDG_STATE_HOME:-~/.local/state}/logs/maintain/ (10 kept)."
     print -r -- "The run itself executes in a subshell (it is piped to tee), so finish with"
     print -r -- "'exec zsh' to pick up updated command paths."
+}
+
+# Report commands that exist in more than one install location. This catches the failure
+# mode where a tool installed two ways leaves the OLDER copy winning on PATH forever, in
+# silence: a stale ~/.local/bin/gh 2.92.0 shadowed the zinit-managed 2.97.0 while maintain
+# dutifully updated the copy that never ran. Nothing else in the run would surface that.
+#
+# Strictly read-only — it prints, and never reorders PATH or deletes anything.
+#
+# The allowlist is what makes this worth having, not a nicety. Without it the check reports
+# 13 deliberate shadows on a perfectly healthy machine, and a report you learn to skip past
+# is worse than no report because it still looks like coverage. Keep the list short and keep
+# each reason attached: if one of those decisions changes — say mise stops owning vim, see
+# mise/config.toml — the matching entries MUST come out, or they will mask real duplicates.
+function maintain::path_dupes() {
+    emulate -L zsh
+    setopt local_options null_glob
+
+    local -a expected=(
+        vim view rvim rview ex vimdiff vimtutor xxd  # mise owns vim; plugins need 9.2
+        python3 pydoc3 python3-config                # mise python shadows python3-minimal
+        sg                                           # apt `login` beats ast-grep's stray sg
+        install                                      # coreutils; a plugin dir leaks one
+    )
+
+    local d f c
+    local -aU cands
+    for d in ~/.local/share/mise/installs/*/*/bin(/N) ~/.local/share/zinit/plugins/*(/N) \
+             ~/.local/share/zinit/polaris/bin(/N) ~/.cargo/bin(/N) \
+             ~/.local/share/npm/bin(/N) ~/.config/bun/bin(/N) ~/.local/bin(/N); do
+        for f in "${d}"/*(-*N); do cands+=( "${f:t}" ); done
+    done
+
+    local -a hits
+    for c in ${(o)cands}; do
+        (( ${expected[(Ie)${c}]} )) && continue
+        local -aU locs reals
+        locs=( ${(f)"$(whence -a -p -- ${c} 2>/dev/null)"} )
+        (( ${#locs} > 1 )) || continue
+        # Compare RESOLVED targets: /bin is a symlink to /usr/bin on Ubuntu, so the very
+        # same file would otherwise be reported as a duplicate of itself on every box.
+        reals=( ${locs[@]:A} )
+        (( ${#reals} > 1 )) && hits+=( "      ${c}: ${(j: :)locs}" )
+    done
+
+    if (( ${#hits} )); then
+        print -r -- "    ⚠️ Shadowed commands (first path wins; a newer copy may be masked):"
+        print -rl -- "${hits[@]}"
+    else
+        print -r -- "    ✓ No unexpected duplicate executables on PATH"
+    fi
 }
 
 # Wrapper: tee the whole run to a timestamped log (keeping the 10 newest), preserving
@@ -1861,6 +1912,11 @@ function maintain::run() {
     fi
 
     (( $+commands[mise] )) && { mise doctor || print -r -- "  ⚠️ Mise doctor reported issues." }
+
+    # Informational only: never recorded as a failure, since a shadowed command is a thing
+    # for a human to judge (some shadows are deliberate) rather than a broken step.
+    print -r -- "  • Duplicate executables on PATH"
+    maintain::path_dupes
 
     # Read-only server status report — highlights action items, never changes state.
     if [[ "${HOST_LOCATION:-}" == "server" && "${HOST_OS}" == "linux" ]]; then
