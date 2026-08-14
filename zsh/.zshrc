@@ -650,6 +650,40 @@ function () {
     zi load akavel/up
 }
 
+# ------------------------------------------------------------------------------
+# gh_asset — expand a GitHub release-asset template for the running platform.
+#
+# WHY: gh-r assets built for `*-unknown-linux-gnu` are compiled against whatever glibc
+# the CI runner had, and hard-fail on anything older — on Debian 12 (glibc 2.36) atuin,
+# qsv, yazi and gping all died with "libc.so.6: version `GLIBC_2.38' not found". The
+# musl builds are statically linked and run on every glibc vintage, so Linux always
+# resolves to musl here. That's a policy this function encodes; it cannot be detected
+# at declaration time without downloading the asset first.
+#
+# Placeholders (upstreams disagree on arch spelling, hence two):
+#   {arch}  → x86_64 | aarch64      (atuin, yazi, qsv, doggo, tealdeer)
+#   {arch2} → x86_64 | arm64        (gping)
+#
+# Takes the Linux template, then the macOS one; macOS falls back to the Linux template
+# when omitted. Returns the literal asset name for bpick.
+#
+#   zi ice from'gh-r' bpick"$(gh_asset 'yazi-{arch}-unknown-linux-musl.zip' \
+#                                      'yazi-{arch}-apple-darwin.zip')"
+#
+# Kept as a plain string expander rather than a `zi` wrapper on purpose: zinit's ices are
+# global state consumed by the following `zi load`, and zinit-reset exists precisely
+# because ices get snapshotted into <plugin>/._zinit/ and replayed forever. Ice
+# declarations stay literal and greppable; only the filename is computed.
+# ------------------------------------------------------------------------------
+function gh_asset() {
+    local tmpl
+    [[ "${OSTYPE}" == darwin* ]] && tmpl="${2:-${1}}" || tmpl="${1}"
+    case "${CPUTYPE}" in
+        (aarch64|arm64) print -r -- "${${tmpl//\{arch\}/aarch64}//\{arch2\}/arm64}"  ;;
+        (*)             print -r -- "${${tmpl//\{arch\}/x86_64}//\{arch2\}/x86_64}" ;;
+    esac
+}
+
 # 📊 QSV - Ultra-fast CSV toolkit with Python integration
 # Usage: `qsv stats data.csv` - advanced CSV statistics and operations
 # More features than xsv: SQL queries, Python expressions, etc.
@@ -657,11 +691,25 @@ function () {
 # variants. `pick` only selects what lands on PATH, it does not stop extraction, and
 # ziextract additionally parks the previous version in ._backup on every update — which
 # is how this one plugin reached 2.2GB. atclone prunes both; atpull repeats it per update.
-zi ice wait'2' lucid from'gh-r' as'program' pick'qsv' nocompile'!' \
-    atclone'rm -rf ._backup; rm -f qsv[a-z]*(N)' atpull'%atclone'
+# The asset embeds the version (qsv-22.0.1-x86_64-unknown-linux-musl.zip), so the
+# templates glob it. Two upstream gaps this has to work around, both verified against the
+# v22.0.1 asset list: musl is published for x86_64 ONLY (aarch64 Linux gets gnu, and will
+# hit the same glibc wall on an old ARM distro — nothing selectable here fixes that), and
+# the only darwin build is aarch64, so the macOS template globs the arch rather than
+# constructing an Intel-Mac name that upstream does not publish at all.
+function () {
+    local libc='musl'
+    [[ "${CPUTYPE}" == (aarch64|arm64) ]] && libc='gnu'
+    zi ice wait'2' lucid from'gh-r' as'program' pick'qsv' nocompile'!' \
+        atclone'rm -rf ._backup; rm -f qsv[a-z]*(N)' atpull'%atclone' \
+        bpick"$(gh_asset "qsv-*-{arch}-unknown-linux-${libc}.zip" 'qsv-*-apple-darwin.zip')"
+}
 zi load dathere/qsv
 
-zi ice wait'2' lucid from'gh-r' as'program' pick'*/yazi' nocompile'!'
+# 🗂️ Yazi - blazing fast terminal file manager
+# bpick names the .zip explicitly so it can't match the .deb shipped alongside it.
+zi ice wait'2' lucid from'gh-r' as'program' pick'*/yazi' nocompile'!' \
+    bpick"$(gh_asset 'yazi-{arch}-unknown-linux-musl.zip' 'yazi-{arch}-apple-darwin.zip')"
 zi load sxyazi/yazi
 
 # ==============================================================================
@@ -675,7 +723,10 @@ zi load cli/cli
 # 🧠 Atuin - Magical shell history with sync, stats, and better search
 # Usage: Ctrl+R for powerful history search, `atuin stats` for analytics
 # Stores full context (directory, duration, exit code) and syncs across machines
-zi ice as"command" from"gh-r" bpick"atuin-x86_64-unknown-linux-gnu.tar.gz" mv"atuin*/atuin -> atuin" \
+# The template names the file exactly so it can't match the atuin-server-* assets that
+# ship in the same release.
+zi ice as"command" from"gh-r" mv"atuin*/atuin -> atuin" \
+    bpick"$(gh_asset 'atuin-{arch}-unknown-linux-musl.tar.gz' 'atuin-{arch}-apple-darwin.tar.gz')" \
     atclone"./atuin init zsh > init.zsh; ./atuin gen-completions --shell zsh > _atuin" \
     atpull"%atclone" src"init.zsh"
 zi light atuinsh/atuin
@@ -704,18 +755,10 @@ zi load muesli/duf
 # v1.2.0 renamed its release assets (doggo_1.1.7_Linux_x86_64.tar.gz ->
 # doggo-linux-x86_64.tar.gz). zinit's auto-detection still infers the old capitalized
 # form and errors with "bpick ice found no release assets", so pin bpick explicitly.
-# Anonymous function scopes the os/arch locals instead of leaking them into the shell.
-function () {
-    local os arch
-    [[ "${OSTYPE}" == darwin* ]] && os='darwin' || os='linux'
-    case "${CPUTYPE}" in
-        (aarch64|arm64) arch='aarch64' ;;
-        (*)             arch='x86_64'  ;;
-    esac
-    zi ice wait'2' lucid from'gh-r' as'command' \
-        bpick"*-${os}-${arch}.tar.gz" pick='doggo' nocompile='!'
-    zi load mr-karan/doggo
-}
+# Go binary, so there's no libc variant to choose — only os/arch.
+zi ice wait'2' lucid from'gh-r' as'command' pick='doggo' nocompile='!' \
+    bpick"$(gh_asset 'doggo-linux-{arch}.tar.gz' 'doggo-darwin-{arch}.tar.gz')"
+zi load mr-karan/doggo
 
 # 🦎 Lazygit - TUI for git
 zi ice wait'2' lucid from'gh-r' as'command' pick='lazygit' nocompile='!'
@@ -733,9 +776,10 @@ zi load dalance/procs
 # Usage: `tldr tar` shows worked examples; `tldr --update` refreshes the page cache
 # Ships a raw per-arch binary (tealdeer-linux-x86_64-musl, no archive): extract''
 # suppresses the bogus ziextract error (same as jq above) and mv normalizes to `tldr`.
-# Linux x86_64 pinned like atuin below; adjust bpick on other platforms.
-zi ice wait'2' lucid from'gh-r' as'program' extract'' bpick'tealdeer-linux-x86_64-musl' \
-    mv'tealdeer* -> tldr' pick'tldr' nocompile'!'
+# The extension-less names have no wildcard, so bpick can't also grab the .sha256.
+zi ice wait'2' lucid from'gh-r' as'program' extract'' mv'tealdeer* -> tldr' \
+    bpick"$(gh_asset 'tealdeer-linux-{arch}-musl' 'tealdeer-macos-{arch}')" \
+    pick'tldr' nocompile'!'
 zi load tealdeer-rs/tealdeer
 
 # 🌐 xh - HTTPie-style HTTP client in Rust; http() in aliases.zsh prefers it
@@ -773,8 +817,11 @@ zi load eth-p/bat-extras
 
 # 📈 Gping - ping with a live latency graph; ping() in aliases.zsh prefers it
 # Usage: `gping example.com cloudflare.com` graphs both hosts side by side
-# Assets are named gping-Linux-gnu-x86_64.tar.gz (capitalized OS); pin bpick like atuin.
-zi ice wait'2' lucid from'gh-r' as'command' bpick'*Linux-gnu-x86_64*' pick'gping' nocompile'!'
+# Assets are named gping-Linux-musl-x86_64.tar.gz / gping-macOS-arm64.tar.gz (capitalized
+# OS); zinit can't infer them, so pin bpick. musl over gnu for the glibc reason in atuin.
+# The only upstream here that spells arm64 rather than aarch64, hence {arch2}.
+zi ice wait'2' lucid from'gh-r' as'command' pick'gping' nocompile'!' \
+    bpick"$(gh_asset 'gping-Linux-musl-{arch2}.tar.gz' 'gping-macOS-{arch2}.tar.gz')"
 zi load orf/gping
 
 # 🔍 ripgrep-all (rga) - rg across PDFs, sqlite, zip, docx, subtitles; rga() in
