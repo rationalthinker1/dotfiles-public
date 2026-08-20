@@ -210,8 +210,16 @@ setopt NUMERIC_GLOB_SORT          # Sort globs numerically (file1, file2, file10
 setopt NO_CASE_GLOB               # Case-insensitive globbing (*.JPG matches *.jpg)
 # e.g. "git show HEAD^" or "scp host:*.log ." passes the pattern through untouched
 unsetopt NOMATCH                  # Pass through unmatched globs literally instead of erroring (e.g. `git show HEAD^`, `scp host:*.log`)
-# e.g. files="a b c"; "for f in $files" loops 3 times (default zsh: 1 time)
-setopt SH_WORD_SPLIT              # Word-split unquoted $VAR expansions on IFS (bash-like behavior)
+# SH_WORD_SPLIT is deliberately left OFF (zsh's default; it exists for sh/ksh emulation).
+# Enabling it globally rewrites the meaning of every unquoted expansion in the ~40
+# third-party plugin scripts sourced below, none of which were written against it — the
+# first symptom was PATH entries containing spaces being split into two broken entries
+# ("/mnt/c/Program" + "Files/PowerShell/7"). Split explicitly at the call site instead:
+#   files="a b c"
+#   for f in ${=files};      do ...   # split on IFS  (direct SH_WORD_SPLIT equivalent)
+#   for f in ${(s: :)files}; do ...   # split on an explicit separator
+#   for f in ${(f)lines};    do ...   # split on newlines
+# If a whole function wants bash semantics: setopt local_options SH_WORD_SPLIT
 
 # 🧠 History behavior
 # e.g. "sudo !!" re-runs the previous command as root; "!ssh" re-runs your last ssh
@@ -557,12 +565,6 @@ zi light ap/rename
 zi ice lucid from'gh-r' as'program' sbin'**/eza -> eza' \
     atclone'cp -vf completions/eza.zsh _eza' nocompile'!'
 zi load eza-community/eza
-
-# 🌲 Erdtree - Modern file-tree visualization with disk usage
-# Usage: `erdtree` or `et` - shows directory tree with file sizes
-# Alternative to `tree` and `ncdu` with better visuals
-zi ice wait'2' lucid from'gh-r' as'command' nocompile'!'
-zi load solidiquis/erdtree
 
 # Byron/dua-cli publishes TWO release series from one repo: `dua-core-vX.Y.Z` library
 # tags (no binary assets) and `vX.Y.Z` binary tags. zinit resolves /releases/latest,
@@ -1011,6 +1013,26 @@ fi
 # ==============================================================================
 if (( $+commands[mise] )); then
     eval "$(mise activate zsh)"
+
+    # `mise activate` applies its PATH here at load, but zinit's turbo gh-r plugins prepend
+    # their bin dirs later — shadowing mise-managed tools and triggering mise's "tool paths are
+    # not first in PATH" warning. Re-float mise's install dirs to the front. It is a cheap array
+    # reorder: `(M)…:#pat` keeps only the mise dirs (order preserved), the plain `:#pat` keeps
+    # everything else, typeset -U (see .zshenv) dedups; the intentional non-mise order from
+    # .zshenv is left untouched.
+    #
+    # Hook BOTH precmd and preexec. precmd keeps prompts correct — but turbo plugins with a wait
+    # (e.g. zoxide at wait'1') load via `sched`, a TIMER that fires ~1s into an idle prompt,
+    # AFTER the last precmd. A precmd-only hook can't re-float before a command that runs in that
+    # window, so `mise doctor` there still saw the stale order (the lone remaining warning).
+    # preexec runs immediately before every command line, so any command — `mise doctor`
+    # included — sees mise first even right after a plugin sched-loads.
+    autoload -Uz add-zsh-hook
+    function _mise_keep_path_first() {
+        path=("${(@M)path:#*/mise/installs/*}" "${(@)path:#*/mise/installs/*}")
+    }
+    add-zsh-hook precmd  _mise_keep_path_first
+    add-zsh-hook preexec _mise_keep_path_first
 fi
 
 # ==============================================================================

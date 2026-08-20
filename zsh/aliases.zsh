@@ -221,12 +221,43 @@ alias ll='eza --color=auto --long --header --group --all --group-directories-fir
 alias lls='eza --color=auto --long --header --group --all --group-directories-first --sort size'
 # Same as above, but ordered by date
 alias lt='eza --color=auto --long --header --group --all --group-directories-first --reverse --sort oldest'
+# 🌲 Tree listings (levels 2/3/4). Functions, not aliases, because the tool check has to
+# happen at CALL time: eza is installed by zinit, so it is not on PATH yet when this file
+# is sourced — a `(( $+commands[eza] ))` guard evaluated here would be false and silently
+# pin us to the fallback forever. Same reasoning as cat()/ls()/top() further down.
+#
+# --git-ignore is the flag that makes the deeper levels usable: without it `llllt` in a
+# node/rust project is nothing but node_modules/ and target/. It only applies inside a git
+# repo, so listings elsewhere are unaffected. --ignore-glob='.git' is separate and still
+# needed — .git is not itself listed in .gitignore, so --all would happily walk into it.
+#
+# `command tree` is the fallback so a box without eza still gets a tree instead of
+# "command not found". It needs no .git handling: it hides dotfiles unless given -a.
+#
+# Do NOT reach for erd (erdtree) here. It was tried and removed from the config entirely:
+# erd 3.1.2's threaded uid/gid lookup calls non-reentrant getpwuid()/getgrgid(), so
+# concurrent calls trample libc's shared static buffer and the owner column fills with raw
+# /etc/passwd records ("razaf x 1000:1000:,,, /home/razaf /usr/bin/zsh") that differ every
+# run — fabricated ownership, not a display quirk. --threads 1 avoids it but discards the
+# parallelism that was erd's only advantage here, and the project has been dormant since
+# Jul 2023. eza covers what it offered (--git-ignore above, --total-size for du-style
+# aggregation if ever wanted).
+function tree_listing() {
+    local level="${1}"
+    shift
+    if (( $+commands[eza] )); then
+        eza --color=auto --long --header --group --all --group-directories-first \
+            --git-ignore --ignore-glob='.git' --tree --level="${level}" "$@"
+        return
+    fi
+    command tree -L "${level}" "$@"
+}
 # Show tree level 2
-alias llt='eza --color=auto --long --header --group --all --group-directories-first --tree --level=2'
+function llt() { tree_listing 2 "$@" }
 # Show tree level 3
-alias lllt='eza --color=auto --long --header --group --all --group-directories-first --tree --level=3'
+function lllt() { tree_listing 3 "$@" }
 # Show tree level 4
-alias llllt='eza --color=auto --long --header --group --all --group-directories-first --tree --level=4'
+function llllt() { tree_listing 4 "$@" }
 # Show hidden files ##
 alias l.='eza --color=auto --long --header --group --all --group-directories-first --list-dirs .*'
 # Show only directories
@@ -1411,35 +1442,13 @@ function note() {
 # Dry run by default; pass --go to execute. Args pass straight through.
 alias zi-update="\"${ZDOTDIR}/functions/zinit-reset\""
 
-# 🛠️ mise wrapper: inject the vim build env only when mise might compile vim.
-# ASDF_VIM_CONFIG/LDFLAGS used to be computed in .zshenv, spawning python3 twice on
-# EVERY zsh invocation (including scripts). Only `mise install/upgrade` needs them.
-# `mise activate zsh` (run earlier in .zshrc) already defines a mise() function for
-# shell integration, so we save a copy and chain to it instead of clobbering it.
-if (( $+functions[mise] )) && ! (( $+functions[_mise_activate_orig] )); then
-    functions -c mise _mise_activate_orig
-fi
-function mise() {
-    case "${1:-}" in
-        (install|i|upgrade|up)
-            if (( $+commands[python3] && $+commands[python3-config] )); then
-                local python_prefix
-                python_prefix="$(python3 -c 'import sys; print(sys.prefix)' 2>/dev/null)"
-                if [[ -n "${python_prefix}" ]]; then
-                    export ASDF_VIM_CONFIG="--with-tlib=ncurses --with-compiledby=mise --enable-multibyte --enable-cscope --enable-terminal --enable-python3interp --with-python3-command=${commands[python3]} --enable-fail-if-missing --enable-gui=no --without-x"
-                    # rpath embeds the Python lib path into the vim binary (no runtime LD_LIBRARY_PATH)
-                    export LDFLAGS="-L${python_prefix}/lib -Wl,-rpath,${python_prefix}/lib ${LDFLAGS:-}"
-                fi
-            fi
-            ;;
-    esac
-
-    if (( $+functions[_mise_activate_orig] )); then
-        _mise_activate_orig "$@"
-    else
-        command mise "$@"
-    fi
-}
+# 🛠️ No mise() wrapper here on purpose. This used to override mise() to export the vim
+# build flags (ASDF_VIM_CONFIG/LDFLAGS) on `mise install|upgrade`, chaining to a saved
+# copy of the function `mise activate zsh` defines. It was a bypassable guard: it only
+# existed in interactive shells that had sourced this file, so a `mise install` from a
+# script or a non-interactive shell silently compiled vim WITHOUT python3 and broke
+# UltiSnips. The flags now live in the [env] block of mise/config.toml, which mise reads
+# on every invocation. Do not reintroduce a wrapper for this.
 
 # ---------------------------------------------------------------------------------
 # Modern tool wrappers, with availability checks and fallbacks.
