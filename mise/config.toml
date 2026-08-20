@@ -1,3 +1,36 @@
+# ==============================================================================
+# Build environment for source-compiled tools
+# ==============================================================================
+# 🛠️ ASDF_VIM_CONFIG — the ./configure line the asdf vim plugin uses (see the vim
+# pin under [tools]). This MUST live here, not in a shell wrapper: it was previously
+# exported by install.sh and by a mise() function in zsh/aliases.zsh, so any *other*
+# way of reaching the compiler — `mise install` from a script, a non-interactive
+# shell, `command mise`, a maintain run — silently missed it and fell through to the
+# plugin's own default_config. That default enables python3 but omits
+# --enable-fail-if-missing, so configure quietly dropped python3 (and perl/ruby/lua)
+# and the build still "succeeded". That is how a -python3 vim shipped and broke
+# UltiSnips. mise reads this file for every invocation, so there is no bypass left.
+#
+# --enable-fail-if-missing is the load-bearing flag: it turns a future silent
+# regression into a loud build failure instead of a vim that starts and misbehaves.
+#
+# --with-python3-command is pinned to the SYSTEM python3, deliberately NOT mise's.
+# mise's python is `latest`, so `mise prune` (maintain phase 5) reclaims the old
+# versioned dir on every bump — which used to take libpython3.x.so with it and break
+# the vim binary that had it baked in via -rpath. The distro python3 is apt-managed,
+# never pruned, and its libpython sits in the default linker search path, so no
+# LDFLAGS/rpath is needed at all. Requires python3-dev (installed by install.sh).
+# On macOS this resolves to Apple's /usr/bin/python3 (Command Line Tools) — the same
+# interpreter MacVim builds against; untested here, this repo's vim-from-mise exists
+# for Ubuntu's 9.1 cap.
+#
+# Static string on purpose: no command substitution, so this costs nothing at shell
+# startup. An earlier .zshenv version computed it and spawned python3 twice on EVERY
+# zsh invocation. Do NOT add LDFLAGS here — that would leak into every compile in
+# every shell (cargo, node-gyp, …); the system-python choice above removes the need.
+[env]
+ASDF_VIM_CONFIG = "--with-tlib=ncurses --with-compiledby=mise --enable-multibyte --enable-cscope --enable-terminal --enable-python3interp --with-python3-command=/usr/bin/python3 --enable-fail-if-missing --enable-gui=no --without-x"
+
 [tools]
 node = "lts"
 python = "latest"
@@ -15,10 +48,20 @@ uv = "latest"
 # Pinned to a CONCRETE patch, not "9.2" or "latest". Two reasons: a future 9.3 can never
 # land unattended and break the plugins this is here for, and vim tags patches almost
 # daily (9.2.0921...9.2.0926 inside a week) while mise compiles it from source — see the
-# mise wrapper in aliases.zsh that injects the vim build env. A series pin would rebuild
-# vim on most maintain runs for no gain; this rebuilds only when the line below changes.
+# ASDF_VIM_CONFIG entry at the top of this file for the build flags. A series pin would
+# rebuild vim on most maintain runs for no gain; this rebuilds only when the line below
+# changes.
 #
-# To bump deliberately: `mise latest vim` to see what is current, edit this line, then
+# The BACKEND IS PINNED EXPLICITLY — do not shorten this key back to plain `vim`.
+# `mise registry vim` now resolves to `conda:vim asdf:mise-plugins/mise-vim`, and conda
+# comes FIRST, so a bare `vim@<version>` picks the conda backend, which has no vim package
+# at all: "conda solve failed: No candidates were found for vim". It fails at repodata
+# fetch, before any compile, and ASDF_VIM_CONFIG is never consulted. Machines where vim
+# already works only do so because they installed it before conda entered the registry.
+# Naming the asdf backend explicitly is what keeps a fresh install working.
+#
+# To bump deliberately: `mise latest asdf:mise-plugins/mise-vim` to see what is current
+# (plain `mise latest vim` reports conda's useless version list), edit this line, then
 # `mise install`. The superseded build is reclaimed by `mise prune` in maintain phase 5.
-vim = "9.2.0926"
+"asdf:mise-plugins/mise-vim" = "9.2.0926"
 yarn = "1"

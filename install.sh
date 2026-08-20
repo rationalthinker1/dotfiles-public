@@ -25,6 +25,48 @@ relative_path() {
     python3 -c "import os; print(os.path.relpath('${source}', '${target_dir}'))"
 }
 
+# Link one tracked dotfile into place, backing up whatever was there before.
+# Idempotent: a target already pointing at the right relative source is left untouched.
+# Extracted from the bulk symlink loop so individual links (notably mise/config.toml)
+# can be established early, before the steps that consume them.
+link_dotfile() {
+    local source_path="${1}"
+    local target="${2}"
+    local dotfile_source="${DOTFILES_ROOT}/${source_path}"
+
+    # Skip if source doesn't exist in dotfiles (e.g. password-store not yet committed)
+    [[ ! -e "${dotfile_source}" ]] && return 0
+
+    # Ensure parent directory exists (needed before computing relative path)
+    mkdir -p "$(dirname "${target}")" "${BACKUP_DIR}"
+
+    # Compute relative symlink path so it works across different $HOME environments (host vs container)
+    local relative_source
+    relative_source="$(relative_path "${dotfile_source}" "$(dirname "${target}")")"
+
+    # Skip if target is already pointing to the correct relative source
+    if [[ -L "${target}" ]]; then
+        [[ "$(readlink "${target}")" == "${relative_source}" ]] && return 0
+    fi
+
+    # Backup if target exists and is not a symlink to THIS dotfiles repo
+    if [[ -e "${target}" ]]; then
+        local resolved_path
+        resolved_path="$(readlink -f "${target}" 2>/dev/null || echo "")"
+        # Only skip if symlink points to our dotfiles directory
+        if [[ ! -L "${target}" ]] || [[ "${resolved_path}" != "${DOTFILES_ROOT}"/* ]]; then
+            if [[ -f "${target}" || -d "${target}" ]]; then
+                echo "  Backing up existing: ${target}"
+                rsync -a "${target}" "${BACKUP_DIR}/" 2>/dev/null || true
+                rm -rf "${target}"
+            fi
+        fi
+    fi
+
+    # Create relative symlink so it resolves correctly on both host and container
+    ln -nfs "${relative_source}" "${target}"
+}
+
 #=======================================================================================
 # Argument parsing
 #=======================================================================================
@@ -118,7 +160,7 @@ readonly -a LINUX_PACKAGES=(
     build-essential git tmux htop curl wget zsh fonts-powerline
     xclip p7zip-full zip unzip
     pdftk-java  # PDF manipulation tool
-    unrar wipe cmake exuberant-ctags rsync
+    unrar wipe cmake exuberant-ctags rsync   # unrar: see LINUX_PACKAGE_ALTS
     libncurses-dev util-linux-extra pcre2-utils
     autoconf automake libtool pkg-config  # Build dependencies
     libssl-dev libcurl4-openssl-dev zlib1g-dev libffi-dev libreadline-dev  # Development libraries
@@ -129,6 +171,13 @@ readonly -a LINUX_PACKAGES=(
     pass gnupg2 pinentry-curses  # Secret management
 		libx11-dev libxt-dev libxpm-dev libgtk-3-dev
     # NOTE: Python, Node.js, Go, Rust, Vim, Yarn, and uv are installed via mise
+)
+
+# Fallbacks for packages that aren't universally available. Ubuntu carries `unrar` in
+# multiverse, but Debian ships it only in non-free — a main-only bookworm box has no
+# candidate at all. `unrar-free` is in Debian main and handles classic RAR (not RAR5).
+readonly -A LINUX_PACKAGE_ALTS=(
+    [unrar]="unrar-free"
 )
 
 readonly -a ARCH_PACKAGES=(
@@ -308,7 +357,14 @@ elif command -v apt-get &>/dev/null; then
     echo "Installing Linux packages..."
     failed_packages=()
     for pkg in "${LINUX_PACKAGES[@]}"; do
-        sudo apt-get install -y "${pkg}" || failed_packages+=("${pkg}")
+        sudo apt-get install -y "${pkg}" && continue
+        # Retry with the distro-specific fallback before declaring the package failed
+        alt="${LINUX_PACKAGE_ALTS[${pkg}]:-}"
+        if [[ -n "${alt}" ]]; then
+            echo "  '${pkg}' unavailable on this distro — falling back to '${alt}'"
+            sudo apt-get install -y "${alt}" && continue
+        fi
+        failed_packages+=("${pkg}")
     done
     if (( ${#failed_packages[@]} > 0 )); then
         echo "WARNING: The following packages failed to install: ${failed_packages[*]}"
@@ -359,78 +415,37 @@ fi
 # Activate mise for the current script session
 export PATH="${HOME}/.local/bin:${PATH}"
 
-# Install development tools globally via mise
-echo "Installing development tools via mise..."
+# The tracked mise config is the single source of truth for tool versions, so it has to be
+# linked BEFORE anything installs. `mise use --global` would otherwise write a *real* file
+# here on a fresh machine and the repo's pins (notably the concrete vim patch) would never
+# apply — the bulk symlink pass runs much later and would only find, and back up, that
+# generated file. Linking here also keeps install.sh from rewriting the tracked config.
+link_dotfile "mise/config.toml" "${XDG_CONFIG_HOME}/mise/config.toml"
 
-# Node.js LTS
-echo "  → Node.js LTS..."
-mise use --global node@lts 2>/dev/null || echo "    (skipped - may already be installed)"
+echo "Installing development tools via mise (versions pinned in mise/config.toml)..."
 
-# Yarn (v1 - Classic)
-echo "  → Yarn (v1 Classic)..."
-mise use --global yarn@1 2>/dev/null || echo "    (skipped - may already be installed)"
+# `mise install` skips already-installed tools, so this is idempotent and replaces the
+# hand-rolled per-tool version comparison. Stderr is deliberately NOT suppressed: vim
+# compiles from source here and swallowing its output made a multi-minute build look
+# like a hang, then hid the error when it failed.
+#
+# The vim build flags (ASDF_VIM_CONFIG/LDFLAGS) used to be exported here and mirrored by
+# a mise() wrapper in zsh/aliases.zsh. They now live in the [env] block of
+# mise/config.toml — symlinked to ~/.config/mise/config.toml just above — so mise applies
+# them to EVERY invocation instead of only the two that remembered to. Any other route to
+# the compiler (a script, a non-interactive shell, `command mise`) silently built a
+# -python3 vim and broke UltiSnips. See that file for the full rationale; do NOT re-add
+# them here. The build now links against the system python3, so python3-dev from the apt
+# phase above is what it needs, not a mise python installed first.
+mise_install_failed=false
+echo "  → Python, Node, Yarn, Rust, uv, Vim (compiled with Python3 support)..."
+mise install || mise_install_failed=true
 
-# Python (latest stable)
-echo "  → Python..."
-mise use --global python@latest 2>/dev/null || echo "    (skipped - may already be installed)"
-
-# Rust (latest stable)
-echo "  → Rust..."
-mise use --global rust@latest 2>/dev/null || echo "    (skipped - may already be installed)"
-
-# uv (fast Python package installer)
-echo "  → uv..."
-mise use --global uv@latest 2>/dev/null || echo "    (skipped - may already be installed)"
-
-# Vim (with Python3 support)
-echo "  → Vim with Python3 support..."
-# Check if vim should be installed/upgraded (only on major.minor version changes)
-should_install_vim=false
-if mise which vim &>/dev/null; then
-    # Extract major.minor from current vim version (e.g., "9.1" from "9.1.2001")
-    current_vim_version=$(mise exec -- vim --version 2>/dev/null | head -1 | grep -oP '\d+\.\d+' | head -1)
-    # Get major.minor from latest vim version
-    latest_vim_version=$(mise latest vim 2>/dev/null | grep -oP '^\d+\.\d+' | head -1)
-
-    if [[ -n "${current_vim_version}" && -n "${latest_vim_version}" ]]; then
-        if [[ "${current_vim_version}" != "${latest_vim_version}" ]]; then
-            echo "    Current: vim ${current_vim_version}, Latest: vim ${latest_vim_version} - upgrading..."
-            should_install_vim=true
-        else
-            echo "    (skipped - vim ${current_vim_version} already installed, same major.minor as latest)"
-        fi
-    else
-        # Can't determine versions - verify vim works before reinstalling
-        if mise exec -- vim --version &>/dev/null; then
-            echo "    (skipped - vim already installed and functional)"
-            should_install_vim=false
-        else
-            echo "    Can't determine versions, installing to be safe..."
-            should_install_vim=true
-        fi
-    fi
-else
-    echo "    Installing vim for the first time..."
-    should_install_vim=true
-fi
-
-if [[ "${should_install_vim}" == "true" ]]; then
-    # Get mise Python paths (don't use 'mise exec' to avoid triggering vim installation)
-    PYTHON_PREFIX=$(mise exec -- python3 -c "import sys; print(sys.prefix)" 2>/dev/null)
-    PY3_FILE_LOCATION=$(mise which python3 2>/dev/null)
-
-    if [[ -n "${PY3_FILE_LOCATION}" && -n "${PYTHON_PREFIX}" ]]; then
-        # Embed Python library path into vim binary using rpath
-        # This ensures vim can find Python libraries at runtime without needing LD_LIBRARY_PATH
-        export LDFLAGS="-L${PYTHON_PREFIX}/lib -Wl,-rpath,${PYTHON_PREFIX}/lib ${LDFLAGS:-}"
-        export ASDF_VIM_CONFIG="--with-tlib=ncurses --with-compiledby=mise --enable-multibyte --enable-cscope --enable-terminal --enable-python3interp --with-python3-command=${PY3_FILE_LOCATION} --enable-fail-if-missing --enable-gui=no --without-x"
-        mise use --global vim@latest 2>/dev/null || echo "    (installation failed)"
-        # Unset to prevent triggering vim installation on subsequent mise commands
-        unset ASDF_VIM_CONFIG LDFLAGS
-    else
-        echo "    WARNING: python3-config not found, vim may not have Python3 support"
-        mise use --global vim@latest 2>/dev/null || echo "    (installation failed)"
-    fi
+if [[ "${mise_install_failed}" == "true" ]]; then
+    echo ""
+    echo "⚠ ERROR: one or more mise tools failed to install (see the output above)."
+    echo "         Re-run manually to see the full error:  mise install"
+    echo "         Installation continues, but tools depending on them will be skipped."
 fi
 
 # Verify installations
@@ -444,9 +459,12 @@ verify_tool "cargo" "cargo --version"
 verify_tool "uv" "uv --version"
 verify_tool "vim" "vim --version | head -1"
 
-# Verify vim has Python3 support
+# Verify vim has Python3 support. Gated on `mise which vim`: without it, `mise exec` would
+# try to auto-install the very tool that just failed, re-running a doomed build.
 echo ""
-if mise exec -- vim --version | grep -q '+python3'; then
+if ! mise which vim &>/dev/null; then
+    echo "⚠ WARNING: vim is not installed — skipping Python3 support check"
+elif mise exec -- vim --version 2>/dev/null | grep -q '+python3'; then
     echo "✓ Vim has Python3 support enabled"
 else
     echo "⚠ WARNING: Vim may not have Python3 support"
@@ -698,39 +716,7 @@ for source_path in "${!ZSH_LINKS[@]}"; do
 done
 
 for source_path in "${!DOTFILE_LINKS[@]}"; do
-    dotfile_source="${DOTFILES_ROOT}/${source_path}"
-    target="${DOTFILE_LINKS[${source_path}]}"
-
-    # Skip if source doesn't exist in dotfiles (e.g. password-store not yet committed)
-    [[ ! -e "${dotfile_source}" ]] && continue
-
-    # Ensure parent directory exists (needed before computing relative path)
-    mkdir -p "$(dirname "${target}")"
-
-    # Compute relative symlink path so it works across different $HOME environments (host vs container)
-    relative_source="$(relative_path "${dotfile_source}" "$(dirname "${target}")")"
-
-    # Skip if target is already pointing to the correct relative source
-    if [[ -L "${target}" ]]; then
-        current="$(readlink "${target}")"
-        [[ "${current}" == "${relative_source}" ]] && continue
-    fi
-
-    # Backup if target exists and is not a symlink to THIS dotfiles repo
-    if [[ -e "${target}" ]]; then
-        resolved_path="$(readlink -f "${target}" 2>/dev/null || echo "")"
-        # Only skip if symlink points to our dotfiles directory
-        if [[ ! -L "${target}" ]] || [[ "${resolved_path}" != "${DOTFILES_ROOT}"/* ]]; then
-            if [[ -f "${target}" || -d "${target}" ]]; then
-                echo "  Backing up existing: ${target}"
-                rsync -a "${target}" "${BACKUP_DIR}/" 2>/dev/null || true
-                rm -rf "${target}"
-            fi
-        fi
-    fi
-
-    # Create relative symlink so it resolves correctly on both host and container
-    ln -nfs "${relative_source}" "${target}"
+    link_dotfile "${source_path}" "${DOTFILE_LINKS[${source_path}]}"
 done
 
 echo "✓ Dotfile symlinks installed"
@@ -759,8 +745,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing Vim plugins"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Check if vim-plug is available before installing plugins
-if [[ -f "${HOME}/.vim/autoload/plug.vim" ]] || [[ -f "${HOME}/.local/share/vim/autoload/plug.vim" ]]; then
+# Check that vim itself installed before asking it to install plugins — otherwise
+# `mise exec` would retry the failed vim build instead of reporting the real problem
+if ! mise which vim &>/dev/null; then
+    echo "WARNING: vim is not installed, skipping plugin installation"
+elif [[ -f "${HOME}/.vim/autoload/plug.vim" ]] || [[ -f "${HOME}/.local/share/vim/autoload/plug.vim" ]]; then
     if mise exec -- vim -E -c PlugInstall -c qall!; then
         echo "✓ Vim plugins installed"
     else

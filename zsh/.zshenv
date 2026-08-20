@@ -54,9 +54,11 @@ export FNM_PATH="${XDG_CONFIG_HOME}/.fnm"
 export EDITOR="vim"
 export LESS="-XRF"
 
-# 🛠️ Vim build configuration for mise (ASDF_VIM_CONFIG / LDFLAGS) moved to the
-# mise() wrapper in aliases.zsh: computing it spawned python3 twice on EVERY zsh
-# invocation (including scripts), but it is only needed when mise compiles vim.
+# 🛠️ Vim build configuration for mise (ASDF_VIM_CONFIG) lives in the [env] block of
+# mise/config.toml. It was here once, computing the flags with two python3 spawns on
+# EVERY zsh invocation (including scripts); then in a mise() wrapper in aliases.zsh,
+# which interactive-only shells could bypass. mise's own config applies it to every
+# invocation at zero shell-startup cost.
 
 # ☁️ AWS
 export AWS_CONFIG_FILE="${XDG_CONFIG_HOME}/.aws/config"
