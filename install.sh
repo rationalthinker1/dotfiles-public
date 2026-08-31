@@ -168,6 +168,7 @@ readonly -a LINUX_PACKAGES=(
     python3-dev libpython3-dev  # Python dev headers (required for building vim with Python3 support)
     man-db less openssh-client software-properties-common  # Essential utilities
     strace gdb lsb-release shellcheck tree lsof ncdu  # Debugging & development tools
+    earlyoom  # Kills the biggest consumer before RAM+swap exhaustion takes the box down
     pass gnupg2 pinentry-curses  # Secret management
 		libx11-dev libxt-dev libxpm-dev libgtk-3-dev
     # NOTE: Python, Node.js, Go, Rust, Vim, Yarn, and uv are installed via mise
@@ -224,7 +225,9 @@ declare -A SHARED_LINKS=(
     [claude/commands]="${CLAUDE_CONFIG_DIR}/commands"
     [claude/agents]="${CLAUDE_CONFIG_DIR}/agents"
     [claude/skills]="${CLAUDE_CONFIG_DIR}/skills"
+    [claude/CLAUDE.md]="${CLAUDE_CONFIG_DIR}/CLAUDE.md"
     [password-store]="${PASSWORD_STORE_DIR}"
+    [scripts/memwatch]="${HOME}/.local/bin/memwatch"
 )
 
 declare -A ZSH_LINKS=(
@@ -532,14 +535,10 @@ fi
 #---------------------------------------------------------------------------------------
 if [[ "${HOST_OS}" == "wsl" && "${IS_DEVCONTAINER}" != "true" ]] && ! command -v wslvar &>/dev/null; then
     if command -v apt-get &>/dev/null; then
-        echo "Installing wslu from PPA..."
+        echo "Installing wslu..."
         # Run in a subshell so a failure here doesn't abort the whole script (set -e)
+        # wslu ships in the distro repos (Ubuntu universe / Debian) — no PPA needed
         (
-            # Add PPA only if not already present
-            if ! grep -q "wslutilities/wslu" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
-                sudo add-apt-repository ppa:wslutilities/wslu -y
-                sudo apt-get update -y --allow-releaseinfo-change
-            fi
             sudo apt-get install -y wslu
         ) || echo "⚠ wslu install failed — continuing (install manually with: sudo apt-get install wslu)"
     elif command -v pacman &>/dev/null; then
@@ -782,6 +781,41 @@ if [[ "${HOST_OS}" == "wsl" && "${IS_DEVCONTAINER}" != "true" ]]; then
     if [[ -f "${DOTFILES_ROOT}/wsl.conf" && ! -f "/etc/wsl.conf" ]]; then
         sudo cp "${DOTFILES_ROOT}/wsl.conf" /etc/wsl.conf
         echo "✓ Installed wsl.conf (run 'update-wsl-settings' to sync changes)"
+    fi
+
+    # Setup memwatch — records memory pressure so a WSL power-off (RAM+swap
+    # exhaustion => 9p stall => reboot(RB_POWER_OFF)) leaves evidence behind.
+    # A system unit, not --user: user@${UID}.service is unreliable under WSL.
+    # Idempotent: only reinstalls when the rendered unit differs from what's live.
+    if [[ -f "${DOTFILES_ROOT}/scripts/memwatch.service" ]] && (( $(id -u) != 0 )); then
+        memwatch_unit="/etc/systemd/system/memwatch.service"
+        memwatch_staged="$(mktemp)"
+        # A system unit can't expand %h, so bake in the invoking user's path.
+        sed "s|^ExecStart=.*|ExecStart=${HOME}/.local/bin/memwatch|" \
+            "${DOTFILES_ROOT}/scripts/memwatch.service" >"${memwatch_staged}"
+
+        if sudo cmp -s "${memwatch_staged}" "${memwatch_unit}" 2>/dev/null; then
+            echo "✓ memwatch.service already current"
+        else
+            sudo cp "${memwatch_staged}" "${memwatch_unit}"
+            sudo systemctl daemon-reload
+            sudo systemctl enable --now memwatch.service
+            echo "✓ Installed memwatch.service (logs: /var/log/memwatch/)"
+        fi
+        rm -f "${memwatch_staged}"
+        unset memwatch_unit memwatch_staged
+    fi
+
+    # Tune earlyoom (installed via LINUX_PACKAGES). Without it nothing ever gets
+    # OOM-killed here, so exhaustion escalates to a full VM power-off.
+    if [[ -f "${DOTFILES_ROOT}/scripts/earlyoom.default" ]] && command -v earlyoom &>/dev/null; then
+        if sudo cmp -s "${DOTFILES_ROOT}/scripts/earlyoom.default" /etc/default/earlyoom 2>/dev/null; then
+            echo "✓ earlyoom config already current"
+        else
+            sudo cp "${DOTFILES_ROOT}/scripts/earlyoom.default" /etc/default/earlyoom
+            sudo systemctl restart earlyoom
+            echo "✓ Configured earlyoom"
+        fi
     fi
 
     # Setup Windows Terminal

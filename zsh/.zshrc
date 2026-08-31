@@ -662,9 +662,10 @@ function () {
 # resolves to musl here. That's a policy this function encodes; it cannot be detected
 # at declaration time without downloading the asset first.
 #
-# Placeholders (upstreams disagree on arch spelling, hence two):
-#   {arch}  → x86_64 | aarch64      (atuin, yazi, qsv, doggo, tealdeer)
-#   {arch2} → x86_64 | arm64        (gping)
+# Placeholders (upstreams disagree on arch spelling, hence three):
+#   {arch}   → x86_64 | aarch64     (atuin, yazi, qsv, doggo, tealdeer)
+#   {arch2}  → x86_64 | arm64       (gping)
+#   {goarch} → amd64  | arm64       (cloudflared — Go's own GOARCH spelling)
 #
 # Takes the Linux template, then the macOS one; macOS falls back to the Linux template
 # when omitted. Returns the literal asset name for bpick.
@@ -681,8 +682,8 @@ function gh_asset() {
     local tmpl
     [[ "${OSTYPE}" == darwin* ]] && tmpl="${2:-${1}}" || tmpl="${1}"
     case "${CPUTYPE}" in
-        (aarch64|arm64) print -r -- "${${tmpl//\{arch\}/aarch64}//\{arch2\}/arm64}"  ;;
-        (*)             print -r -- "${${tmpl//\{arch\}/x86_64}//\{arch2\}/x86_64}" ;;
+        (aarch64|arm64) print -r -- "${${${tmpl//\{arch\}/aarch64}//\{arch2\}/arm64}//\{goarch\}/arm64}"  ;;
+        (*)             print -r -- "${${${tmpl//\{arch\}/x86_64}//\{arch2\}/x86_64}//\{goarch\}/amd64}" ;;
     esac
 }
 
@@ -761,6 +762,29 @@ zi load muesli/duf
 zi ice wait'2' lucid from'gh-r' as'command' pick='doggo' nocompile='!' \
     bpick"$(gh_asset 'doggo-linux-{arch}.tar.gz' 'doggo-darwin-{arch}.tar.gz')"
 zi load mr-karan/doggo
+
+# ☁️ Cloudflared - Cloudflare Tunnel client
+# Usage: `cloudflared tunnel --url http://localhost:3000` - publish a local port
+# Cloudflare spells arch the Go way (amd64, not x86_64), hence {goarch}. The two
+# platforms ship different shapes: Linux publishes a bare, unversioned binary named
+# cloudflared-linux-amd64, while macOS ships a .tgz that extracts to plain
+# `cloudflared`. So the rename is scoped to the Linux name — on macOS the glob simply
+# finds nothing to move and `pick` takes the extracted binary as-is.
+#
+# On Linux this prints "[ziextract] Error: didn't recognize archive type of
+# cloudflared-linux-amd64 (no extraction has been done)" on install/update. It is
+# cosmetic and expected — the asset is a bare ELF, not an archive. No ice suppresses
+# it: zinit sets that warning whenever no extractor matches (zinit-install.zsh:1756),
+# and --norm/extract'-' only govern whether the source file is deleted afterwards.
+# The mv, chmod and pick all still run, which is why the binary works regardless.
+#
+# rm -rf ._backup for the reason documented on qsv above: zinit parks the previous
+# version there on every update, and this is a 39MB binary.
+zi ice wait'2' lucid from'gh-r' as'program' pick'cloudflared' nocompile'!' \
+    bpick"$(gh_asset 'cloudflared-linux-{goarch}' 'cloudflared-darwin-{goarch}.tgz')" \
+    mv'cloudflared-linux-* -> cloudflared' \
+    atclone'rm -rf ._backup; chmod +x cloudflared' atpull'%atclone'
+zi load cloudflare/cloudflared
 
 # 🦎 Lazygit - TUI for git
 zi ice wait'2' lucid from'gh-r' as'command' pick='lazygit' nocompile='!'
@@ -933,9 +957,12 @@ autoload -Uz zmv
 # Auto-start Docker on WSL if not running (skip on SSH sessions)
 # Attempted once per boot: /run/user/${UID} is a tmpfs wiped on reboot, so the flag
 # file self-resets. This removes a systemctl+sudo spawn from every later shell.
-# (Long-term: with systemd enabled in wsl.conf, `sudo systemctl enable docker`
-# makes this whole block unnecessary.)
-if [[ "${HOST_OS}" == "wsl" && -z "${SSH_TTY:-}" ]] && (( $+commands[systemctl] )); then
+#
+# DISABLED BY DEFAULT: on a 16GB host the WSL VM was exhausting RAM+swap and getting
+# hard power-cycled by WSL (reboot(RB_POWER_OFF)); an idle Docker stack was a large
+# share of that footprint. Start it on demand with `sudo systemctl start docker`,
+# or opt back in to autostart by exporting DOCKER_AUTOSTART=1 in zsh/local.zsh.
+if [[ "${DOCKER_AUTOSTART:-0}" == "1" && "${HOST_OS}" == "wsl" && -z "${SSH_TTY:-}" ]] && (( $+commands[systemctl] )); then
     typeset _docker_flag="/run/user/${UID}/.docker-autostart-attempted"
     if [[ ! -e "${_docker_flag}" ]] && : >| "${_docker_flag}" 2>/dev/null; then
         if ! systemctl is-active --quiet docker 2>/dev/null; then

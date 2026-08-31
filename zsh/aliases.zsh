@@ -61,15 +61,21 @@ function cat() {
 	bat "$@"
 }
 alias rcat='command cat'
-# Kept for the man() fallback below: when batman (bat-extras) isn't installed,
-# plain man still renders through bat via this pager.
-export MANPAGER="sh -c 'col -bx | bat -l man -p'"
 
 # 📖 Man pages via batman (bat-extras) - proper bat rendering without the col hack.
 # Guarded like cat(): piped calls (`man ls | grep`) reach the real man.
 function man() {
 	[[ -o interactive && -t 1 ]] || { command man "$@"; return }
 	(( $+commands[batman] )) && { batman "$@"; return }
+
+	# MANPAGER is set here rather than exported at source time: bat is installed by
+	# zinit turbo, so an export guarded at source time would either be skipped (bat
+	# not on PATH yet) or, unguarded, point man at a binary that may not exist and
+	# break plain `man` on a box without bat.
+	(( $+commands[bat] )) && {
+		MANPAGER="sh -c 'col -bx | bat -l man -p'" command man "$@"
+		return
+	}
 	command man "$@"
 }
 
@@ -494,7 +500,10 @@ function bakt() {
 # Example: fs 20
 function fs() {
 	local limit=${1:-$DEFAULT_FS_LIMIT}
-	sudo du --count-links --all --human-readable --exclude /media 2>/dev/null | grep -v -e '^.*K[[:space:]]' | sort -r -n | head "-n${limit}"
+	# sort -rh (not -rn): -n compares the leading number only, so 900M sorted above
+	# 1.5G. The K filter is anchored to the size field — unanchored, '^.*K[[:space:]]'
+	# also dropped any row whose PATH contained "K ".
+	sudo du --count-links --all --human-readable --exclude /media 2>/dev/null | grep -vE '^[0-9.,]+K' | sort -r -h | head "-n${limit}"
 }
 
 # Get top biggest directories
@@ -573,7 +582,7 @@ if [[ "${HOST_OS}" == "linux" || "${HOST_OS}" == "wsl" ]]; then
 
 	# simple-install ppa:numix/ppa numix-gtk-theme numix-icon-theme-circle
 	function simple-install() {
-		repository=$1
+		local repository="${1}"
 
 		# Add the repository
 		add-repo "${repository}"
@@ -596,8 +605,14 @@ fi
 # back to plain unzip when it isn't on PATH yet (turbo load) or not installed.
 function unzipd() {
 	local filename="${1}"
-	local directory="${filename%.zip}"
-	directory="${directory##*/}"
+	[[ -n "${filename}" ]] || { print -ru2 -- "Usage: unzipd <archive>"; return 1 }
+
+	# Strip the archive suffix, compound forms first, so foo.tar.gz -> foo rather
+	# than a directory literally named "foo.tar.gz". Names with unrelated dots
+	# (my.project.zip -> my.project) survive intact.
+	local directory="${filename:t}"
+	directory="${directory%.(tar.gz|tar.bz2|tar.xz|tar.zst|tar.lz4|tar.lz|tar.Z)}"
+	directory="${directory%.(zip|tar|tgz|tbz|tbz2|txz|tzst|gz|bz2|xz|zst|lz4|rar|7z|Z|lzh|arj)}"
 	if (( $+commands[ouch] )); then
 		ouch decompress "${filename}" --dir "${directory}"
 	else
@@ -729,25 +744,87 @@ function git_search() {
 }
 alias gse="git_search"
 
-# Reset git to a previous commit
+# Reset git to a previous commit, hard, after showing exactly what that destroys.
 # Usage: git_reset [n]
 # Example: git_reset 2  (resets to HEAD~2)
 function git_reset() {
-	local COMMIT="HEAD"
-	if [[ "$#" -eq 1 ]]; then
-		COMMIT="HEAD~$1"
+	if (( $# > 1 )); then
+		print -ru2 -- "Usage: ${funcstack[1]} [N]   (hard reset to HEAD~N)"
+		return 1
+	fi
+	if (( $# == 1 )) && [[ "$1" != <-> ]]; then
+		print -ru2 -- "${funcstack[1]}: N must be a number, got '$1'"
+		return 1
 	fi
 
-	git reset --hard "${COMMIT}"
+	git rev-parse --git-dir &>/dev/null || {
+		print -ru2 -- "${funcstack[1]}: not a git repository"
+		return 1
+	}
+
+	local commit="HEAD"
+	(( $# == 1 )) && commit="HEAD~$1"
+
+	git rev-parse --verify --quiet "${commit}^{commit}" >/dev/null || {
+		print -ru2 -- "${funcstack[1]}: no such commit: ${commit}"
+		return 1
+	}
+
+	# Spell out the damage before asking. --untracked-files=no because `reset --hard`
+	# leaves untracked files alone; counting them would overstate what is at risk.
+	local -i dirty dropped
+	dirty=$(git status --porcelain --untracked-files=no | wc -l)
+	dropped=$(git rev-list --count "${commit}..HEAD")
+	print -r -- "Hard reset to ${commit} — $(git log -1 --format='%h %s' "${commit}")"
+	(( dropped )) && print -r -- "  drops ${dropped} commit(s) currently on HEAD"
+	(( dirty ))   && print -r -- "  discards ${dirty} uncommitted change(s)"
+	(( dropped || dirty )) || print -r -- "  nothing to discard (working tree already matches)"
+
+	local confirm
+	read -r "confirm?Proceed? (y/n): "
+	if [[ "${confirm}" != "y" ]]; then
+		echo "Cancelled"
+		return 1
+	fi
+
+	git reset --hard "${commit}"
 }
-# Removed: conflicted with forgit::reset::head
-# alias gre="git_reset"
+# `gre [N]` -> git_reset above: `gre` resets hard to HEAD, `gre 2` to HEAD~2.
+# forgit does NOT claim this name (its reset::head lives on `grh`), so the earlier
+# "conflicted with forgit" note was mistaken and the alias is safe to keep.
+alias gre="git_reset"
 
 # Clone git repo and cd into it
 # Usage: git-clone <repo-url>
 # Example: git-clone https://github.com/user/repo.git
 function git-clone() {
-	git clone "$@" && cd "${${1:t}%.git}"
+	(( $# )) || { print -ru2 -- "Usage: git-clone <repo-url> [directory]"; return 1 }
+
+	git clone "$@" || return
+
+	# git, not us, decides the destination, so recover it instead of assuming it is
+	# the URL basename: an explicit trailing directory wins. Every candidate is
+	# validated as a real clone first, so an option's value (the "1" in `--depth 1`)
+	# can never send us into the wrong directory.
+	# A bare/mirror clone keeps the .git suffix, a normal one drops it; try the more
+	# likely spelling first so a stale sibling directory can't win the race.
+	local last="${@[-1]}" candidate
+	local -a candidates=("${last}")
+	if [[ " $* " == *" --bare "* || " $* " == *" --mirror "* ]]; then
+		candidates+=("${last:t}" "${${last:t}%.git}")
+	else
+		candidates+=("${${last:t}%.git}" "${last:t}")
+	fi
+
+	for candidate in "${candidates[@]}"; do
+		[[ -n "${candidate}" && -d "${candidate}" ]] || continue
+		git -C "${candidate}" rev-parse --git-dir &>/dev/null || continue
+		builtin cd "${candidate}"
+		return
+	done
+
+	print -ru2 -- "git-clone: clone succeeded but the target directory could not be determined"
+	return 1
 }
 
 # Jump to git repository root
@@ -770,7 +847,7 @@ alias gstp="git stash pop"
 alias gstl="git stash list"
 alias gsts="git stash show -p"
 
-alias gco="git checkout"
+alias gcheck="git checkout"  # `gco` belongs to forgit::checkout::commit
 alias gcob="git checkout -b"
 alias gcom="git checkout master || git checkout main"
 
@@ -778,15 +855,10 @@ alias gf="git fetch"
 alias gfa="git fetch --all"
 alias gfp="git fetch --prune"
 
-function grh() {
-	local confirm
-	read -r "confirm?Hard reset to HEAD? This discards local changes (y/n): "
-	if [[ "${confirm}" != "y" ]]; then
-		echo "Cancelled"
-		return 1
-	fi
-	git reset --hard
-}
+# Guarded `git reset --hard`. Named `ghard`, not `grh`: forgit claims `grh` for
+# forgit::reset::head (an interactive unstage, which is a different operation).
+# Delegates to git_reset so both entry points share one confirmation prompt.
+function ghard() { git_reset "$@"; }
 alias grsoft="git reset --soft"
 
 alias glg="git log --graph --oneline --decorate"
@@ -796,7 +868,7 @@ alias glgp="git log -p"  # Show patches
 alias gaa="git add --all"
 alias gap="git add --patch"
 alias gcan="git commit --amend --no-edit"
-alias grs="git restore --staged"
+alias grst="git restore --staged"  # `grs` belongs to forgit::restore
 
 # WIP (Work In Progress) helpers
 alias gwip="git add -A && git commit -m 'WIP' --no-verify"
@@ -814,34 +886,24 @@ function gcm() {
 # =======================================================================================
 # Forgit - Interactive Git Tool Aliases
 # =======================================================================================
-# Check if forgit functions are available, otherwise use fallback aliases
-if (( $+functions[forgit::log] )); then
-    # Forgit is available - use interactive forgit commands
-    alias gl='forgit::log'          # Interactive git log browser
-    alias gd='forgit::diff'         # Interactive git diff viewer
-    alias ga='forgit::add'          # Interactive git add
-    alias gre='forgit::reset::head' # Interactive git reset HEAD
-    alias gcf='forgit::checkout::file'   # Interactive checkout files
-    alias gcb='forgit::checkout::branch' # Interactive checkout branch
-    alias gss='forgit::stash::show' # Interactive stash viewer
-    alias gcp='forgit::cherry::pick' # Interactive cherry-pick
-    alias grb='forgit::rebase'      # Interactive rebase
-    alias gfu='forgit::fixup'       # Interactive fixup
-    alias gclean='forgit::clean'    # Interactive clean
-else
-    # Forgit not available - use standard git command fallbacks
-    alias gl='git log --graph --oneline --decorate --all'
-    alias gd='git diff'
-    alias ga='git add'
-    alias gre='git reset HEAD'
-    alias gcf='git checkout'
-    alias gcb='git checkout -b'
-    alias gss='git stash show -p'
-    alias gcp='git cherry-pick'
-    alias grb='git rebase'
-    alias gfu='git commit --fixup'
-    alias gclean='git clean -id'
-fi
+# Nothing to define here: forgit registers its own aliases (FORGIT_NO_ALIASES is
+# deliberately left unset) and it turbo-loads via `zi ice wait'0'` in .zshrc, i.e.
+# AFTER this file is sourced. Any alias we set for one of its names would simply be
+# overwritten a moment later, so forgit owns the names below outright:
+#
+#   ga  add          grh reset::head          grs restore       gl  log (forgit_log=gl)
+#   grl reflog       gd  diff                 gso show          gi  ignore
+#   gat attributes   gcf checkout::file       gcff checkout::file::from::commit
+#   gcb checkout::branch                      gsw switch::branch
+#   gco checkout::commit                      gct checkout::tag  gbd branch::delete
+#   grc revert::commit                        gclean clean       gss stash::show
+#   gsp stash::push  gcp cherry::pick::from::branch              grb rebase
+#   gfu fixup        gsq squash               grw reword         gbl blame
+#   gwt worktree     gwa worktree::add        gwd worktree::delete
+#
+# Plain-git equivalents that would otherwise collide live under different names:
+# `gcheck` (git checkout), `grst` (git restore --staged), `ghard` (guarded hard reset).
+# See `forgit_*` in .zshrc if you want to remap any of them.
 
 # =======================================================================================
 # Suffix Aliases
@@ -867,7 +929,8 @@ alias -g J="| jq"
 alias -g JL="| jless"   # browse JSON interactively (e.g. `xh :3000/api JL`)
 alias -g JN="| jnv"     # build a jq filter interactively over the JSON
 alias -g L="| less"
-alias -g P="| ${PAGER}"
+alias -g P="| ${PAGER:-less}"   # PAGER is not set anywhere in zsh/; without the
+                                # default this expands to "| " and P is a parse error
 alias -g S="| sort -n"
 alias -g T="| tail"
 alias -g U="| uniq"
@@ -986,8 +1049,11 @@ alias nlog="tail -f /var/log/nginx/*.log"
 # =======================================================================================
 # Runs docker compose command looking at other files
 function dc() {
-	export IP_ADDRESS=$(ip route list default | awk '{print $3}')
-    IP_ADDRESS=$IP_ADDRESS docker compose "$@"
+	# local + a prefix assignment, not export: `export` leaked IP_ADDRESS into the
+	# interactive shell and every later child process. The prefix assignment still
+	# puts it in docker compose's environment, which is all the .yml needs.
+	local ip_address="$(ip route list default 2>/dev/null | awk '{print $3}')"
+	IP_ADDRESS="${ip_address}" docker compose "$@"
 }
 
 function dce() {
@@ -1020,15 +1086,40 @@ function dclo() { dc logs -tf; }
 # Usage: dcp [args...]
 function dcp() { dc ps "$@"; }
 
+# Resolve a Docker Compose service name to a single container id.
+# Prints nothing and returns non-zero when the service isn't running.
+function _dc_container_id() {
+	local ids
+	ids="$(dc ps -q "$1" 2>/dev/null)" || return 1
+	[[ -n "${ids}" ]] || return 1
+	print -r -- "${ids%%$'\n'*}"  # first id, in case the service is scaled
+}
+
 # Execute command in Docker Compose service
-# Usage: dexec <service> <command>
-# Example: dexec php bash
-function dexec() { docker exec -it $(dc ps -q $1) $2; }
+# Usage: dexec <service> <command> [args...]
+# Example: dexec php bash        /  dexec php ls -la /var/www
+function dexec() {
+	local container
+	container="$(_dc_container_id "$1")" || {
+		print -ru2 -- "dexec: no running container for compose service '$1'"
+		return 1
+	}
+	shift
+	docker exec -it "${container}" "$@"
+}
 
 # Execute command as root in Docker Compose service
-# Usage: drexec <service> <command>
-# Example: drexec php apt-get update
-function drexec() { docker exec --user root:root -it $(dc ps -q $1) $2; }
+# Usage: drexec <service> <command> [args...]
+# Example: drexec php apt-get update -y
+function drexec() {
+	local container
+	container="$(_dc_container_id "$1")" || {
+		print -ru2 -- "drexec: no running container for compose service '$1'"
+		return 1
+	}
+	shift
+	docker exec --user root:root -it "${container}" "$@"
+}
 
 # Run bash shell in Docker Compose service
 # Usage: dceb <service> [script]
@@ -1062,64 +1153,134 @@ function dcebr() {
 	dc exec --user root:root "$1" "$script"
 }
 
+# The docker shortcuts below are functions rather than aliases so they can take
+# extra flags in any position, be used in pipes and command substitutions, and
+# apply defaults of their own. An alias can only ever prepend a fixed prefix.
+
 # Get latest container ID
-alias dl="docker ps -l -q"
+# Usage: dl [docker ps flags...]
+# Example: dl                    /  dip "$(dl)"
+function dl() { docker ps -l -q "$@"; }
 
 # Get container process
-alias dps="docker ps"
+# Usage: dps [docker ps flags...]
+# Example: dps --filter status=running
+function dps() { docker ps "$@"; }
 
-# Get process included stop container
-alias dpa="docker ps -a"
+# Get processes including stopped containers
+# Usage: dpa [docker ps flags...]
+# Example: dpa --filter status=exited
+function dpa() { docker ps -a "$@"; }
 
 # Get images
-alias di="docker images"
+# Usage: di [docker images flags...]
+# Example: di --filter dangling=true
+function di() { docker images "$@"; }
 
-# Get container IP
-alias dip="docker inspect --format '{{ .NetworkSettings.IPAddress }}'"
+# Get container IP addresses
+# Usage: dip [container...]        (defaults to the latest container)
+# Example: dip            /  dip portal-php portal-nginx-1
+# Reads .NetworkSettings.Networks, not the legacy .NetworkSettings.IPAddress:
+# on a user-defined network (anything docker compose creates) the legacy field is
+# absent entirely and asking for it aborts docker inspect with a template error.
+function dip() {
+	local -a targets=("$@")
+	if (( $#targets == 0 )); then
+		targets=(${(f)"$(docker ps -l -q)"}) || return 1
+		(( $#targets )) || { print -ru2 -- "dip: no containers"; return 1 }
+	fi
+	docker inspect --format \
+		'{{ .Name }}{{ with index .NetworkSettings "IPAddress" }} {{ . }}{{ end }}{{ range $net, $conf := .NetworkSettings.Networks }} {{ $net }}={{ $conf.IPAddress }}{{ end }}' \
+		"${targets[@]}"
+}
 
-# Run deamonized container, e.g., $dkd base /bin/echo hello
-alias dkd="docker run -d -P"
+# Run daemonized container
+# Usage: dkd <image> [command...]
+# Example: dkd base /bin/echo hello
+function dkd() { docker run -d -P "$@"; }
 
-# Run interactive container, e.g., $dki base /bin/bash
-alias dki="docker run -i -t -P"
+# Run interactive container
+# Usage: dki <image> [command...]
+# Example: dki base /bin/bash
+function dki() { docker run -i -t -P "$@"; }
 
 # Stop all Docker containers
 # Usage: dstop
 function dstop() {
+	local -a containers
+	containers=(${(f)"$(docker ps -a -q)"}) || {
+		print -ru2 -- "${funcstack[1]}: could not list containers (is the docker daemon running?)"
+		return 1
+	}
+	if (( $#containers == 0 )); then
+		echo "No containers"
+		return 0
+	fi
+
 	local confirm
-	read -r "confirm?Stop all Docker containers? (y/n): "
+	read -r "confirm?Stop all ${#containers} Docker containers? (y/n): "
 	if [[ "${confirm}" != "y" ]]; then
 		echo "Cancelled"
 		return 1
 	fi
-	docker stop $(docker ps -a -q)
+	docker stop "${containers[@]}"
 }
 
 # Stop and remove all Docker containers
 # Usage: drmf
 function drmf() {
+	local -a containers
+	containers=(${(f)"$(docker ps -a -q)"}) || {
+		print -ru2 -- "${funcstack[1]}: could not list containers (is the docker daemon running?)"
+		return 1
+	}
+	if (( $#containers == 0 )); then
+		echo "No containers"
+		return 0
+	fi
+
 	local confirm
-	read -r "confirm?Stop and remove ALL Docker containers? (y/n): "
+	read -r "confirm?Stop and remove ALL ${#containers} Docker containers? (y/n): "
 	if [[ "${confirm}" != "y" ]]; then
 		echo "Cancelled"
 		return 1
 	fi
-	docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)
+	docker stop "${containers[@]}" && docker rm "${containers[@]}"
 }
 
 # Get IP addresses of all running containers
-alias dpsi="docker ps -q | xargs docker inspect --format '{{ .Id }} - {{ .Name }} - {{ .NetworkSettings.IPAddress }}'"
+# Usage: dpsi
+# Same legacy-field problem as dip(), fixed the same way; also survives having no
+# running containers, where `docker ps -q | xargs docker inspect` would error.
+function dpsi() {
+	local -a containers
+	containers=(${(f)"$(docker ps -q)"}) || return 1
+	(( $#containers )) || { echo "No running containers"; return 0 }
+	docker inspect --format \
+		'{{ .Id }} - {{ .Name }} -{{ with index .NetworkSettings "IPAddress" }} {{ . }}{{ end }}{{ range $net, $conf := .NetworkSettings.Networks }} {{ $net }}={{ $conf.IPAddress }}{{ end }}' \
+		"${containers[@]}"
+}
 
 # Remove all Docker containers
 # Usage: drc
 function drc() {
+	local -a containers
+	containers=(${(f)"$(docker ps -a -q)"}) || {
+		print -ru2 -- "${funcstack[1]}: could not list containers (is the docker daemon running?)"
+		return 1
+	}
+	if (( $#containers == 0 )); then
+		echo "No containers"
+		return 0
+	fi
+
 	local confirm
-	read -r "confirm?Remove ALL Docker containers? (y/n): "
+	read -r "confirm?Remove ALL ${#containers} Docker containers? (y/n): "
 	if [[ "${confirm}" != "y" ]]; then
 		echo "Cancelled"
 		return 1
 	fi
-	docker rm $(docker ps -a -q)
+	docker rm "${containers[@]}"
 }
 
 # Remove all images
@@ -1153,9 +1314,12 @@ function dbt() {
 
 	local -a args=("$1")
 	shift
-	if [[ $# -ge 1 ]]; then
-		args+=(-t "$@")
-	fi
+
+	# docker takes one -t per tag; `-t a b` would make "b" a second build context.
+	local tag
+	for tag in "$@"; do
+		args+=(-t "${tag}")
+	done
 
 	docker build "${args[@]}"
 }
@@ -1181,9 +1345,27 @@ if [[ $HOST_OS == "wsl" ]]; then
 	# Open file/directory in Windows VS Code from WSL
 	# Usage: code [file or directory]
 	function code() {
-		local code_exe="${WINDOWS_USER_PROFILE:-/mnt/c/Users/${USER}}/AppData/Local/Programs/Microsoft VS Code/Code.exe"
-		if [[ ! -x "${code_exe}" ]]; then
-			echo "Error: VS Code not found at ${code_exe}" >&2
+		# Prefer VS Code's own WSL CLI: it hands paths to the already-running remote
+		# window and understands Linux paths, which Code.exe does not. `om[1]` picks
+		# the most recently installed server build when several are present.
+		local -a remote_cli=(${HOME}/.vscode-server/bin/*/bin/remote-cli/code(N-.xom[1]))
+		if (( $#remote_cli )); then
+			"${remote_cli[1]}" "$@"
+			return
+		fi
+
+		# Fall back to the Windows binary. ${USER} is the *Linux* account name and is
+		# usually not the Windows one, so ask Windows where its profile actually is.
+		local win_profile="${WINDOWS_USER_PROFILE}"
+		if [[ -z "${win_profile}" ]]; then
+			# cd to a drive path first so cmd.exe doesn't warn about a UNC cwd.
+			win_profile="$(builtin cd /mnt/c && cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r')"
+			[[ -n "${win_profile}" ]] && win_profile="$(wslpath -u "${win_profile}" 2>/dev/null)"
+		fi
+
+		local code_exe="${win_profile}/AppData/Local/Programs/Microsoft VS Code/Code.exe"
+		if [[ -z "${win_profile}" || ! -x "${code_exe}" ]]; then
+			print -ru2 -- "code: VS Code not found (no ~/.vscode-server CLI, and no Code.exe at ${code_exe})"
 			return 1
 		fi
 		"${code_exe}" "$@"
@@ -1240,30 +1422,113 @@ fi
 # Development Workflow Functions
 # =======================================================================================
 
-# Kill process by port number
+# List listening TCP sockets as: PORT PID COMMAND ADDRESS
+# lsof is preferred (works the same on macOS and Linux, and matches `lsp`); ss is the
+# Linux-only fallback for minimal images that ship iproute2 but not lsof.
+function _killport_listeners() {
+  if (( $+commands[lsof] )); then
+    # +c 0 stops lsof truncating COMMAND to 9 characters.
+    lsof +c 0 -nP -iTCP -sTCP:LISTEN 2>/dev/null | awk 'NR > 1 {
+      # A LISTEN row ends in a literal "(LISTEN)" column, so the address is not $NF.
+      line = $0
+      sub(/[ \t]*\(LISTEN\)[ \t]*$/, "", line)
+      nf = split(line, f, /[ \t]+/)
+      addr = f[nf]
+      n = split(addr, parts, ":")
+      printf "%-7s %-8s %-22s %s\n", parts[n], $2, $1, addr
+    }'
+  elif (( $+commands[ss] )); then
+    ss -tlnpH 2>/dev/null | awk '{
+      addr = $4
+      n = split(addr, parts, ":")
+      pid = "?"; cmd = "?"
+      if (match($0, /pid=[0-9]+/)) { pid = substr($0, RSTART + 4, RLENGTH - 4) }
+      if (match($0, /\(\("[^"]+"/)) { cmd = substr($0, RSTART + 3, RLENGTH - 4) }
+      printf "%-7s %-8s %-22s %s\n", parts[n], pid, cmd, addr
+    }'
+  fi | awk '!seen[$0]++' | sort -k1,1n
+}
+
+# Kill process by port number.
+# With a port argument the behaviour is unchanged. With no argument it opens an fzf
+# picker over the listening sockets — Tab to select several, Enter to confirm.
+# Usage: killport [port]
+# Example: killport 3000
+#          killport          # pick interactively
 function killport() {
-  if [[ $# -lt 1 ]]; then
+  local confirm
+
+  if (( $# >= 1 )); then
+    local port="${1}"
+    local pid=$(lsof -ti:"${port}")
+
+    if [[ -n "${pid}" ]]; then
+      # ${=pid} splits on whitespace: a port can be held by more than one PID
+      # (IPv4 + IPv6, or a pre-forking server), and quoting would pass them as one
+      # bogus argument.
+      read -r "confirm?Kill PID ${pid} on port ${port} with SIGKILL? (y/n): "
+      if [[ "${confirm}" == "y" ]]; then
+        echo "🔫 Killing process ${pid} on port ${port}..."
+        kill -9 ${=pid}
+        echo "✓ Process killed"
+      else
+        echo "❌ Cancelled"
+      fi
+    else
+      echo "❌ No process found on port ${port}"
+    fi
+    return
+  fi
+
+  if (( ! $+commands[fzf] )); then
     echo "Usage: killport <port>"
-    echo "Example: killport 3000"
+    echo "(install fzf to pick a port interactively)"
     return 1
   fi
 
-  local port="${1}"
-  local pid=$(lsof -ti:"${port}")
-
-  if [[ -n "${pid}" ]]; then
-    local confirm
-    read -r "confirm?Kill PID ${pid} on port ${port} with SIGKILL? (y/n): "
-    if [[ "${confirm}" == "y" ]]; then
-      echo "🔫 Killing process ${pid} on port ${port}..."
-      kill -9 "${pid}"
-      echo "✓ Process killed"
-    else
-      echo "❌ Cancelled"
-    fi
-  else
-    echo "❌ No process found on port ${port}"
+  local listeners
+  listeners="$(_killport_listeners)"
+  if [[ -z "${listeners}" ]]; then
+    echo "❌ No listening ports found"
+    return 1
   fi
+
+  local -a picked
+  picked=("${(@f)$(print -r -- "${listeners}" | fzf --multi --exit-0 \
+    --header='PORT    PID      COMMAND                ADDRESS' \
+    --height=40% --layout=reverse --border --info=inline)}")
+
+  # An empty selection means Esc/Ctrl-C, or --exit-0 with nothing matching.
+  if [[ -z "${picked[*]//[[:space:]]/}" ]]; then
+    echo "❌ Cancelled"
+    return 1
+  fi
+
+  local -a pids
+  local line
+  for line in "${picked[@]}"; do
+    [[ -n "${line}" ]] && pids+=("${${(z)line}[2]}")
+  done
+  # (u) dedupes: one process often listens on several ports, and without this it
+  # would be reported killed once per selected row.
+  pids=("${(@u)pids}")
+
+  echo "Selected:"
+  print -r -- "${listeners}" | grep -E "^\s*[0-9]+\s+(${(j:|:)pids})\s" | sed 's/^/  /'
+  read -r "confirm?Kill ${#pids} process(es) with SIGKILL? (y/n): "
+  if [[ "${confirm}" != "y" ]]; then
+    echo "❌ Cancelled"
+    return 1
+  fi
+
+  local target
+  for target in "${pids[@]}"; do
+    if kill -9 "${target}" 2>/dev/null; then
+      echo "✓ Killed ${target}"
+    else
+      echo "⚠ Could not kill ${target} (try sudo)"
+    fi
+  done
 }
 
 # Smart package manager runner - detects npm/yarn/pnpm/bun
@@ -1321,26 +1586,51 @@ function replace-in-files() {
   local search="${1}"
   local replace="${2}"
   local pattern="${3:-*}"
+  local confirm
 
   echo "🔍 Searching for: ${search}"
   echo "📝 Replacing with: ${replace}"
   echo "📁 In files matching: ${pattern}"
   echo ""
 
-  # Show matches first
-  rg "${search}" -l --glob "${pattern}"
+  # --fixed-strings so the search is a literal, matching what the replacement does.
+  # --null + ${(0)...} so filenames containing spaces (or newlines) survive: the old
+  # `rg -l | xargs sed` split "my file.txt" into two nonexistent paths.
+  # `command rg` bypasses the rg() wrapper above, which pages its output.
+  local -a files
+  # --glob must precede the `--`: everything after `--` is positional (PATTERN then
+  # PATHs), so a trailing --glob would be searched for as a filename.
+  # The trailing ./ is required, not cosmetic: with no path argument rg reads STDIN
+  # whenever stdin is not a tty, so the search silently matched nothing any time the
+  # function was called with its input redirected.
+  files=(${(0)"$(command rg --fixed-strings --files-with-matches --null --glob "${pattern}" -- "${search}" ./ 2>/dev/null)"})
 
+  if (( ${#files} == 0 )); then
+    echo "❌ No files matching ${pattern} contain ${search}"
+    return 1
+  fi
+
+  printf '%s\n' "${files[@]}"
   echo ""
-  read "confirm?Proceed with replacement? (y/n) "
-  if [[ "${confirm}" == "y" ]]; then
-    if [[ "${HOST_OS}" == "darwin" ]]; then
-      rg "${search}" -l --glob "${pattern}" | xargs sed -i '' "s/${search}/${replace}/g"
-    else
-      rg "${search}" -l --glob "${pattern}" | xargs sed -i "s/${search}/${replace}/g"
-    fi
-    echo "✓ Replacement complete"
-  else
+  read "confirm?Proceed with replacement in ${#files} file(s)? (y/n) "
+  if [[ "${confirm}" != "y" ]]; then
     echo "❌ Cancelled"
+    return 1
+  fi
+
+  # perl with \Q...\E rather than sed s///. The old form built the expression by
+  # interpolating raw user input, so any search or replacement containing a slash — a
+  # URL, a path — produced `sed: unknown option to 's'` and changed nothing. Passing
+  # both through the environment and quoting the pattern with \Q makes / & \ . * [ ]
+  # ^ $ literal, and $ENV{} on the right-hand side is not re-parsed.
+  # This also drops the separate darwin branch: perl -i needs no backup-suffix
+  # argument, so one code path now works on both GNU and BSD userland.
+  if RIF_SEARCH="${search}" RIF_REPLACE="${replace}" \
+       perl -0777 -pi -e 's/\Q$ENV{RIF_SEARCH}\E/$ENV{RIF_REPLACE}/g' -- "${files[@]}"; then
+    echo "✓ Replacement complete in ${#files} file(s)"
+  else
+    echo "❌ Replacement failed"
+    return 1
   fi
 }
 
@@ -1375,8 +1665,10 @@ function extract() {
             *.tar.bz2)   tar xjf "${1}"     ;;
             *.tar.gz)    tar xzf "${1}"     ;;
             *.tar.xz)    tar xJf "${1}"     ;;
-            *.tar.zst)   tar --zstd -xf "${1}" 2>/dev/null || zstd -d "${1}" | tar xf - ;;
-            *.tar.lz4)   lz4 -d "${1}" | tar xf - ;;
+            # -dc, not -d: plain -d writes a decompressed file next to the archive
+            # (and can block on an overwrite prompt) instead of streaming to tar.
+            *.tar.zst)   tar --zstd -xf "${1}" 2>/dev/null || zstd -dc "${1}" | tar xf - ;;
+            *.tar.lz4)   lz4 -dc "${1}" | tar xf - ;;
             *.bz2)       bunzip2 "${1}"     ;;
             *.rar)       unrar x "${1}"     ;;
             *.gz)        gunzip "${1}"      ;;
@@ -1389,10 +1681,11 @@ function extract() {
             *.xz)        unxz "${1}"        ;;
             *.zst)       unzstd "${1}"      ;;
             *.lz4)       unlz4 "${1}"       ;;
-            *)           echo "Cannot extract '${1}' - unknown format" ;;
+            *)           echo "Cannot extract '${1}' - unknown format" >&2; return 1 ;;
         esac
     else
-        echo "File '${1}' not found"
+        echo "File '${1}' not found" >&2
+        return 1
     fi
 }
 
@@ -1417,7 +1710,9 @@ function note() {
   if [[ $# -eq 0 ]]; then
     # Show recent notes
     echo "📝 Recent notes:"
-    ls -lt "${notes_dir}" | head -10
+    # `command ls`, not ls: the ls() override routes to eza, whose -t is --time and
+    # consumes the directory as its value ("Option --time has no <dir> setting").
+    command ls -lt "${notes_dir}" | head -10
   else
     # Create new note
     local note_file="${notes_dir}/$(date +%Y-%m-%d)-${1}.md"
@@ -1544,16 +1839,67 @@ function rga() {
 	command rg "$@"
 }
 
+# curl stand-in for http()/https(). xh turbo-loads at wait'2', so for the first
+# couple of seconds of a shell (or on a box where the download failed) it isn't on
+# PATH yet. curl does not speak xh's request language, so refuse the xh-only forms
+# rather than quietly issuing a different request than the one that was typed:
+# `https POST api.example.com name=raza` would otherwise make curl treat "POST" and
+# "name=raza" as two more URLs to fetch.
+# $1 is the scheme to assume for URLs written without one (curl >= 7.45).
+function _http_via_curl() {
+	local scheme="$1"; shift
+
+	local offender="" arg key
+	local -i i
+	for (( i = 1; i <= $#; i++ )); do
+		arg="${@[i]}"
+
+		# Skip flags, and skip the value that belongs to a flag: `-w url=%{...}` and
+		# `-d name=value` are curl's own grammar, not xh's.
+		[[ "${arg}" == -* ]] && continue
+		(( i > 1 )) && [[ "${@[i-1]}" == -* ]] && continue
+
+		# xh puts the method first: `http POST example.com`.
+		if (( i == 1 )) && [[ "${arg}" == (GET|HEAD|POST|PUT|PATCH|DELETE|OPTIONS) ]]; then
+			offender="${arg}"; break
+		fi
+
+		# xh's host shorthand: `http :3000/api`.
+		if [[ "${arg}" == :[0-9/]* ]]; then
+			offender="${arg}"; break
+		fi
+
+		# xh's request items: name=value, name:=raw-json, name==query-param. A URL's
+		# own query string ("example.com?a=b") keeps punctuation left of the "=", so
+		# only a bare identifier counts as an xh item.
+		if [[ "${arg}" == *=* ]]; then
+			key="${arg%%=*}"
+			key="${key%:}"
+			if [[ -n "${key}" && "${key}" != *[/:?.@#]* ]]; then
+				offender="${arg}"; break
+			fi
+		fi
+	done
+
+	if [[ -n "${offender}" ]]; then
+		print -ru2 -- "${funcstack[2]}: xh is not on PATH yet and curl does not understand xh syntax ('${offender}')."
+		print -ru2 -- "${funcstack[2]}: give xh a moment to finish loading, or call curl directly."
+		return 127
+	fi
+
+	command curl --proto-default "${scheme}" "$@"
+}
+
 # HTTP client - xh (HTTPie syntax), falling back to curl
 function http() {
 	(( $+commands[xh] )) && { xh "$@"; return }
-	command curl "$@"
+	_http_via_curl http "$@"
 }
 
 # Same, but force HTTPS when the URL doesn't spell out a scheme
 function https() {
 	(( $+commands[xh] )) && { xh --https "$@"; return }
-	command curl "$@"
+	_http_via_curl https "$@"
 }
 
 # batgrep directly (bat-extras) - ripgrep results with highlighted context,

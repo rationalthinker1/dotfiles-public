@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+# memwatch — records memory pressure and per-process growth so the cause of a
+# WSL power-off is identifiable afterwards.
+#
+# Context: on this host the WSL2 VM exhausts RAM+swap, the kernel never OOM-kills
+# (no cgroup bounds), the 9p transport stalls, and WSL calls reboot(RB_POWER_OFF).
+# Nothing survives to say what ate the memory. This writes that evidence to disk,
+# syncing on every alert so the last lines survive a hard power-cut.
+#
+# Pairs with earlyoom: earlyoom kills the runaway, memwatch says what it was.
+
+set -uo pipefail
+
+INTERVAL="${MEMWATCH_INTERVAL:-15}"        # seconds between samples
+MEM_ALERT_MB="${MEMWATCH_MEM_ALERT_MB:-800}"   # MemAvailable below this => alert
+SWAP_ALERT_MB="${MEMWATCH_SWAP_ALERT_MB:-256}" # SwapFree below this => alert
+PSI_ALERT="${MEMWATCH_PSI_ALERT:-10}"      # memory PSI 'full avg10' above this => alert
+GROW_MB="${MEMWATCH_GROW_MB:-5}"           # per-sample RSS delta counted as growth
+GROW_STREAK="${MEMWATCH_GROW_STREAK:-8}"   # consecutive growing samples => leak suspect
+GROW_MIN_MB="${MEMWATCH_GROW_MIN_MB:-400}" # only flag suspects above this RSS
+DUMP_MIN_GAP="${MEMWATCH_DUMP_MIN_GAP:-60}"    # min seconds between full process dumps
+RETAIN_DAYS="${MEMWATCH_RETAIN_DAYS:-14}"
+LOG_DIR="${MEMWATCH_LOG_DIR:-/var/log/memwatch}"
+
+mkdir -p "${LOG_DIR}" 2>/dev/null || { echo "memwatch: cannot create ${LOG_DIR}" >&2; exit 1; }
+
+declare -A prev_rss=()   # pid -> RSS at previous sample (kB)
+declare -A streak=()     # pid -> consecutive samples of growth
+declare -A flagged=()    # pid -> already reported as a leak suspect
+
+log_file() { echo "${LOG_DIR}/memwatch-$(date +%Y%m%d).log"; }
+
+say() { printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >>"$(log_file)"; }
+
+prune() { find "${LOG_DIR}" -name 'memwatch-*.log' -mtime "+${RETAIN_DAYS}" -delete 2>/dev/null; }
+
+# Top consumers, with enough cmdline to tell five identical `node` processes apart.
+dump_procs() {
+    say "  ---- top 15 by RSS ----"
+    ps -eo pid,rss,etimes,args --sort=-rss --no-headers 2>/dev/null | head -15 |
+    while read -r pid rss etimes args; do
+        printf '%s   %7d MB  pid=%-7s age=%-8s %.140s\n' \
+            "$(date '+%Y-%m-%d %H:%M:%S')" "$((rss / 1024))" "${pid}" "${etimes}s" "${args}"
+    done >>"$(log_file)"
+}
+
+# Read a value from /proc/meminfo in MB.
+meminfo_mb() { awk -v k="$1:" '$1 == k { print int($2 / 1024); exit }' /proc/meminfo; }
+
+trap 'say "=== memwatch stopping (signal) ==="; sync; exit 0' TERM INT
+
+prune
+say "=== memwatch started (interval=${INTERVAL}s alert<${MEM_ALERT_MB}MB kernel=$(uname -r)) ==="
+sync
+
+last_day="$(date +%Y%m%d)"
+last_dump=0
+
+while :; do
+    avail="$(meminfo_mb MemAvailable)"
+    swfree="$(meminfo_mb SwapFree)"
+    swtotal="$(meminfo_mb SwapTotal)"
+    psi_full="$(awk '/^full/ { sub("avg10=", "", $2); print $2; exit }' /proc/pressure/memory 2>/dev/null || echo 0)"
+    load1="$(awk '{ print $1 }' /proc/loadavg)"
+
+    # New day: rotate to a fresh file and drop expired ones.
+    today="$(date +%Y%m%d)"
+    if [[ "${today}" != "${last_day}" ]]; then
+        last_day="${today}"
+        prune
+        say "=== date rollover ==="
+    fi
+
+    alert=""
+    (( avail < MEM_ALERT_MB )) && alert="LOW_MEM"
+    (( swtotal > 0 && swfree < SWAP_ALERT_MB )) && alert="${alert:+${alert},}LOW_SWAP"
+    awk -v p="${psi_full}" -v t="${PSI_ALERT}" 'BEGIN { exit !(p > t) }' && \
+        alert="${alert:+${alert},}STALL"
+
+    say "avail=${avail}MB swapfree=${swfree}/${swtotal}MB psi_full10=${psi_full} load1=${load1}${alert:+  ** ${alert} **}"
+
+    # Per-process growth tracking — the leak signal.
+    while read -r pid rss comm; do
+        (( rss < GROW_MIN_MB * 1024 )) && continue
+        prev="${prev_rss[$pid]:-0}"
+        if (( prev > 0 && rss > prev + GROW_MB * 1024 )); then
+            streak[$pid]=$(( ${streak[$pid]:-0} + 1 ))
+            if (( streak[$pid] >= GROW_STREAK )) && [[ -z "${flagged[$pid]:-}" ]]; then
+                flagged[$pid]=1
+                say "  !! LEAK SUSPECT pid=${pid} ${comm} grew ${GROW_STREAK}+ samples straight, now $((rss / 1024))MB"
+                say "     cmdline: $(tr '\0' ' ' <"/proc/${pid}/cmdline" 2>/dev/null | cut -c1-200)"
+                sync
+            fi
+        else
+            streak[$pid]=0
+        fi
+        prev_rss[$pid]="${rss}"
+    done < <(ps -eo pid,rss,comm --sort=-rss --no-headers 2>/dev/null | head -25)
+
+    # Sustained pressure would otherwise dump 15 lines every interval; throttle the
+    # full listing while still logging the one-line sample every time.
+    if [[ -n "${alert}" ]]; then
+        now="$(date +%s)"
+        if (( now - last_dump >= DUMP_MIN_GAP )); then
+            last_dump="${now}"
+            dump_procs
+        fi
+        sync   # alerts precede the power-off; make sure they reach disk
+    fi
+
+    # Forget processes that have exited, so the maps don't grow without bound.
+    for pid in "${!prev_rss[@]}"; do
+        [[ -d "/proc/${pid}" ]] || { unset 'prev_rss[$pid]' 'streak[$pid]' 'flagged[$pid]'; }
+    done
+
+    sleep "${INTERVAL}"
+done

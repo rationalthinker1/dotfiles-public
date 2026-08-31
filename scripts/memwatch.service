@@ -1,0 +1,30 @@
+[Unit]
+Description=memwatch — memory pressure and leak recorder
+Documentation=https://github.com/rationalthinker1/dotfiles
+After=multi-user.target
+
+[Service]
+Type=simple
+# A system unit cannot expand %h (it resolves to /root), so this path is literal.
+# install.sh rewrites it for the invoking user when it installs the unit.
+ExecStart=/home/raza/.local/bin/memwatch
+Restart=always
+RestartSec=5
+
+# Runs as root so it can read cmdlines of container and other-user processes.
+User=root
+
+# Stay out of the way of the workload it is observing.
+Nice=10
+IOSchedulingClass=idle
+
+# Never let the recorder become part of the problem. If memwatch itself leaks,
+# systemd kills it and Restart=always brings it back.
+MemoryMax=64M
+
+# Make it the last thing earlyoom or the kernel would choose to kill — its whole
+# value is being alive at the moment everything else dies.
+OOMScoreAdjust=-500
+
+[Install]
+WantedBy=multi-user.target
