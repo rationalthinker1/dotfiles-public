@@ -173,7 +173,7 @@ function zi_audit() {
     local -A declared seen_twice
     local -a parsed report decl_ices saved dropped stale payload hits orphans zwcs
 
-    # id -> declared ice names. A plugin declared inside an if/else (up, qsv) appears
+    # id -> declared ice names. A plugin declared inside an if/else (up) appears
     # twice with different ices; record that so the drop check can be skipped for it,
     # since only one branch is live and the other's ices would be false positives.
     parsed=( ${(f)"$(zi_audit::declared "${zshrc}")"} )
