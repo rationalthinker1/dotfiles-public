@@ -3,11 +3,21 @@
 # zinit-reset — wipe every installed zinit object and reinstall from .zshrc
 #
 # Why this exists: zinit snapshots a plugin's ices into <plugin>/._zinit/ at
-# install time and replays *those* on every `zi update`, forever. Editing an ice
-# in .zshrc does nothing to an already-installed plugin, so machines silently
-# drift — a repo that once used from'gh' + atclone'cargo build' keeps compiling
-# from source long after .zshrc switched it to from'gh-r'. Only deleting the
-# plugin dir (and its ._zinit/) rewrites that metadata.
+# install time, and the update path replays *those* rather than what .zshrc declares
+# now. Machines silently drift — a repo that once used from'gh' + atclone'cargo build'
+# keeps compiling from source long after .zshrc switched it to from'gh-r'.
+#
+# Be precise about which update path, because the difference is the whole trap:
+#   - bulk `zi update --all` NEVER refreshes that metadata (it walks the plugins dir in
+#     background subshells, with no session ice context — bursting first does not help);
+#   - a targeted `zi update <plugin>` on a LOADED plugin DOES refresh it, but only by
+#     MERGING: it writes changed and added ices and never removes the ones .zshrc
+#     dropped, so a stale atclone keeps firing forever.
+# Deleting the plugin dir remains the only complete rewrite.
+#
+# All of this is measured in docs/ZINIT_UPDATE_MECHANICS.md. Read it before proposing an
+# incremental replacement for this script: the obvious one (loop targeted updates instead
+# of wiping) has been tested and reintroduces the exact bug this script exists to fix.
 #
 # Run it directly — this dir is not in fpath (detect_os.sh is explicitly sourced from
 # .zshenv), and there is nothing to wire up: zsh accepts local/return at script level.
