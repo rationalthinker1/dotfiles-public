@@ -1076,7 +1076,14 @@ function maintain::run() {
         fi
 
         (( srv_clean )) && print -r -- "    ✓ no reboot required, no failed units, no boot errors"
-        (( $+commands[needrestart] && can_sudo )) && { print -r -- "    services needing restart (needrestart):"; "${sudo_cmd[@]}" needrestart -r l 2>/dev/null }
+        # DEBIAN_FRONTEND is load-bearing here, not decoration. Without it needrestart renders
+        # its "Pending kernel upgrade" notice through debconf/whiptail, and because sudo gives
+        # the command its OWN pty that dialog paints onto a different tty than the one you are
+        # typing into — no keystroke can reach it and the whole run wedges until the process is
+        # killed from another host. `2>/dev/null` does not help: debconf writes to the tty, not
+        # stderr. `env` for the same reason as apt_env above: sudo's env_reset drops the var.
+        # Only reproduces where a -generic kernel is installed, so WSL never shows it.
+        (( $+commands[needrestart] && can_sudo )) && { print -r -- "    services needing restart (needrestart):"; "${sudo_cmd[@]}" env DEBIAN_FRONTEND=noninteractive needrestart -r l 2>/dev/null }
     fi
 
     # WSL runtime/kernel updates live on the WINDOWS side: `wsl --update` targets the WSL2
