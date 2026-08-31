@@ -586,22 +586,6 @@ zi light ap/rename
 zi ice from'gh-r' as'program' nocompile'!'
 zi load eza-community/eza
 
-# Byron/dua-cli publishes TWO release series from one repo: `dua-core-vX.Y.Z` library
-# tags (no binary assets) and `vX.Y.Z` binary tags. zinit resolves /releases/latest,
-# which lands on the assetless library tag and fails with "gh-r: No release assets
-# found"; there is no ice to skip assetless releases and `ver` would pin us to a tag
-# that silently never updates. So this one builds from source instead.
-# `cargo clean` after copying the binary out is load-bearing: target/ is ~340MB for a
-# 4.3MB binary. With it the whole plugin dir is ~7MB. Requires cargo (mise pins rust
-# in mise/config.toml). Rebuild (~1min, longer on a small VPS) only runs when a `zi
-# update` actually pulls new commits — zinit skips hooks otherwise unless --urge.
-zi ice wait'2' lucid depth'1' as'program' pick'dua' nocompile'!' \
-    atclone'cargo build --release --locked && cp -f target/release/dua . && cargo clean' \
-    atpull'%atclone'
-zi load Byron/dua-cli
-
-# Note: zshmarks removed - use zoxide for directory jumping (z <pattern>)
-
 # ==============================================================================
 # SEARCH / DEV TOOLS
 # ==============================================================================
@@ -808,6 +792,25 @@ zi load dathere/qsv
 zi ice wait'2' lucid from'gh-r' as'program' pick'*/yazi' nocompile'!' \
     bpick"$(gh_asset 'yazi-{arch}-unknown-linux-{libc}.zip' 'yazi-{arch}-apple-darwin.zip')"
 zi load sxyazi/yazi
+
+# 💽 dua - disk usage analyzer; `dua i` opens the interactive tree browser
+# Byron/dua-cli publishes TWO release series from one repo: `dua-core-vX.Y.Z` library
+# tags (no binary assets) and `vX.Y.Z` binary tags. zinit resolves /releases/latest, so a
+# library tag published last leaves gh-r with "gh-r: No release assets found", and there
+# is no ice to skip assetless releases. That once made a source build the only option.
+# It no longer does: upstream tags the pair back-to-back, so the assetless window is
+# narrow. Measured over the last five dua-core tags — 2s, 1s, 1s, 71s, and one 28h
+# outlier (v3.3.0). It can only strike an install/update, never a shell start, and the
+# recovery is to re-run later; that beats a ~1min `cargo build --locked` against a 340MB
+# target/ plus a hard rust-toolchain dependency, for a 4.4MB static binary upstream
+# already ships. Should upstream ever leave a library tag on top for good, revert to the
+# atclone build in git history rather than pinning `ver` — a pin never updates again.
+# Linux is musl-ONLY here (no gnu asset exists at all), hence the literal over {libc}.
+# The asset embeds the version, so the templates glob it; the tarball nests everything
+# under dua-v<ver>-<triple>/, hence pick'*/dua'.
+zi ice wait'2' lucid from'gh-r' as'program' pick'*/dua' nocompile'!' \
+    bpick"$(gh_asset 'dua-v*-{arch}-unknown-linux-musl.tar.gz' 'dua-v*-{arch}-apple-darwin.tar.gz')"
+zi load Byron/dua-cli
 
 # ==============================================================================
 # ADDITIONAL MODERN CLI TOOLS
