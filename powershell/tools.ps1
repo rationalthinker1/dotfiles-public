@@ -34,7 +34,7 @@ if (Test-Command 'fzf') {
 }
 
 # Point ripgrep at the config already tracked in this repo, if it is reachable.
-$rgConfig = Join-Path $script:DotfilesRoot 'ripgrep/.ripgreprc'
+$rgConfig = Join-Path $script:DotfilesRoot 'config/ripgrep/.ripgreprc'
 if ((Test-Command 'rg') -and (Test-Path $rgConfig) -and -not $env:RIPGREP_CONFIG_PATH) {
     $env:RIPGREP_CONFIG_PATH = $rgConfig
 }

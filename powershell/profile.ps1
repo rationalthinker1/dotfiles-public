@@ -168,6 +168,6 @@ foreach ($fragment in @('psreadline.ps1', 'tools.ps1', 'aliases.ps1')) {
     if (Test-Path $path) { . $path }
 }
 
-# Machine-specific overrides — gitignored, mirrors zsh/local.zsh. Always last.
+# Machine-specific overrides — gitignored, mirrors config/zsh/local.zsh. Always last.
 $localProfile = Join-Path $script:ProfileDir 'local.ps1'
 if (Test-Path $localProfile) { . $localProfile }

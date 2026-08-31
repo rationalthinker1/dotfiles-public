@@ -1,12 +1,12 @@
 # PowerShell 7 configuration
 
-A deliberately small PowerShell counterpart to the ZSH configuration in `zsh/`. The goal
+A deliberately small PowerShell counterpart to the ZSH configuration in `config/zsh/`. The goal
 is **pwsh usable** — a native Windows shell that feels familiar when you drop into it —
 not a full port of the 40-plugin ZSH setup.
 
 ## What this is
 
-Most of the value in `zsh/` is not ZSH at all: it is the ~40 binaries zi fetches from
+Most of the value in `config/zsh/` is not ZSH at all: it is the ~40 binaries zi fetches from
 GitHub releases (fd, rg, bat, eza, fzf, zoxide, delta, lazygit, atuin, …). Those are
 cross-platform and run natively on Windows, so this side only needs to replace the thin
 shell-specific layer on top of them.
@@ -87,6 +87,7 @@ the zsh helper does.
 
 ## Shared with the ZSH side
 
-`atuin/`, `git/aliases.gitconfig`, `ripgrep/.ripgreprc` and `mise/config.toml` are
+`config/atuin/`, `config/git/aliases.gitconfig`, `config/ripgrep/.ripgreprc` and
+`config/mise/config.toml` are
 shell-agnostic and used by both. `tools.ps1` mirrors the `FZF_*` and `BAT_THEME` values
 from `.zshrc` so search behaviour matches in either shell.

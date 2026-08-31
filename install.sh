@@ -27,7 +27,7 @@ relative_path() {
 
 # Link one tracked dotfile into place, backing up whatever was there before.
 # Idempotent: a target already pointing at the right relative source is left untouched.
-# Extracted from the bulk symlink loop so individual links (notably mise/config.toml)
+# Extracted from the bulk symlink loop so individual links (notably config/mise/config.toml)
 # can be established early, before the steps that consume them.
 link_dotfile() {
     local source_path="${1}"
@@ -65,6 +65,49 @@ link_dotfile() {
 
     # Create relative symlink so it resolves correctly on both host and container
     ln -nfs "${relative_source}" "${target}"
+}
+
+# Relocate leftovers from the pre-config/ repo layout.
+#
+# The directories that get symlinked into ~/.config moved from the repo root into config/.
+# `git pull` relocates the TRACKED half of that automatically, but anything untracked or
+# gitignored — zsh/local.zsh, zsh/cache/, the *.zwc bytecode, .aws/credentials, password
+# entries not yet committed — is invisible to git and stays stranded at the old path. A
+# machine that has not been updated in months recovers in a single ./install.sh because of
+# this function; keep it permanently, it costs one [[ -d ]] test per directory per run.
+#
+# The dangling ~/.config/* symlinks need no handling here: link_dotfile's `[[ -e target ]]`
+# test follows the link, so it is false for a dangling one — the backup branch is skipped
+# and ln -nfs simply repoints it at the new source.
+migrate_to_config() {
+    local dir old new
+
+    if ! command -v rsync &>/dev/null; then
+        echo "⚠ rsync not available yet — skipping config/ migration (re-run install.sh after the package phase)"
+        return 0
+    fi
+
+    for dir in "${MIGRATED_CONFIG_DIRS[@]}"; do
+        old="${DOTFILES_ROOT}/${dir}"
+        new="${DOTFILES_ROOT}/config/${dir}"
+
+        # Nothing to do on a fresh clone or an already-migrated machine
+        [[ -d "${old}" && ! -L "${old}" ]] || continue
+
+        mkdir -p "${new}"
+        # --ignore-existing never clobbers a tracked file with a stale copy from the old
+        # tree; --remove-source-files unlinks ONLY what actually transferred, so anything
+        # skipped survives at the old path and gets reported below instead of vanishing.
+        rsync -a --ignore-existing --remove-source-files "${old}/" "${new}/"
+        find "${old}" -depth -type d -empty -delete 2>/dev/null || true
+
+        if [[ -d "${old}" ]]; then
+            echo "⚠ ${old} still holds files that also exist under config/ — reconcile by hand:"
+            find "${old}" -type f | sed 's|^|    |'
+        else
+            echo "✓ Migrated leftovers: ${dir}/ → config/${dir}/"
+        fi
+    done
 }
 
 #=======================================================================================
@@ -205,39 +248,48 @@ readonly -a ARCH_PACKAGES=(
 declare -A SHARED_LINKS=(
     [.vimrc]="${HOME}/.vimrc"
     [.vim]="${HOME}/.vim"
-    [.aws]="${XDG_CONFIG_HOME:-${HOME}/.config}/.aws"
-    [atuin]="${XDG_CONFIG_HOME:-${HOME}/.config}/atuin"
-    [zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/zsh"
-    [ranger]="${XDG_CONFIG_HOME:-${HOME}/.config}/ranger"
-    [sheldon]="${XDG_CONFIG_HOME:-${HOME}/.config}/sheldon"
-    [ripgrep]="${XDG_CONFIG_HOME:-${HOME}/.config}/ripgrep"
-    [kitty]="${XDG_CONFIG_HOME:-${HOME}/.config}/kitty"
-    [broot]="${XDG_CONFIG_HOME:-${HOME}/.config}/broot"
-    [alacritty]="${XDG_CONFIG_HOME:-${HOME}/.config}/alacritty"
-    [tmux]="${XDG_CONFIG_HOME:-${HOME}/.config}/tmux"
-    [mise/config.toml]="${XDG_CONFIG_HOME:-${HOME}/.config}/mise/config.toml"
-    [gh/config.yml]="${XDG_CONFIG_HOME:-${HOME}/.config}/gh/config.yml"
-    [git/ignore]="${XDG_CONFIG_HOME:-${HOME}/.config}/git/ignore"
-    [git/aliases.gitconfig]="${XDG_CONFIG_HOME:-${HOME}/.config}/git/aliases.gitconfig"
+    [config/.aws]="${XDG_CONFIG_HOME:-${HOME}/.config}/.aws"
+    [config/atuin]="${XDG_CONFIG_HOME:-${HOME}/.config}/atuin"
+    [config/zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/zsh"
+    [config/ranger]="${XDG_CONFIG_HOME:-${HOME}/.config}/ranger"
+    [config/sheldon]="${XDG_CONFIG_HOME:-${HOME}/.config}/sheldon"
+    [config/ripgrep]="${XDG_CONFIG_HOME:-${HOME}/.config}/ripgrep"
+    [config/kitty]="${XDG_CONFIG_HOME:-${HOME}/.config}/kitty"
+    [config/broot]="${XDG_CONFIG_HOME:-${HOME}/.config}/broot"
+    [config/alacritty]="${XDG_CONFIG_HOME:-${HOME}/.config}/alacritty"
+    [config/tmux]="${XDG_CONFIG_HOME:-${HOME}/.config}/tmux"
+    [config/mise/config.toml]="${XDG_CONFIG_HOME:-${HOME}/.config}/mise/config.toml"
+    [config/gh/config.yml]="${XDG_CONFIG_HOME:-${HOME}/.config}/gh/config.yml"
+    [config/git/ignore]="${XDG_CONFIG_HOME:-${HOME}/.config}/git/ignore"
+    [config/git/aliases.gitconfig]="${XDG_CONFIG_HOME:-${HOME}/.config}/git/aliases.gitconfig"
     [mimeapps.list]="${XDG_CONFIG_HOME:-${HOME}/.config}/mimeapps.list"
     [.Xresources]="${HOME}/.Xresources"
     [rc.sh]="${HOME}/.ssh/rc"
-    [claude/commands]="${CLAUDE_CONFIG_DIR}/commands"
-    [claude/agents]="${CLAUDE_CONFIG_DIR}/agents"
-    [claude/skills]="${CLAUDE_CONFIG_DIR}/skills"
-    [claude/CLAUDE.md]="${CLAUDE_CONFIG_DIR}/CLAUDE.md"
-    [password-store]="${PASSWORD_STORE_DIR}"
+    [config/claude/commands]="${CLAUDE_CONFIG_DIR}/commands"
+    [config/claude/agents]="${CLAUDE_CONFIG_DIR}/agents"
+    [config/claude/skills]="${CLAUDE_CONFIG_DIR}/skills"
+    [config/claude/CLAUDE.md]="${CLAUDE_CONFIG_DIR}/CLAUDE.md"
+    [config/password-store]="${PASSWORD_STORE_DIR}"
     [scripts/memwatch]="${HOME}/.local/bin/memwatch"
 )
 
+# Directories that moved from the repo root into config/. Consumed by migrate_to_config to
+# rescue untracked/gitignored leftovers on machines cloned before the move. This is exactly
+# the set of link sources that land under ~/.config — keep it in sync with SHARED_LINKS and
+# ZSH_LINKS above.
+readonly -a MIGRATED_CONFIG_DIRS=(
+    .aws alacritty atuin broot claude fzf gh git kitty mise
+    password-store ranger ripgrep sheldon tmux zi zsh
+)
+
 declare -A ZSH_LINKS=(
-    [zsh/.zshrc]="${HOME}/.zshrc"
-    [zsh/.zshenv]="${HOME}/.zshenv"
-    [zsh/.zprofile]="${HOME}/.zprofile"
-    [zsh/.zlogin]="${HOME}/.zlogin"
-    [zsh/.zlogout]="${HOME}/.zlogout"
-    [fzf/fzf.zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/fzf/fzf.zsh"
-    [zi/init.zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/zi/init.zsh"
+    [config/zsh/.zshrc]="${HOME}/.zshrc"
+    [config/zsh/.zshenv]="${HOME}/.zshenv"
+    [config/zsh/.zprofile]="${HOME}/.zprofile"
+    [config/zsh/.zlogin]="${HOME}/.zlogin"
+    [config/zsh/.zlogout]="${HOME}/.zlogout"
+    [config/fzf/fzf.zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/fzf/fzf.zsh"
+    [config/zi/init.zsh]="${XDG_CONFIG_HOME:-${HOME}/.config}/zi/init.zsh"
 )
 
 
@@ -245,15 +297,19 @@ declare -A ZSH_LINKS=(
 # Environment Detection & Initialization
 #=======================================================================================
 
+# Rescue leftovers from the pre-config/ layout BEFORE anything reads a repo path, so every
+# step below — starting with the detect_os.sh source right after — sees the final layout.
+[[ -d "${DOTFILES_ROOT}" ]] && migrate_to_config
+
 # Source centralized POSIX-compatible OS detection
 # Shared with .zshrc for consistency
-if [[ ! -f "${DOTFILES_ROOT}/zsh/functions/detect_os.sh" ]]; then
-    echo "ERROR: detect_os.sh not found at ${DOTFILES_ROOT}/zsh/functions/detect_os.sh"
+if [[ ! -f "${DOTFILES_ROOT}/config/zsh/functions/detect_os.sh" ]]; then
+    echo "ERROR: detect_os.sh not found at ${DOTFILES_ROOT}/config/zsh/functions/detect_os.sh"
     echo "Your dotfiles repository may be incomplete or corrupted"
     exit 1
 fi
 
-source "${DOTFILES_ROOT}/zsh/functions/detect_os.sh"
+source "${DOTFILES_ROOT}/config/zsh/functions/detect_os.sh"
 export LOCAL_CONFIG="${HOME}/.config"
 export XDG_CONFIG_HOME="${HOME}/.config"
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
@@ -423,9 +479,9 @@ export PATH="${HOME}/.local/bin:${PATH}"
 # here on a fresh machine and the repo's pins (notably the concrete vim patch) would never
 # apply — the bulk symlink pass runs much later and would only find, and back up, that
 # generated file. Linking here also keeps install.sh from rewriting the tracked config.
-link_dotfile "mise/config.toml" "${XDG_CONFIG_HOME}/mise/config.toml"
+link_dotfile "config/mise/config.toml" "${XDG_CONFIG_HOME}/mise/config.toml"
 
-echo "Installing development tools via mise (versions pinned in mise/config.toml)..."
+echo "Installing development tools via mise (versions pinned in config/mise/config.toml)..."
 
 # `mise install` skips already-installed tools, so this is idempotent and replaces the
 # hand-rolled per-tool version comparison. Stderr is deliberately NOT suppressed: vim
@@ -433,8 +489,8 @@ echo "Installing development tools via mise (versions pinned in mise/config.toml
 # like a hang, then hid the error when it failed.
 #
 # The vim build flags (ASDF_VIM_CONFIG/LDFLAGS) used to be exported here and mirrored by
-# a mise() wrapper in zsh/aliases.zsh. They now live in the [env] block of
-# mise/config.toml — symlinked to ~/.config/mise/config.toml just above — so mise applies
+# a mise() wrapper in config/zsh/aliases.zsh. They now live in the [env] block of
+# config/mise/config.toml — symlinked to ~/.config/mise/config.toml just above — so mise applies
 # them to EVERY invocation instead of only the two that remembered to. Any other route to
 # the compiler (a script, a non-interactive shell, `command mise`) silently built a
 # -python3 vim and broke UltiSnips. See that file for the full rationale; do NOT re-add
@@ -645,7 +701,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Migrating legacy paths to XDG locations"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# zsh/.zshenv redirects these tools to XDG paths. Without moving the existing
+# config/zsh/.zshenv redirects these tools to XDG paths. Without moving the existing
 # files, a machine pulling that change silently loses git identity, npm auth
 # tokens, docker logins, GPG keyrings, etc. — the env var points at an empty
 # location while the real data sits abandoned at the old path.
@@ -698,7 +754,7 @@ if [[ ! -d "${GNUPGHOME}" ]]; then
     echo "✓ Created GNUPGHOME at ${GNUPGHOME}"
 fi
 
-# wget aborts every invocation if WGETRC (set in zsh/.zshenv) points to a missing file
+# wget aborts every invocation if WGETRC (set in config/zsh/.zshenv) points to a missing file
 if [[ ! -f "${XDG_CONFIG_HOME}/wget/wgetrc" ]]; then
     mkdir -p "${XDG_CONFIG_HOME}/wget"
     touch "${XDG_CONFIG_HOME}/wget/wgetrc"
@@ -726,7 +782,7 @@ echo "✓ Dotfile symlinks installed"
 # is idempotent and also migrates older machines that defined these aliases inline.
 #---------------------------------------------------------------------------------------
 git_config_file="${XDG_CONFIG_HOME}/git/config"
-if [[ -f "${DOTFILES_ROOT}/git/aliases.gitconfig" ]]; then
+if [[ -f "${DOTFILES_ROOT}/config/git/aliases.gitconfig" ]]; then
     # Wire the include once (git config --add creates the file if it doesn't exist yet)
     if ! git config --file "${git_config_file}" --get-all include.path 2>/dev/null | grep -qx "aliases.gitconfig"; then
         git config --file "${git_config_file}" --add include.path "aliases.gitconfig"

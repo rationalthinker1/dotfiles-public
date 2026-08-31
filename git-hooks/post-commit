@@ -29,11 +29,11 @@ sensitive_patterns=(
     '^\.gitignore$'             # public .gitignore differs from master
     '^\.gitconfig$'             # personal git identity
     '^\.ssh/'                   # SSH keys and config
-    '^\.aws/'                   # cloud config + credentials
-    '^password-store/'          # GPG-encrypted secret store
+    '^config/\.aws/'            # cloud config + credentials
+    '^config/password-store/'   # GPG-encrypted secret store
     '^windows-terminal/settings\.json$'  # hostnames / usernames
-    '^zsh/references/aws\.md$'  # S3 bucket names
-    '^zsh/local\.zsh$'          # machine-specific overrides
+    '^config/zsh/references/aws\.md$'    # S3 bucket names
+    '^config/zsh/local\.zsh$'   # machine-specific overrides
     '^fish/local\.fish$'        # machine-specific overrides (fish)
 )
 changed_files=$(git diff-tree --no-commit-id -r --name-only "$commit_hash")
@@ -65,7 +65,7 @@ git -c user.name="$git_name" -c user.email="$git_email" cherry-pick "$commit_has
 }
 
 # SAFETY NET: never push if a sensitive path slipped into the public tree.
-leaked=$(git ls-files | grep -E '^(\.gitconfig$|\.ssh/|\.aws/|password-store/|windows-terminal/settings\.json$|zsh/references/aws\.md$)')
+leaked=$(git ls-files | grep -E '^(\.gitconfig$|CLAUDE\.md$|\.ssh/|config/\.aws/|config/password-store/|windows-terminal/settings\.json$|config/zsh/references/aws\.md$|config/zsh/local\.zsh$)')
 if [[ -n "$leaked" ]]; then
     print "[post-commit] ERROR: sensitive path(s) present in public tree — aborting (nothing pushed):" >&2
     print "$leaked" >&2
