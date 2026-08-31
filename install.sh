@@ -693,10 +693,7 @@ if [[ "${SKIP_FONTS}" != "true" && "${HOST_LOCATION}" == "desktop" && "${HOST_OS
                 sudo cp -t "${font_directory}/truetype/${last_folder}/" -- "${ttf_files[@]}" 2>/dev/null || true
             fi
 
-            if command -v fc-cache &>/dev/null; then
-                echo "Updating font cache..."
-                sudo fc-cache -f -v | grep -q "${last_folder}" && echo "✓ Fonts installed: ${last_folder}"
-            fi
+            echo "✓ Installed: ${last_folder}"
         }
 
         install_font_subdirectories() {
@@ -719,7 +716,21 @@ if [[ "${SKIP_FONTS}" != "true" && "${HOST_LOCATION}" == "desktop" && "${HOST_OS
         }
 
         install_font_subdirectories "${install_dir}"
-        
+
+        # ONE forced rebuild for every folder installed above, not one per folder — with 163
+        # font archives that was 163 full-system rebuilds, each slower than the last.
+        #
+        # The old form was `fc-cache -f -v | grep -q "${last_folder}"`, which also killed the
+        # install outright: grep -q exits at its first match, SIGPIPEs fc-cache (141), pipefail
+        # propagates that as the pipeline status, and since the pipeline was the last command in
+        # install_font_folder the function returned 141 — aborting the script via set -e at the
+        # unguarded call site in install_font_subdirectories. It only surfaced on machines with
+        # enough fonts for fc-cache's output to outlive grep, which is why it ran fine elsewhere.
+        if command -v fc-cache &>/dev/null; then
+            echo "Updating font cache (once, for all installed fonts)..."
+            sudo fc-cache -f || echo "⚠ font cache update failed — run 'sudo fc-cache -f' by hand"
+        fi
+
         rm -rf "${install_dir}"
         touch "${FONTS_DIR}/.installed"
         echo "✓ Fonts installed"
