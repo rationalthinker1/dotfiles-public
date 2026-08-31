@@ -688,20 +688,39 @@ function () {
 #
 # WHY: gh-r assets built for `*-unknown-linux-gnu` are compiled against whatever glibc
 # the CI runner had, and hard-fail on anything older — on Debian 12 (glibc 2.36) atuin,
-# qsv, yazi and gping all died with "libc.so.6: version `GLIBC_2.38' not found". The
-# musl builds are statically linked and run on every glibc vintage, so Linux always
-# resolves to musl here. That's a policy this function encodes; it cannot be detected
-# at declaration time without downloading the asset first.
+# qsv, yazi and gping all died with "libc.so.6: version `GLIBC_2.38' not found". The musl
+# builds are statically linked and run on every glibc vintage, which is why they were
+# adopted wholesale. But musl's allocator is markedly slower than glibc's under
+# allocation-heavy, multithreaded load — precisely the profile of the tools installed
+# here — so "musl everywhere" bought portability by taxing every machine, including the
+# ones whose glibc was never too old.
+#
+# So the libc is now chosen PER MACHINE rather than asserted per template: prefer gnu for
+# the speed, drop to musl only where the local glibc is too old to run a gnu asset. That
+# IS detectable at declaration time — the machine expanding the template is the machine
+# that will run the binary — by comparing the local glibc against the newest requirement
+# we have actually been bitten by (2.38). What is *not* detectable is the requirement of
+# a specific asset, hence a floor rather than an exact answer; ${GH_ASSET_GLIBC_MIN}
+# raises it if a future asset demands newer, and ${GH_ASSET_LIBC} forces one outright.
+# Both belong in local.zsh (sourced at the top of this file, long before any ice).
 #
 # Placeholders (upstreams disagree on arch spelling, hence three):
 #   {arch}   → x86_64 | aarch64     (atuin, yazi, qsv, doggo, tealdeer)
 #   {arch2}  → x86_64 | arm64       (gping)
 #   {goarch} → amd64  | arm64       (cloudflared — Go's own GOARCH spelling)
+#   {libc}   → gnu    | musl        (atuin, yazi, gping — both variants published)
+#   {libc:X} → as {libc}, but aarch64 forced to X (qsv, jnv — see below)
+#
+# {libc:X} exists because several Rust release matrices publish musl for x86_64 ONLY and
+# leave aarch64 Linux on gnu — verified against qsv v22.0.1 and jnv v0.7.1. On aarch64
+# there is nothing to choose, so the template names the one build that exists; an old-glibc
+# ARM box hits the wall above and nothing selectable here fixes that. Conversely tealdeer
+# publishes musl ONLY, so it keeps a literal `musl` — a placeholder would invent an asset.
 #
 # Takes the Linux template, then the macOS one; macOS falls back to the Linux template
 # when omitted. Returns the literal asset name for bpick.
 #
-#   zi ice from'gh-r' bpick"$(gh_asset 'yazi-{arch}-unknown-linux-musl.zip' \
+#   zi ice from'gh-r' bpick"$(gh_asset 'yazi-{arch}-unknown-linux-{libc}.zip' \
 #                                      'yazi-{arch}-apple-darwin.zip')"
 #
 # Kept as a plain string expander rather than a `zi` wrapper on purpose: zinit's ices are
@@ -709,14 +728,62 @@ function () {
 # because ices get snapshotted into <plugin>/._zinit/ and replayed forever. Ice
 # declarations stay literal and greppable; only the filename is computed.
 # ------------------------------------------------------------------------------
+# Assigns the answer to ${_gh_asset_libc} rather than printing it, and is primed once in
+# the parent shell below. Every gh_asset call site is a `bpick"$(gh_asset …)"` command
+# substitution, i.e. a subshell, so a cache filled *inside* gh_asset dies with it — strace
+# showed getconf forking once per template. Priming in the parent lets all of them inherit
+# one answer; the in-function calls survive only as a fallback for a direct caller.
+typeset -g _gh_asset_libc=''
+
+function _gh_asset_resolve_libc() {
+    [[ -n "${_gh_asset_libc}" ]] && return
+    if [[ -n "${GH_ASSET_LIBC}" ]]; then
+        _gh_asset_libc="${GH_ASSET_LIBC}"
+        return
+    fi
+    local ver
+    # "glibc 2.39" → 2.39. Falls back to ldd's first line; both come up empty on a musl
+    # host (Alpine), which correctly lands on musl.
+    ver="${${(z)"$(getconf GNU_LIBC_VERSION 2>/dev/null)"}[2]}"
+    [[ -z "${ver}" ]] && ver="${${${(f)"$(ldd --version 2>/dev/null)"}[1]}##* }"
+    autoload -Uz is-at-least
+    if [[ -n "${ver}" ]] && is-at-least "${GH_ASSET_GLIBC_MIN:-2.38}" "${ver}"; then
+        _gh_asset_libc='gnu'
+    else
+        _gh_asset_libc='musl'
+    fi
+}
+
 function gh_asset() {
-    local tmpl
+    local tmpl arch arch2 goarch libc arm_libc
     [[ "${OSTYPE}" == darwin* ]] && tmpl="${2:-${1}}" || tmpl="${1}"
     case "${CPUTYPE}" in
-        (aarch64|arm64) print -r -- "${${${tmpl//\{arch\}/aarch64}//\{arch2\}/arm64}//\{goarch\}/arm64}"  ;;
-        (*)             print -r -- "${${${tmpl//\{arch\}/x86_64}//\{arch2\}/x86_64}//\{goarch\}/amd64}" ;;
+        (aarch64|arm64) arch='aarch64' arch2='arm64'  goarch='arm64' ;;
+        (*)             arch='x86_64'  arch2='x86_64' goarch='amd64' ;;
     esac
+    # Both forms resolve lazily, so a template with no {libc} — every macOS one — forks
+    # nothing. {libc:X} pins aarch64 to X, the only build those upstreams publish for it.
+    if [[ "${tmpl}" == *'{libc:'*'}'* ]]; then
+        arm_libc="${${tmpl#*\{libc:}%%\}*}"
+        if [[ "${arch}" == 'aarch64' ]]; then
+            libc="${arm_libc}"
+        else
+            _gh_asset_resolve_libc
+            libc="${_gh_asset_libc}"
+        fi
+        tmpl="${tmpl/\{libc:${arm_libc}\}/${libc}}"
+    fi
+    if [[ "${tmpl}" == *'{libc}'* ]]; then
+        _gh_asset_resolve_libc
+        tmpl="${tmpl//\{libc\}/${_gh_asset_libc}}"
+    fi
+    tmpl="${tmpl//\{arch\}/${arch}}"
+    tmpl="${tmpl//\{arch2\}/${arch2}}"
+    print -r -- "${tmpl//\{goarch\}/${goarch}}"
 }
+
+# One getconf for the whole shell. Skipped on macOS, where no template carries {libc}.
+[[ "${OSTYPE}" == linux* ]] && _gh_asset_resolve_libc
 
 # 📊 QSV - Ultra-fast CSV toolkit with Python integration
 # Usage: `qsv stats data.csv` - advanced CSV statistics and operations
@@ -727,23 +794,19 @@ function gh_asset() {
 # is how this one plugin reached 2.2GB. atclone prunes both; atpull repeats it per update.
 # The asset embeds the version (qsv-22.0.1-x86_64-unknown-linux-musl.zip), so the
 # templates glob it. Two upstream gaps this has to work around, both verified against the
-# v22.0.1 asset list: musl is published for x86_64 ONLY (aarch64 Linux gets gnu, and will
-# hit the same glibc wall on an old ARM distro — nothing selectable here fixes that), and
-# the only darwin build is aarch64, so the macOS template globs the arch rather than
-# constructing an Intel-Mac name that upstream does not publish at all.
-function () {
-    local libc='musl'
-    [[ "${CPUTYPE}" == (aarch64|arm64) ]] && libc='gnu'
-    zi ice wait'2' lucid from'gh-r' as'program' pick'qsv' nocompile'!' \
-        atclone'rm -rf ._backup; rm -f qsv[a-z]*(N)' atpull'%atclone' \
-        bpick"$(gh_asset "qsv-*-{arch}-unknown-linux-${libc}.zip" 'qsv-*-apple-darwin.zip')"
-}
+# v22.0.1 asset list: musl is published for x86_64 ONLY, hence {libc} rather than a literal
+# (aarch64 Linux resolves to gnu and will hit the same glibc wall on an old ARM distro —
+# nothing selectable here fixes that), and the only darwin build is aarch64, so the macOS
+# template globs the arch rather than constructing an Intel-Mac name upstream never publishes.
+zi ice wait'2' lucid from'gh-r' as'program' pick'qsv' nocompile'!' \
+    atclone'rm -rf ._backup; rm -f qsv[a-z]*(N)' atpull'%atclone' \
+    bpick"$(gh_asset 'qsv-*-{arch}-unknown-linux-{libc:gnu}.zip' 'qsv-*-apple-darwin.zip')"
 zi load dathere/qsv
 
 # 🗂️ Yazi - blazing fast terminal file manager
 # bpick names the .zip explicitly so it can't match the .deb shipped alongside it.
 zi ice wait'2' lucid from'gh-r' as'program' pick'*/yazi' nocompile'!' \
-    bpick"$(gh_asset 'yazi-{arch}-unknown-linux-musl.zip' 'yazi-{arch}-apple-darwin.zip')"
+    bpick"$(gh_asset 'yazi-{arch}-unknown-linux-{libc}.zip' 'yazi-{arch}-apple-darwin.zip')"
 zi load sxyazi/yazi
 
 # ==============================================================================
@@ -760,7 +823,7 @@ zi load cli/cli
 # The template names the file exactly so it can't match the atuin-server-* assets that
 # ship in the same release.
 zi ice as"command" from"gh-r" mv"atuin*/atuin -> atuin" \
-    bpick"$(gh_asset 'atuin-{arch}-unknown-linux-musl.tar.gz' 'atuin-{arch}-apple-darwin.tar.gz')" \
+    bpick"$(gh_asset 'atuin-{arch}-unknown-linux-{libc}.tar.gz' 'atuin-{arch}-apple-darwin.tar.gz')" \
     atclone"./atuin init zsh > init.zsh; ./atuin gen-completions --shell zsh > _atuin" \
     atpull"%atclone" src"init.zsh"
 zi light atuinsh/atuin
@@ -839,6 +902,9 @@ zi load dalance/procs
 # Ships a raw per-arch binary (tealdeer-linux-x86_64-musl, no archive): extract''
 # suppresses the bogus ziextract error (same as jq above) and mv normalizes to `tldr`.
 # The extension-less names have no wildcard, so bpick can't also grab the .sha256.
+# Literal `musl`, not {libc}: upstream publishes no gnu Linux build at all (v1.9.0), so
+# there is no choice to make and a placeholder would only invent a nonexistent asset.
+# Harmless — tldr shells out to a cache lookup, nothing musl's allocator can slow down.
 zi ice wait'2' lucid from'gh-r' as'program' extract'' mv'tealdeer* -> tldr' \
     bpick"$(gh_asset 'tealdeer-linux-{arch}-musl' 'tealdeer-macos-{arch}')" \
     pick'tldr' nocompile'!'
@@ -858,8 +924,9 @@ zi load PaulJuliusMartinez/jless
 # 🧭 jnv - interactive jq playground (live filter over a JSON document)
 # Usage: `jnv data.json` or `curl -s api | jnv`; type a jq filter, see results live
 # bpick avoids dist-manifest.json/installer assets; tar.xz nests jnv-<triple>/jnv.
-zi ice wait'2' lucid from'gh-r' as'command' bpick'*x86_64-unknown-linux-gnu.tar.xz' \
-    pick'*/jnv' nocompile'!'
+# Same libc split as qsv (verified against v0.7.1): musl for x86_64, gnu for aarch64 Linux.
+zi ice wait'2' lucid from'gh-r' as'command' pick'*/jnv' nocompile'!' \
+    bpick"$(gh_asset 'jnv-{arch}-unknown-linux-{libc:gnu}.tar.xz' 'jnv-{arch}-apple-darwin.tar.xz')"
 zi load ynqa/jnv
 
 # 📦 Ouch - universal (de)compressor; extract() in aliases.zsh prefers it
@@ -883,7 +950,7 @@ zi load eth-p/bat-extras
 # OS); zinit can't infer them, so pin bpick. musl over gnu for the glibc reason in atuin.
 # The only upstream here that spells arm64 rather than aarch64, hence {arch2}.
 zi ice wait'2' lucid from'gh-r' as'command' pick'gping' nocompile'!' \
-    bpick"$(gh_asset 'gping-Linux-musl-{arch2}.tar.gz' 'gping-macOS-{arch2}.tar.gz')"
+    bpick"$(gh_asset 'gping-Linux-{libc}-{arch2}.tar.gz' 'gping-macOS-{arch2}.tar.gz')"
 zi load orf/gping
 
 # 🔍 ripgrep-all (rga) - rg across PDFs, sqlite, zip, docx, subtitles; rga() in
