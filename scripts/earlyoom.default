@@ -1,0 +1,18 @@
+# /etc/default/earlyoom — kill the largest consumer before RAM+swap exhaustion.
+#
+# Why this exists: on WSL2 the kernel never OOM-kills here. Nothing is cgroup-bounded
+# (memory.max=max on every slice), and the VS Code server lives in init.scope, which
+# systemd does not resource-control. So exhaustion doesn't kill a process — it stalls
+# the 9p transport until WSL gives up and calls reboot(RB_POWER_OFF), taking the whole
+# VM with it and leaving no record of the cause. earlyoom supplies the missing victim.
+#
+#   -m 8,4   SIGTERM at 8% MemAvailable, SIGKILL at 4%
+#   -s 10,5  same thresholds against free swap
+#   -r 300   memory report every 5 min (journald)
+#   --avoid  never pick infrastructure whose death takes the whole session down
+#
+# Deliberately no --prefer: earlyoom matches against /proc/PID/comm, and the Node
+# processes here report comm=MainThread, not "node" — so a '^node$' rule would never
+# fire and would give false confidence. Left to its default scoring earlyoom targets
+# the largest RSS, which is the runaway tsserver / extension host anyway.
+EARLYOOM_ARGS="-m 8,4 -s 10,5 -r 300 --avoid '^(systemd|init|dockerd|containerd|sshd|wslservice|wslinfo)$'"

@@ -25,6 +25,13 @@ Modern ZSH configuration with 40+ plugins, synchronized across multiple environm
 │   ├── local.zsh        # Machine-specific config (not in git)
 │   ├── functions/       # Custom ZSH functions
 │   └── references/      # Command reference files (fd, rg, etc.)
+├── powershell/          # PowerShell 7 config (native Windows; see powershell/README.md)
+│   ├── profile.ps1      # Entry point, linked from $PROFILE.CurrentUserAllHosts
+│   ├── psreadline.ps1   # Autosuggestions, key bindings
+│   ├── tools.ps1        # zoxide/atuin/PSFzf/oh-my-posh integration
+│   ├── aliases.ps1      # Aliases and helper functions
+│   ├── local.ps1        # Machine-specific config (not in git)
+│   └── install.ps1      # Windows-side bootstrap (winget + module install)
 ├── git-hooks/           # Tracked git hooks (symlinked into .git/hooks by install.sh)
 │   └── post-commit      # Auto-syncs commits from master → public branch
 ├── zi/                  # zi plugin manager (auto-generated, DO NOT REVIEW)
@@ -75,6 +82,11 @@ into the per-machine config via `[include]` (see Version Control Integration).
 - Use ZSH arrays, parameter expansion, and glob qualifiers
 - Bash-style scripting is only acceptable where cross-shell compatibility is explicitly required
 - Flag Bash-style constructs in ZSH-specific files as style violations
+
+**Scope:** this policy covers `zsh/` and the shell scripts at the repo root. `powershell/`
+is a separate, deliberately minimal PowerShell 7 configuration for native Windows sessions
+— review it as PowerShell (see `powershell/README.md`), not against ZSH idioms. The two
+trees share tool *configs* (`atuin/`, `ripgrep/`, `mise/`, `git/`), never shell syntax.
 
 ### 2. ZSH Lifecycle and Load Order
 

@@ -2,10 +2,13 @@
 autoProxy = true
 firewall = true
 
-# Memory: cap at 20GB (host has 32GB; autoMemoryReclaim returns unused RAM to Windows).
-# Swap raised from default 4GB — the freezes were the VM exhausting RAM+swap and thrashing.
-memory = 20GB
-swap = 32GB
+# Memory: cap at 10GB (host has 16GB; autoMemoryReclaim returns unused RAM to Windows).
+# Swap raised well above default — the freezes were the VM exhausting RAM+swap and thrashing
+# until the 9p transport stalled and WSL called reboot(RB_POWER_OFF). Generous swap turns
+# that hard power-off into mere slowness. Swap is a disk file, so oversizing it is cheap.
+# NOTE: host-specific. On a 32GB machine raise to memory = 20GB / swap = 32GB.
+memory = 10GB
+swap = 16GB
 
 # disabled due to docker not working with localhost
 #networkingMode = "mirrored"
