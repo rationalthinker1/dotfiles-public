@@ -14,6 +14,40 @@ verify_tool() {
     fi
 }
 
+# Create a directory, treating "it is already there" as success.
+#
+# `mkdir -p` is required by POSIX to be a silent no-op on an existing directory, but the
+# rust-coreutils (uutils 0.8.0) that Ubuntu 26.04 ships as its DEFAULT userland exits 1
+# with "mkdir: Already exists" instead. Under `set -euo pipefail` that aborts the whole
+# install on a rerun — every path here exists by the second run. Since this script is
+# re-run for months across machines whose coreutils provider we do not control, never call
+# `mkdir -p` directly; go through this.
+#
+# The dangling-symlink branch is not about uutils: a ~/.config entry left pointing at the
+# pre-config/ layout fails `mkdir -p` on GNU too, and link_dotfile would die here before
+# reaching the `ln -nfs` that would have repointed it. Only symlinks resolving to nothing
+# are removed — a link to a real file is left alone so mkdir fails loudly instead.
+ensure_dir() {
+    local dir
+    for dir in "$@"; do
+        [[ -d "${dir}" ]] && continue
+        if [[ -L "${dir}" && ! -e "${dir}" ]]; then
+            rm -f "${dir}"
+        fi
+        mkdir -p "${dir}" || { [[ -d "${dir}" ]] || return 1; }
+    done
+}
+
+# ensure_dir's contract for system paths that need root. Deliberately does NOT clear
+# dangling symlinks — nothing outside $HOME should be silently unlinked by this script.
+ensure_dir_root() {
+    local dir
+    for dir in "$@"; do
+        [[ -d "${dir}" ]] && continue
+        sudo mkdir -p "${dir}" || { [[ -d "${dir}" ]] || return 1; }
+    done
+}
+
 # Compute relative path from target_dir to source (cross-platform)
 relative_path() {
     local source="${1}"
@@ -38,7 +72,7 @@ link_dotfile() {
     [[ ! -e "${dotfile_source}" ]] && return 0
 
     # Ensure parent directory exists (needed before computing relative path)
-    mkdir -p "$(dirname "${target}")" "${BACKUP_DIR}"
+    ensure_dir "$(dirname "${target}")" "${BACKUP_DIR}"
 
     # Compute relative symlink path so it works across different $HOME environments (host vs container)
     local relative_source
@@ -94,7 +128,7 @@ migrate_to_config() {
         # Nothing to do on a fresh clone or an already-migrated machine
         [[ -d "${old}" && ! -L "${old}" ]] || continue
 
-        mkdir -p "${new}"
+        ensure_dir "${new}"
         # --ignore-existing never clobbers a tracked file with a stale copy from the old
         # tree; --remove-source-files unlinks ONLY what actually transferred, so anything
         # skipped survives at the old path and gets reported below instead of vanishing.
@@ -447,7 +481,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 zinit_home="${HOME}/.local/share/zinit/zinit.git"
 
 if [[ ! -f "${zinit_home}/zinit.zsh" ]]; then
-    mkdir -p "$(dirname "${zinit_home}")"
+    ensure_dir "$(dirname "${zinit_home}")"
     git clone https://github.com/zdharma-continuum/zinit.git "${zinit_home}"
 else
     echo "✓ Zinit already installed"
@@ -619,7 +653,7 @@ if [[ "${SKIP_FONTS}" != "true" && "${HOST_LOCATION}" == "desktop" && "${HOST_OS
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         
         install_dir="${FONTS_DIR}/installations"
-        mkdir -p "${install_dir}"
+        ensure_dir "${install_dir}"
 
         # Extract all font archives
         for zipfile in "${FONTS_DIR}"/*.zip; do
@@ -645,7 +679,7 @@ if [[ "${SKIP_FONTS}" != "true" && "${HOST_LOCATION}" == "desktop" && "${HOST_OS
             last_folder="$(basename "${directory}")"
             echo "Installing fonts from: ${directory}"
 
-            sudo mkdir -p "${font_directory}/opentype/${last_folder}" "${font_directory}/truetype/${last_folder}"
+            ensure_dir_root "${font_directory}/opentype/${last_folder}" "${font_directory}/truetype/${last_folder}"
 
             shopt -s nullglob
             otf_files=("${directory}"/*.otf)
@@ -713,7 +747,7 @@ migrate_to_xdg() {
         echo "⚠ Skipped ${old} — ${new} already exists, reconcile manually"
         return 0
     fi
-    mkdir -p "$(dirname "${new}")"
+    ensure_dir "$(dirname "${new}")"
     mv "${old}" "${new}"
     echo "✓ Migrated ${old} → ${new}"
 }
@@ -744,19 +778,19 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  Installing dotfile symlinks"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-mkdir -p "${BACKUP_DIR}"
-mkdir -p "${XDG_CONFIG_HOME}/zi"
+ensure_dir "${BACKUP_DIR}"
+ensure_dir "${XDG_CONFIG_HOME}/zi"
 
 # GPG requires strict permissions on its directory
 if [[ ! -d "${GNUPGHOME}" ]]; then
-    mkdir -p "${GNUPGHOME}"
+    ensure_dir "${GNUPGHOME}"
     chmod 700 "${GNUPGHOME}"
     echo "✓ Created GNUPGHOME at ${GNUPGHOME}"
 fi
 
 # wget aborts every invocation if WGETRC (set in config/zsh/.zshenv) points to a missing file
 if [[ ! -f "${XDG_CONFIG_HOME}/wget/wgetrc" ]]; then
-    mkdir -p "${XDG_CONFIG_HOME}/wget"
+    ensure_dir "${XDG_CONFIG_HOME}/wget"
     touch "${XDG_CONFIG_HOME}/wget/wgetrc"
     echo "✓ Created empty wgetrc at ${XDG_CONFIG_HOME}/wget/wgetrc"
 fi
