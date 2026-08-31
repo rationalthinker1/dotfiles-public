@@ -45,3 +45,8 @@ password-store/
 windows-terminal/settings.json
 zsh/references/aws.md
 .gitconfig
+# Root CLAUDE.md only — it documents the private remote and the sensitive-path
+# list. Anchored with a leading slash so claude/CLAUDE.md (generic, safe) still syncs.
+/CLAUDE.md
+# graft's generated graph/cards — untracked here, ignored to keep status clean.
+graft/
