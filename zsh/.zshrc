@@ -499,7 +499,13 @@ zi light Aloxaf/fzf-tab
 
 # 🔍 FZF-Tab-Source - Provides additional completion sources for fzf-tab
 # Enhances fzf-tab with better context-aware completions
-zi ice lucid wait'1' depth'1' branch'main'
+# No branch/ver ice here on purpose. This line used to carry branch'main', which is NOT an
+# ice in zinit v3.15.3 (absent from ${ZINIT[ice-list]}) — and an unrecognised ice makes the
+# parser `break`, discarding it AND every ice after it. Upstream's default branch is already
+# main, so the pin was redundant; dropping it is what the plugin has effectively been doing
+# all along. If you ever do need to pin a git ref, the real ice is ver'…' (zinit-install.zsh
+# runs `git checkout ${ICE[ver]}`) — and put it LAST. Run `zi-audit` after any ice edit.
+zi ice lucid wait'1' depth'1'
 zi light Freed-Wu/fzf-tab-source
 
 # 🔄 ZSH Autosuggestions - Fish-like command suggestions from history
@@ -533,7 +539,13 @@ zi light reegnz/jq-zsh-plugin
 # 🔥 Fancy Completions - Enhanced completions for modern CLI tools
 # Provides smart completions for gh (GitHub CLI), docker, kubectl, etc.
 # blockf + creinstall for the same post-compinit reason as zsh-completions above
-zi ice lucid blockf depth'1' branch'main' atpull'zi creinstall -q .'
+# branch'main' dropped — see the note above fzf-tab-source. This line was the one that
+# actually hurt: `branch` sat AHEAD of atpull, so `atpull'zi creinstall -q .'` was silently
+# discarded and completions were never reinstalled on update.
+# No lucid: it exists only to suppress zinit's `zle -M "Loaded <id>"` notice
+# (zinit.zsh:2484), which is emitted for TURBO loads. With no wait ice this loads during
+# .zshrc, before zle exists, so lucid never had anything to suppress.
+zi ice blockf depth'1' atpull'zi creinstall -q .'
 zi light z-shell/zsh-fancy-completions
 
 # ==============================================================================
@@ -562,8 +574,16 @@ zi light ap/rename
 # 📊 Eza - Modern ls replacement with colors, icons, and git integration
 # Usage: Already aliased to `ls`, `l`, `la`, `ll`, `tree`
 # Shows file permissions, size, git status, and uses colors automatically
-zi ice lucid from'gh-r' as'program' sbin'**/eza -> eza' \
-    atclone'cp -vf completions/eza.zsh _eza' nocompile'!'
+# NO sbin ice here, deliberately: sbin comes from zinit-annex-bin-gem-node, which is not
+# installed. zinit parses the ice list with `|| break` (zinit.zsh:2335), so an unrecognised
+# ice discards itself AND every ice after it — this line used to silently lose sbin,
+# atclone and nocompile alike, which is why _eza never appeared. as'program' already puts
+# the plugin dir on PATH and the asset drops `eza` at its root, so sbin bought nothing.
+# The old atclone is gone too: it copied completions/eza.zsh, but the binary tarball has
+# no completions/ dir — upstream ships those as a separate completions-<ver>.tar.gz asset.
+# No lucid — see the note above zsh-fancy-completions: it only suppresses the turbo
+# "Loaded" notice, and this line has no wait ice.
+zi ice from'gh-r' as'program' nocompile'!'
 zi load eza-community/eza
 
 # Byron/dua-cli publishes TWO release series from one repo: `dua-core-vX.Y.Z` library
@@ -598,7 +618,10 @@ zi load BurntSushi/ripgrep
 #        `ast-grep -p '$A && $A()' -r '$A?.()' -l ts` - rewrite code structurally
 #        `ast-grep scan` - lint a project with custom YAML rules (sgconfig.yml)
 # Note: the old `sg` short name is deprecated upstream - use `ast-grep`
-zi ice wait'2' lucid from'gh-r' as'program' sbin'**/ast-grep' nocompile'!'
+# sbin dropped for the same reason as eza above (annex not installed → it silently ate
+# the nocompile that followed it). The asset drops both `ast-grep` and `sg` at the plugin
+# root, which as'program' already puts on PATH.
+zi ice wait'2' lucid from'gh-r' as'program' nocompile'!'
 zi load ast-grep/ast-grep
 
 # 🦇 Bat - Cat clone with syntax highlighting and git integration
@@ -630,8 +653,16 @@ zi load chmln/sd
 # name (jq-linux-amd64, jq-macos-arm64, …) to plain `jq`, keeping it arch-agnostic.
 # extract'' (empty) suppresses "[ziextract] Error: didn't recognize archive type" —
 # gh-r unconditionally runs ziextract unless the extract ice is *set at all*, and this
-# asset is a bare binary with nothing to unpack. Cosmetic only; the mv still runs.
-zi ice wait'2' lucid from'gh-r' as'program' extract'' mv'jq* -> jq' pick'jq' nocompile'!'
+# asset is a bare binary with nothing to unpack. The mv still runs — but this is NOT
+# cosmetic: suppressing ziextract also suppresses the chmod +x it would have done, which
+# is what the atclone below exists to replace.
+# atclone'chmod +x jq' is load-bearing, not belt-and-braces: ziextract is what normally
+# sets the executable bit, and extract'' disables it. A FRESH install still lands 0755,
+# but an *update* leaves the re-downloaded binary 0644 and jq silently stops working the
+# next time upstream cuts a release. atpull'%atclone' repeats the chmod on every update.
+# cloudflared has the same bare-binary shape and survives only because it chmods too.
+zi ice wait'2' lucid from'gh-r' as'program' extract'' mv'jq* -> jq' pick'jq' nocompile'!' \
+    atclone'chmod +x jq' atpull'%atclone'
 zi load jqlang/jq
 
 # 💥 UP - Interactive pipe builder for shell commands
@@ -735,7 +766,11 @@ zi ice as"command" from"gh-r" mv"atuin*/atuin -> atuin" \
 zi light atuinsh/atuin
 
 # 📊 Bottom - Modern system monitor
-zi ice wait'2' lucid from'gh-r' as'command' pick='*/btm' nocompile='!'
+# pick'btm', not '*/btm': this asset extracts FLAT (btm + completion/ at the plugin root),
+# so the subdirectory glob matched nothing and the pick was a dead no-op. Harmless only
+# because as'command' puts the dir on PATH regardless. `zi-audit` flags this as
+# pick-no-match, which is also the alarm if upstream ever changes the layout back.
+zi ice wait'2' lucid from'gh-r' as'command' pick='btm' nocompile='!'
 zi load ClementTsang/bottom
 
 # ⚡ Hyperfine - Command benchmarking
@@ -751,7 +786,8 @@ zi ice wait'0' lucid from'gh-r' as'command' pick='*/delta' nocompile='!'
 zi load dandavison/delta
 
 # 📁 Duf - Modern df alternative
-zi ice wait'2' lucid from'gh-r' as'command' pick='*/duf' nocompile='!'
+# pick'duf', not '*/duf' — extracts flat (duf + duf.1 at the root); see btm above.
+zi ice wait'2' lucid from'gh-r' as'command' pick='duf' nocompile='!'
 zi load muesli/duf
 
 # 🐶 Doggo - Modern dig alternative with better output
@@ -883,7 +919,8 @@ zi load sharkdp/pastel
 # `gd` - interactive diff, `ga` - interactive add, `glo` - interactive log
 export forgit_log=gl
 export FORGIT_DIFF_GIT_OPTS="-w --ignore-blank-lines"
-zi ice lucid wait'0' depth'1' branch'main'
+# branch'main' dropped — see the note above fzf-tab-source.
+zi ice lucid wait'0' depth'1'
 zi light wfxr/forgit
 
 # 🌐 Git-Open - Open current repo in browser (GitHub/GitLab/Bitbucket)

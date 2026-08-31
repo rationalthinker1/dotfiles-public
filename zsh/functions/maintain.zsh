@@ -22,7 +22,7 @@
 # coredumps, snap revisions, and dev caches; FIXES by tightening secret-file permissions and
 # recompiling zsh; and VERIFIES via broken-symlink, dotfiles-drift, config-merge, security,
 # and disk-usage audits. Supersedes the old `update-all` (kept as an alias below).
-# The install.sh bootstrap and the ~400MB zinit reset are opt-in (prompted, or forced with
+# The install.sh bootstrap and the ~400MB zinit WIPE are opt-in (prompted, or forced with
 # --install / --zinit); everything else runs by default.
 #
 # Each step is independent and self-guarded: a missing tool is skipped, and a step that
@@ -39,6 +39,12 @@
 # Destructive steps are conservative: trash/thumbnails only drop items older than 30
 # days, and docker prune keeps volumes and anything younger than 7 days.
 #
+# On WSL only, phase 4 also re-asserts that Docker cannot autostart — every container
+# back to restart=no, docker.service/.socket/containerd.service disabled at boot. Both
+# drift back on their own (tools rewrite restart policies; a docker-ce upgrade re-enables
+# the units), and an idle stack resurrecting itself is what exhausted this VM's RAM+swap.
+# See zsh/functions/dock.zsh for the manual lifecycle this pairs with.
+#
 # Every run is tee'd to ${XDG_STATE_HOME}/logs/maintain/maintain-<timestamp>.log
 # (10 newest kept) by the wrapper below.
 #
@@ -53,27 +59,39 @@
 #
 # If you knowingly want the fast path on a machine you just reset, run
 # `zinit update --parallel` directly — don't wire it back in here as a default.
+#
+# That fast path is safe ONLY while .zshrc's zinit declarations are unchanged since
+# install: then the saved ices are correct by construction and bulk update, which never
+# refreshes them, has nothing to get wrong. It genuinely updates (verified: a plugin
+# faked back to an older release was detected and upgraded). The moment a declaration
+# changes, that plugin needs a wipe — a targeted update merges ices and cannot remove the
+# ones you deleted. See docs/ZINIT_UPDATE_MECHANICS.md for the measurements.
 
 function maintain::usage() {
     print -r -- "Usage: maintain [-h|--help] [--install] [--zinit]"
     print -r -- ""
     print -r -- "Full-spectrum system maintenance — update, clean, fix, and verify — in six phases:"
     print -r -- "  1. System & OS package managers (brew/apt/pacman, flatpak, snap+cleanup, firmware/macOS updates)"
-    print -r -- "  2. Runtimes & version managers (gh, zinit reset, vim-plug, tmux/TPM, Claude Code, mise, rustup, …)"
+    print -r -- "  2. Runtimes & version managers (gh, zinit update + ice audit, vim-plug, tmux/TPM, Claude Code, mise, rustup, …)"
     print -r -- "  3. Global packages & language build caches (npm, pnpm, bun, uv, pipx, pynvim, composer, go, cargo, atuin sync)"
-    print -r -- "  4. Container hygiene (docker/podman prune, safe mode)"
+    print -r -- "  4. Container hygiene (docker/podman prune safe mode; WSL: re-pin containers to restart=no and disable docker units at boot)"
     print -r -- "  5. Cleanup & caches (TRIM, journal, coredumps, macOS/dev caches, DNS flush, zsh recompile, font/desktop DBs)"
     print -r -- "  6. Health, integrity & security (doctors, PATH shadows, broken-link & dotfiles audit, config-merge/security report, permission audit, disk report)"
     print -r -- ""
     print -r -- "Options:"
     print -r -- "  --install   Run the dotfiles install.sh bootstrap first (skips its prompt)."
-    print -r -- "  --zinit     Reset & reinstall zinit plugins, ~400MB re-download (skips its prompt)."
+    print -r -- "  --zinit     FULL zinit wipe + reinstall, ~400MB (skips its prompt). Not needed to"
+    print -r -- "              update: every run updates plugins and reinstalls any that drifted from"
+    print -r -- "              .zshrc. Use it after editing an ice VALUE in place, which the audit"
+    print -r -- "              cannot see (it compares ice names, not values)."
     print -r -- ""
     print -r -- "Two steps are opt-in. Before the phases begin, maintain asks whether to run the"
-    print -r -- "dotfiles install.sh bootstrap and whether to reset zinit plugins (both default N —"
+    print -r -- "dotfiles install.sh bootstrap and whether to do a FULL zinit wipe (both default N —"
     print -r -- "a bare Enter skips them). Each prompt is suppressed when its flag is passed, and"
     print -r -- "both are suppressed entirely when stdin is not a terminal, so scripted and cron"
-    print -r -- "runs skip them unless --install / --zinit are given."
+    print -r -- "runs skip them unless --install / --zinit are given. Declining the zinit prompt"
+    print -r -- "does NOT skip zinit: plugins are still updated and any that drifted from .zshrc"
+    print -r -- "are still reinstalled — only the wholesale ~400MB re-download is skipped."
     print -r -- ""
     print -r -- "Primes sudo up front and keeps it alive so the run is unattended"
     print -r -- "(root shells run sudo-free). Devcontainers skip OS-level steps."
@@ -193,11 +211,13 @@ function maintain() {
         [[ "${reply}" == [yY]* ]] && run_install=1
     fi
 
-    # The zinit reset is a full wipe+reinstall (~400MB re-download), so it is opt-in the same
-    # way — off unless you ask for it or pass --zinit.
+    # Only the FULL WIPE is opt-in. Answering N (or running non-interactively) still updates
+    # the plugins and still repairs any that drifted from .zshrc — it just does so
+    # incrementally instead of re-downloading ~400MB. Say y only when you have edited an ice
+    # VALUE in place, which the audit cannot detect (it compares ice names).
     if (( ! run_zinit )) && [[ -t 0 ]]; then
         local zreply=""
-        read -r "zreply?▸ Reset & update zinit plugins (full reinstall, ~400MB)? [y/N] "
+        read -r "zreply?▸ FULL zinit wipe + reinstall (~400MB)? Plugins update either way. [y/N] "
         [[ "${zreply}" == [yY]* ]] && run_zinit=1
     fi
 
@@ -422,16 +442,68 @@ function maintain::run() {
     # The zinit reset is a full wipe+reinstall (~400MB re-download), so it is opt-in: enabled
     # by --zinit or by answering y to the prompt in maintain(). Off by default (bare Enter,
     # cron, CI).
+    # Zinit plugins. The default path UPDATES them; --zinit is the full-wipe hammer.
+    #
+    # This used to be all-or-nothing — and the "nothing" was the default, so an ordinary
+    # run never touched the plugins at all and the only way to update was to accept a
+    # ~400MB wipe. The three steps below give the normal path teeth:
+    #
+    #   1. `zi update --all --parallel` is correct AND fast for every plugin whose .zshrc
+    #      declaration is unchanged since install: its saved ices then match the config by
+    #      construction, so bulk update's inability to refresh ices has nothing to get
+    #      wrong. (It does genuinely update — verified against a plugin faked back a
+    #      release.) --no-pager is mandatory: zi update pages by default and will block
+    #      forever on a pipe with no tty.
+    #   2. `zi-audit --ids` names the plugins whose on-disk metadata no longer matches
+    #      .zshrc — the only ones that need more than an update.
+    #   3. Those get wiped and reinstalled. A wipe is the ONLY complete repair: a targeted
+    #      update merges ices and can never remove one you deleted from the declaration.
+    #
+    # Blind spot worth knowing: zi-audit compares ice NAMES, not values, because declared
+    # values contain unevaluated command substitution (bpick"$(gh_asset …)"). Adding or
+    # removing an ice is caught here; editing one IN PLACE is not — for that, run --zinit.
+    # See docs/ZINIT_UPDATE_MECHANICS.md.
     if (( run_zinit )); then
-        maintain::hdr "Resetting Zinit Plugins"
+        maintain::hdr "Resetting Zinit Plugins (full wipe, ~400MB)"
         "${ZDOTDIR}/functions/zinit-reset" --go || failures+=("zinit reset")
         # Drop stale command-hash entries pointing into the pre-wipe plugin dirs, so the
         # steps below this line resolve correctly. This only repairs THIS process — we run in
         # a subshell (see the pipe in maintain()), so the calling shell keeps its stale hash
         # regardless; that is what the closing `exec zsh` in the summary is for.
         rehash
+        (( $+functions[zi_audit] )) && { maintain::hdr "Verifying zinit ices"; zi_audit --quiet || failures+=("zinit audit") }
+    elif (( $+functions[zi] )); then
+        maintain::hdr "Updating zinit plugins"
+        PAGER=cat GIT_PAGER=cat zi update --all --parallel --no-pager </dev/null \
+            || failures+=("zi update")
+
+        if (( $+functions[zi_audit] )); then
+            maintain::hdr "Auditing zinit ices against .zshrc"
+            local -a zi_drifted
+            zi_drifted=( ${(f)"$(zi_audit --ids 2>/dev/null)"} )
+            zi_drifted=( ${zi_drifted:#} )
+
+            if (( ${#zi_drifted} )); then
+                print -r -- "  ${#zi_drifted} plugin(s) drifted from .zshrc — reinstalling:"
+                local zp zdir
+                for zp in "${zi_drifted[@]}"; do
+                    zdir="${ZINIT[PLUGINS_DIR]}/${zp//\//---}"
+                    # Only ever delete a real directory strictly beneath PLUGINS_DIR.
+                    [[ -n "${zp}" && -d "${zdir}" && "${zdir}" == "${ZINIT[PLUGINS_DIR]}"/?* ]] || continue
+                    print -r -- "    ${zp}"
+                    rm -rf -- "${zdir}"
+                done
+                # Turbo (wait'…') never fires in a script, so the reinstall needs a fresh
+                # shell plus a scheduler burst — the same primitive zinit-reset uses.
+                zsh -ic '@zinit-scheduler burst' >/dev/null 2>&1
+                rehash
+                zi_audit --quiet || failures+=("zinit drift unresolved")
+            else
+                print -r -- "  no drift — every plugin matches its .zshrc declaration"
+            fi
+        fi
     else
-        maintain::hdr "Skipping Zinit reset (pass --zinit or answer y to enable)"
+        maintain::hdr "Skipping zinit (not loaded in this shell)"
     fi
 
     # Self-update only when mise is a standalone install (under $HOME). Package-manager
@@ -612,6 +684,58 @@ function maintain::run() {
     elif (( $+commands[podman] )); then
         maintain::hdr "Podman system prune (safe mode)"
         podman system prune -f --filter "until=168h" || failures+=("podman prune")
+    fi
+
+    # Re-close both Docker autostart vectors. Autostart is off by design on this host (see
+    # zsh/functions/dock.zsh and the DOCKER_AUTOSTART gate in .zshrc): an idle stack coming
+    # back up on its own was a large share of what exhausted the WSL VM's RAM+swap and got
+    # it hard power-cycled. Both vectors drift back ON without anyone touching them —
+    #   - restart policies: tools (notably the Supabase CLI) rewrite containers to
+    #     unless-stopped behind your back, so the next dockerd start drags the stack up;
+    #   - systemd units: a docker-ce package upgrade re-enables docker.service/.socket,
+    # which is exactly the kind of silent drift a maintenance pass exists to catch.
+    #
+    # WSL-only on purpose. On a server or desktop, containers that bring themselves back
+    # after a reboot are the entire point — disabling that there would be a silent outage.
+    if [[ "${HOST_OS}" == "wsl" && "${in_container}" != "true" ]] && (( $+commands[docker] )); then
+        maintain::hdr "Docker autostart (keeping it off: restart=no + units disabled)"
+
+        # Restart policies can only be rewritten while the daemon answers. When it is down
+        # (the normal state here) there is nothing to drift and nothing to fix.
+        if (( ${#docker_cmd} )); then
+            local -a all_containers
+            all_containers=( ${(f)"$("${docker_cmd[@]}" ps -aq 2>/dev/null)"} )
+            if (( ${#all_containers} )); then
+                if "${docker_cmd[@]}" update --restart=no "${all_containers[@]}" >/dev/null; then
+                    print -r -- "  ${#all_containers} container(s) pinned to restart=no"
+                else
+                    failures+=("docker restart-policy pin")
+                fi
+            else
+                print -r -- "  no containers to pin"
+            fi
+        else
+            print -r -- "  daemon not running — restart policies left as-is"
+        fi
+
+        # The units are independent of the daemon being up, so this runs either way.
+        if (( $+commands[systemctl] && can_sudo )); then
+            local -a autostart_units
+            local unit
+            for unit in docker.service docker.socket containerd.service; do
+                [[ "$(systemctl is-enabled "${unit}" 2>/dev/null)" == "enabled" ]] \
+                    && autostart_units+=("${unit}")
+            done
+            if (( ${#autostart_units} )); then
+                if "${sudo_cmd[@]}" systemctl disable "${autostart_units[@]}" &>/dev/null; then
+                    print -r -- "  disabled at boot: ${autostart_units[*]}"
+                else
+                    failures+=("docker unit disable")
+                fi
+            else
+                print -r -- "  units already disabled at boot"
+            fi
+        fi
     fi
 
 
