@@ -185,9 +185,10 @@ Yes to both, and that is not the bug. Keep these separate:
 - **Downloading is the point.** A new upstream version means a download. Verified: a plugin
   faked back to an older release was detected and upgraded by a plain bulk run.
 - **Compiling is declared.** Any plugin with `atpull'%atclone'` over a build command
-  rebuilds when upstream moves. As of this writing that is `Byron/dua-cli`
-  (`cargo build`), `junegunn/fzf` (`./install --bin`) and `tj/git-extras` (`make … install`).
-  That is `.zshrc` asking for it.
+  rebuilds when upstream moves. As of this writing that is `junegunn/fzf`
+  (`./install --bin`) and `tj/git-extras` (`make … install`). That is `.zshrc` asking for
+  it. (`Byron/dua-cli` was on this list until it moved to `gh-r` — the very migration the
+  experiment below models.)
 - **The bug was doing the *wrong* thing** — compiling from source while the config declared
   a prebuilt binary, and doing both in one run. That happens only when `._zinit/` disagrees
   with `.zshrc`.

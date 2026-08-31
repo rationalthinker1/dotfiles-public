@@ -650,7 +650,8 @@ function maintain::run() {
     # Compiled Languages (Go / Rust)
     (( $+commands[go] ))    && { maintain::hdr "Cleaning Go build cache"; go clean -cache -testcache || failures+=("go cache") }
     (( $+commands[cargo] )) && (( $+commands[cargo-cache] )) && { maintain::hdr "Cargo cache prune"; cargo cache --remove-dir git-db,registry-sources || failures+=("cargo cache") }
-    # cargo-update refreshes cargo-installed binaries (dua-cli, qsv, yazi, …)
+    # cargo-update refreshes whatever is still cargo-installed. dua-cli, qsv and yazi used
+    # to be here; all three now come from gh-r, so this only covers leftovers.
     (( $+commands[cargo-install-update] )) && { maintain::hdr "Cargo-installed binaries"; cargo install-update -a || failures+=("cargo install-update") }
 
     # Atuin history sync — the atuin BINARY already updates via the zinit reset (phase 2);
