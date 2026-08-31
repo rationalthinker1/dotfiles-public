@@ -8,7 +8,7 @@
 
 ## Why this document exists
 
-`zsh/functions/zinit-reset` deletes every installed plugin (~400MB) and reinstalls from
+`config/zsh/functions/zinit-reset` deletes every installed plugin (~400MB) and reinstalls from
 scratch. That is expensive, and the obvious question recurs every few months:
 
 > Can't we just check which packages changed and update only those?
@@ -291,7 +291,7 @@ typo'd ice will silently eat the rest of the line.
 
 ## The audit script
 
-`zsh/functions/zi-audit.zsh` defines `zi-audit`, which encodes every failure mode in this
+`config/zsh/functions/zi-audit.zsh` defines `zi-audit`, which encodes every failure mode in this
 document as a check. Run it from an interactive shell (it needs zinit loaded):
 
 ```zsh

@@ -24,7 +24,7 @@ foreach ($builtinAlias in @(
 }
 
 #---------------------------------------------------------------------------------------
-# Listing — eza, matching the definitions in zsh/aliases.zsh
+# Listing — eza, matching the definitions in config/zsh/aliases.zsh
 #---------------------------------------------------------------------------------------
 
 if (Test-Command 'eza') {
@@ -144,7 +144,7 @@ function mv {
     Move-Item @rest @sw
 }
 
-# `mkdir -pv` from zsh/aliases.zsh. New-Item already creates intermediate directories
+# `mkdir -pv` from config/zsh/aliases.zsh. New-Item already creates intermediate directories
 # and echoes what it made, so the flags are swallowed rather than translated.
 function mkdir {
     $paths = @($args | Where-Object { $_ -notmatch '^-[pv]+$' })
@@ -177,7 +177,7 @@ function mkcd {
 }
 
 #---------------------------------------------------------------------------------------
-# Git — mirrors the short aliases in zsh/aliases.zsh.
+# Git — mirrors the short aliases in config/zsh/aliases.zsh.
 # Note `gc` and `gl` shadow built-in aliases removed above.
 #
 # `gcheck`, not `gco`, is plain `git checkout` — matching zsh, where forgit claims
@@ -297,7 +297,7 @@ function myip { (Invoke-RestMethod -Uri 'https://api.ipify.org').Trim() }
 function dotfiles { Set-Location -LiteralPath $script:DotfilesRoot }
 
 #---------------------------------------------------------------------------------------
-# Ports — mirrors `lsp` and `killport` in zsh/aliases.zsh
+# Ports — mirrors `lsp` and `killport` in config/zsh/aliases.zsh
 #---------------------------------------------------------------------------------------
 
 function Get-ListeningPort {
@@ -336,7 +336,7 @@ function Get-ListeningPort {
     }
 }
 
-# Port listening checker — the `lsp` alias from zsh/aliases.zsh
+# Port listening checker — the `lsp` alias from config/zsh/aliases.zsh
 function lsp { Get-ListeningPort | Format-Table -AutoSize }
 
 # Kill process by port number.

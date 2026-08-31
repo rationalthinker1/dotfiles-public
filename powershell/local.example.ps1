@@ -1,5 +1,5 @@
 #=======================================================================================
-# Machine-specific PowerShell overrides — the counterpart to zsh/local.zsh
+# Machine-specific PowerShell overrides — the counterpart to config/zsh/local.zsh
 #
 # Copy to `local.ps1` (gitignored) and edit. Sourced LAST by profile.ps1, so anything
 # here wins over the tracked configuration.

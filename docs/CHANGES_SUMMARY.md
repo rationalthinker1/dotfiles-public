@@ -23,21 +23,21 @@
 ### 🔧 Core Configuration Files
 
 **✓ Fix #39 - Added lifecycle documentation to:**
-- [zsh/.zshenv](../zsh/.zshenv) - 27 lines total
+- [zsh/.zshenv](../config/zsh/.zshenv) - 27 lines total
   - Comprehensive header explaining load order
   - Documents when this file runs (ALL shells)
   - Lists what should/shouldn't go here
 
-- [zsh/.zshrc](../zsh/.zshrc) - 929 lines total  
+- [zsh/.zshrc](../config/zsh/.zshrc) - 929 lines total  
   - Header explains interactive-only configuration
   - Documents load order and file responsibilities
 
 **✓ Fix #31, #32, #33 - Created lifecycle files:**
-- [zsh/.zprofile](../zsh/.zprofile) - Login shell initialization
-- [zsh/.zlogin](../zsh/.zlogin) - Post-interactive setup
-- [zsh/.zlogout](../zsh/.zlogout) - Cleanup on exit (includes wslpath cache cleanup)
+- [zsh/.zprofile](../config/zsh/.zprofile) - Login shell initialization
+- [zsh/.zlogin](../config/zsh/.zlogin) - Post-interactive setup
+- [zsh/.zlogout](../config/zsh/.zlogout) - Cleanup on exit (includes wslpath cache cleanup)
 
-**✓ Fix #50 - Created [zsh/functions/detect_os.zsh](../zsh/functions/detect_os.zsh)**
+**✓ Fix #50 - Created [zsh/functions/detect_os.zsh](../config/zsh/functions/detect_os.zsh)**
 - Centralized OS detection logic
 - Exports: `HOST_OS`, `HOST_LOCATION`, `CODENAME`
 - Used by both `.zshrc` and `install.sh`
@@ -46,7 +46,7 @@
 
 ### ⚡ Performance Improvements
 
-**✓ Fix #16 - Enhanced zcompile in [zsh/.zshrc](../zsh/.zshrc):922**
+**✓ Fix #16 - Enhanced zcompile in [zsh/.zshrc](../config/zsh/.zshrc):922**
 ```zsh
 compile_if_needed() {
     local source_file="${1}"
@@ -65,7 +65,7 @@ compile_if_needed "${ZDOTDIR}/local.zsh"
 
 ### 🎯 Functional Fixes
 
-**✓ Fix #22 - Consolidated aliases in [zsh/aliases.zsh](../zsh/aliases.zsh):6**
+**✓ Fix #22 - Consolidated aliases in [zsh/aliases.zsh](../config/zsh/aliases.zsh):6**
 ```zsh
 reload_zsh() {
     source "${ZDOTDIR}/.zshrc"
@@ -74,7 +74,7 @@ alias rebash="reload_zsh"
 alias vpr="vim \"${ZDOTDIR}/.zshrc\" && reload_zsh"
 ```
 
-**✓ Fix #25 - Interactive check in cd() at [zsh/aliases.zsh](../zsh/aliases.zsh):29**
+**✓ Fix #25 - Interactive check in cd() at [zsh/aliases.zsh](../config/zsh/aliases.zsh):29**
 ```zsh
 cd() {
     # Only override cd in interactive shells; use builtin for scripts
@@ -83,7 +83,7 @@ cd() {
 }
 ```
 
-**✓ Fix #27 - Extended extract() with modern formats at [zsh/aliases.zsh](../zsh/aliases.zsh):1144**
+**✓ Fix #27 - Extended extract() with modern formats at [zsh/aliases.zsh](../config/zsh/aliases.zsh):1144**
 Added support for:
 - `*.tar.xz` (tar xJf)
 - `*.tar.zst` (zstd + tar)
@@ -92,7 +92,7 @@ Added support for:
 - `*.zst` (unzstd)
 - `*.lz4` (unlz4)
 
-**✓ Fix #28 - Enhanced Docker compose detection at [zsh/aliases.zsh](../zsh/aliases.zsh):819**
+**✓ Fix #28 - Enhanced Docker compose detection at [zsh/aliases.zsh](../config/zsh/aliases.zsh):819**
 ```zsh
 dc() {
     if [[ -e "docker-compose.yml" ]]; then
@@ -114,23 +114,23 @@ dc() {
 }
 ```
 
-**✓ Fix #38 - Removed duplicate OMZP::extract at [zsh/.zshrc](../zsh/.zshrc):747**
+**✓ Fix #38 - Removed duplicate OMZP::extract at [zsh/.zshrc](../config/zsh/.zshrc):747**
 - Removed `zi snippet OMZP::extract`
 - Added comment: `# OMZP::extract removed - using custom extract() function from aliases.zsh`
 
 **✓ Fix #41 - Added usage examples to functions:**
-- `git_search()` - [aliases.zsh:619](../zsh/aliases.zsh#L619)
-- `replace-in-files()` - [aliases.zsh:1104](../zsh/aliases.zsh#L1104)
-- `dexec()` - [aliases.zsh:852](../zsh/aliases.zsh#L852)
-- `drexec()` - [aliases.zsh:856](../zsh/aliases.zsh#L856)
-- `dceb()` - [aliases.zsh:862](../zsh/aliases.zsh#L862)
-- `dcebr()` - [aliases.zsh:877](../zsh/aliases.zsh#L877)
+- `git_search()` - [aliases.zsh:619](../config/zsh/aliases.zsh#L619)
+- `replace-in-files()` - [aliases.zsh:1104](../config/zsh/aliases.zsh#L1104)
+- `dexec()` - [aliases.zsh:852](../config/zsh/aliases.zsh#L852)
+- `drexec()` - [aliases.zsh:856](../config/zsh/aliases.zsh#L856)
+- `dceb()` - [aliases.zsh:862](../config/zsh/aliases.zsh#L862)
+- `dcebr()` - [aliases.zsh:877](../config/zsh/aliases.zsh#L877)
 
 ---
 
 ### 🧹 Code Cleanup
 
-**✓ Fix #23 - Removed all commented code from [zsh/aliases.zsh](../zsh/aliases.zsh)**
+**✓ Fix #23 - Removed all commented code from [zsh/aliases.zsh](../config/zsh/aliases.zsh)**
 Removed:
 - Line 155: `#alias ls='ls --color=auto'`
 - Line 293: `#alias ref="cat ~/.config/zsh/reference.zsh"`
@@ -141,7 +141,7 @@ Removed:
 
 ### 🎨 Style Standardization
 
-Applied to **all ZSH files** ([.zshrc](../zsh/.zshrc), [aliases.zsh](../zsh/aliases.zsh), [.zshenv](../zsh/.zshenv)):
+Applied to **all ZSH files** ([.zshrc](../config/zsh/.zshrc), [aliases.zsh](../config/zsh/aliases.zsh), [.zshenv](../config/zsh/.zshenv)):
 
 **✓ Fix #18, #62 - Double quote standard**
 - All variables now use `"${var}"` format
@@ -167,7 +167,7 @@ Applied to **all ZSH files** ([.zshrc](../zsh/.zshrc), [aliases.zsh](../zsh/alia
 **✓ Fix #60 - Parameter expansion**
 - `${var:t}` instead of `basename "$var"`
 - `${var:h}` instead of `dirname "$var"`
-- Applied at [aliases.zsh:49](../zsh/aliases.zsh#L49), [437](../zsh/aliases.zsh#L437), [637](../zsh/aliases.zsh#L637)
+- Applied at [aliases.zsh:49](../config/zsh/aliases.zsh#L49), [437](../config/zsh/aliases.zsh#L437), [637](../config/zsh/aliases.zsh#L637)
 
 **✓ Fix #61 - Pattern matching**
 - Replaced grep in conditionals with ZSH `[[ =~ ]]` and glob patterns
@@ -333,13 +333,13 @@ Replaced separate OS detection implementations with a **single POSIX-compatible 
 - **Problem**: Code duplication, potential drift between implementations
 
 ### After
-- **[zsh/functions/detect_os.sh](../zsh/functions/detect_os.sh)**: Single POSIX sh-compatible source
+- **[zsh/functions/detect_os.sh](../config/zsh/functions/detect_os.sh)**: Single POSIX sh-compatible source
 - **Shared by**: install.sh (bash) AND .zshrc (zsh)
 - **Result**: Single source of truth, guaranteed consistency
 
 ### Implementation Details
 
-**File: [zsh/functions/detect_os.sh](../zsh/functions/detect_os.sh)**
+**File: [zsh/functions/detect_os.sh](../config/zsh/functions/detect_os.sh)**
 ```sh
 #!/usr/bin/env sh
 # POSIX-compatible - works in sh, bash, and zsh
@@ -356,7 +356,7 @@ Replaced separate OS detection implementations with a **single POSIX-compatible 
 **Sourced by:**
 1. **install.sh** (line 70):
    ```bash
-   source "${DOTFILES_ROOT}/zsh/functions/detect_os.sh"
+   source "${DOTFILES_ROOT}/config/zsh/functions/detect_os.sh"
    ```
    
 2. **.zshrc** (line 71):

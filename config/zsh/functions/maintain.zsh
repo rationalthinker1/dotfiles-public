@@ -198,13 +198,15 @@ function maintain() {
     # unattended phases start mirrors why sudo is primed up front — every question lands now,
     # not ten minutes in.
     #
-    # ZDOTDIR is ~/.config/zsh, a symlink into the repo, so :A resolves it before :h takes the
-    # parent — a bare ${ZDOTDIR:h} would look in ~/.config and miss.
+    # ZDOTDIR is ~/.config/zsh, a symlink into the repo, so :A resolves it before the :h hops
+    # take the parents — a bare ${ZDOTDIR:h} would look in ~/.config and miss. Two hops, not
+    # one: the link source is <repo>/config/zsh, so :A:h lands on config/ and :A:h:h on the
+    # repo root.
     #
     # Default for both prompts is N: a bare Enter, EOF, or a non-tty stdin (cron, CI,
     # `maintain < /dev/null`) all mean skip. The matching --install / --zinit flags force the
     # step on and suppress its prompt, so scripted runs stay fully unattended.
-    local install_script="${ZDOTDIR:A:h}/install.sh"
+    local install_script="${ZDOTDIR:A:h:h}/install.sh"
     if (( ! run_install )) && [[ -t 0 && -r "${install_script}" ]]; then
         local reply=""
         read -r "reply?▸ Run dotfiles install.sh as part of this run? [y/N] "
@@ -970,11 +972,12 @@ function maintain::run() {
         print -r -- "    ✓ no unexpected broken symlinks"
     fi
 
-    # Dotfiles integrity (read-only). Repo root resolves through the ZDOTDIR symlink. Flag any
+    # Dotfiles integrity (read-only). Repo root resolves through the ZDOTDIR symlink — two :h
+    # hops, because the link source is <repo>/config/zsh, not <repo>/zsh. Flag any
     # managed target that exists but is NOT a symlink back into the repo (drift — usually an
     # app rewrote a symlinked file), and warn on uncommitted/unpushed repo state. The list
     # mirrors a core subset of install.sh's SHARED_LINKS/ZSH_LINKS — keep in sync if it changes.
-    local dotf="${ZDOTDIR:A:h}"
+    local dotf="${ZDOTDIR:A:h:h}"
     maintain::hdr "Dotfiles integrity"
     if [[ -d "${dotf}/.git" ]]; then
         # Each entry must be a target install.sh actually links. NOTE: mise is linked at
