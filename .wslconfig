@@ -2,12 +2,17 @@
 autoProxy = true
 firewall = true
 
-# Memory: cap at 10GB (host has 16GB; autoMemoryReclaim returns unused RAM to Windows).
-# Swap raised well above default — the freezes were the VM exhausting RAM+swap and thrashing
-# until the 9p transport stalled and WSL called reboot(RB_POWER_OFF). Generous swap turns
-# that hard power-off into mere slowness. Swap is a disk file, so oversizing it is cheap.
-# NOTE: host-specific. On a 32GB machine raise to memory = 20GB / swap = 32GB.
-memory = 10GB
+# Memory: cap at 20GB (host has 32GB; autoMemoryReclaim returns unused RAM to Windows).
+# NOTE: host-specific. This host IS 32GB — Win32_OperatingSystem reports
+# TotalVisibleMemorySize = 33,271,096 KB. b39f25d set 10GB "for this 16GB host", but that
+# premise was wrong for this machine, so the cap was halved for no reason. Restored 2026-09-04.
+#
+# Swap stays at 16GB. memwatch (/var/log/memwatch, Aug 31 - Sep 4) never once fired a
+# LOW_SWAP alert: SwapFree never dropped below ~71% of 16GB, so under 5GB was ever in use.
+# The binding constraint is MemAvailable, which dipped to 461-681MB with memory PSI
+# full/avg10 peaking at 17.69, and LOW_MEM alerts trending 0,1,1,4,8 per day. The VM stalls
+# in reclaim; it does not exhaust swap. More swap would not have helped — headroom would.
+memory = 20GB
 swap = 16GB
 
 # disabled due to docker not working with localhost
@@ -15,6 +20,13 @@ swap = 16GB
 
 dnsTunneling = true
 localhostForwarding = true
+
+# Pin the clocksource. The guest was defaulting to raw "tsc", whose monotonic clock runs
+# ~2% slow inside the VM; hv_utils then stepped CLOCK_REALTIME forward ~0.65s every ~33s to
+# compensate — 1945 "Clock change detected" events in a single boot (2026-09-04), which
+# breaks timeouts, keepalives and watchdogs across the guest.
+# Verify after restart: cat /sys/devices/system/clocksource/clocksource0/current_clocksource
+kernelCommandLine = clocksource=hyperv_clocksource_tsc_page
 
 [experimental]
 autoMemoryReclaim = "gradual"
