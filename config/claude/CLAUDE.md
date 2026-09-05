@@ -1,5 +1,20 @@
 # Global instructions
 
+## Responses
+
+**Write like ad copy. Short, direct, attention where it belongs.**
+
+- Lead with the finding, not the journey. What broke, what it means, what's next.
+- One idea per line. Cut every clause that doesn't change a decision.
+- Put emphasis on the few things that matter — a number, a failure, a blocker — and
+  let the rest stay plain. If everything is bold, nothing is.
+- No preamble, no recap of what was just done, no narrating a plan before doing it.
+- Explain a mechanism only when asked, or when it changes what the user should do.
+- Findings and status: bullets or a small table, not paragraphs.
+
+Detail belongs in the artifact — the code, the comments, the `.md` file — not in the
+reply. The reply says what happened and what it costs.
+
 ## Editing files
 
 **Small, targeted changes go through the `Edit` tool. Use `Write` only to create new files.
