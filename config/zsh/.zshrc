@@ -1161,9 +1161,18 @@ if (( $+commands[mise] )); then
     # window, so `mise doctor` there still saw the stale order (the lone remaining warning).
     # preexec runs immediately before every command line, so any command — `mise doctor`
     # included — sees mise first even right after a plugin sched-loads.
+    #
+    # An ACTIVE VIRTUALENV outranks mise. mise pins `python = "latest"`, so its
+    # installs/python/*/bin is one of the dirs re-floated above — which buried the
+    # `.venv/bin` that `source .venv/bin/activate` had just put first, on the very
+    # next command line. The venv looked active (VIRTUAL_ENV set, prompt segment
+    # showing) while `python` was mise's 3.14 and every package in the venv came back
+    # ModuleNotFoundError. Re-float VIRTUAL_ENV/bin last so it lands ahead of mise;
+    # with no venv active this is a no-op and mise still wins.
     autoload -Uz add-zsh-hook
     function _mise_keep_path_first() {
         path=("${(@M)path:#*/mise/installs/*}" "${(@)path:#*/mise/installs/*}")
+        [[ -n "${VIRTUAL_ENV}" ]] && path=("${VIRTUAL_ENV}/bin" "${(@)path:#${VIRTUAL_ENV}/bin}")
     }
     add-zsh-hook precmd  _mise_keep_path_first
     add-zsh-hook preexec _mise_keep_path_first
