@@ -89,6 +89,18 @@ function cd() {
 	# Only override cd in interactive shells; use builtin for scripts
 	[[ -o interactive ]] || { builtin cd "$@"; return; }
 
+	# ...and only for a `cd` typed at the prompt. Inside this function
+	# ZSH_EVAL_CONTEXT is `toplevel:shfunc` when called from the command line, but
+	# gains a frame for every enclosing scope: `toplevel:file:shfunc` from a sourced
+	# file, `toplevel:cmdsubst:shfunc` from a $(...), `toplevel:shfunc:shfunc` from
+	# another function. Those callers want POSIX cd, not a picker — the self-locating
+	# idiom `VC_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"` resolves to
+	# `cd .` under zsh (no BASH_SOURCE; $0 is the bare sourced filename), which would
+	# otherwise open the subdirectory picker in the middle of `source env.sh`.
+	# Same trap for `cd "${var}"` with var empty: it falls through to the zoxide
+	# branch, where `grep -i ""` matches every directory.
+	[[ "${ZSH_EVAL_CONTEXT%:shfunc}" == "toplevel" ]] || { builtin cd "$@"; return; }
+
 	if [[ $# -eq 0 ]]; then
 		# No args: show zoxide directory history or fall back to common directories
 		local dir
@@ -211,6 +223,12 @@ function kkk() {
 function ls() {
 	# Only override ls in interactive shells; use builtin for scripts
 	[[ -o interactive ]] || { command ls --color=auto "$@"; return; }
+
+	# Piped or substituted calls get the real ls, same rule as cat()/df()/xxd(): eza is
+	# not an ls clone. It has no -C/-b/-q/--quoting-style, and `n=$(ls | wc -l)` counts
+	# a different set. A script sourced from an interactive shell is still interactive,
+	# so -o interactive alone does not cover it.
+	[[ -t 1 ]] || { command ls --color=auto "$@"; return; }
 
 	# Fall back to regular ls if eza is not installed
 	(( $+commands[eza] )) || { command ls --color=auto "$@"; return; }
@@ -1291,6 +1309,11 @@ function drc() {
 # Example: dbu myapp:latest
 function dbu() { docker build -t=$1 .; }
 
+# Remove all unused Docker objects (containers, images, volumes, networks)
+function dockerclean() {
+	docker system prune --all --volumes
+}
+
 # Run bash shell in Docker container as current user
 # Usage: dexbash <container-id>
 # Example: dexbash abc123
@@ -1776,7 +1799,20 @@ function df() {
 	command df "$@"
 }
 
+# Disk usage explorer - dust for the bare `ncdu` / `ncdu <dir>` case, real ncdu otherwise.
+#
+# dust is NOT an ncdu clone; it shares no flags with it. `-t 1` cannot guard this one,
+# because the calls that matter still run on a terminal: `ncdu -o scan.json` (export),
+# `ncdu -f scan.json` (import), `-x` (one filesystem), `--exclude`. Handed to dust those
+# are misread as dust's own options, so any option at all routes to the real binary —
+# the same flag-whitelist shape rg() uses above. For dust's own flags, call `dust`.
 function ncdu() {
+	local arg
+	for arg in "$@"; do
+		[[ "${arg}" == -* ]] || continue
+		(( $+commands[ncdu] )) && { command ncdu "$@"; return }
+		break
+	done
 	(( $+commands[dust] )) && { dust "$@"; return }
 	(( $+commands[ncdu] )) && { command ncdu "$@"; return }
 	print -ru2 -- "ncdu: neither dust nor ncdu is installed"
