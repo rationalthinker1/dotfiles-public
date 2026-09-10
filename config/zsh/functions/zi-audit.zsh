@@ -1,101 +1,96 @@
 #!/usr/bin/env zsh
-# ==============================================================================
-# zi-audit.zsh - Verify every zi plugin installed as its .zshrc declaration says
-# ==============================================================================
+# zi-audit.zsh — verify every zi plugin installed as its .zshrc declaration says.
 # Defines `zi_audit` (alias: `zi-audit`) plus its ::declared / ::usage helpers.
 #
-# Why this exists: zinit fails SILENTLY in several ways that a working shell does
-# not reveal. All of these were live in this config and none produced an error:
+# Exists because zinit fails silently: an unknown ice aborts the ice parser and discards
+# every ice after it, extract'' drops the exec bit on update, and `zi update` merges ices
+# but never removes dropped ones. docs/ZINIT_UPDATE_MECHANICS.md has the measurements.
 #
-#   1. An unrecognised ice aborts the ice parser. zinit.zsh:2335 matches each ice
-#      against ${ZINIT[ice-list]} and `|| break`s on a miss — so the unknown ice AND
-#      EVERY ICE AFTER IT are discarded. `sbin` (annex-only, no annex installed) ate
-#      eza's atclone and ast-grep's nocompile; `branch` (not an ice in v3.15.3) ate
-#      zsh-fancy-completions' atpull. Binaries still worked, so nothing looked wrong.
-#   2. `extract''` suppresses ziextract, which is also what chmods +x. A fresh
-#      install lands 0755, but an UPDATE re-downloads 0644 — jq silently stopped
-#      being executable on every new upstream release.
-#   3. Metadata drift: a targeted `zi update` MERGES ices and never removes ones
-#      dropped from .zshrc, so a retired atclone keeps firing forever.
-#
-# See docs/ZINIT_UPDATE_MECHANICS.md for the measurements behind each.
-#
-# Sourced by: .zshrc, via the `${ZDOTDIR}/functions/`*.zsh(N) loop. It must run in a
-# shell where zinit is loaded, because it validates ice names against zinit's OWN
-# ${ZINIT[ice-list]} rather than a hardcoded copy — so it stays correct automatically
-# if an annex is ever installed to extend that list.
-#
-# Read-only. It never installs, updates or deletes anything.
-# ==============================================================================
+# Must run where zinit is loaded — ice names are validated against zinit's OWN
+# ${ZINIT[ice-list]}, so an installed annex extends the audit automatically.
+# Read-only with ONE exception: an interactive run offers to delete leftover ._backup
+# dirs at the end. It never deletes unprompted, and never when stdout is not a tty.
 
-# Ices zinit writes into ._zinit/ as its own bookkeeping rather than because .zshrc
-# declared them. Comparing these would report drift on every healthy plugin.
-# Not readonly: this file is re-sourced during development, and -r would abort that.
+# Ices zinit writes as its own bookkeeping; comparing them reports drift on every healthy
+# plugin. Not readonly — this file is re-sourced during development.
 typeset -ga ZI_AUDIT_BOOKKEEPING=(
     is_release url teleid light-mode .gitignore
 )
 
+# Findings needing a .zshrc edit: counted, but a wipe+reinstall cannot fix them, so they
+# never reach --ids — maintain would reinstall on them forever.
+typeset -ga ZI_AUDIT_LINT=(
+    unknown-ice pick-no-match ver-stale atpull-noop lucid-no-wait depth-ignored has-unmet
+)
+
+# Informational only: never counted, never affect the exit code, never reach --ids.
+typeset -ga ZI_AUDIT_ADVISORY=(
+    zwc-orphan completion-broken completion-disabled conditional-absent
+)
+
 function zi_audit::usage() {
-    print -r -- "Usage: zi-audit [-h|--help] [-q|--quiet] [plugin ...]"
+    print -r -- "Usage: zi-audit [-h|--help] [-q|--quiet] [--ids] [--online] [plugin ...]"
     print -r -- ""
     print -r -- "Audit installed zi plugins against their .zshrc declarations."
     print -r -- "With no arguments every declared plugin is checked."
     print -r -- ""
-    print -r -- "Checks per plugin:"
-    print -r -- "  unknown-ice    an ice zinit does not recognise — it and every ice"
-    print -r -- "                 AFTER it are silently discarded (zinit.zsh:2335)"
-    print -r -- "  ice-dropped    declared in .zshrc but absent from ._zinit/"
-    print -r -- "  ice-stale      present in ._zinit/ but no longer declared (needs a"
-    print -r -- "                 wipe — an update merges ices and cannot remove them)"
-    print -r -- "  not-installed  declared but no plugin directory"
-    print -r -- "  no-payload     directory holds only metadata, nothing was extracted"
-    print -r -- "  pick-no-match  the pick'…' pattern matches no file"
-    print -r -- "  not-executable a command/program plugin's binary lacks +x"
-    print -r -- "  src-missing    src'…' names a file that is absent or empty"
-    print -r -- "  orphan         installed but no longer declared in .zshrc"
+    print -r -- "Declaration vs. disk:"
+    print -r -- "  unknown-ice        zinit does not know it; it and every ice AFTER it"
+    print -r -- "                     are silently discarded (zinit.zsh:2335)"
+    print -r -- "  ice-dropped        declared in .zshrc but absent from ._zinit/"
+    print -r -- "  ice-stale          in ._zinit/ but no longer declared (needs a wipe)"
+    print -r -- "  not-installed      declared but no plugin directory"
+    print -r -- "  no-payload         only metadata, nothing was extracted"
+    print -r -- "  pick-no-match      the pick'…' pattern matches no file"
+    print -r -- "  not-executable     a command/program plugin's binary lacks +x"
+    print -r -- "  src-missing        src'…' names a file that is absent or empty"
+    print -r -- "  orphan             installed but no longer declared in .zshrc"
     print -r -- ""
-    print -r -- "Checks that an ice actually TOOK EFFECT (registration is not enough):"
+    print -r -- "Did the ice actually TAKE EFFECT (registration is not enough):"
     print -r -- "  mv/cp-not-applied  the 'A -> B' destination does not exist"
     print -r -- "  bpick-mismatch     the downloaded asset does not match bpick'…'"
     print -r -- "  ver-not-applied    HEAD is not on the ref named by ver'…'"
     print -r -- "  depth-not-applied  depth'…' given but the clone is not shallow"
     print -r -- "  nocompile-ignored  nocompile set but .zwc files exist"
+    print -r -- "  compile-missing    compile'…' set but no .zwc was produced"
+    print -r -- "  gh-r-clone         from'gh-r' but a .git clone is present instead"
+    print -r -- "  extract-noexec     extract'' suppressed the chmod and nothing is +x"
     print -r -- ""
-    print -r -- "With --online, one more (see the note at the bottom):"
-    print -r -- "  ver-stale          a gh-r plugin is pinned with ver'…' while a NEWER"
-    print -r -- "                     upstream release already carries a matching asset"
+    print -r -- "Runtime state (needs the plugin to have loaded; turbo may defer that):"
+    print -r -- "  not-on-path        as'program' but its dir never reached \$path"
+    print -r -- "  not-in-fpath       a completion plugin missing from \$fpath"
+    print -r -- "  completion-missing blockf/creinstall plugin with no _<name> installed"
+    print -r -- ""
+    print -r -- "Declaration lints — real, but a reinstall cannot fix them:"
+    print -r -- "  atpull-noop        atpull'%atclone' with no atclone to run"
+    print -r -- "  lucid-no-wait      lucid without wait; it only silences turbo"
+    print -r -- "  depth-ignored      depth'…' on gh-r; only the git path reads it"
+    print -r -- "  has-unmet          has'cmd' but cmd is absent, which explains an absence"
+    print -r -- "  ver-stale          (--online) pinned while a newer release matches bpick"
+    print -r -- ""
+    print -r -- "Advisory (marked ~, never counted, never affects the exit code):"
+    print -r -- "  zwc-orphan         a .zwc whose source is gone or older than it"
+    print -r -- "  completion-broken  dangling symlink in zinit's completions dir"
+    print -r -- "  completion-disabled  a completion installed but turned off by zi cdisable"
+    print -r -- "  conditional-absent declared inside an if that is false on this host"
     print -r -- ""
     print -r -- "Options:"
     print -r -- "  -q, --quiet   List only plugins with findings; suppress the OK lines."
-    print -r -- "      --ids     Print ONLY the ids of plugins a wipe+reinstall would fix,"
-    print -r -- "                one per line, nothing else. For scripting (maintain uses"
-    print -r -- "                it to repair exactly those). Declaration bugs a reinstall"
-    print -r -- "                cannot touch (unknown-ice, pick-no-match) are excluded —"
-    print -r -- "                those need a .zshrc edit, so reinstalling would loop."
-    print -r -- "      --online  Additionally run ver-stale, which needs the GitHub API."
-    print -r -- "                One request per PINNED gh-r plugin, none for the rest."
+    print -r -- "      --ids     Print ONLY the ids a wipe+reinstall would fix, one per"
+    print -r -- "                line. For scripting; maintain repairs exactly those."
+    print -r -- "                Lints and advisories are excluded."
+    print -r -- "      --online  Also run ver-stale, which needs the GitHub API: one"
+    print -r -- "                request per PINNED gh-r plugin, none for the rest."
     print -r -- "                Ignored with --ids. maintain passes this."
     print -r -- ""
-    print -r -- "Exits non-zero if any finding is reported. Read-only: never installs,"
-    print -r -- "updates or deletes. Snippets are out of scope (plugins only)."
-    print -r -- ""
-    print -r -- "Version staleness is deliberately NOT checked for UNPINNED plugins —"
-    print -r -- "\`zi update\` already compares installed against latest and skips what has"
-    print -r -- "not moved. A ver'…' pin is the exact case it cannot catch: the pin is what"
-    print -r -- "update honours, so a pin added to work around a broken upstream release"
-    print -r -- "stays put forever once the reason for it is forgotten. That is what"
-    print -r -- "--online looks for, and why it is opt-in rather than always on."
+    print -r -- "Exits non-zero if any non-advisory finding is reported."
+    print -r -- "Read-only, except that an interactive run offers to delete leftover"
+    print -r -- "._backup dirs at the end. Snippets are out of scope (plugins only)."
 }
 
-# Prints the newest release tag of ${1} that carries an asset matching the bpick glob
-# ${2}, or nothing. Used only by the ver-stale check.
-#
-# jq rather than a grep over the raw JSON because the answer needs tag and asset PAIRED,
-# and a release object holds its tag_name far from its assets[] names — a grep can find
-# both and has no way to tell which belongs to which. The API returns newest-first, so
-# the first match is the answer. Everything is soft-failed (missing curl or jq, no
-# network, a rate-limited response): a check that cannot reach the network reports
-# nothing rather than a false finding.
+# Newest tag of ${1} with an asset matching bpick glob ${2}. jq, not grep: tag and asset
+# must stay PAIRED. API is newest-first. Soft-fails everywhere — a check that cannot reach
+# the network reports nothing, never a false finding.
 function zi_audit::newest_matching_tag() {
     local id="${1}" bpick="${2}" line tag asset
     local -a lines
@@ -116,20 +111,18 @@ function zi_audit::newest_matching_tag() {
     return 1
 }
 
-# Parse .zshrc into "plugin-id<TAB>ice1 ice2 …" lines on stdout.
-#
-# Tokenising uses ${(z)…} — zsh's own shell-word splitter — rather than a regex,
-# because ice VALUES routinely contain spaces, quotes and command substitution
-# (mv'jq* -> jq', bpick"$(gh_asset …)"). ${(z)} honours quoting exactly as zsh does
-# when it runs the line, so each ice stays one word whatever is inside it. The ice
-# NAME is then the prefix before the first quote; only NAMES are ever compared, which
-# sidesteps zinit's value normalisation (as'program' is stored as as=command).
+# Emits "id<TAB>ices<TAB>cond<TAB>id-as<TAB>ice-cond" per plugin.
+# ${(z)…} not a regex: ice values carry spaces and $(…), and it splits as zsh does.
+# Only ice NAMES are compared, sidestepping zinit's normalisation (as'program' -> command)
+# — hence editing an ice VALUE in place is an accepted blind spot.
+# cond = declared inside an `if`; id-as overrides the install dir (zinit.zsh:356).
 function zi_audit::declared() {
     emulate -L zsh
     setopt local_options extended_glob typeset_silent
 
     local zshrc="${1}"
-    local line joined="" ices="" name w
+    local line joined="" ices="" idas="" name w
+    local -i cond=0 ice_cond=0
     local -a raw words
 
     raw=( ${(f)"$(<${zshrc})"} )
@@ -146,28 +139,68 @@ function zi_audit::declared() {
         words=( ${(z)joined} ) 2>/dev/null
         joined=""
 
+        (( ${#words} )) || continue
+        # ${(z)} keeps a leading # as its own word. Skipping these matters: .zshrc carries
+        # commented-out `if` blocks, and counting those would mark every later plugin
+        # conditional for want of a matching `fi`.
+        [[ "${words[1]}" == \#* ]] && continue
+
+        # Before the >=2 guard: a bare `fi` is a single word.
+        case "${words[1]}" in
+            (if) (( cond++ )); continue ;;
+            (fi) (( cond > 0 )) && (( cond-- )); continue ;;
+        esac
+
         (( ${#words} >= 2 )) || continue
         [[ "${words[1]}" == (zi|zinit) ]] || continue
 
         case "${words[2]}" in
             (ice)
-                ices=""
+                # Depth of the ICE line, which is not the depth of the `zi load`:
+                # akavel/up (.zshrc:667) picks its ices in an if/else and loads once
+                # outside it, so only one branch's ices are ever live and comparing the
+                # other's would be a false drop.
+                ices="" idas="" ice_cond=${cond}
                 for w in "${words[@]:2}"; do
                     # A trailing comment is tokenised too — stop before it.
                     [[ "${w}" == \#* ]] && break
                     # Ice name = everything before the first quote; bare ices have none.
-                    name="${w%%[\'\"]*}"
                     # Strip a trailing '=' from the ice=value form zinit also accepts.
+                    name="${w%%[\'\"]*}"
                     name="${name%=}"
-                    [[ -n "${name}" ]] && ices+="${name} "
+                    [[ -n "${name}" ]] || continue
+                    ices+="${name} "
+                    [[ "${name}" == "id-as" ]] && idas="${${w#${name}}//[\'\"=]/}"
                 done
                 ;;
             (load|light)
-                (( ${#words} >= 3 )) && print -r -- "${words[3]}	${ices% }"
-                ices=""
+                (( ${#words} >= 3 )) && print -r -- "${words[3]}	${ices% }	${cond}	${idas}	${ice_cond}"
+                ices="" idas=""
+                ;;
+            (for)
+                # `zi for` interleaves ices and ids in one command, ices applying to the id
+                # that follows. A plugin id is the word carrying a / (owner/repo) or a
+                # leading % (a local path); no ice NAME can, since the name stops at the
+                # first quote. Unused in this .zshrc — present so a `for` block is audited
+                # rather than silently invisible AND reported as an orphan.
+                ices="" idas=""
+                for w in "${words[@]:2}"; do
+                    [[ "${w}" == \#* ]] && break
+                    name="${w%%[\'\"]*}"
+                    name="${name%=}"
+                    [[ -n "${name}" ]] || continue
+                    if [[ "${name}" == (*/*|%*) ]]; then
+                        print -r -- "${name}	${ices% }	${cond}	${idas}	${ice_cond}"
+                        ices="" idas=""
+                    else
+                        ices+="${name} "
+                        [[ "${name}" == "id-as" ]] && idas="${${w#${name}}//[\'\"=]/}"
+                    fi
+                done
+                ices="" idas=""
                 ;;
             (snippet)
-                ices=""   # snippets are out of scope, but they still consume the ices
+                ices="" idas="" ice_cond=0   # out of scope, but they still consume the ices
                 ;;
         esac
     done
@@ -215,28 +248,46 @@ function zi_audit() {
     local plugins_dir="${ZINIT[PLUGINS_DIR]:-${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/plugins}"
 
     # --- every local used below, declared exactly once --------------------------
-    local id ices entry dir ice as_val pick_val src_val hit r d
-    local mv_val cp_val bpick_val ver_val asset ref xfrom xto newer
-    local -i findings=0 checked=0 pos bad_at limit rep
-    local -A declared seen_twice
-    local -a parsed report decl_ices saved dropped stale payload hits orphans zwcs
+    local id ices entry rest cond idas icecond dir ice as_val pick_val src_val hit r d xpath
+    local mv_val cp_val bpick_val ver_val asset ref xfrom xto newer klass backup_size
+    local -i findings=0 advisories=0 checked=0 pos bad_at limit rep hard soft unloaded=0
+    local -A declared seen_twice conditional idas_of
+    local -a parsed report decl_ices saved dropped stale payload hits orphans zwcs comps backups
 
     # id -> declared ice names. A plugin declared inside an if/else (up) appears
     # twice with different ices; record that so the drop check can be skipped for it,
     # since only one branch is live and the other's ices would be false positives.
+    #
+    # Fields are unpacked with successive %%/# rather than ${(s.\t.)}: an ice-less
+    # declaration emits an empty field, and splitting would silently drop it and shift
+    # every field after it.
     parsed=( ${(f)"$(zi_audit::declared "${zshrc}")"} )
+    if (( ! ${#parsed} )); then
+        print -ru2 -- "zi-audit: parsed no plugins from ${zshrc} — the parse failed, or the file is not the one you think"
+        return 1
+    fi
     for entry in "${parsed[@]}"; do
-        id="${entry%%	*}"
-        ices="${entry#*	}"
-        [[ -n "${declared[${id}]}" ]] && seen_twice[${id}]=1
+        id="${entry%%	*}";     rest="${entry#*	}"
+        ices="${rest%%	*}";    rest="${rest#*	}"
+        cond="${rest%%	*}";    rest="${rest#*	}"
+        idas="${rest%%	*}";    icecond="${rest#*	}"
+        [[ -n "${declared[${id}]+x}" ]] && seen_twice[${id}]=1
         declared[${id}]="${ices}"
+        (( ${cond:-0} )) && conditional[${id}]=1
+        # Ices chosen in an if/else and loaded once outside it (akavel/up, .zshrc:667):
+        # only one branch is ever live, so comparing the other's names is a false drop.
+        # This is NOT covered by seen_twice, which needs two `zi load` lines to trigger.
+        (( ${icecond:-0} )) && seen_twice[${id}]=1
+        [[ -n "${idas}" ]] && idas_of[${id}]="${idas}"
     done
 
     for id in ${(ko)declared}; do
         (( ${#wanted} )) && [[ ${wanted[(Ie)${id}]} -eq 0 ]] && continue
         (( checked++ ))
         report=()
-        dir="${plugins_dir}/${id//\//---}"
+        # id-as'…' overrides the install dir (zinit.zsh:356). Without this the plugin
+        # reads as both not-installed and orphaned.
+        dir="${plugins_dir}/${${idas_of[${id}]:-${id}}//\//---}"
         decl_ices=( ${=declared[${id}]} )
 
         # --- unknown ices: these truncate the declaration at the first miss ---------
@@ -252,7 +303,14 @@ function zi_audit() {
         done
 
         if [[ ! -d "${dir}" ]]; then
-            report+=("not-installed (no ${dir:t})")
+            # Declared inside an `if`: absence is this host failing the condition, not
+            # drift. zsh-syntax-highlighting (.zshrc:469) is desktop-and-not-SSH only, so
+            # without this every server and SSH session reports a false finding.
+            if (( ${conditional[${id}]:-0} )); then
+                report+=("conditional-absent: declared inside an if that is false here")
+            else
+                report+=("not-installed (no ${dir:t})")
+            fi
         else
             saved=( ${dir}/._zinit/*(N:t) )
 
@@ -282,22 +340,39 @@ function zi_audit() {
                 (( ${#stale} )) && report+=("ice-stale: ${stale[*]} — needs a wipe, an update cannot remove these")
             fi
 
+            # Reset first: these locals span the loop, so an unset one carries over.
+            as_val="" pick_val="" src_val="" from_val=""
+            [[ -r "${dir}/._zinit/as" ]]   && as_val="$(<"${dir}/._zinit/as")"
+            [[ -r "${dir}/._zinit/pick" ]] && pick_val="$(<"${dir}/._zinit/pick")"
+            [[ -r "${dir}/._zinit/src" ]]  && src_val="$(<"${dir}/._zinit/src")"
+            [[ -r "${dir}/._zinit/from" ]] && from_val="$(<"${dir}/._zinit/from")"
+
             # --- payload -----------------------------------------------------------
             payload=( ${dir}/*(ND) ${dir}/*(N.) )
             payload=( ${payload:#*/._zinit} )
             payload=( ${payload:#*/._backup} )
             (( ${#payload} )) || report+=("no-payload (nothing extracted)")
 
+            # The canonical drift signature (ZINIT_UPDATE_MECHANICS.md:202-212).
+            if [[ "${from_val}" == "gh-r" && -d "${dir}/.git" ]]; then
+                report+=("gh-r-clone: from'gh-r' but a .git clone is present — it did not install the release asset")
+            fi
+
+            # extract'' also suppresses the chmod (:232-243); not-executable needs a
+            # matching pick, so a pick-less plugin slips past it.
+            if [[ -r "${dir}/._zinit/extract" && -z "$(<"${dir}/._zinit/extract")" ]]; then
+                if [[ "${as_val}" == (command|program) ]] && (( ${#payload} )); then
+                    hits=( ${dir}/*(N.x) )
+                    (( ${#hits} )) || report+=("extract-noexec: extract'' set and nothing in the plugin is executable")
+                fi
+            fi
+
+            # ._backup is reported once as a total at the end, not per plugin: it is on
+            # nearly every gh-r plugin, so a line each buries the actual findings.
+
             # --- pick target exists and is executable ------------------------------
             # Only for command/program plugins: a zsh plugin's pick is a source file
             # and has no business being +x.
-            as_val=""
-            pick_val=""
-            src_val=""
-            [[ -r "${dir}/._zinit/as" ]]   && as_val="$(<"${dir}/._zinit/as")"
-            [[ -r "${dir}/._zinit/pick" ]] && pick_val="$(<"${dir}/._zinit/pick")"
-            [[ -r "${dir}/._zinit/src" ]]  && src_val="$(<"${dir}/._zinit/src")"
-
             if [[ "${as_val}" == (command|program) && -n "${pick_val}" ]]; then
                 # A pick may be absolute ($ZPFX/bin/git-*, already expanded on disk);
                 # only relative patterns get the plugin dir prepended.
@@ -336,6 +411,10 @@ function zi_audit() {
                 [[ -n "${xto}" ]] || continue
                 hits=( ${~dir}/${~xto}(N) )
                 (( ${#hits} )) || report+=("${ice}-not-applied: '${mv_val}' — '${xto}' does not exist")
+                # No "source still present" check: the source is a glob that routinely
+                # still matches the result (mv'jq* -> jq'), some are self-renames
+                # (mv'bd -> bd'), and excluding the destination still leaves siblings
+                # like bat.1. Measured as 8 findings, all false. Do not re-add.
             done
 
             # bpick'PATTERN': the asset zinit actually downloaded (recorded in url)
@@ -390,27 +469,118 @@ function zi_audit() {
                 zwcs=( ${dir}/**/*.zwc(N) )
                 (( ${#zwcs} )) && report+=("nocompile-ignored: ${#zwcs} .zwc present (${zwcs[1]:t})")
             fi
+
+            # compile'X': the mirror image — it was asked for, so something must exist.
+            if [[ -r "${dir}/._zinit/compile" ]]; then
+                zwcs=( ${dir}/**/*.zwc(N) )
+                (( ${#zwcs} )) || report+=("compile-missing: compile'$(<"${dir}/._zinit/compile")' set but no .zwc was produced")
+            fi
+
+            # zsh uses <source>.zwc only when NEWER; older or orphaned is dead (:343-354).
+            zwcs=( ${dir}/**/*.zwc(N) )
+            for hit in "${zwcs[@]}"; do
+                if [[ ! -e "${hit%.zwc}" ]]; then
+                    report+=("zwc-orphan: ${hit#${dir}/} has no source")
+                elif [[ "${hit%.zwc}" -nt "${hit}" ]]; then
+                    report+=("zwc-orphan: ${hit#${dir}/} is older than its source and is being ignored")
+                fi
+            done
+
+            # --- declaration lints: real, but no reinstall can fix them -------------
+            # atpull'%atclone' with nothing to re-run (:387).
+            if [[ -r "${dir}/._zinit/atpull" && "$(<"${dir}/._zinit/atpull")" == "%atclone" ]]; then
+                [[ -r "${dir}/._zinit/atclone" ]] || report+=("atpull-noop: atpull'%atclone' but no atclone is declared")
+            fi
+
+            # lucid silences a turbo-only message (zinit.zsh:2484); dead without wait.
+            if [[ -r "${dir}/._zinit/lucid" ]]; then
+                [[ -r "${dir}/._zinit/wait" && -n "$(<"${dir}/._zinit/wait")" ]] || \
+                    report+=("lucid-no-wait: lucid without wait — it only silences turbo, so it is dead here")
+            fi
+
+            # depth is read only by the git clone path (zinit-install.zsh:433) (:384-386).
+            if [[ -r "${dir}/._zinit/depth" && "${from_val}" == "gh-r" ]]; then
+                report+=("depth-ignored: depth'$(<"${dir}/._zinit/depth")' with from'gh-r' — only the git path reads it")
+            fi
+
+            # --- runtime state -----------------------------------------------------
+            # $path and completion links are written at LOAD time (zinit.zsh:1827-1836).
+            # 48 of 51 declarations are turbo, so ungated this calls the whole config
+            # broken in a young shell. Unloaded plugins are skipped and counted once.
+            if (( ${ZINIT_REGISTERED_PLUGINS[(Ie)${id}]} )); then
+                if [[ "${as_val}" == (command|program) ]]; then
+                    # zinit prepends the matched pick's directory, else the plugin dir
+                    # (zinit.zsh:1833) — computed the same way rather than guessed.
+                    xpath="${dir}"
+                    if [[ -n "${pick_val}" ]]; then
+                        # Absolute picks must NOT be prefixed with the plugin dir —
+                        # git-extras picks $ZPFX/bin/git-*, its atclone having installed
+                        # there, so the dir zinit puts on PATH is polaris/bin and the
+                        # plugin dir legitimately never joins it. Same branch as
+                        # pick-no-match above; without it this fires on every such plugin.
+                        if [[ "${pick_val}" == /* ]]; then
+                            hits=( ${~pick_val}(N) )
+                        else
+                            hits=( ${~dir}/${~pick_val}(N) )
+                        fi
+                        (( ${#hits} )) && xpath="${hits[1]:h}"
+                    fi
+                    (( ${path[(Ie)${xpath}]} )) || \
+                        report+=("not-on-path: ${xpath/#${HOME}/~} is loaded but absent from \$path — something later rewrote PATH")
+                fi
+
+                # creinstall links _name into the completions dir; when it silently stops,
+                # completions never reinstall (:361). _[^.]## skips _rg.ps1 / _setup.py.
+                comps=( ${dir}/**/_[^.]##(N.) )
+                comps=( ${comps:#*/._backup/*} )
+                for hit in "${comps[@]}"; do
+                    [[ -e "${ZINIT[COMPLETIONS_DIR]}/${hit:t}" ]] && continue
+                    # `zi cdisable` renames the link with the underscore stripped, so
+                    # this shape means deliberately off, not broken.
+                    if [[ -e "${ZINIT[COMPLETIONS_DIR]}/${${hit:t}#_}" ]]; then
+                        report+=("completion-disabled: ${hit:t} is installed but disabled")
+                    else
+                        report+=("completion-missing: ${hit:t} ships with the plugin but was never installed")
+                    fi
+                done
+            else
+                (( unloaded++ ))
+            fi
         fi
 
-        # A finding is repairable by wipe+reinstall UNLESS it is a declaration bug that a
-        # reinstall cannot touch: an unrecognised ice, a pick matching nothing, or a pin
-        # upstream has outgrown. Those need a .zshrc edit, and reinstalling on them would
-        # loop forever — a ver-stale plugin in particular reinstalls perfectly happily,
-        # onto the same pinned tag, every single run.
+        # Three classes, keyed on the finding's leading name (see the arrays at the top):
+        #   advisory — never counted, never affects the exit code, never reaches --ids
+        #   lint     — counted, but a wipe cannot fix it, so it must not reach --ids or
+        #              maintain reinstalls the plugin onto the same broken shape forever
+        #   the rest — repairable, and exactly what --ids exists to list
         rep=0
+        hard=0
+        soft=0
         for r in "${report[@]}"; do
-            [[ "${r}" == unknown-ice* || "${r}" == pick-no-match* || "${r}" == ver-stale* ]] && continue
-            (( rep++ ))
+            klass="${r%%:*}"
+            klass="${klass%% *}"
+            if (( ${ZI_AUDIT_ADVISORY[(Ie)${klass}]} )); then
+                (( soft++ ))
+            elif (( ${ZI_AUDIT_LINT[(Ie)${klass}]} )); then
+                (( hard++ ))
+            else
+                (( hard++, rep++ ))
+            fi
         done
 
         if (( ids_only )); then
             (( rep )) && print -r -- "${id}"
-        elif (( ${#report} )); then
-            (( findings += ${#report} ))
+        elif (( hard )); then
+            (( findings += hard, advisories += soft ))
             print -r -- "✗ ${id}"
             for r in "${report[@]}"; do
                 print -r -- "    ${r}"
             done
+        elif (( soft )); then
+            # ~ not ✗: maintain greps ✗ lines to decide what to repair, and an advisory is
+            # explicitly not a repair request.
+            (( advisories += soft ))
+            (( quiet )) || { print -r -- "~ ${id}"; for r in "${report[@]}"; do print -r -- "    ${r}"; done; }
         elif (( ! quiet )); then
             print -r -- "✓ ${id}"
         fi
@@ -422,8 +592,15 @@ function zi_audit() {
     # --- orphans: installed but no longer declared ------------------------------
     if (( ! ${#wanted} )); then
         orphans=()
+        # An id-as'…' plugin lives under its LABEL, so the dir does not reconstruct into
+        # a declared id; match those by label before falling back to the id mapping.
+        local -A idas_dirs=()
+        for id in ${(k)idas_of}; do
+            idas_dirs[${idas_of[${id}]//\//---}]=1
+        done
         for d in ${plugins_dir}/*(N/); do
             [[ "${d:t}" == "_local---zinit" ]] && continue
+            (( ${idas_dirs[${d:t}]:-0} )) && continue
             id="${${d:t}//---//}"
             [[ -n "${declared[${id}]+x}" ]] || orphans+=("${d:t}")
         done
@@ -437,12 +614,66 @@ function zi_audit() {
     fi
 
     print -r -- ""
-    if (( findings )); then
-        print -r -- "${checked} plugin(s) checked — ${findings} finding(s)"
-        return 1
+    # An audit run before turbo drains sees almost nothing loaded, so say so rather than
+    # letting a near-empty runtime pass read as a clean bill of health.
+    (( unloaded )) && print -r -- "${unloaded} plugin(s) not loaded yet (turbo) — runtime checks skipped for those"
+
+    # ziextract parks the previous extraction in ._backup on every gh-r update and never
+    # reclaims it, so it accrues silently across the whole tree. One du over all of them
+    # rather than one per plugin.
+    if (( ! ${#wanted} )); then
+        backups=( ${plugins_dir}/*/._backup(N/) )
+        if (( ${#backups} )); then
+            backup_size="${$(du -shc -- "${backups[@]}" 2>/dev/null | tail -1)%%[[:space:]]*}"
+            print -r -- "${backup_size} of ._backup residue across ${#backups} plugin(s)"
+        fi
     fi
-    print -r -- "${checked} plugin(s) checked — all clean"
-    return 0
+
+    # Global runtime state, checked once rather than per plugin.
+    if (( ! ${#wanted} )) && [[ -n "${ZINIT[COMPLETIONS_DIR]}" ]]; then
+        # If this one line is wrong, every completion in the config is dead.
+        if (( ! ${fpath[(Ie)${ZINIT[COMPLETIONS_DIR]}]} )); then
+            print -r -- "✗ fpath-missing: ${ZINIT[COMPLETIONS_DIR]} is not in \$fpath — no zinit completion works"
+            (( findings++ ))
+        fi
+        # A link whose target an update moved out from under it.
+        hits=( ${ZINIT[COMPLETIONS_DIR]}/*(N@) )
+        for hit in "${hits[@]}"; do
+            [[ -e "${hit}" ]] || { print -r -- "~ completion-broken: ${hit:t} dangles"; (( advisories++ )); }
+        done
+    fi
+
+    # maintain takes the LAST line as the verdict; keep it last, and keep the
+    # "N plugin(s) checked" prefix it prints verbatim.
+    local tail_note=""
+    local -i rc=0
+    (( advisories )) && tail_note=", ${advisories} advisory"
+    if (( findings )); then
+        print -r -- "${checked} plugin(s) checked — ${findings} finding(s)${tail_note}"
+        rc=1
+    else
+        print -r -- "${checked} plugin(s) checked — all clean${tail_note}"
+    fi
+
+    # The ONE place zi-audit is not read-only, and it never acts without an answer.
+    # Gated on BOTH stdin and stdout being a tty: maintain captures this function with
+    # $(zi_audit --quiet --online), which makes stdout a pipe, so an unattended run can
+    # never reach the prompt and can never block. --ids is machine-readable, so it is out
+    # too — and it returns long before here anyway.
+    if (( ! ids_only && ${#backups} )) && [[ -t 0 && -t 1 ]]; then
+        print -rn -- "Delete all ${#backups} ._backup director$( (( ${#backups} == 1 )) && print -n y || print -n ies) (${backup_size})? [y/N] "
+        if read -q; then
+            print -r -- ""
+            # Re-glob rather than trusting the list: the audit above is not instant, and
+            # these paths are rm -rf targets.
+            backups=( ${plugins_dir}/*/._backup(N/) )
+            (( ${#backups} )) && rm -rf -- "${backups[@]}"
+            print -r -- "Reclaimed ${backup_size}."
+        else
+            print -r -- ""
+        fi
+    fi
+    return ${rc}
 }
 
 alias zi-audit="zi_audit"
