@@ -32,19 +32,21 @@
 #   ./scripts/sync-public                 # dry run — classify every commit, apply nothing
 #   ./scripts/sync-public --go            # cherry-pick, verify, push
 #   ./scripts/sync-public --go --no-push  # apply locally, leave the push to you
+#   ./scripts/sync-public --all           # also consider commits predating the public branch
 # ==============================================================================
 
 emulate -L zsh
 setopt extended_glob warn_create_global
 
-local -i dry_run=1 do_push=1
+local -i dry_run=1 do_push=1 consider_all=0
 local arg
 for arg in "$@"; do
     case "${arg}" in
         (--go)      dry_run=0 ;;
         (--no-push) do_push=0 ;;
+        (--all)     consider_all=1 ;;
         (-h|--help)
-            print -r -- "usage: sync-public [--go] [--no-push]"
+            print -r -- "usage: sync-public [--go] [--no-push] [--all]"
             exit 0
             ;;
         (*)
@@ -117,13 +119,38 @@ fi
 # ----------------------------------------------------------------- enumerate
 
 # `git cherry` compares patch-ids, so a commit already replayed onto public under a
-# different hash is correctly reported as present ('-'). Output is oldest-first,
-# which is the order the cherry-picks must run in.
+# different hash is correctly reported as present ('-'). Output is oldest-first, which
+# is the order the cherry-picks must run in.
+#
+# But its range runs back to the merge base, and public was built by cherry-picking
+# rather than branching — so the base is the initial commit and a raw run reports the
+# repo's whole history, ~780 commits that predate the public branch entirely.
+#
+# The floor is the FIRST '-' line: the oldest master commit whose patch reached public,
+# i.e. where the public era begins. Everything from there on is in scope.
+#
+# Deliberately NOT the last '-'. That reads as "newest thing already synced" and is the
+# tempting choice, but it silently swallows the failure this script exists to catch: a
+# commit that failed to sync, followed by one that succeeded, ends up below the mark and
+# is never seen again. That is precisely how three commits went missing in one sitting.
+local -a cherry
+cherry=( ${(f)"$(git cherry public master)"} )
+
+local -i floor=0 i=0
+if (( ! consider_all )); then
+    for (( i = 1; i <= ${#cherry}; i++ )); do
+        [[ "${cherry[i]}" == '- '* ]] && { floor=${i}; break }
+    done
+fi
+
 local -a missing
-missing=( ${(f)"$(git cherry public master | awk '$1 == "+" { print $2 }')"} )
+missing=( ${(f)"$(printf '%s\n' "${cherry[@]:${floor}}" | awk '$1 == "+" { print $2 }')"} )
+local -i older
+older=$(( $(printf '%s\n' "${cherry[@]:0:${floor}}" | grep -c '^+ ') ))
 
 if (( ! ${#missing} )); then
-    print -r -- "Nothing to sync — public already has every master commit."
+    print -r -- "Nothing to sync — public has every master commit since the public era began."
+    (( older )) && print -r -- "(${older} pre-public-era commit(s) ignored; --all to include them)"
     exit 0
 fi
 
@@ -150,6 +177,7 @@ print -r -- "=================================================="
 print -r -- "missing:   ${#missing} commit(s) not in public"
 print -r -- "to apply:  ${#to_apply}"
 print -r -- "skipped:   ${#skipped} (sensitive)"
+(( older )) && print -r -- "ignored:   ${older} pre-public-era (--all to include)"
 print -r -- ""
 
 for c in "${to_apply[@]}"; do
