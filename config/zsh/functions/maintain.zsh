@@ -237,6 +237,26 @@ function maintain() {
     return ${ret}
 }
 
+# Run zi-audit, echo its output verbatim, and keep two things for the closing summary: the
+# LAST line — "N plugin(s) checked — all clean" / "… — N finding(s)" — in `zi_report`, and
+# the flagged plugin ids in `zi_flagged`. Captured rather than printed straight through
+# because the summary needs them as values; zsh's dynamic scoping lets this write
+# maintain::run's locals, same as maintain::run reads maintain()'s.
+# An empty capture (zinit not loaded) leaves zi_report empty and the summary line is skipped.
+function maintain::zi_audit() {
+    local out=""
+    out="$(zi_audit --quiet)"
+    local rc=${?}
+    [[ -n "${out}" ]] && print -r -- "${out}"
+    zi_report="${out##*$'\n'}"
+    # Ids to name in the summary: zi-audit marks each flagged plugin with a leading ✗ and
+    # indents its findings beneath, so the ✗ lines alone are the id list. The orphan block
+    # is a ✗ HEADING, not an id — it collapses to the bare word, its members stay above.
+    # Count can differ from the findings count in the verdict: one plugin may carry several.
+    zi_flagged=( ${${${(M)${(f)out}:#✗ *}#✗ }/orphans*/orphans} )
+    return ${rc}
+}
+
 # Phase-6 sub-section header: a blank line then a titled rule, so each audit reads as its own
 # block instead of a flat bullet list. Fixed rule (not zsh `(l:)` padding) because that counts
 # BYTES, and the multibyte ─ would be split into mojibake.
@@ -251,6 +271,11 @@ function maintain::run() {
 
     local start=${SECONDS}
     local -a failures
+    # zi-audit's one-line verdict plus the plugins it flagged, surfaced in the closing
+    # summary. zi_report stays empty when the zinit step is skipped (no zinit in this
+    # shell), which drops the summary line; zi_flagged is empty on a clean audit.
+    local zi_report=""
+    local -a zi_flagged
     local initial_df="$(command df -h / | awk 'NR==2 {print $4}')"
 
     print -r -- "=================================================="
@@ -473,7 +498,7 @@ function maintain::run() {
         # a subshell (see the pipe in maintain()), so the calling shell keeps its stale hash
         # regardless; that is what the closing `exec zsh` in the summary is for.
         rehash
-        (( $+functions[zi_audit] )) && { maintain::hdr "Verifying zinit ices"; zi_audit --quiet || failures+=("zinit audit") }
+        (( $+functions[zi_audit] )) && { maintain::hdr "Verifying zinit ices"; maintain::zi_audit || failures+=("zinit audit") }
     elif (( $+functions[zi] )); then
         maintain::hdr "Updating zinit plugins"
         PAGER=cat GIT_PAGER=cat zi update --all --parallel --no-pager </dev/null \
@@ -499,9 +524,13 @@ function maintain::run() {
                 # shell plus a scheduler burst — the same primitive zinit-reset uses.
                 zsh -ic '@zinit-scheduler burst' >/dev/null 2>&1
                 rehash
-                zi_audit --quiet || failures+=("zinit drift unresolved")
+                maintain::zi_audit || failures+=("zinit drift unresolved")
             else
                 print -r -- "  no drift — every plugin matches its .zshrc declaration"
+                # --ids above only lists WIPE-REPAIRABLE drift; a full pass also reports the
+                # findings it suppresses (unknown-ice, pick-no-match, orphans) and is the only
+                # thing that produces the summary verdict. Filesystem reads only, so it is cheap.
+                maintain::zi_audit || failures+=("zinit audit")
             fi
         fi
     else
@@ -1122,6 +1151,11 @@ function maintain::run() {
     print -r -- "✅ Maintenance Complete!"
     printf '   Elapsed:           %dm %02ds\n' $(( elapsed / 60 )) $(( elapsed % 60 ))
     print -r -- "   Storage Available: ${initial_df} ➔ ${final_df}"
+    if [[ -n "${zi_report}" ]]; then
+        print -r -- "   Zinit plugins:     ${zi_report}"
+        local zf
+        for zf in "${zi_flagged[@]}"; do print -r -- "        • ${zf}"; done
+    fi
     if (( ${#failures} )); then
         print -r -- "   ⚠️ ${#failures} step(s) failed:"
         local f
