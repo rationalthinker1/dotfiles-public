@@ -425,6 +425,12 @@ ZINIT_HOME="${XDG_DATA_HOME}/zinit/zinit.git"
 if [[ -f "${ZINIT_HOME}/zinit.zsh" ]]; then
     source "${ZINIT_HOME}/zinit.zsh"
     autoload -Uz _zinit; (( ${+_comps} )) && _comps[zinit]=_zinit
+    # zinit re-runs compinit itself after installing a plugin's completions, and its
+    # dump path defaults to ${ZDOTDIR}/.zcompdump (zinit-install.zsh:658) — i.e. it
+    # writes a 50KB dump into the *repo* on every completion install, diverging from
+    # the real one this file builds below. Point it at the same file so there is one
+    # dump, in the cache, where it belongs.
+    ZINIT[ZCOMPDUMP_PATH]="${XDG_CACHE_HOME}/zsh/zcompdump"
 fi
 
 # Initialize ZSH completion system before any plugins that depend on it (e.g. fzf-tab)

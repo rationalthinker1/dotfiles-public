@@ -52,6 +52,15 @@ Set-PSReadLineKeyHandler -Key 'Ctrl+a'     -Function BeginningOfLine
 Set-PSReadLineKeyHandler -Key 'Ctrl+e'     -Function EndOfLine
 Set-PSReadLineKeyHandler -Key 'Alt+Backspace' -Function BackwardKillWord
 
+# The rest of the emacs kill-ring pair bound in .zshrc:269-278. Ctrl+k/Ctrl+y are the
+# half that Windows edit mode leaves unbound.
+Set-PSReadLineKeyHandler -Key 'Ctrl+k'     -Function KillLine
+Set-PSReadLineKeyHandler -Key 'Ctrl+y'     -Function Yank
+
+# Word-wise movement on Ctrl+arrows, matching .zshrc:281-284.
+Set-PSReadLineKeyHandler -Key 'Ctrl+LeftArrow'  -Function BackwardWord
+Set-PSReadLineKeyHandler -Key 'Ctrl+RightArrow' -Function ForwardWord
+
 # Menu completion instead of cycling — the closest built-in analogue to fzf-tab.
 # PSFzf overrides this in tools.ps1 when it is installed.
 Set-PSReadLineKeyHandler -Key 'Tab'       -Function MenuComplete

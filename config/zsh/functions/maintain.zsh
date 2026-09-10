@@ -613,6 +613,48 @@ function maintain::run() {
         claude update </dev/null || failures+=("Claude Code")
     fi
 
+    # PowerShell profile (WSL only). Unlike everything under config/, powershell/ is
+    # COPIED to Windows local disk rather than symlinked — a $PROFILE pointing at
+    # \\wsl.localhost\ dies on `wsl --shutdown`, is refused by execution policy (UNC is
+    # the Internet zone), and pays UNC round-trips every shell start. See
+    # powershell/README.md. Consequence: repo edits do NOT reach pwsh until copied, which
+    # is exactly the kind of drift this function exists to close.
+    #
+    # The copy is done here in zsh rather than by invoking the pwsh `dotsync` function,
+    # because dotsync is DEFINED BY the profile being synced: if a bad edit breaks the
+    # profile, dotsync no longer exists and the one command that could fix it is gone.
+    # This path keeps working regardless. Keep the two file lists in step — the pwsh side
+    # lives in aliases.ps1 (dotsync) and install.ps1 §3.
+    if [[ "${HOST_OS}" == "wsl" && "${in_container}" != "true" ]] && (( $+commands[cmd.exe] )); then
+        # cd to a drive path first so cmd.exe doesn't warn about a UNC cwd.
+        local win_local_appdata pwsh_deploy
+        win_local_appdata="$(builtin cd /mnt/c && cmd.exe /c 'echo %LOCALAPPDATA%' 2>/dev/null | tr -d '\r')"
+        [[ -n "${win_local_appdata}" ]] && win_local_appdata="$(wslpath -u "${win_local_appdata}" 2>/dev/null)"
+        pwsh_deploy="${win_local_appdata}/dotfiles"
+
+        # Only refresh an EXISTING deployment. Creating one here would leave files on disk
+        # that no $PROFILE points at — linking is install.ps1's job, not this function's.
+        if [[ -n "${win_local_appdata}" && -d "${pwsh_deploy}/powershell" ]]; then
+            maintain::hdr "PowerShell profile sync (${pwsh_deploy})"
+            {
+                local f rel dest
+                # local.ps1 is deliberately absent: machine-specific, exists only there.
+                for f in profile.ps1 psreadline.ps1 tools.ps1 aliases.ps1 hooks.ps1; do
+                    [[ -f "${DOTFILES_ROOT}/powershell/${f}" ]] || continue
+                    cp -f "${DOTFILES_ROOT}/powershell/${f}" "${pwsh_deploy}/powershell/${f}"
+                done
+                # Shared tool configs the profile reads at runtime; without these its env
+                # vars would point back into WSL and undo the whole point of the copy.
+                for rel in config/ripgrep/.ripgreprc config/mise/config.toml config/atuin config/zsh/references; do
+                    [[ -e "${DOTFILES_ROOT}/${rel}" ]] || continue
+                    dest="${pwsh_deploy}/${rel}"
+                    mkdir -p "${dest:h}"
+                    cp -rf "${DOTFILES_ROOT}/${rel}" "${dest}"
+                done
+            } || failures+=("pwsh profile sync")
+        fi
+    fi
+
 
     # ----------------------------------------------------
     # 3. GLOBAL PACKAGES & LANGUAGE CACHES

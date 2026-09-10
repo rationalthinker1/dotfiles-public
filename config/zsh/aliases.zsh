@@ -924,6 +924,55 @@ function gcm() {
 # See `forgit_*` in .zshrc if you want to remap any of them.
 
 # =======================================================================================
+# Editor Switch
+# =======================================================================================
+# vim and neovim are both installed and both configured (.vim/ and config/nvim/).
+# ${DOTFILES_VIM} — set in .zshenv from a marker file under XDG_STATE_HOME — picks
+# which one `vim` and `${EDITOR}` mean.
+#
+# `command vim` and `\vim` always reach the real vim, so the alias never traps you.
+if [[ "${DOTFILES_VIM}" == "nvim" ]] && (( $+commands[nvim] )); then
+    alias vim="nvim"
+    alias vimdiff="nvim -d"
+fi
+alias vi="${DOTFILES_VIM}"
+
+# Switch the daily driver. Takes effect in new shells; the current one is
+# updated in place so there is no need to reload.
+function usenvim() {
+    if (( ! $+commands[nvim] )); then
+        print -u2 "usenvim: nvim is not installed (mise install)"
+        return 1
+    fi
+    command mkdir -p "${XDG_STATE_HOME:-${HOME}/.local/state}/dotfiles"
+    command touch "${XDG_STATE_HOME:-${HOME}/.local/state}/dotfiles/use-nvim"
+    export DOTFILES_VIM="nvim" EDITOR="nvim" VISUAL="nvim"
+    alias vim="nvim"
+    alias vimdiff="nvim -d"
+    alias vi="nvim"
+    print "Daily driver: nvim  (revert with usevim; \`command vim\` is always real vim)"
+}
+
+function usevim() {
+    command rm -f "${XDG_STATE_HOME:-${HOME}/.local/state}/dotfiles/use-nvim"
+    export DOTFILES_VIM="vim" EDITOR="vim" VISUAL="vim"
+    unalias vim 2>/dev/null
+    unalias vimdiff 2>/dev/null
+    alias vi="vim"
+    print "Daily driver: vim"
+}
+
+# Which one is active, and where each resolves.
+function whichvim() {
+    print "DOTFILES_VIM = ${DOTFILES_VIM}"
+    print "EDITOR       = ${EDITOR}"
+    print "vim          -> ${commands[vim]:-<not found>}"
+    print "nvim         -> ${commands[nvim]:-<not found>}"
+    local marker="${XDG_STATE_HOME:-${HOME}/.local/state}/dotfiles/use-nvim"
+    print "marker       = ${marker} $([[ -f "${marker}" ]] && print '(present)' || print '(absent)')"
+}
+
+# =======================================================================================
 # Suffix Aliases
 # =======================================================================================
 alias -s git="git-clone"
@@ -932,8 +981,8 @@ alias -s cond="${EDITOR}"
 alias -s log="${EDITOR}"
 alias -s vim="${EDITOR}"
 alias -s deb="sudo dpkg -i"
-alias -s {c,py,cpp,r,rb,go,js,jsx,ts,java,sql,hs,md}="vim"
-alias -s {xml,json,toml,yaml,yml,ini,conf}="vim"  # (log already mapped to ${EDITOR} above)
+alias -s {c,py,cpp,r,rb,go,js,jsx,ts,java,sql,hs,md}="${EDITOR}"
+alias -s {xml,json,toml,yaml,yml,ini,conf}="${EDITOR}"  # (log already mapped above)
 alias -s {gz,tgz,zip,lzh,bz2,tbz,Z,tar,arj,xz,7z}="extract"
 
 # =======================================================================================
@@ -1369,29 +1418,66 @@ if [[ $HOST_OS == "wsl" ]]; then
 	# Usage: code [file or directory]
 	function code() {
 		# Prefer VS Code's own WSL CLI: it hands paths to the already-running remote
-		# window and understands Linux paths, which Code.exe does not. `om[1]` picks
-		# the most recently installed server build when several are present.
+		# window and understands Linux paths, which Code.exe does not. It reaches that
+		# window over $VSCODE_IPC_HOOK_CLI, a socket that only exists in a shell VS Code
+		# itself started. From an ordinary WSL shell the variable is unset (or names a
+		# dead socket left by a closed window) and the CLI aborts with "Command is only
+		# available in WSL or inside a Visual Studio Code terminal." — so require a live
+		# socket here, otherwise the `return` below swallows that failure and the
+		# Code.exe fallback becomes unreachable dead code. `om[1]` picks the most
+		# recently installed server build when several are present.
 		local -a remote_cli=(${HOME}/.vscode-server/bin/*/bin/remote-cli/code(N-.xom[1]))
-		if (( $#remote_cli )); then
+		if (( $#remote_cli )) && [[ -S "${VSCODE_IPC_HOOK_CLI}" ]]; then
 			"${remote_cli[1]}" "$@"
 			return
 		fi
 
-		# Fall back to the Windows binary. ${USER} is the *Linux* account name and is
-		# usually not the Windows one, so ask Windows where its profile actually is.
-		local win_profile="${WINDOWS_USER_PROFILE}"
-		if [[ -z "${win_profile}" ]]; then
-			# cd to a drive path first so cmd.exe doesn't warn about a UNC cwd.
-			win_profile="$(builtin cd /mnt/c && cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r')"
-			[[ -n "${win_profile}" ]] && win_profile="$(wslpath -u "${win_profile}" 2>/dev/null)"
+		# Fall back to the Windows binary. VS Code ships two installers — the "System"
+		# one lands in Program Files, the "User" one in %LOCALAPPDATA%\Programs — and
+		# either may be the only one present, so probe both. The machine-wide paths are
+		# fixed, hence cheap; check them first so the common case never pays for the
+		# cmd.exe round-trip below.
+		local code_exe=""
+		local cand
+		for cand in "/mnt/c/Program Files/Microsoft VS Code/Code.exe" \
+		            "/mnt/c/Program Files (x86)/Microsoft VS Code/Code.exe"; do
+			[[ -x "${cand}" ]] && { code_exe="${cand}"; break }
+		done
+
+		if [[ -z "${code_exe}" ]]; then
+			# Per-user install. ${USER} is the *Linux* account name and is usually not
+			# the Windows one, so ask Windows where its profile actually is.
+			local win_profile="${WINDOWS_USER_PROFILE}"
+			if [[ -z "${win_profile}" ]]; then
+				# cd to a drive path first so cmd.exe doesn't warn about a UNC cwd.
+				win_profile="$(builtin cd /mnt/c && cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r')"
+				[[ -n "${win_profile}" ]] && win_profile="$(wslpath -u "${win_profile}" 2>/dev/null)"
+			fi
+			cand="${win_profile}/AppData/Local/Programs/Microsoft VS Code/Code.exe"
+			[[ -n "${win_profile}" && -x "${cand}" ]] && code_exe="${cand}"
 		fi
 
-		local code_exe="${win_profile}/AppData/Local/Programs/Microsoft VS Code/Code.exe"
-		if [[ -z "${win_profile}" || ! -x "${code_exe}" ]]; then
-			print -ru2 -- "code: VS Code not found (no ~/.vscode-server CLI, and no Code.exe at ${code_exe})"
+		if [[ -z "${code_exe}" ]]; then
+			print -ru2 -- "code: VS Code not found (no live VS Code CLI socket, and no Code.exe under Program Files or %LOCALAPPDATA%\\Programs)"
 			return 1
 		fi
-		"${code_exe}" "$@"
+
+		# Code.exe is a Windows process, so its cwd is the Windows-side one: a relative
+		# path like `.` resolves against that, not against this shell, and a Linux path
+		# means nothing to it at all. Absolutise every argument that names an existing
+		# path (leaving flags such as --diff untouched) and let --remote reopen them in
+		# this distro, which is exactly what the WSL extension does.
+		local -a args=()
+		local arg
+		for arg in "$@"; do
+			[[ -e "${arg}" ]] && args+=("${arg:A}") || args+=("${arg}")
+		done
+
+		if [[ -n "${WSL_DISTRO_NAME}" ]]; then
+			"${code_exe}" --remote "wsl+${WSL_DISTRO_NAME}" "${args[@]}"
+		else
+			"${code_exe}" "${args[@]}"
+		fi
 	}
 fi
 

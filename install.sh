@@ -289,6 +289,9 @@ declare -A SHARED_LINKS=(
     [config/sheldon]="${XDG_CONFIG_HOME:-${HOME}/.config}/sheldon"
     [config/ripgrep]="${XDG_CONFIG_HOME:-${HOME}/.config}/ripgrep"
     [config/kitty]="${XDG_CONFIG_HOME:-${HOME}/.config}/kitty"
+    # Neovim sits alongside vim (.vimrc/.vim above), sharing no runtime state.
+    # See config/nvim/README.md.
+    [config/nvim]="${XDG_CONFIG_HOME:-${HOME}/.config}/nvim"
     [config/broot]="${XDG_CONFIG_HOME:-${HOME}/.config}/broot"
     [config/alacritty]="${XDG_CONFIG_HOME:-${HOME}/.config}/alacritty"
     [config/tmux]="${XDG_CONFIG_HOME:-${HOME}/.config}/tmux"
@@ -313,7 +316,7 @@ declare -A SHARED_LINKS=(
 # ZSH_LINKS above.
 readonly -a MIGRATED_CONFIG_DIRS=(
     .aws alacritty atuin broot claude fzf gh git kitty mise
-    password-store ranger ripgrep sheldon tmux zi zsh
+    nvim password-store ranger ripgrep sheldon tmux zi zsh
 )
 
 declare -A ZSH_LINKS=(
@@ -551,6 +554,23 @@ verify_tool "rustc" "rustc --version"
 verify_tool "cargo" "cargo --version"
 verify_tool "uv" "uv --version"
 verify_tool "vim" "vim --version | head -1"
+verify_tool "nvim" "nvim --version | head -1"
+
+# Verify the tree-sitter CLI. This is NOT optional tooling — nvim-treesitter's
+# `main` branch shells out to it to compile every parser, and without it each one
+# fails with `ENOENT ... 'tree-sitter'` while Neovim quietly falls back to regex
+# syntax. Nothing errors at runtime: you get an editor that looks fine but has no
+# treesitter highlighting, no text objects and no obvious cause. Worth an explicit
+# check for exactly that reason.
+echo ""
+if ! mise which nvim &>/dev/null; then
+    echo "⚠ WARNING: neovim is not installed — skipping tree-sitter check"
+elif mise exec -- tree-sitter --version &>/dev/null; then
+    echo "✓ tree-sitter CLI present (nvim-treesitter can build parsers)"
+else
+    echo "⚠ WARNING: tree-sitter CLI missing — nvim-treesitter will silently fall"
+    echo "           back to regex syntax. Check the pin in config/mise/config.toml."
+fi
 
 # Verify vim has Python3 support. Gated on `mise which vim`: without it, `mise exec` would
 # try to auto-install the very tool that just failed, re-running a doomed build.
@@ -568,9 +588,14 @@ echo "To update all tools to latest versions, run:"
 echo "  mise upgrade"
 
 #---------------------------------------------------------------------------------------
-# Install pynvim (Python package for Vim)
+# Install pynvim (Neovim's Python provider)
 #---------------------------------------------------------------------------------------
-echo "Installing pynvim for Vim..."
+# Despite the name this is Neovim's python3 provider, not a vim package — the old
+# comment here predated config/nvim/ existing. It is wanted on both sides:
+# vim-visual-multi has a has('python3') fast path, and on the Neovim side this is
+# what :checkhealth vim.provider looks for. Vim's own +python3 comes from the
+# build flags in config/mise/config.toml, not from here.
+echo "Installing pynvim (Neovim python3 provider)..."
 mise exec -- uv pip install --user pynvim 2>/dev/null || echo "  (skipping - may already be installed)"
 mise exec -- python -c 'import pynvim' 2>/dev/null && echo "✓ pynvim installed" || echo "  (pynvim installation may need verification)"
 
@@ -857,6 +882,37 @@ elif [[ -f "${HOME}/.vim/autoload/plug.vim" ]] || [[ -f "${HOME}/.local/share/vi
     fi
 else
     echo "WARNING: vim-plug not found, skipping plugin installation"
+fi
+
+#---------------------------------------------------------------------------------------
+# Install Neovim plugins
+#---------------------------------------------------------------------------------------
+# Separate from the vim block above on purpose: Neovim keeps its own plugin
+# checkout, so neither install can affect the other.
+#
+# Neovim uses vim.pack (its built-in manager, 0.12+), NOT vim-plug — so there is
+# nothing to bootstrap. vim.pack.add() in lua/plugins/init.lua installs anything
+# missing on the first run, at the revisions pinned in the tracked
+# config/nvim/nvim-pack-lock.json. Starting Neovim once is the whole install.
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "  Installing Neovim plugins"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+if ! mise which nvim &>/dev/null; then
+    echo "WARNING: neovim is not installed, skipping plugin installation"
+elif mise exec -- nvim --headless -c 'qa!'; then
+    echo "✓ Neovim plugins installed (vim.pack)"
+    # The LANGUAGE SERVERS are not installed here, and cannot be:
+    # mason-lspconfig deliberately skips ensure_installed when headless
+    # (`if not platform.is_headless`), so the ~11 servers arrive on the first
+    # INTERACTIVE nvim launch instead. That is correct behaviour, but it means
+    # the first real session spends a minute installing — say so rather than
+    # letting it look like a hang.
+    echo "  note: language servers install on your first interactive \`nvim\`,"
+    echo "        not here — mason skips that step in headless mode. Watch it"
+    echo "        with :Mason. Same for nvim-treesitter's parsers."
+else
+    echo "WARNING: Neovim plugin installation failed"
 fi
 
 #---------------------------------------------------------------------------------------

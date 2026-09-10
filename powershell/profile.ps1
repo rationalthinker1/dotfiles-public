@@ -16,20 +16,55 @@ if (-not [Environment]::UserInteractive -or $Host.Name -eq 'Default Host') { ret
 # $PSScriptRoot points at the directory of the file PowerShell *opened*, which for the
 # symlinked $PROFILE is ~/.config/powershell — not this repo. Resolve the link so the
 # fragments below are found next to the real profile.ps1 rather than beside the symlink.
+# A file that must sit beside the real profile.ps1. Any resolution result that does not
+# contain it is wrong, however plausible the path looks — so every candidate is verified
+# rather than trusted.
+$script:ProfileAnchor = 'aliases.ps1'
+
 $script:ProfileDir = $PSScriptRoot
 try {
     $self = Get-Item -LiteralPath $PSCommandPath -Force -ErrorAction Stop
     if ($self.LinkType -eq 'SymbolicLink') {
-        $resolved = $self.ResolveLinkTarget($true)
-        if ($resolved) {
-            $script:ProfileDir = Split-Path -Parent $resolved.FullName
-        } elseif ($self.Target) {
-            # Fallback for older link representations: Target may be a relative path.
-            $target = @($self.Target)[0]
+
+        # ORDER MATTERS, and ResolveLinkTarget($true) is deliberately LAST.
+        #
+        # `$true` means "return the final target" and is the obvious call, but it is
+        # wrong for a link pointing at a UNC path: it splices the raw reparse data
+        # (\??\UNC\server\share\...) onto the link's own directory, producing e.g.
+        #
+        #   \\wsl.localhost\Ubuntu\home\razaf\.dotfiles\UNC\wsl.localhost\...\profile.ps1
+        #
+        # from a link whose target is plainly \\wsl.localhost\...\powershell\profile.ps1.
+        # ProfileDir then points somewhere that exists in name only, every fragment
+        # Test-Path fails, and the profile loads as a silent no-op — no aliases, no
+        # prompt, no keybindings, with nothing logged. The raw LinkTarget is correct, so
+        # it goes first.
+        $candidates = [System.Collections.Generic.List[string]]::new()
+
+        foreach ($raw in @($self.LinkTarget, @($self.Target)[0])) {
+            if ($raw) { $candidates.Add($raw) }
+        }
+        foreach ($final in @($false, $true)) {
+            try {
+                $r = $self.ResolveLinkTarget($final)
+                if ($r -and $r.FullName) { $candidates.Add($r.FullName) }
+            } catch {
+                # This overload throws on some link/filesystem combinations; the raw
+                # target above is the answer in those cases anyway.
+            }
+        }
+
+        foreach ($candidate in $candidates) {
+            $target = $candidate
+            # Target may be relative on older link representations.
             if (-not [IO.Path]::IsPathRooted($target)) {
                 $target = Join-Path (Split-Path -Parent $PSCommandPath) $target
             }
-            $script:ProfileDir = Split-Path -Parent ([IO.Path]::GetFullPath($target))
+            $dir = Split-Path -Parent $target
+            if ($dir -and (Test-Path -LiteralPath (Join-Path $dir $script:ProfileAnchor))) {
+                $script:ProfileDir = $dir
+                break
+            }
         }
     }
 } catch {
@@ -163,9 +198,22 @@ function Get-ToolInitScript {
 # Fragments
 #---------------------------------------------------------------------------------------
 
-foreach ($fragment in @('psreadline.ps1', 'tools.ps1', 'aliases.ps1')) {
+# hooks.ps1 last of the four: it registers a LocationChangedAction that zoxide's `cd`
+# (installed in tools.ps1) triggers, and aliases.ps1 may define functions it calls.
+$script:LoadedFragments = 0
+foreach ($fragment in @('psreadline.ps1', 'tools.ps1', 'aliases.ps1', 'hooks.ps1')) {
     $path = Join-Path $script:ProfileDir $fragment
-    if (Test-Path $path) { . $path }
+    if (Test-Path -LiteralPath $path) {
+        . $path
+        $script:LoadedFragments++
+    }
+}
+
+# Never fail silently again. A wrong ProfileDir used to leave a shell that looked normal
+# but had no aliases, no prompt and no keybindings, with nothing said about it.
+if ($script:LoadedFragments -eq 0) {
+    Write-Warning "dotfiles: no profile fragments found in '${script:ProfileDir}' — the profile loaded as a no-op."
+    Write-Warning "dotfiles: `$PROFILE is '${PSCommandPath}'; check that its link target resolves to the repo's powershell/ directory."
 }
 
 # Machine-specific overrides — gitignored, mirrors config/zsh/local.zsh. Always last.

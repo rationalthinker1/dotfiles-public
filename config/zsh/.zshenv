@@ -24,6 +24,14 @@
 # Guard for .zshrc fallback sourcing
 export ZSHENV_LOADED=1
 
+# Ubuntu's /etc/zsh/zshrc runs a bare `compinit` (no -d) before our .zshrc gets a say,
+# which both dumps a ~50KB .zcompdump into ZDOTDIR — i.e. into this repo — and pays for
+# a second full compaudit fpath scan on every start. .zshrc already runs compinit
+# properly, cached under XDG_CACHE_HOME. This is the opt-out /etc/zsh/zshrc itself
+# documents, and it must be set here: ZDOTDIR/.zshenv is read before /etc/zsh/zshrc.
+# Not exported — it is only ever read by that one file, in this same shell.
+skip_global_compinit=1
+
 # 🧭 Base paths (XDG-compliant)
 export DOTFILES_ROOT="${HOME}/.dotfiles"
 export XDG_CONFIG_HOME="${HOME}/.config"
@@ -51,7 +59,32 @@ export PASSWORD_STORE_DIR="${XDG_CONFIG_HOME}/password-store"
 export FNM_PATH="${XDG_CONFIG_HOME}/.fnm"
 
 # 🖥️ Terminal & editor defaults
-export EDITOR="vim"
+#
+# Which editor is the daily driver. Both stay installed and configured — vim
+# from .vim/, neovim from config/nvim/ — so this only decides what `vim`,
+# `$EDITOR` and the suffix aliases resolve to. Toggle with `usenvim` / `usevim`
+# (see aliases.zsh); revert costs one command and no config changes.
+#
+# The switch is a MARKER FILE, not a variable in local.zsh, because local.zsh is
+# sourced from .zshrc — interactive shells only, and far too late to set $EDITOR
+# for `git commit` or `crontab -e`. .zshenv runs for every shell, which is the
+# whole point.
+#
+# It lives under XDG_STATE_HOME rather than XDG_CONFIG_HOME because
+# ~/.config/zsh is a SYMLINK INTO THIS REPO — a marker there shows up as an
+# untracked file in `git status` on every switch.
+#
+# DOTFILES_VIM in the environment overrides the marker, for one-off use:
+#   DOTFILES_VIM=nvim git commit
+if [[ -z "${DOTFILES_VIM}" ]]; then
+    if [[ -f "${XDG_STATE_HOME:-${HOME}/.local/state}/dotfiles/use-nvim" ]]; then
+        export DOTFILES_VIM="nvim"
+    else
+        export DOTFILES_VIM="vim"
+    fi
+fi
+export EDITOR="${DOTFILES_VIM}"
+export VISUAL="${DOTFILES_VIM}"
 export LESS="-XRF"
 
 # 🛠️ Vim build configuration for mise (ASDF_VIM_CONFIG) lives in the [env] block of
@@ -138,6 +171,18 @@ path=(
   "${PNPM_HOME}/bin"
   "${FNM_PATH}"
   $path
+  # mise SHIMS, deliberately LAST.
+  #
+  # `mise activate` runs in .zshrc, so it only ever reaches interactive shells.
+  # Everything else — `git commit` spawning $EDITOR, cron, a script, an IDE
+  # shelling out — sees none of it: in a clean shell `vim` resolved to Ubuntu's
+  # /bin/vim (9.1) rather than the pinned mise 9.2, and `nvim` was not found at
+  # all, which would have made EDITOR=nvim simply fail.
+  #
+  # Shims fix that for non-interactive use. They go at the END so that in an
+  # interactive shell `mise activate`'s real install paths still win: shims are
+  # a fallback, not the primary mechanism, and never shadow the faster path.
+  "${XDG_DATA_HOME}/mise/shims"
 )
 
 if [[ "${HOST_OS:-}" == "wsl" ]]; then

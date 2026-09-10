@@ -18,7 +18,9 @@
 # on shadowing `function cp`. Running at file scope works because profile.ps1 dot-sources
 # the fragments at global scope. -Force is needed as well: many built-ins are ReadOnly.
 foreach ($builtinAlias in @(
-    'ls', 'cat', 'gc', 'gl', 'gp', 'gcm', 'h', 'history', 'ps', 'rm', 'cp', 'mv', 'diff', 'man'
+    'ls', 'cat', 'gc', 'gl', 'gp', 'gcm', 'h', 'history', 'ps', 'rm', 'cp', 'mv', 'diff', 'man',
+    # `ni` is New-Item; without this, `function ni { npm install }` below never resolves.
+    'ni'
 )) {
     Remove-Alias -Name $builtinAlias -Scope Global -Force -ErrorAction SilentlyContinue
 }
@@ -37,8 +39,18 @@ if (Test-Command 'eza') {
     function lls { $o = $global:EzaBase; eza @o --all --sort size @args }
     function lt  { $o = $global:EzaBase; eza @o --all --reverse --sort oldest @args }
     function ld  { $o = $global:EzaBase; eza @o --all --only-dirs @args }
-    function tree { eza --color=auto --tree --level=2 --group-directories-first @args }
     function ls  { eza --color=auto --group-directories-first @args }
+
+    # Dotfiles only — config/zsh/aliases.zsh:268. A period is legal in a PowerShell
+    # function name, so this defines and invokes as plain `l.`.
+    function l. { $o = $global:EzaBase; eza @o --list-dirs .* @args }
+
+    # Tree views. `tree` keeps its level-2 default; the llt family matches the zsh
+    # depth ladder (config/zsh/aliases.zsh:262-266).
+    function tree  { eza --color=auto --tree --level=2 --group-directories-first @args }
+    function llt   { eza --color=auto --tree --level=2 --git-ignore --ignore-glob=.git @args }
+    function lllt  { eza --color=auto --tree --level=3 --git-ignore --ignore-glob=.git @args }
+    function llllt { eza --color=auto --tree --level=4 --git-ignore --ignore-glob=.git @args }
 } else {
     function l  { Get-ChildItem @args }
     function ll { Get-ChildItem -Force @args }
@@ -66,6 +78,21 @@ if (Test-Command 'btm')   { function top  { btm @args } }
 if (Test-Command 'xh')    { function http { xh @args } }
 if (Test-Command 'doggo') { function dig  { doggo @args } }
 if (Test-Command 'tldr')  { function man  { tldr @args } } else { function man { Get-Help @args } }
+
+# Further wrappers from config/zsh/aliases.zsh:1728-1923. Each guarded at SOURCE time —
+# the zsh originals check inside the function body only because zinit turbo means the
+# binaries are not on PATH when aliases.zsh is sourced. PowerShell has no turbo, so the
+# cheaper source-time guard used throughout this file is correct here.
+if (Test-Command 'dust')       { function ncdu  { dust @args } }
+if (Test-Command 'hyperfine')  { function bench { hyperfine @args } }
+if (Test-Command 'lazydocker') { function lzd   { lazydocker @args } }
+if (Test-Command 'gping')      { function ping  { gping @args } }
+if (Test-Command 'hexyl')      { function xxd   { hexyl @args } }
+if (Test-Command 'rga')        { function rga   { & (Get-CommandPath 'rga') @args } }
+elseif (Test-Command 'rg')     { function rga   { rg @args } }
+if (Test-Command 'batgrep')    { function bgrep { batgrep @args } }
+if (Test-Command 'batdiff')    { function bdiff { batdiff @args } }
+if (Test-Command 'batwatch')   { function bwatch { batwatch @args } }
 if (Test-Command 'delta') {
     $env:GIT_PAGER = 'delta'
     function diff { delta @args }
@@ -261,6 +288,79 @@ function gr { groot }
 
 if (Test-Command 'lazygit') { function lg { lazygit @args } }
 
+# Hard reset to HEAD~N, with a summary and confirmation — config/zsh/aliases.zsh:750.
+#
+# This is what makes `ghard` safe to define. The plain alias was deliberately absent
+# before precisely because an unguarded `git reset --hard` is a footgun; the guard is
+# the feature, so it is ported rather than the raw command.
+function git_reset {
+    param([int] $Count = 1)
+
+    if (-not (git rev-parse --is-inside-work-tree 2>$null)) {
+        Write-Error 'Not in a git repository'
+        return
+    }
+    if ($Count -lt 1) { Write-Error 'git_reset: count must be >= 1'; return }
+
+    $target = "HEAD~${Count}"
+    if (-not (git rev-parse --verify --quiet $target 2>$null)) {
+        Write-Error "git_reset: ${target} does not exist (not enough history)"
+        return
+    }
+
+    $dropped = @(git log --oneline "${target}..HEAD")
+    $dirty   = @(git status --porcelain)
+
+    Write-Host "The following $($dropped.Count) commit(s) will be DROPPED:"
+    $dropped | ForEach-Object { Write-Host "  $_" }
+    if ($dirty.Count -gt 0) {
+        Write-Host "…and $($dirty.Count) uncommitted change(s) will be DISCARDED." -ForegroundColor Yellow
+    }
+
+    if ((Read-Host "Hard reset to ${target}? (y/n)") -ne 'y') { Write-Host '❌ Cancelled'; return }
+    git reset --hard $target
+}
+
+function gre   { git_reset @args }
+function ghard { git_reset @args }
+
+# Search every commit in history for a string.
+function gse {
+    param([Parameter(Mandatory)][string] $Pattern)
+    git rev-list --all | git grep $Pattern --stdin
+}
+function git_search { gse @args }
+
+# Clone, then cd into the directory git actually created.
+function git-clone {
+    git clone @args
+    if ($LASTEXITCODE -ne 0) { return }
+
+    # An explicit target dir is the last non-flag argument when there are two of them;
+    # otherwise derive it from the URL, stripping .git and any --bare/--mirror suffix.
+    $positional = @($args | Where-Object { $_ -notlike '-*' })
+    $dir = if ($positional.Count -ge 2) {
+        $positional[-1]
+    } else {
+        $name = ($positional[0] -split '[/:]')[-1] -replace '\.git$', ''
+        if ($args -contains '--bare' -or $args -contains '--mirror') { "${name}.git" } else { $name }
+    }
+
+    if (Test-Path -LiteralPath $dir) { Set-Location -LiteralPath $dir }
+    else { Write-Warning "git-clone: cloned, but could not resolve directory '${dir}'" }
+}
+
+function gpuf { git push --force @args }
+
+# Stage everything and hand the commit message to Claude Code.
+function cc {
+    git status --short
+    Write-Host '--- last commit ---'
+    git log -1 --oneline
+    git add -A
+    claude -p '/commit'
+}
+
 #---------------------------------------------------------------------------------------
 # Shell utilities
 #---------------------------------------------------------------------------------------
@@ -292,9 +392,131 @@ function which {
 }
 
 function myip { (Invoke-RestMethod -Uri 'https://api.ipify.org').Trim() }
+function myip_public { myip }
 
-# Open the dotfiles repo, wherever it is mounted.
-function dotfiles { Set-Location -LiteralPath $script:DotfilesRoot }
+# The zsh version parses `ip -4 addr` / `ifconfig`; Windows has a real cmdlet.
+function myip_local {
+    if (Get-Command Get-NetIPAddress -ErrorAction Ignore) {
+        Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+            Where-Object { $_.IPAddress -ne '127.0.0.1' -and $_.PrefixOrigin -ne 'WellKnown' } |
+            Select-Object -ExpandProperty IPAddress
+    } elseif (Test-Command 'ip') {
+        # pwsh-in-WSL
+        (ip -4 -o addr show | ForEach-Object { ($_ -split '\s+')[3] -replace '/.*' }) |
+            Where-Object { $_ -ne '127.0.0.1' }
+    }
+}
+
+# Process grep — config/zsh/aliases.zsh:341
+function psg {
+    param([Parameter(Mandatory)][string] $Pattern)
+    Get-Process | Where-Object { $_.ProcessName -match $Pattern } |
+        Select-Object Id, ProcessName, @{n = 'WS(MB)'; e = { [math]::Round($_.WS / 1MB, 1) } } |
+        Format-Table -AutoSize
+}
+
+# History grep — config/zsh/aliases.zsh:356
+function hgrep {
+    param([Parameter(Mandatory)][string] $Pattern)
+    Get-History | Where-Object CommandLine -match $Pattern
+}
+
+# All listening TCP sockets — config/zsh/aliases.zsh:1411.
+# Get-ListeningPort (defined below) already does the collection work.
+function ports { Get-ListeningPort | Format-Table -AutoSize }
+
+#---------------------------------------------------------------------------------------
+# Backups — config/zsh/aliases.zsh:431,459
+#---------------------------------------------------------------------------------------
+
+# Swap file <-> file.bak. Three-way move, so running it twice returns to the start.
+function bak {
+    param([Parameter(Mandatory)][string] $Path)
+
+    $target = $Path.TrimEnd('/', '\')
+    $backup = "${target}.bak"
+
+    if ((Test-Path -LiteralPath $target) -and (Test-Path -LiteralPath $backup)) {
+        $tmp = "${target}.bak.swap"
+        Move-Item -LiteralPath $backup -Destination $tmp
+        Move-Item -LiteralPath $target -Destination $backup
+        Move-Item -LiteralPath $tmp -Destination $target
+        Write-Host "⇄ swapped ${target} and ${backup}"
+    } elseif (Test-Path -LiteralPath $target) {
+        Move-Item -LiteralPath $target -Destination $backup
+        Write-Host "→ ${backup}"
+    } elseif (Test-Path -LiteralPath $backup) {
+        Move-Item -LiteralPath $backup -Destination $target
+        Write-Host "→ ${target}"
+    } else {
+        Write-Error "bak: neither ${target} nor ${backup} exists"
+    }
+}
+
+# Timestamped copy, leaving the original in place.
+function bakt {
+    param([Parameter(Mandatory)][string] $Path)
+
+    $target = $Path.TrimEnd('/', '\')
+    if (-not (Test-Path -LiteralPath $target)) { Write-Error "bakt: ${target} not found"; return }
+
+    $dest = '{0}.{1}.bak' -f $target, (Get-Date -Format 'yyyyMMdd-HHmmss')
+    Copy-Item -LiteralPath $target -Destination $dest -Recurse
+    Write-Host "→ ${dest}"
+}
+
+# Where this profile was deployed FROM. After install the running profile is a local-disk
+# copy (see install.ps1 §3), so $script:DotfilesRoot is that copy, not the git repo.
+function Get-DotfilesSource {
+    $marker = Join-Path $script:DotfilesRoot '.source'
+    if (Test-Path -LiteralPath $marker) {
+        $src = (Get-Content -LiteralPath $marker -Raw).Trim()
+        if ($src) { return $src }
+    }
+    return $null
+}
+
+# cd to the git repo for editing, falling back to the deployed copy.
+# The source lives in WSL, so it is only reachable while WSL is running.
+function dotfiles {
+    $src = Get-DotfilesSource
+    if ($src -and (Test-Path -LiteralPath $src)) { Set-Location -LiteralPath $src; return }
+    if ($src) { Write-Warning "dotfiles: source '${src}' unreachable (WSL not running?) — opening the deployed copy" }
+    Set-Location -LiteralPath $script:DotfilesRoot
+}
+
+# Refresh the deployed copy from the repo, without a full install run.
+# Use after editing powershell/*.ps1 in the repo: `dotsync; reload`.
+function dotsync {
+    $src = Get-DotfilesSource
+    if (-not $src)                          { Write-Error 'dotsync: no .source marker — run install.ps1 first'; return }
+    if (-not (Test-Path -LiteralPath $src)) { Write-Error "dotsync: source '${src}' unreachable (is WSL running?)"; return }
+
+    $n = 0
+    foreach ($f in 'profile.ps1', 'psreadline.ps1', 'tools.ps1', 'aliases.ps1', 'hooks.ps1') {
+        # local.ps1 is deliberately absent from this list: it is machine-specific and
+        # exists only in the deployed directory.
+        $from = Join-Path $src "powershell/${f}"
+        if (Test-Path -LiteralPath $from) {
+            Copy-Item -LiteralPath $from -Destination (Join-Path $script:ProfileDir $f) -Force
+            $n++
+        }
+    }
+    foreach ($rel in 'config/ripgrep/.ripgreprc', 'config/mise/config.toml', 'config/atuin', 'config/zsh/references') {
+        $from = Join-Path $src $rel
+        if (-not (Test-Path -LiteralPath $from)) { continue }
+        $to = Join-Path $script:DotfilesRoot ($rel -replace '/', '\')
+        $toParent = Split-Path -Parent $to
+        if (-not (Test-Path -LiteralPath $toParent)) { New-Item -ItemType Directory -Path $toParent -Force | Out-Null }
+        Copy-Item -LiteralPath $from -Destination $to -Recurse -Force
+    }
+
+    Get-ChildItem -LiteralPath $script:DotfilesRoot -Recurse -File -ErrorAction SilentlyContinue |
+        Unblock-File -ErrorAction SilentlyContinue
+
+    Write-Host "✓ synced ${n} file(s) from ${src}" -ForegroundColor Green
+    Write-Host "  run 'reload' to apply" -ForegroundColor DarkGray
+}
 
 #---------------------------------------------------------------------------------------
 # Ports — mirrors `lsp` and `killport` in config/zsh/aliases.zsh
@@ -418,4 +640,458 @@ function killport {
 if (Test-Command 'wsl') {
     function wsls  { wsl --list --verbose }
     function wslsd { wsl --shutdown }
+}
+
+#---------------------------------------------------------------------------------------
+# Docker — config/zsh/aliases.zsh:1048-1310
+#
+# Guarded as a block: the Windows session this targets is used for Node work, so on a
+# machine without Docker Desktop none of these are defined rather than being defined and
+# failing at call time.
+#
+# The zsh `dc` prefixes IP_ADDRESS=$(ip route list default…) — Linux iproute2. The
+# equivalent here is Get-NetRoute, computed once per call and only when something is
+# actually going to read it.
+#---------------------------------------------------------------------------------------
+
+if (Test-Command 'docker') {
+
+    function script:Get-DockerHostIp {
+        if (-not (Get-Command Get-NetRoute -ErrorAction Ignore)) { return $null }
+        $idx = (Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
+            Sort-Object RouteMetric | Select-Object -First 1).InterfaceIndex
+        if (-not $idx) { return $null }
+        (Get-NetIPAddress -InterfaceIndex $idx -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+            Select-Object -First 1).IPAddress
+    }
+
+    function dc {
+        $ip = Get-DockerHostIp
+        if ($ip) { $env:IP_ADDRESS = $ip }
+        docker compose @args
+    }
+
+    function dcu {
+        # Mirrors the zsh helper: a project-local docker.sh wins over a bare `up -d`.
+        if (Test-Path 'docker/docker.sh')  { & 'docker/docker.sh' @args; return }
+        if (Test-Path './docker.sh')       { & './docker.sh' @args; return }
+        dc up -d @args
+    }
+
+    function dce   { dc exec @args }
+    function dclo  { dc logs -tf @args }
+    function dcp   { dc ps @args }
+
+    function script:Get-DcContainerId {
+        param([Parameter(Mandatory)][string] $Service)
+        $id = (dc ps -q $Service 2>$null | Select-Object -First 1)
+        if (-not $id) { Write-Error "No running container for service '${Service}'" }
+        return $id
+    }
+
+    function dexec {
+        param([Parameter(Mandatory)][string] $Service)
+        $id = Get-DcContainerId $Service
+        if ($id) { docker exec -it $id @($args) }
+    }
+
+    function drexec {
+        param([Parameter(Mandatory)][string] $Service)
+        $id = Get-DcContainerId $Service
+        if ($id) { docker exec -it --user root $id @($args) }
+    }
+
+    function dceb  { dexec @args /bin/bash }
+    function dcebr { drexec @args /bin/bash }
+
+    function dl  { docker ps -l -q @args }
+    function dps { docker ps @args }
+    function dpa { docker ps -a @args }
+    function di  { docker images @args }
+
+    function dip {
+        docker inspect --format '{{.Name}} {{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' `
+            @(docker ps -q)
+    }
+
+    function dstop {
+        $running = @(docker ps -q)
+        if ($running.Count -eq 0) { Write-Host 'No running containers'; return }
+        docker ps
+        if ((Read-Host "Stop $($running.Count) container(s)? (y/n)") -ne 'y') { Write-Host '❌ Cancelled'; return }
+        docker stop @running
+    }
+
+    function drmf {
+        $all = @(docker ps -aq)
+        if ($all.Count -eq 0) { Write-Host 'No containers'; return }
+        docker ps -a
+        if ((Read-Host "Stop AND REMOVE $($all.Count) container(s)? (y/n)") -ne 'y') { Write-Host '❌ Cancelled'; return }
+        docker stop @all
+        docker rm @all
+    }
+
+    function docker-clean {
+        Write-Host 'This removes ALL images, containers, networks and volumes.' -ForegroundColor Yellow
+        if ((Read-Host 'Prune ALL Docker data? (y/n)') -ne 'y') { Write-Host '❌ Cancelled'; return }
+        docker system prune -af --volumes
+    }
+}
+
+#---------------------------------------------------------------------------------------
+# Editor dispatch
+#
+# $env:EDITOR may carry flags ('code --wait'), which `& $env:EDITOR file` cannot run —
+# PowerShell would look for an executable literally named "code --wait". Split it.
+#---------------------------------------------------------------------------------------
+
+function Invoke-Editor {
+    param([Parameter(Mandatory)][string[]] $Path)
+
+    if (-not $env:EDITOR) {
+        Write-Warning 'No $env:EDITOR set (see tools.ps1); falling back to notepad.'
+        notepad @Path
+        return
+    }
+
+    $parts = $env:EDITOR -split '\s+' | Where-Object { $_ }
+    $exe   = $parts[0]
+    $flags = @($parts | Select-Object -Skip 1)
+    & $exe @flags @Path
+}
+
+#---------------------------------------------------------------------------------------
+# Node — npm / yarn / pnpm, mirroring config/zsh/aliases.zsh:623-665
+#
+# Unguarded on purpose. These are one-line pass-throughs, and a "npm is not recognised"
+# from the shell is a clearer error than a missing function; guarding each on
+# Test-Command would also hide them when a version manager puts npm on PATH later.
+#---------------------------------------------------------------------------------------
+
+# npm
+function ni   { npm install @args }
+function nid  { npm install --save-dev @args }
+function nig  { npm install -g @args }
+function nrd  { npm run dev @args }
+function nrb  { npm run build @args }
+function nrs  { npm run start @args }
+function nrt  { npm run test @args }
+function nrl  { npm run lint @args }
+function nrf  { npm run format @args }
+function nci  { npm ci @args }                  # clean install from package-lock.json
+function ncc  { npm cache clean --force @args }
+function nou  { npm outdated @args }
+function nup  { npm update @args }
+
+# yarn
+function yi    { yarn install @args }
+function yag   { yarn global add @args }
+function yrm   { yarn remove @args }
+function yup   { yarn upgrade @args }
+function yui   { yarn upgrade-interactive @args }
+function yout  { yarn outdated @args }
+function ycc   { yarn cache clean @args }
+function yd    { yarn dev @args }
+function yb    { yarn build @args }
+
+# pnpm
+function pi    { pnpm install @args }
+function pna   { pnpm add @args }
+function pnad  { pnpm add -D @args }
+function pr    { pnpm remove @args }
+
+# package.json
+function pkg  { Invoke-Editor 'package.json' }
+function pkgj {
+    if (Test-Command 'jq') { Get-Content -Raw package.json | jq @args }
+    else { Get-Content -Raw package.json | ConvertFrom-Json | ConvertTo-Json -Depth 100 }
+}
+
+# Smart package-manager runner — config/zsh/aliases.zsh:1535
+#
+# bun is checked first: it writes bun.lockb (<1.2) or bun.lock (1.2+), but bun projects
+# frequently still carry a package-lock.json from before the switch, which would
+# otherwise fall through to npm.
+function run {
+    if ($args.Count -lt 1) {
+        Write-Host 'Usage: run <script>'
+        Write-Host 'Example: run dev'
+        return
+    }
+
+    if ((Test-Path 'bun.lockb') -or (Test-Path 'bun.lock')) {
+        Write-Host '📦 Using Bun'; bun run @args
+    } elseif (Test-Path 'yarn.lock') {
+        Write-Host '📦 Using Yarn'; yarn @args
+    } elseif (Test-Path 'pnpm-lock.yaml') {
+        Write-Host '📦 Using pnpm'; pnpm @args
+    } elseif ((Test-Path 'package-lock.json') -or (Test-Path 'package.json')) {
+        Write-Host '📦 Using npm'; npm run @args
+    } else {
+        Write-Host '❌ No package.json found'
+    }
+}
+
+#---------------------------------------------------------------------------------------
+# Development workflow — config/zsh/aliases.zsh:1422-1727
+#---------------------------------------------------------------------------------------
+
+# 7-Zip installs to Program Files without adding itself to PATH, so Test-Command '7z'
+# is false on a machine that has it. Probe the standard locations too, and memoize —
+# extract may call this several times per invocation.
+$script:SevenZipPath = $null
+function script:Resolve-SevenZip {
+    if ($script:SevenZipPath) { return $script:SevenZipPath }
+
+    $found = Get-CommandPath '7z'
+    if (-not $found) {
+        $candidates = @(
+            (Join-Path $env:ProgramFiles '7-Zip\7z.exe'),
+            (Join-Path ${env:ProgramFiles(x86)} '7-Zip\7z.exe')
+        ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) }
+        $found = $candidates | Select-Object -First 1
+    }
+
+    $script:SevenZipPath = $found
+    return $found
+}
+
+# Extract any archive. Prefers ouch (universal decompressor); the per-format fallbacks
+# below are the WINDOWS toolbox, not the Unix one from zsh — tar ships with Windows 10+,
+# Expand-Archive handles .zip natively, and 7z covers the rest.
+function extract {
+    param([Parameter(Mandatory)][string] $Path)
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        Write-Error "File '${Path}' not found"
+        return
+    }
+
+    if (Test-Command 'ouch') { ouch decompress $Path; return }
+
+    # `break` in every branch is load-bearing: switch -Regex runs EVERY matching branch,
+    # and "x.tar.gz" matches both the tar pattern and the bare .gz one — without break it
+    # would untar the archive and then hand the same file to 7z.
+    $full = (Resolve-Path -LiteralPath $Path).Path
+    $sevenZip = Resolve-SevenZip
+    switch -Regex ($full) {
+        '\.(tar\.(gz|bz2|xz|zst)|tgz|tbz2|tar)$' { tar -xf $full; break }
+        '\.zip$' {
+            if ($sevenZip) { & $sevenZip x $full } else { Expand-Archive -LiteralPath $full -Force }
+            break
+        }
+        '\.(7z|rar|gz|bz2|xz|zst|lz4|Z)$' {
+            if ($sevenZip) { & $sevenZip x $full }
+            else { Write-Error "extract: 7-Zip is required for '${Path}' (winget install 7zip.7zip)" }
+            break
+        }
+        default { Write-Error "Cannot extract '${Path}' - unknown format" }
+    }
+}
+
+# Decompress into a directory named after the archive.
+function unzipd {
+    param([Parameter(Mandatory)][string] $Path)
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        Write-Error "File '${Path}' not found"
+        return
+    }
+
+    # Strip compound suffixes (.tar.gz -> name), matching the zsh helper.
+    $dir = [IO.Path]::GetFileName($Path) -replace '\.(tar\.(gz|bz2|xz|zst)|tgz|tbz2|tar|zip|7z|rar)$', ''
+
+    if (Test-Command 'ouch') { ouch decompress --dir $dir $Path; return }
+    Expand-Archive -LiteralPath $Path -DestinationPath $dir -Force
+}
+
+# Quick HTTP server in the current directory.
+# `python3` is frequently absent on Windows even when Python is installed, so probe the
+# names Windows actually ships (`py` launcher, bare `python`) before giving up.
+function serve {
+    param([int] $Port = 8000)
+
+    $py = @('python3', 'python', 'py') | Where-Object { Test-Command $_ } | Select-Object -First 1
+    if (-not $py) {
+        if (Test-Command 'npx') {
+            Write-Host "🌐 Starting HTTP server on http://localhost:${Port} (npx serve)"
+            npx --yes serve --listen $Port .
+            return
+        }
+        Write-Error 'serve: no python or npx found'
+        return
+    }
+
+    Write-Host "🌐 Starting HTTP server on http://localhost:${Port}"
+    & $py -m http.server $Port
+}
+
+# Generate a random password.
+# The zsh version shells out to openssl, which is not standard on Windows; .NET's CSPRNG
+# is always available and avoids the dependency entirely.
+function genpass {
+    param([int] $Length = 20)
+
+    # Same alphabet as the zsh helper: base64 minus the +/= characters.
+    $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.ToCharArray()
+    $bytes = [byte[]]::new($Length)
+    [System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+
+    # Reject-free modulo bias is not a concern at this alphabet size for a shell helper,
+    # but taking the byte modulo the alphabet length keeps the distribution near-uniform.
+    -join ($bytes | ForEach-Object { $alphabet[$_ % $alphabet.Length] })
+}
+
+# Quick note taking — dated markdown under ~/notes.
+function note {
+    $notesDir = Join-Path $HOME 'notes'
+    if (-not (Test-Path $notesDir)) { New-Item -ItemType Directory -Path $notesDir -Force | Out-Null }
+
+    if ($args.Count -eq 0) {
+        Write-Host '📝 Recent notes:'
+        Get-ChildItem -LiteralPath $notesDir -File |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 10 Name, LastWriteTime, Length |
+            Format-Table -AutoSize
+        return
+    }
+
+    $slug = $args -join '-'
+    $noteFile = Join-Path $notesDir ('{0}-{1}.md' -f (Get-Date -Format 'yyyy-MM-dd'), $slug)
+    if (-not (Test-Path -LiteralPath $noteFile)) {
+        Set-Content -LiteralPath $noteFile -Encoding UTF8 -Value @(
+            "# ${slug}", '', "Date: $(Get-Date)", ''
+        )
+    }
+    Invoke-Editor $noteFile
+}
+
+# Quick directory size check.
+function dirsize {
+    if (Test-Command 'dust') {
+        if ($args.Count -lt 1) { dust -d 1 } else { dust -d 1 @args }
+        return
+    }
+
+    $targets = if ($args.Count -lt 1) { Get-ChildItem -Directory } else { $args | Get-Item }
+    $targets | ForEach-Object {
+        $bytes = (Get-ChildItem -LiteralPath $_.FullName -Recurse -File -ErrorAction SilentlyContinue |
+            Measure-Object -Property Length -Sum).Sum
+        [pscustomobject]@{
+            Size = '{0,8:N1} MB' -f ($bytes / 1MB)
+            Name = $_.Name
+        }
+    } | Sort-Object { [double]($_.Size -replace '[^\d.]') } -Descending | Format-Table -AutoSize
+}
+
+# Find and replace text across files, with confirmation.
+function replace-in-files {
+    param(
+        [Parameter(Mandatory)][string] $Search,
+        [Parameter(Mandatory)][string] $Replace,
+        [string] $Pattern = '*'
+    )
+
+    if (-not (Test-Command 'rg')) { Write-Error 'replace-in-files: ripgrep (rg) is required'; return }
+
+    $files = @(rg --files-with-matches --fixed-strings --glob $Pattern -- $Search 2>$null)
+    if ($files.Count -eq 0) { Write-Host "No files matching '${Search}'"; return }
+
+    Write-Host "Found ${Search} in $($files.Count) file(s):"
+    $files | ForEach-Object { Write-Host "  $_" }
+
+    if ((Read-Host "Replace with '${Replace}'? (y/n)") -ne 'y') { Write-Host '❌ Cancelled'; return }
+
+    foreach ($file in $files) {
+        # -Raw + literal Replace() avoids regex-escaping bugs on both search and
+        # replacement, which is the same reason the zsh helper uses perl -0777 over sed.
+        $content = Get-Content -LiteralPath $file -Raw
+        Set-Content -LiteralPath $file -Value $content.Replace($Search, $Replace) -NoNewline
+    }
+    Write-Host "✓ Replaced in $($files.Count) file(s)"
+}
+
+# Kill a process interactively with fzf — the counterpart to killport.
+function killp {
+    if (-not (Test-Command 'fzf')) { Write-Error 'killp: fzf is required'; return }
+
+    $rows = Get-Process | Sort-Object -Property WS -Descending | ForEach-Object {
+        '{0,-8} {1,-30} {2,10:N1} MB' -f $_.Id, $_.ProcessName, ($_.WS / 1MB)
+    }
+
+    $picked = @($rows | fzf --multi --exit-0 `
+        --header='PID      NAME                                   MEMORY' `
+        --height=40% --layout=reverse --border --info=inline)
+
+    if ($picked.Count -eq 0) { Write-Host '❌ Cancelled'; return }
+
+    $ids = @($picked | ForEach-Object { [int] (($_ -split '\s+')[0]) })
+    if ((Read-Host "Kill $($ids.Count) process(es)? (y/n)") -ne 'y') { Write-Host '❌ Cancelled'; return }
+
+    foreach ($id in $ids) {
+        try { Stop-Process -Id $id -Force -ErrorAction Stop; Write-Host "✓ Killed ${id}" }
+        catch { Write-Host "⚠ Could not kill ${id} (try an elevated shell)" }
+    }
+}
+
+#---------------------------------------------------------------------------------------
+# ref — cheat-sheet viewer over config/zsh/references/*.md
+#
+# The reference files are shell-agnostic markdown, so both shells read the same tracked
+# copies. Path is derived from $script:DotfilesRoot rather than ZDOTDIR, which pwsh has no
+# equivalent of.
+#---------------------------------------------------------------------------------------
+
+function script:Show-RefUsage {
+    Write-Host @'
+Usage: ref <topic>           Print reference content to stdout
+       ref -e <topic>        Open reference in $env:EDITOR
+       ref -ls | --list      List all available reference topics
+       ref --help | -h       Show this help message
+
+Examples:
+  ref fd                     Print the fd cheat sheet
+  ref -e rg                  Edit the rg reference in $env:EDITOR
+  ref --list                 Show all available topics
+'@
+}
+
+function ref {
+    $referencesDir = Join-Path $script:DotfilesRoot 'config/zsh/references'
+
+    if ($args.Count -eq 0) { Show-RefUsage; return }
+
+    switch ($args[0]) {
+        { $_ -in '--help', '-h' } { Show-RefUsage; return }
+
+        { $_ -in '-ls', '--list' } {
+            if (-not (Test-Path $referencesDir)) { Write-Error "ref: no references at ${referencesDir}"; return }
+            Write-Host 'Available reference topics:'
+            Get-ChildItem -LiteralPath $referencesDir -Filter '*.md' |
+                ForEach-Object { Write-Host "  $($_.BaseName)" }
+            return
+        }
+
+        '-e' {
+            if ($args.Count -lt 2) { Write-Error 'ref -e: no topic given'; return }
+            if (-not (Test-Path $referencesDir)) {
+                New-Item -ItemType Directory -Path $referencesDir -Force | Out-Null
+            }
+            $target = Join-Path $referencesDir "$($args[1]).md"
+            if (-not (Test-Path -LiteralPath $target)) { New-Item -ItemType File -Path $target -Force | Out-Null }
+            Invoke-Editor $target
+            return
+        }
+
+        default {
+            $target = Join-Path $referencesDir "$($args[0]).md"
+            if (-not (Test-Path -LiteralPath $target)) {
+                Write-Error "ref: no reference for '$($args[0])' (try: ref --list)"
+                return
+            }
+            # bat renders the markdown; plain Get-Content is the guaranteed fallback.
+            if (Test-Command 'bat') { bat --style=plain --paging=auto --language=markdown $target }
+            else { Get-Content -LiteralPath $target }
+        }
+    }
 }

@@ -39,6 +39,34 @@ if ((Test-Command 'rg') -and (Test-Path $rgConfig) -and -not $env:RIPGREP_CONFIG
     $env:RIPGREP_CONFIG_PATH = $rgConfig
 }
 
+# atuin and mise read per-user config from %APPDATA% on Windows, which would ignore the
+# copies tracked in this repo — the ones .zshenv already points zsh at (ATUIN_CONFIG_DIR,
+# MISE_CONFIG_FILE). Without these two the "shared with the ZSH side" claim in README.md
+# holds for ripgrep only, and the two shells silently diverge.
+$atuinConfig = Join-Path $script:DotfilesRoot 'config/atuin'
+if ((Test-Command 'atuin') -and (Test-Path $atuinConfig) -and -not $env:ATUIN_CONFIG_DIR) {
+    $env:ATUIN_CONFIG_DIR = $atuinConfig
+}
+
+$miseConfig = Join-Path $script:DotfilesRoot 'config/mise/config.toml'
+if ((Test-Command 'mise') -and (Test-Path $miseConfig) -and -not $env:MISE_CONFIG_FILE) {
+    $env:MISE_CONFIG_FILE = $miseConfig
+}
+
+# .zshenv:54 sets EDITOR=vim for zsh. Nothing set it here, so `ref -e` and `note` had
+# no editor to open. Prefer what is actually installed on Windows over a bare 'vim';
+# notepad is the guaranteed backstop, since it ships with the OS.
+#
+# `code` is deliberately NOT in this chain: it forks and returns immediately, so an
+# editor function would carry on before the file was saved. Set it explicitly WITH the
+# blocking flag in local.ps1 if you want it — Invoke-Editor splits on whitespace:
+#   $env:EDITOR = 'code --wait'
+if (-not $env:EDITOR) {
+    foreach ($candidate in @('nvim', 'vim', 'notepad')) {
+        if (Test-Command $candidate) { $env:EDITOR = $candidate; break }
+    }
+}
+
 #---------------------------------------------------------------------------------------
 # zoxide — smarter cd. Officially supports PowerShell.
 #---------------------------------------------------------------------------------------

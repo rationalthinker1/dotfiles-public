@@ -64,4 +64,31 @@ uv = "latest"
 # (plain `mise latest vim` reports conda's useless version list), edit this line, then
 # `mise install`. The superseded build is reclaimed by `mise prune` in maintain phase 5.
 "asdf:mise-plugins/mise-vim" = "9.2.0926"
+# Neovim sits ALONGSIDE vim, not instead of it. `vim` remains the daily driver
+# (config in .vim/); this is the parallel Neovim config in config/nvim/, kept so
+# the two can be compared without either one's breakage affecting the other.
+# Different binaries, different config dirs, no shared state — see
+# config/nvim/README.md.
+#
+# BACKEND PINNED EXPLICITLY, for the same reason as vim above: `mise registry
+# neovim` resolves to `vfox:mise-plugins/vfox-neovim aqua:neovim/neovim`, and
+# vfox comes FIRST, so a bare `neovim@<version>` clones a vfox plugin and builds
+# through it. aqua ships upstream's prebuilt release binaries — no compile, no
+# plugin clone, and no build flags to keep in sync.
+#
+# Pinned to a concrete patch for the same reason as vim: 0.12 is the release that
+# added vim.pack and the 'autocomplete' option, and an unattended 0.13 should not
+# be able to land and change that surface.
+"aqua:neovim/neovim" = "0.12.5"
+# Build tool for nvim-treesitter's parsers, NOT a general dependency.
+#
+# nvim-treesitter's `main` branch shells out to the tree-sitter CLI to compile
+# each parser. (The frozen `master` branch compiled with a bare C compiler,
+# which is why most guides never mention this — main is a ground-up rewrite.)
+# Without it every parser install fails with
+#   error: Error during "tree-sitter build": ENOENT ... 'tree-sitter'
+# and Neovim silently falls back to regex syntax.
+#
+# aqua backend for prebuilt binaries; asdf would build it from Rust source.
+"aqua:tree-sitter/tree-sitter" = "0.27.0"
 yarn = "1"
