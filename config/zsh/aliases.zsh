@@ -1482,214 +1482,191 @@ if [[ $HOST_OS == "wsl" ]]; then
 fi
 
 # ==============================================================================
-# WSL Windows Terminal sync (manual function)
+# WSL ↔ Windows config sync
+#
+# Five configs live in two places at once: the repo, and wherever Windows or the distro
+# actually reads them from. These functions reconcile one pair each.
+#
+# The old versions decided by MTIME ALONE and copied without asking. That is wrong twice
+# over. Mtime says when a file was written, not whether its contents differ — a git
+# checkout, an install.sh run, or `touch` all bump it — so the "newer" side was routinely
+# the one with nothing new in it, and the copy silently overwrote real edits on the other
+# side. And a .bak.<epoch> next to the file is a poor undo: you only learn you needed it
+# after the fact, and nothing ever cleans them up.
+#
+# So mtime is now a HINT, printed next to the real evidence — a diff — and the direction
+# is yours to choose. Identical files are detected first and skipped without a prompt,
+# which is the common case and used to write a pointless backup every time.
 # ==============================================================================
 if [[ "${HOST_OS}" == 'wsl' ]]; then
-    function sync_wt_settings() {
-        local PWSH_EXE="/mnt/c/Program Files/PowerShell/7/pwsh.exe"
+    zmodload -F zsh/stat b:zstat 2>/dev/null
 
-        if [[ -x "${PWSH_EXE}" ]]; then
-            local WINDOWS_USER=$("${PWSH_EXE}" -NoProfile -Command '$env:UserName' | tr -d '\r')
-            local DOTFILES_DIR="${HOME}/.dotfiles"
-            local TERMINAL_SETTINGS_DEST="/mnt/c/Users/${WINDOWS_USER}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
-            local TERMINAL_SETTINGS_SRC="${DOTFILES_DIR}/windows-terminal/settings.json"
+    # Every pwsh.exe launch is a ~300ms round trip into Windows, and four of the five
+    # pairs need the username. Resolve once per shell.
+    typeset -g _WSL_USER=""
+    typeset -g _WSL_PWSH="/mnt/c/Program Files/PowerShell/7/pwsh.exe"
 
-            if [[ -f "${TERMINAL_SETTINGS_DEST}" && -f "${TERMINAL_SETTINGS_SRC}" ]]; then
-                if [[ "${TERMINAL_SETTINGS_SRC}" -nt "${TERMINAL_SETTINGS_DEST}" ]]; then
-                    cp "${TERMINAL_SETTINGS_DEST}" "${TERMINAL_SETTINGS_DEST}.bak.$(date +%s)"
-                    cp "${TERMINAL_SETTINGS_SRC}" "${TERMINAL_SETTINGS_DEST}"
-                    echo "✓ Synced Windows Terminal settings from dotfiles"
-                else
-                    cp "${TERMINAL_SETTINGS_DEST}" "${TERMINAL_SETTINGS_SRC}"
-                    echo "✓ Synced dotfiles Windows Terminal settings from Windows"
-                fi
-            else
-                echo "✗ Could not find settings files"
-            fi
-        else
-            echo "✗ PowerShell not found at ${PWSH_EXE}"
+    function _wsl_user() {
+        [[ -n "${_WSL_USER}" ]] && { print -r -- "${_WSL_USER}"; return 0 }
+        [[ -x "${_WSL_PWSH}" ]] || return 1
+        _WSL_USER="$("${_WSL_PWSH}" -NoProfile -Command '$env:UserName' | tr -d '\r')"
+        [[ -n "${_WSL_USER}" ]] || return 1
+        print -r -- "${_WSL_USER}"
+    }
+
+    # "2026-09-10 11:04  12.4K", or "—" when absent.
+    function _wsl_stamp() {
+        local f="${1}"
+        [[ -f "${f}" ]] || { print -r -- "—"; return }
+        local -a st
+        zstat -F '%Y-%m-%d %H:%M' -A st +mtime "${f}" 2>/dev/null || { print -r -- "?"; return }
+        local -a sz
+        zstat -A sz +size "${f}" 2>/dev/null
+        printf '%s  %s\n' "${st[1]}" "$(numfmt --to=iec --suffix=B "${sz[1]}" 2>/dev/null || print -r -- "${sz[1]}B")"
+    }
+
+    # Unified diff, oldest→newest so '+' always means "what the newer side would bring in".
+    # Capped: settings.json alone is 563 lines and nobody reads that at a prompt.
+    function _wsl_show_diff() {
+        local a="${1}" b="${2}" alabel="${3}" blabel="${4}"
+        local -i cap=40
+        local -a out
+        out=( ${(f)"$(command diff -u --label "${alabel}" --label "${blabel}" "${a}" "${b}" 2>/dev/null)"} )
+        (( ${#out} )) || { print -r -- "    (no textual diff)"; return }
+        local l
+        for l in "${out[@]:0:${cap}}"; do print -r -- "    ${l}"; done
+        (( ${#out} > cap )) && print -r -- "    … ${$(( ${#out} - cap ))} more diff line(s)"
+    }
+
+    # _wsl_sync <label> <repo-path> <system-path> [sudo]
+    #
+    # Reports, shows the diff, then asks for a direction. Never writes without a y-ish
+    # answer, and never prompts at all when stdin is not a tty — a scripted or piped run
+    # reports and moves on rather than blocking or guessing.
+    function _wsl_sync() {
+        emulate -L zsh
+        setopt local_options
+        local label="${1}" repo="${2}" sys="${3}" priv="${4:-}"
+        local -a WRITE=(cp) MKDIR=(mkdir -p)
+        [[ "${priv}" == 'sudo' ]] && WRITE=(sudo cp) MKDIR=(sudo mkdir -p)
+
+        print -r -- ""
+        print -r -- "▸ ${label}"
+
+        if [[ ! -f "${repo}" && ! -f "${sys}" ]]; then
+            print -r -- "    ✗ absent on both sides — nothing to sync"
+            print -r -- "        repo:   ${repo}"
+            print -r -- "        system: ${sys}"
+            return 1
         fi
+
+        # Identical is the common case. Say so and leave, rather than writing a backup
+        # and a byte-for-byte copy the way the old version did on every single run.
+        if [[ -f "${repo}" && -f "${sys}" ]] && cmp -s "${repo}" "${sys}"; then
+            print -r -- "    ✓ identical — nothing to do"
+            return 0
+        fi
+
+        print -r -- "    repo:   $(_wsl_stamp "${repo}")  ${repo}"
+        print -r -- "    system: $(_wsl_stamp "${sys}")  ${sys}"
+
+        local hint=""
+        if [[ -f "${repo}" && -f "${sys}" ]]; then
+            [[ "${repo}" -nt "${sys}" ]] && hint="repo is newer by mtime" || hint="system is newer by mtime"
+            print -r -- "    ${hint} (a hint, not evidence — read the diff)"
+            print -r -- ""
+            if [[ "${repo}" -nt "${sys}" ]]; then
+                _wsl_show_diff "${sys}" "${repo}" "system" "repo"
+            else
+                _wsl_show_diff "${repo}" "${sys}" "repo" "system"
+            fi
+        elif [[ -f "${repo}" ]]; then
+            print -r -- "    only the repo copy exists"
+        else
+            print -r -- "    only the system copy exists"
+        fi
+
+        if [[ ! -t 0 ]]; then
+            print -r -- "    (not a tty — no changes made; run interactively to choose)"
+            return 0
+        fi
+
+        local reply=""
+        print -r -- ""
+        read -r "reply?    [r] repo → system   [s] system → repo   [n] skip  (n): "
+        case "${reply}" in
+            ([rR]*)
+                [[ -f "${repo}" ]] || { print -ru2 -- "    ✗ no repo copy to send"; return 1 }
+                "${MKDIR[@]}" "${sys:h}" 2>/dev/null
+                [[ -f "${sys}" ]] && "${WRITE[@]}" "${sys}" "${sys}.bak.$(date +%s)"
+                "${WRITE[@]}" "${repo}" "${sys}" && print -r -- "    ✓ repo → system"
+                ;;
+            ([sS]*)
+                [[ -f "${sys}" ]] || { print -ru2 -- "    ✗ no system copy to take"; return 1 }
+                mkdir -p "${repo:h}"
+                [[ -f "${repo}" ]] && cp "${repo}" "${repo}.bak.$(date +%s)"
+                # Reading a root-owned /etc file needs sudo; the result must not stay root's.
+                "${WRITE[@]}" "${sys}" "${repo}" \
+                    && { [[ "${priv}" == 'sudo' ]] && sudo chown "$(id -u):$(id -g)" "${repo}"; \
+                         print -r -- "    ✓ system → repo" }
+                ;;
+            (*) print -r -- "    skipped" ;;
+        esac
+    }
+
+    # --- the five pairs -------------------------------------------------------
+    #
+    # Each resolves its own paths and hands off. wsl.conf is the only one that needs sudo
+    # (it lives in /etc); the rest sit under the Windows user profile, writable as-is.
+
+    function _wsl_pair_wt() {
+        local u; u="$(_wsl_user)" || { print -ru2 -- "✗ pwsh not found at ${_WSL_PWSH}"; return 1 }
+        _wsl_sync "Windows Terminal settings" \
+            "${HOME}/.dotfiles/windows-terminal/settings.json" \
+            "/mnt/c/Users/${u}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
+    }
+
+    function _wsl_pair_ssh() {
+        local u; u="$(_wsl_user)" || { print -ru2 -- "✗ pwsh not found at ${_WSL_PWSH}"; return 1 }
+        _wsl_sync "SSH config (Windows side)" \
+            "${HOME}/.dotfiles/.ssh/config" \
+            "/mnt/c/Users/${u}/.ssh/config"
+    }
+
+    function _wsl_pair_wslconf() {
+        _wsl_sync "wsl.conf (per-distro)" \
+            "${HOME}/.dotfiles/wsl.conf" \
+            "/etc/wsl.conf" sudo
+    }
+
+    function _wsl_pair_wslconfig() {
+        local u; u="$(_wsl_user)" || { print -ru2 -- "✗ pwsh not found at ${_WSL_PWSH}"; return 1 }
+        _wsl_sync ".wslconfig (global VM settings)" \
+            "${HOME}/.dotfiles/.wslconfig" \
+            "/mnt/c/Users/${u}/.wslconfig"
+    }
+
+    function sync_wt_settings()       { _wsl_pair_wt }
+    function sync_ssh_config()        { _wsl_pair_ssh }
+    function sync_wslconfig()         { _wsl_pair_wslconf; print -r -- "  (run 'wsl --shutdown' from PowerShell to apply)" }
+    function sync_wslconfig_global()  { _wsl_pair_wslconfig; print -r -- "  (run 'wsl --shutdown' from PowerShell to apply)" }
+
+    # Walks all four, prompting per pair. Answering n to each is a safe read-only audit of
+    # what has drifted, which is the usual reason to run this.
+    function sync_all_wsl_settings() {
+        print -r -- "=== WSL ↔ Windows config sync ==="
+        _wsl_pair_wslconf
+        _wsl_pair_wslconfig
+        _wsl_pair_wt
+        _wsl_pair_ssh
+        print -r -- ""
+        print -r -- "Done. If wsl.conf or .wslconfig changed, run 'wsl --shutdown' from PowerShell."
     }
 
     alias update-wt-settings='sync_wt_settings'
-
-    function sync_ssh_config() {
-        local PWSH_EXE="/mnt/c/Program Files/PowerShell/7/pwsh.exe"
-
-        if [[ -x "${PWSH_EXE}" ]]; then
-            local WINDOWS_USER=$("${PWSH_EXE}" -NoProfile -Command '$env:UserName' | tr -d '\r')
-            local DOTFILES_DIR="${HOME}/.dotfiles"
-            local SSH_CONFIG_DEST="/mnt/c/Users/${WINDOWS_USER}/.ssh/config"
-            local SSH_CONFIG_SRC="${DOTFILES_DIR}/.ssh/config"
-
-            if [[ -f "${SSH_CONFIG_DEST}" ]]; then
-                # Create .ssh directory in dotfiles if it doesn't exist
-                mkdir -p "${DOTFILES_DIR}/.ssh"
-
-                if [[ -f "${SSH_CONFIG_SRC}" ]]; then
-                    # Both files exist - compare timestamps
-                    if [[ "${SSH_CONFIG_SRC}" -nt "${SSH_CONFIG_DEST}" ]]; then
-                        cp "${SSH_CONFIG_DEST}" "${SSH_CONFIG_DEST}.bak.$(date +%s)"
-                        cp "${SSH_CONFIG_SRC}" "${SSH_CONFIG_DEST}"
-                        echo "✓ Synced SSH config from dotfiles to Windows"
-                    else
-                        cp "${SSH_CONFIG_SRC}" "${SSH_CONFIG_SRC}.bak.$(date +%s)"
-                        cp "${SSH_CONFIG_DEST}" "${SSH_CONFIG_SRC}"
-                        echo "✓ Synced SSH config from Windows to dotfiles"
-                    fi
-                else
-                    # Only Windows file exists - copy to dotfiles
-                    cp "${SSH_CONFIG_DEST}" "${SSH_CONFIG_SRC}"
-                    echo "✓ Copied SSH config from Windows to dotfiles"
-                fi
-            else
-                echo "✗ Could not find SSH config at ${SSH_CONFIG_DEST}"
-            fi
-        else
-            echo "✗ PowerShell not found at ${PWSH_EXE}"
-        fi
-    }
-
     alias update-ssh-config='sync_ssh_config'
-
-    function sync_wslconfig() {
-        # Sync /etc/wsl.conf (per-distribution settings)
-        local DOTFILES_DIR="${HOME}/.dotfiles"
-        local WSLCONF_DEST="/etc/wsl.conf"
-        local WSLCONF_SRC="${DOTFILES_DIR}/wsl.conf"
-
-        if [[ -f "${WSLCONF_SRC}" ]]; then
-            if [[ -f "${WSLCONF_DEST}" ]]; then
-                # Both files exist - compare timestamps
-                if [[ "${WSLCONF_SRC}" -nt "${WSLCONF_DEST}" ]]; then
-                    sudo cp "${WSLCONF_DEST}" "${WSLCONF_DEST}.bak.$(date +%s)" 2>/dev/null || true
-                    sudo cp "${WSLCONF_SRC}" "${WSLCONF_DEST}"
-                    echo "✓ Synced wsl.conf from dotfiles to /etc/wsl.conf"
-                    echo "  Run 'wsl --shutdown' from PowerShell to apply changes"
-                else
-                    cp "${WSLCONF_SRC}" "${WSLCONF_SRC}.bak.$(date +%s)"
-                    sudo cp "${WSLCONF_DEST}" "${WSLCONF_SRC}"
-                    sudo chown "$(id -u):$(id -g)" "${WSLCONF_SRC}"
-                    echo "✓ Synced wsl.conf from /etc to dotfiles"
-                fi
-            else
-                # No existing /etc/wsl.conf - copy from dotfiles
-                sudo cp "${WSLCONF_SRC}" "${WSLCONF_DEST}"
-                echo "✓ Installed wsl.conf to /etc/wsl.conf"
-                echo "  Run 'wsl --shutdown' from PowerShell to apply changes"
-            fi
-        else
-            echo "✗ wsl.conf not found in dotfiles at ${WSLCONF_SRC}"
-        fi
-    }
-
     alias update-wsl-settings='sync_wslconfig'
-
-    function sync_wslconfig_global() {
-        # Sync global .wslconfig (VM settings for all distros)
-        local PWSH_EXE="/mnt/c/Program Files/PowerShell/7/pwsh.exe"
-
-        if [[ -x "${PWSH_EXE}" ]]; then
-            local WINDOWS_USER=$("${PWSH_EXE}" -NoProfile -Command '$env:UserName' | tr -d '\r')
-            local DOTFILES_DIR="${HOME}/.dotfiles"
-            local WSLCONFIG_DEST="/mnt/c/Users/${WINDOWS_USER}/.wslconfig"
-            local WSLCONFIG_SRC="${DOTFILES_DIR}/.wslconfig"
-
-            if [[ -f "${WSLCONFIG_DEST}" ]]; then
-                if [[ -f "${WSLCONFIG_SRC}" ]]; then
-                    # Both files exist - compare timestamps
-                    if [[ "${WSLCONFIG_SRC}" -nt "${WSLCONFIG_DEST}" ]]; then
-                        cp "${WSLCONFIG_DEST}" "${WSLCONFIG_DEST}.bak.$(date +%s)"
-                        cp "${WSLCONFIG_SRC}" "${WSLCONFIG_DEST}"
-                        echo "✓ Synced .wslconfig from dotfiles to Windows"
-                        echo "  Run 'wsl --shutdown' to apply changes"
-                    else
-                        cp "${WSLCONFIG_SRC}" "${WSLCONFIG_SRC}.bak.$(date +%s)"
-                        cp "${WSLCONFIG_DEST}" "${WSLCONFIG_SRC}"
-                        echo "✓ Synced .wslconfig from Windows to dotfiles"
-                    fi
-                else
-                    # Only Windows file exists - copy to dotfiles
-                    cp "${WSLCONFIG_DEST}" "${WSLCONFIG_SRC}"
-                    echo "✓ Copied .wslconfig from Windows to dotfiles"
-                fi
-            else
-                echo "✗ Could not find .wslconfig at ${WSLCONFIG_DEST}"
-            fi
-        else
-            echo "✗ PowerShell not found at ${PWSH_EXE}"
-        fi
-    }
-
     alias update-wsl-global-settings='sync_wslconfig_global'
-
-    function sync_all_wsl_settings() {
-        # Force sync all WSL-related settings from dotfiles to system
-        echo "=== Syncing WSL settings from dotfiles ==="
-
-        local DOTFILES_DIR="${HOME}/.dotfiles"
-        local PWSH_EXE="/mnt/c/Program Files/PowerShell/7/pwsh.exe"
-        local updated=0
-
-        # 1. Sync wsl.conf (per-distribution settings)
-        local WSLCONF_DEST="/etc/wsl.conf"
-        local WSLCONF_SRC="${DOTFILES_DIR}/wsl.conf"
-
-        if [[ -f "${WSLCONF_SRC}" ]]; then
-            if [[ -f "${WSLCONF_DEST}" ]]; then
-                sudo cp "${WSLCONF_DEST}" "${WSLCONF_DEST}.bak.$(date +%s)"
-            fi
-            sudo cp "${WSLCONF_SRC}" "${WSLCONF_DEST}"
-            echo "✓ wsl.conf → /etc/wsl.conf"
-            ((updated++))
-        else
-            echo "✗ wsl.conf not found in dotfiles"
-        fi
-
-        # 2. Sync .wslconfig (global VM settings)
-        if [[ -x "${PWSH_EXE}" ]]; then
-            local WINDOWS_USER=$("${PWSH_EXE}" -NoProfile -Command '$env:UserName' | tr -d '\r')
-            local WSLCONFIG_DEST="/mnt/c/Users/${WINDOWS_USER}/.wslconfig"
-            local WSLCONFIG_SRC="${DOTFILES_DIR}/.wslconfig"
-
-            if [[ -f "${WSLCONFIG_SRC}" ]]; then
-                if [[ -f "${WSLCONFIG_DEST}" ]]; then
-                    cp "${WSLCONFIG_DEST}" "${WSLCONFIG_DEST}.bak.$(date +%s)"
-                fi
-                cp "${WSLCONFIG_SRC}" "${WSLCONFIG_DEST}"
-                echo "✓ .wslconfig → C:\Users\${WINDOWS_USER}\.wslconfig"
-                ((updated++))
-            else
-                echo "✗ .wslconfig not found in dotfiles"
-            fi
-        else
-            echo "✗ PowerShell not found, skipping .wslconfig"
-        fi
-
-        # 3. Sync Windows Terminal settings
-        if [[ -x "${PWSH_EXE}" ]]; then
-            local WINDOWS_USER=$("${PWSH_EXE}" -NoProfile -Command '$env:UserName' | tr -d '\r')
-            local WT_DEST="/mnt/c/Users/${WINDOWS_USER}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
-            local WT_SRC="${DOTFILES_DIR}/windows-terminal/settings.json"
-
-            if [[ -f "${WT_SRC}" ]]; then
-                if [[ -f "${WT_DEST}" ]]; then
-                    cp "${WT_DEST}" "${WT_DEST}.bak.$(date +%s)"
-                    cp "${WT_SRC}" "${WT_DEST}"
-                    echo "✓ windows-terminal/settings.json → Windows Terminal"
-                    ((updated++))
-                else
-                    echo "⚠ Windows Terminal settings.json not found at destination (install Windows Terminal first)"
-                fi
-            else
-                echo "✗ windows-terminal/settings.json not found in dotfiles"
-            fi
-        fi
-
-        echo ""
-        echo "Synced ${updated} config(s). Run 'wsl --shutdown' from PowerShell to apply WSL changes."
-    }
-
     alias update-all-wsl='sync_all_wsl_settings'
 fi
 
