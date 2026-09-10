@@ -185,17 +185,18 @@ if (( snapshot )); then
 
     # Preview against master without touching the branch: what public would gain or lose.
     #
-    # Both filters are anchored with '^', so the path has to be at the start of the line
-    # for them to mean anything — and `--name-status` puts the STATUS there. Swap the two
-    # columns, filter, swap back. (The previous version stripped the regex's leading '^'
-    # to paste it after a tab, which silently stopped matching the moment the regex was
-    # rewritten to anchor each alternative individually.)
+    # Test the PATH on its own. Both filters anchor at both ends, so they only mean what
+    # they say against a bare path — piping `--name-status` lines through grep breaks
+    # '^' (the status is first) and swapping the columns instead breaks '$' (the status
+    # is last). Either way the filter quietly stops matching and the preview lists
+    # sensitive paths as pending. Splitting the line first is the only form that holds.
     local -a preview
-    preview=( ${(f)"$(git diff --name-status public master -- . \
-                        | awk -F'\t' '{ print $2 "\t" $1 }' \
-                        | grep -vE "${SENSITIVE_TREE_REGEX}" \
-                        | grep -vE "${divergent}" \
-                        | awk -F'\t' '{ print $2 "\t" $1 }')"} )
+    local st p
+    while IFS=$'\t' read -r st p; do
+        [[ "${p}" =~ ${SENSITIVE_TREE_REGEX} ]] && continue
+        [[ "${p}" =~ ${divergent} ]] && continue
+        preview+=( "${st}	${p}" )
+    done < <(git diff --name-status public master -- .)
     print -r -- "changed paths: ${#preview}"
     print -r -- ""
     print -rl -- "${preview[@]:0:40}"
