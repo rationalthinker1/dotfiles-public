@@ -238,14 +238,21 @@ function maintain() {
         else
             print -r -- "    no drift — every plugin matches its .zshrc declaration"
         fi
-        print -r -- "    The wipe is only for an ice VALUE edited in place: the audit compares ice"
-        print -r -- "    NAMES, so that one change is invisible to everything above."
+        print -r -- "    Say y only if you edited what is INSIDE an ice — atclone'old' → atclone'new'."
+        print -r -- "    Adding or removing an ice shows up above; changing one's contents does not."
     fi
 
     # Only the FULL WIPE is opt-in. Answering N (or running non-interactively) still updates
     # the plugins and still repairs any that drifted from .zshrc — it just does so
-    # incrementally instead of re-downloading ~400MB. Say y only when you have edited an ice
-    # VALUE in place, which the audit cannot detect (it compares ice names).
+    # incrementally instead of re-downloading ~400MB.
+    #
+    # The one case incremental repair cannot reach: editing what is INSIDE an ice while
+    # leaving its name alone, say atclone'rm -f qsv[a-z]*' becoming atclone'_qsv_prune'.
+    # zinit snapshots a plugin's ices into ._zinit/ at install time and replays THAT on
+    # every update, and zi_audit::declared keys on the ice NAME only — `${w%%[\'\"]*}`
+    # discards everything from the first quote on. Both sides still read "atclone", so
+    # nothing detects the change and the old value keeps firing forever. Only a wipe
+    # re-reads .zshrc and re-snapshots.
     if (( ! run_zinit )) && [[ -t 0 ]]; then
         local zreply=""
         read -r "zreply?▸ FULL zinit wipe + reinstall (~400MB)? Plugins update either way. [y/N] "
