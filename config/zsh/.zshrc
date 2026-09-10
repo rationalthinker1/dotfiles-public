@@ -772,18 +772,63 @@ function gh_asset() {
 # 📊 QSV - Ultra-fast CSV toolkit with Python integration
 # Usage: `qsv stats data.csv` - advanced CSV statistics and operations
 # More features than xsv: SQL queries, Python expressions, etc.
-# The release archive ships 11 executables (~1.1GB): qsv plus the dp/lite/mcp/p/py31x
-# variants. `pick` only selects what lands on PATH, it does not stop extraction, and
+# The x86_64-gnu archive extracts 7 executables (~983MB): qsv plus dp/lite/mcp/py311-313.
+# `pick` only selects what lands on PATH, it does not stop extraction, and
 # ziextract additionally parks the previous version in ._backup on every update — which
-# is how this one plugin reached 2.2GB. atclone prunes both; atpull repeats it per update.
+# is how this one plugin reached 2.2GB. _qsv_prune drops both; atpull repeats it per update.
 # The asset embeds the version (qsv-22.0.1-x86_64-unknown-linux-musl.zip), so the
 # templates glob it. Two upstream gaps this has to work around, both verified against the
 # v22.0.1 asset list: musl is published for x86_64 ONLY, hence {libc} rather than a literal
 # (aarch64 Linux resolves to gnu and will hit the same glibc wall on an old ARM distro —
 # nothing selectable here fixes that), and the only darwin build is aarch64, so the macOS
 # template globs the arch rather than constructing an Intel-Mac name upstream never publishes.
+#
+# _qsv_prune — keep qsv, qsvmcp and one usable qsvpy; delete the rest. cwd = plugin dir.
+#
+# Dropped: ._backup, qsvdp (CKAN DataPusher+) and qsvlite (a strict subset of qsv, the xsv
+# migration path) — 128MB of variants nothing here invokes. Kept binaries total ~500MB
+# against the 983MB the archive extracts, and the 2.2GB this plugin once reached.
+#
+# WHY qsvmcp: the MCP-optimized build (geocode, mcp, polars, profile, synthesize, to, viz).
+# It is NOT a server — it exposes no `mcp` subcommand and shares src/main.rs with qsv. It is
+# the trimmed binary an MCP server drives; upstream ships the server itself as the separate
+# qsv-mcp-server-<ver>.mcpb bundle. `qsvmcp --update-mcp-skills` writes the skills JSON.
+#
+# WHY a python binary at all: the plain prebuilt enables every feature EXCEPT python, so
+# `qsv py` needs a qsvpy31N. Those are already in the archive — a from-source build with
+# --features python is a ~2GB, very long compile for the same bytes, so never do that.
+#
+# WHY the loader is the oracle: qsvpy31N dynamically links libpython3.N.so.1.0 and, per
+# upstream #1451, aborts at exec when that library is absent — even for subcommands that
+# never touch Python. That is also why it stays a SEPARATE command and never replaces qsv.
+# Nothing static predicts availability well (dathere/qsv#584: a copy next to the binary is
+# not found — there is no $ORIGIN rpath; only ldconfig or LD_LIBRARY_PATH counts), so just
+# run each candidate newest-first and keep the first that starts. Ubuntu 24.04 has
+# libpython3.12 in ldconfig and lands on qsvpy312; a Homebrew-only macOS keeps none, which
+# is the right answer. Note the interpreter is the linked one, NOT whatever `python3` on
+# PATH resolves to (mise ships 3.14 here) — `qsv py` sees 3.12's site-packages, or an
+# active venv of the matching version.
+#
+# WHERE it applies: only x86_64-unknown-linux-gnu and aarch64-apple-darwin ship qsvpy31x.
+# The musl and aarch64-linux-gnu archives ship none, so this is a no-op there.
+function _qsv_prune() {
+    local f py
+    local -a keep=(qsv qsvmcp)
+    rm -rf ._backup
+    # Newest first; the first that starts is the one whose libpython this host resolves.
+    for f in qsvpy3<->(NOn); do
+        chmod +x -- "${f}"
+        ./"${f}" --version >/dev/null 2>&1 && { py="${f}"; keep+=("${py}"); break; }
+    done
+    # Runs before the relink, so the previous version's qsvpy symlink is cleared first.
+    for f in qsv[a-z]*(N); do
+        (( ${keep[(Ie)${f}]} )) || rm -rf -- "${f}"
+    done
+    [[ -n "${py}" ]] && ln -sfn -- "${py}" qsvpy
+    return 0
+}
 zi ice wait'2' lucid from'gh-r' as'program' pick'qsv' nocompile'!' \
-    atclone'rm -rf ._backup; rm -f qsv[a-z]*(N)' atpull'%atclone' \
+    atclone'_qsv_prune' atpull'%atclone' \
     bpick"$(gh_asset 'qsv-*-{arch}-unknown-linux-{libc:gnu}.zip' 'qsv-*-apple-darwin.zip')"
 zi load dathere/qsv
 
