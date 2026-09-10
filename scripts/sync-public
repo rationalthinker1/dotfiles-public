@@ -184,9 +184,18 @@ if (( snapshot )); then
     print -r -- "=================================================="
 
     # Preview against master without touching the branch: what public would gain or lose.
+    #
+    # Both filters are anchored with '^', so the path has to be at the start of the line
+    # for them to mean anything — and `--name-status` puts the STATUS there. Swap the two
+    # columns, filter, swap back. (The previous version stripped the regex's leading '^'
+    # to paste it after a tab, which silently stopped matching the moment the regex was
+    # rewritten to anchor each alternative individually.)
     local -a preview
     preview=( ${(f)"$(git diff --name-status public master -- . \
-                        | grep -vE "	(${SENSITIVE_TREE_REGEX#^}|\.gitignore$|git-hooks/)")"} )
+                        | awk -F'\t' '{ print $2 "\t" $1 }' \
+                        | grep -vE "${SENSITIVE_TREE_REGEX}" \
+                        | grep -vE "${divergent}" \
+                        | awk -F'\t' '{ print $2 "\t" $1 }')"} )
     print -r -- "changed paths: ${#preview}"
     print -r -- ""
     print -rl -- "${preview[@]:0:40}"
