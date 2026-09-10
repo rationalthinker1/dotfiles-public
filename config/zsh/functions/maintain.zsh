@@ -213,6 +213,35 @@ function maintain() {
         [[ "${reply}" == [yY]* ]] && run_install=1
     fi
 
+    # State the zinit situation BEFORE asking about the wipe. The right answer depends
+    # entirely on it — how many plugins drifted, and whether anything is flagged — and the
+    # prompt used to arrive with none of that on screen, so the choice was a guess.
+    #
+    # Cheap enough to run here: zi-audit is read-only and touches only the filesystem (it
+    # compares each plugin's ._zinit metadata against .zshrc), no network and no plugin
+    # loading. --ids lists what a wipe would repair; the full pass supplies the verdict
+    # line, which also counts findings a wipe canNOT fix, such as declaration bugs.
+    if (( ! run_zinit )) && [[ -t 0 ]] && (( $+functions[zi_audit] )); then
+        local -a pre_drift
+        pre_drift=( ${(f)"$(zi_audit --ids 2>/dev/null)"} )
+        pre_drift=( ${pre_drift:#} )
+
+        local pre_verdict
+        pre_verdict="$(zi_audit --quiet 2>/dev/null)"
+        pre_verdict="${pre_verdict##*$'\n'}"
+        [[ -n "${pre_verdict}" ]] && print -r -- "▸ zinit: ${pre_verdict}"
+
+        if (( ${#pre_drift} )); then
+            print -r -- "    ${#pre_drift} plugin(s) drifted from .zshrc — a normal run repairs these:"
+            local zp
+            for zp in "${pre_drift[@]}"; do print -r -- "      • ${zp}"; done
+        else
+            print -r -- "    no drift — every plugin matches its .zshrc declaration"
+        fi
+        print -r -- "    The wipe is only for an ice VALUE edited in place: the audit compares ice"
+        print -r -- "    NAMES, so that one change is invisible to everything above."
+    fi
+
     # Only the FULL WIPE is opt-in. Answering N (or running non-interactively) still updates
     # the plugins and still repairs any that drifted from .zshrc — it just does so
     # incrementally instead of re-downloading ~400MB. Say y only when you have edited an ice
