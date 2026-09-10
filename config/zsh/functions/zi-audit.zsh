@@ -61,6 +61,10 @@ function zi_audit::usage() {
     print -r -- "  depth-not-applied  depth'…' given but the clone is not shallow"
     print -r -- "  nocompile-ignored  nocompile set but .zwc files exist"
     print -r -- ""
+    print -r -- "With --online, one more (see the note at the bottom):"
+    print -r -- "  ver-stale          a gh-r plugin is pinned with ver'…' while a NEWER"
+    print -r -- "                     upstream release already carries a matching asset"
+    print -r -- ""
     print -r -- "Options:"
     print -r -- "  -q, --quiet   List only plugins with findings; suppress the OK lines."
     print -r -- "      --ids     Print ONLY the ids of plugins a wipe+reinstall would fix,"
@@ -68,12 +72,48 @@ function zi_audit::usage() {
     print -r -- "                it to repair exactly those). Declaration bugs a reinstall"
     print -r -- "                cannot touch (unknown-ice, pick-no-match) are excluded —"
     print -r -- "                those need a .zshrc edit, so reinstalling would loop."
+    print -r -- "      --online  Additionally run ver-stale, which needs the GitHub API."
+    print -r -- "                One request per PINNED gh-r plugin, none for the rest."
+    print -r -- "                Ignored with --ids. maintain passes this."
     print -r -- ""
     print -r -- "Exits non-zero if any finding is reported. Read-only: never installs,"
     print -r -- "updates or deletes. Snippets are out of scope (plugins only)."
     print -r -- ""
-    print -r -- "Version staleness is deliberately NOT checked — \`zi update\` already"
-    print -r -- "compares installed against latest and skips what has not moved."
+    print -r -- "Version staleness is deliberately NOT checked for UNPINNED plugins —"
+    print -r -- "\`zi update\` already compares installed against latest and skips what has"
+    print -r -- "not moved. A ver'…' pin is the exact case it cannot catch: the pin is what"
+    print -r -- "update honours, so a pin added to work around a broken upstream release"
+    print -r -- "stays put forever once the reason for it is forgotten. That is what"
+    print -r -- "--online looks for, and why it is opt-in rather than always on."
+}
+
+# Prints the newest release tag of ${1} that carries an asset matching the bpick glob
+# ${2}, or nothing. Used only by the ver-stale check.
+#
+# jq rather than a grep over the raw JSON because the answer needs tag and asset PAIRED,
+# and a release object holds its tag_name far from its assets[] names — a grep can find
+# both and has no way to tell which belongs to which. The API returns newest-first, so
+# the first match is the answer. Everything is soft-failed (missing curl or jq, no
+# network, a rate-limited response): a check that cannot reach the network reports
+# nothing rather than a false finding.
+function zi_audit::newest_matching_tag() {
+    local id="${1}" bpick="${2}" line tag asset
+    local -a lines
+    (( $+commands[curl] && $+commands[jq] )) || return 1
+    [[ -n "${bpick}" ]] || return 1
+    lines=( ${(f)"$(curl -fsSL --max-time 10 \
+        "https://api.github.com/repos/${id}/releases?per_page=30" 2>/dev/null \
+        | jq -r '.[] | .tag_name as $t | (.assets[]?.name | "\($t)\t\(.)")' 2>/dev/null)"} )
+    for line in "${lines[@]}"; do
+        tag="${line%%$'\t'*}"
+        asset="${line#*$'\t'}"
+        # Case-insensitive for the same reason as the bpick-mismatch check above.
+        if [[ -n "${tag}" && "${(L)asset}" == ${~${(L)bpick}} ]]; then
+            print -r -- "${tag}"
+            return 0
+        fi
+    done
+    return 1
 }
 
 # Parse .zshrc into "plugin-id<TAB>ice1 ice2 …" lines on stdout.
@@ -140,18 +180,26 @@ function zi_audit() {
     # Every local below is therefore declared once, up front, and reset explicitly.
     setopt local_options extended_glob no_nomatch typeset_silent
 
-    local -i quiet=0 ids_only=0
+    local -i quiet=0 ids_only=0 online=0
     local -a wanted
     local arg
     for arg in "$@"; do
         case "${arg}" in
             (-h|--help)  zi_audit::usage; return 0 ;;
             (-q|--quiet) quiet=1 ;;
+            (--online)   online=1 ;;
             (--ids)      ids_only=1; quiet=1 ;;
             (-*)         print -ru2 -- "zi-audit: unknown option '${arg}'"; return 2 ;;
             (*)          wanted+=("${arg}") ;;
         esac
     done
+
+    # Cleared after the loop, not inside the --ids branch, so the two flags commute:
+    # `--ids --online` must behave the same as `--online --ids`. --ids reports only what a
+    # wipe+reinstall repairs, and ver-stale is excluded from that set by design, so the
+    # requests could not change its output — they would be latency and rate limit spent
+    # on nothing.
+    (( ids_only )) && online=0
 
     if [[ -z "${ZINIT[ice-list]}" ]]; then
         print -ru2 -- "zi-audit: zinit is not loaded — run this from an interactive shell"
@@ -168,7 +216,7 @@ function zi_audit() {
 
     # --- every local used below, declared exactly once --------------------------
     local id ices entry dir ice as_val pick_val src_val hit r d
-    local mv_val cp_val bpick_val ver_val asset ref xfrom xto
+    local mv_val cp_val bpick_val ver_val asset ref xfrom xto newer
     local -i findings=0 checked=0 pos bad_at limit rep
     local -A declared seen_twice
     local -a parsed report decl_ices saved dropped stale payload hits orphans zwcs
@@ -292,8 +340,12 @@ function zi_audit() {
 
             # bpick'PATTERN': the asset zinit actually downloaded (recorded in url)
             # must match the pattern, or a different asset was picked than intended.
-            if [[ -r "${dir}/._zinit/bpick" && -r "${dir}/._zinit/url" ]]; then
-                bpick_val="$(<"${dir}/._zinit/bpick")"
+            # Read unconditionally and reset every iteration: these locals are declared
+            # once for the whole loop, so a value left over from the previous plugin would
+            # otherwise be compared against this one.
+            bpick_val=""
+            [[ -r "${dir}/._zinit/bpick" ]] && bpick_val="$(<"${dir}/._zinit/bpick")"
+            if [[ -n "${bpick_val}" && -r "${dir}/._zinit/url" ]]; then
                 asset="${${"$(<"${dir}/._zinit/url")"}:t}"
                 # Case-INSENSITIVE on purpose: zinit lowercases the whole URL before
                 # storing it (which is also why Byron/dua-cli is recorded as
@@ -305,12 +357,24 @@ function zi_audit() {
             fi
 
             # ver'X': the checkout must actually be on X (branch or tag).
-            if [[ -r "${dir}/._zinit/ver" && -d "${dir}/.git" ]]; then
-                ver_val="$(<"${dir}/._zinit/ver")"
-                if [[ -n "${ver_val}" ]]; then
-                    ref="$(command git -C "${dir}" rev-parse --abbrev-ref HEAD 2>/dev/null)"
-                    [[ "${ref}" == "HEAD" ]] && ref="$(command git -C "${dir}" describe --tags --exact-match 2>/dev/null)"
-                    [[ "${ref}" == "${ver_val}" ]] || report+=("ver-not-applied: ver'${ver_val}' but HEAD is '${ref:-unknown}'")
+            ver_val=""
+            [[ -r "${dir}/._zinit/ver" ]] && ver_val="$(<"${dir}/._zinit/ver")"
+            if [[ -n "${ver_val}" && -d "${dir}/.git" ]]; then
+                ref="$(command git -C "${dir}" rev-parse --abbrev-ref HEAD 2>/dev/null)"
+                [[ "${ref}" == "HEAD" ]] && ref="$(command git -C "${dir}" describe --tags --exact-match 2>/dev/null)"
+                [[ "${ref}" == "${ver_val}" ]] || report+=("ver-not-applied: ver'${ver_val}' but HEAD is '${ref:-unknown}'")
+            fi
+
+            # ver'X' on a gh-r plugin is a PIN, and `zi update` honours it forever — so a
+            # pin added to route around one broken upstream release becomes permanent the
+            # moment its reason is forgotten. Flag it as soon as a NEWER release carries a
+            # matching asset, i.e. as soon as the pin has outlived its cause. Keyed on
+            # is_release (zinit writes it only for from'gh-r'), so git plugins pinned to a
+            # branch are untouched.
+            if (( online )) && [[ -n "${ver_val}" && -r "${dir}/._zinit/is_release" ]]; then
+                newer="$(zi_audit::newest_matching_tag "${id}" "${bpick_val}")"
+                if [[ -n "${newer}" && "${newer}" != "${ver_val}" ]]; then
+                    report+=("ver-stale: pinned to ver'${ver_val}' but '${newer}' already has an asset matching bpick — drop the pin")
                 fi
             fi
 
@@ -329,11 +393,13 @@ function zi_audit() {
         fi
 
         # A finding is repairable by wipe+reinstall UNLESS it is a declaration bug that a
-        # reinstall cannot touch: an unrecognised ice, or a pick matching nothing. Those
-        # need a .zshrc edit, and reinstalling on them would loop forever.
+        # reinstall cannot touch: an unrecognised ice, a pick matching nothing, or a pin
+        # upstream has outgrown. Those need a .zshrc edit, and reinstalling on them would
+        # loop forever — a ver-stale plugin in particular reinstalls perfectly happily,
+        # onto the same pinned tag, every single run.
         rep=0
         for r in "${report[@]}"; do
-            [[ "${r}" == unknown-ice* || "${r}" == pick-no-match* ]] && continue
+            [[ "${r}" == unknown-ice* || "${r}" == pick-no-match* || "${r}" == ver-stale* ]] && continue
             (( rep++ ))
         done
 

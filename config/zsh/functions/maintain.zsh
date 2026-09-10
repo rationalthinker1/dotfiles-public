@@ -281,7 +281,11 @@ function maintain() {
 # An empty capture (zinit not loaded) leaves zi_report empty and the summary line is skipped.
 function maintain::zi_audit() {
     local out=""
-    out="$(zi_audit --quiet)"
+    # --online here, but NOT on the pre-flight pass above: this is the reported audit, and
+    # ver-stale is the one finding that cannot be seen from the filesystem alone. It costs
+    # one GitHub request per PINNED gh-r plugin — normally zero, since nothing here is
+    # pinned unless an upstream release is temporarily broken.
+    out="$(zi_audit --quiet --online)"
     local rc=${?}
     [[ -n "${out}" ]] && print -r -- "${out}"
     zi_report="${out##*$'\n'}"
