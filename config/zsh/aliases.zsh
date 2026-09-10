@@ -1538,25 +1538,36 @@ if [[ "${HOST_OS}" == 'wsl' ]]; then
         (( ${#out} > cap )) && print -r -- "    … ${$(( ${#out} - cap ))} more diff line(s)"
     }
 
-    # _wsl_sync <label> <repo-path> <system-path> [sudo]
+    # _wsl_sync <label> <repo-path> <system-path> [sudo] [oneway]
     #
     # Reports, shows the diff, then asks for a direction. Never writes without a y-ish
     # answer, and never prompts at all when stdin is not a tty — a scripted or piped run
     # reports and moves on rather than blocking or guessing.
+    #
+    # `oneway` marks the repo side as GENERATED (wsl/render output). Pulling a rendered
+    # file back into the repo would overwrite the template's @WSL_USER@ / @WSL_MEMORY@
+    # placeholders with one machine's literals — reintroducing precisely the hardcoding
+    # the templates exist to remove — so that direction is not offered at all.
     function _wsl_sync() {
         emulate -L zsh
         setopt local_options
-        local label="${1}" repo="${2}" sys="${3}" priv="${4:-}"
+        local label="${1}" repo="${2}" sys="${3}"
+        local -a opts=( "${@:4}" )
+        local -i priv=0 oneway=0
+        (( ${opts[(Ie)sudo]} ))   && priv=1
+        (( ${opts[(Ie)oneway]} )) && oneway=1
         local -a WRITE=(cp) MKDIR=(mkdir -p)
-        [[ "${priv}" == 'sudo' ]] && WRITE=(sudo cp) MKDIR=(sudo mkdir -p)
+        (( priv )) && WRITE=(sudo cp) MKDIR=(sudo mkdir -p)
+        local repo_label="repo"
+        (( oneway )) && repo_label="generated"
 
         print -r -- ""
         print -r -- "▸ ${label}"
 
         if [[ ! -f "${repo}" && ! -f "${sys}" ]]; then
             print -r -- "    ✗ absent on both sides — nothing to sync"
-            print -r -- "        repo:   ${repo}"
-            print -r -- "        system: ${sys}"
+            print -r -- "        ${repo_label}: ${repo}"
+            print -r -- "        system:    ${sys}"
             return 1
         fi
 
@@ -1567,21 +1578,21 @@ if [[ "${HOST_OS}" == 'wsl' ]]; then
             return 0
         fi
 
-        print -r -- "    repo:   $(_wsl_stamp "${repo}")  ${repo}"
-        print -r -- "    system: $(_wsl_stamp "${sys}")  ${sys}"
+        printf '    %-10s %s  %s\n' "${repo_label}:" "$(_wsl_stamp "${repo}")" "${repo}"
+        printf '    %-10s %s  %s\n' "system:" "$(_wsl_stamp "${sys}")" "${sys}"
 
         local hint=""
         if [[ -f "${repo}" && -f "${sys}" ]]; then
-            [[ "${repo}" -nt "${sys}" ]] && hint="repo is newer by mtime" || hint="system is newer by mtime"
-            print -r -- "    ${hint} (a hint, not evidence — read the diff)"
-            print -r -- ""
-            if [[ "${repo}" -nt "${sys}" ]]; then
-                _wsl_show_diff "${sys}" "${repo}" "system" "repo"
-            else
-                _wsl_show_diff "${repo}" "${sys}" "repo" "system"
+            # For a generated file mtime says nothing worth printing — it is whatever the
+            # last render happened to write — so the diff carries the whole message.
+            if (( ! oneway )); then
+                [[ "${repo}" -nt "${sys}" ]] && hint="repo is newer by mtime" || hint="system is newer by mtime"
+                print -r -- "    ${hint} (a hint, not evidence — read the diff)"
             fi
+            print -r -- ""
+            _wsl_show_diff "${sys}" "${repo}" "system" "${repo_label}"
         elif [[ -f "${repo}" ]]; then
-            print -r -- "    only the repo copy exists"
+            print -r -- "    only the ${repo_label} copy exists"
         else
             print -r -- "    only the system copy exists"
         fi
@@ -1593,15 +1604,24 @@ if [[ "${HOST_OS}" == 'wsl' ]]; then
 
         local reply=""
         print -r -- ""
-        read -r "reply?    [r] repo → system   [s] system → repo   [n] skip  (n): "
+        if (( oneway )); then
+            read -r "reply?    [r] deploy → system   [n] skip  (n): "
+        else
+            read -r "reply?    [r] repo → system   [s] system → repo   [n] skip  (n): "
+        fi
         case "${reply}" in
             ([rR]*)
-                [[ -f "${repo}" ]] || { print -ru2 -- "    ✗ no repo copy to send"; return 1 }
+                [[ -f "${repo}" ]] || { print -ru2 -- "    ✗ no ${repo_label} copy to send"; return 1 }
                 "${MKDIR[@]}" "${sys:h}" 2>/dev/null
                 [[ -f "${sys}" ]] && "${WRITE[@]}" "${sys}" "${sys}.bak.$(date +%s)"
-                "${WRITE[@]}" "${repo}" "${sys}" && print -r -- "    ✓ repo → system"
+                "${WRITE[@]}" "${repo}" "${sys}" && print -r -- "    ✓ ${repo_label} → system"
                 ;;
             ([sS]*)
+                (( oneway )) && {
+                    print -ru2 -- "    ✗ this file is generated — pulling it back would bake this"
+                    print -ru2 -- "      machine's values into the template. Edit wsl/*.in instead."
+                    return 1
+                }
                 [[ -f "${sys}" ]] || { print -ru2 -- "    ✗ no system copy to take"; return 1 }
                 mkdir -p "${repo:h}"
                 [[ -f "${repo}" ]] && cp "${repo}" "${repo}.bak.$(date +%s)"
@@ -1614,36 +1634,55 @@ if [[ "${HOST_OS}" == 'wsl' ]]; then
         esac
     }
 
-    # --- the five pairs -------------------------------------------------------
+    # --- the four pairs -------------------------------------------------------
     #
-    # Each resolves its own paths and hands off. wsl.conf is the only one that needs sudo
-    # (it lives in /etc); the rest sit under the Windows user profile, writable as-is.
+    # Two shapes, and the difference matters:
+    #
+    #   TWO-WAY — windows-terminal/settings.json and .ssh/config are hand-edited on both
+    #   sides (Windows Terminal's own GUI rewrites settings.json), so either side can
+    #   legitimately hold the newer truth and you pick.
+    #
+    #   ONE-WAY — wsl.conf and .wslconfig are RENDERED from wsl/*.in for this machine.
+    #   There is no "newer side" to weigh: the repo holds a template, the system holds
+    #   one machine's expansion of it. Edits belong in the template.
+    #
+    # Repo root comes from ZDOTDIR rather than a hardcoded ~/.dotfiles: ZDOTDIR is a
+    # symlink into the repo, so :A resolves it and two :h hops land on the root.
+    typeset -g _WSL_REPO="${ZDOTDIR:A:h:h}"
 
     function _wsl_pair_wt() {
         local u; u="$(_wsl_user)" || { print -ru2 -- "✗ pwsh not found at ${_WSL_PWSH}"; return 1 }
         _wsl_sync "Windows Terminal settings" \
-            "${HOME}/.dotfiles/windows-terminal/settings.json" \
+            "${_WSL_REPO}/wsl/windows-terminal/settings.json" \
             "/mnt/c/Users/${u}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
     }
 
     function _wsl_pair_ssh() {
         local u; u="$(_wsl_user)" || { print -ru2 -- "✗ pwsh not found at ${_WSL_PWSH}"; return 1 }
         _wsl_sync "SSH config (Windows side)" \
-            "${HOME}/.dotfiles/.ssh/config" \
+            "${_WSL_REPO}/.ssh/config" \
             "/mnt/c/Users/${u}/.ssh/config"
     }
 
+    # Render to a temp file and compare THAT against the deployed copy — comparing the
+    # raw template would report a difference forever, since it still holds placeholders.
     function _wsl_pair_wslconf() {
-        _wsl_sync "wsl.conf (per-distro)" \
-            "${HOME}/.dotfiles/wsl.conf" \
-            "/etc/wsl.conf" sudo
+        local tmp; tmp="$(mktemp)" || return 1
+        "${_WSL_REPO}/wsl/render" wsl.conf "${tmp}" || { rm -f "${tmp}"; return 1 }
+        _wsl_sync "wsl.conf (generated → /etc)" "${tmp}" "/etc/wsl.conf" sudo oneway
+        local rc=${?}
+        rm -f "${tmp}"
+        return ${rc}
     }
 
     function _wsl_pair_wslconfig() {
         local u; u="$(_wsl_user)" || { print -ru2 -- "✗ pwsh not found at ${_WSL_PWSH}"; return 1 }
-        _wsl_sync ".wslconfig (global VM settings)" \
-            "${HOME}/.dotfiles/.wslconfig" \
-            "/mnt/c/Users/${u}/.wslconfig"
+        local tmp; tmp="$(mktemp)" || return 1
+        "${_WSL_REPO}/wsl/render" wslconfig "${tmp}" || { rm -f "${tmp}"; return 1 }
+        _wsl_sync ".wslconfig (generated → Windows)" "${tmp}" "/mnt/c/Users/${u}/.wslconfig" oneway
+        local rc=${?}
+        rm -f "${tmp}"
+        return ${rc}
     }
 
     function sync_wt_settings()       { _wsl_pair_wt }

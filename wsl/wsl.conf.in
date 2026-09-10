@@ -16,4 +16,4 @@ generateHosts = true
 generateResolvConf = true
 
 [user]
-default = raza
+default = @WSL_USER@

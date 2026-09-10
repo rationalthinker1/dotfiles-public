@@ -1,0 +1,111 @@
+#!/usr/bin/env zsh
+# ==============================================================================
+# wsl/render — expand a WSL config template for THIS machine
+#
+# Two values in these files cannot be tracked as literals, because they are properties of
+# the machine rather than of the configuration:
+#
+#   @WSL_USER@              the distro's default login user
+#   @WSL_MEMORY@ @WSL_SWAP@ the VM's caps, which only mean anything relative to host RAM
+#
+# Both have already caused real breakage from being hardcoded:
+#
+#   - `[user] default = raza` named an account that does not exist on this machine (the
+#     user is `razaf`). WSL falls back to root when it cannot resolve the configured
+#     default, so deploying that file would have handed the next session a root shell.
+#     /etc/wsl.conf had been hand-trimmed to work around it rather than fixed.
+#   - b39f25d wrote `memory = 10GB` "for this 16GB host" on a 32GB machine, halving the
+#     cap for no reason. It went unnoticed until 2026-09-04.
+#
+# A ratio and a lookup cannot be wrong about the machine they run on. That is the whole
+# point of this script.
+#
+# Usage:
+#   wsl/render wsl.conf              # print the rendered file
+#   wsl/render wslconfig /dest/path  # render and write
+#
+# Override the detected host size for testing:  WSL_HOST_GB=16 wsl/render wslconfig
+# ==============================================================================
+
+emulate -L zsh
+setopt extended_glob warn_create_global
+
+local here="${0:A:h}"
+local what="${1:-}" dest="${2:-}"
+local template
+
+case "${what}" in
+    (wsl.conf)           template="${here}/wsl.conf.in" ;;
+    (wslconfig|.wslconfig) template="${here}/.wslconfig.in" ;;
+    (*)
+        print -ru2 -- "usage: render <wsl.conf|wslconfig> [dest]"
+        exit 2
+        ;;
+esac
+[[ -r "${template}" ]] || { print -ru2 -- "render: missing template ${template}"; exit 1 }
+
+# --- the machine's own answers ------------------------------------------------
+
+local wsl_user
+wsl_user="$(id -un)"
+# A default user that has no passwd entry is the failure this script exists to prevent,
+# so verify rather than assume — id -un can still be right while the account is not what
+# WSL will look up later.
+if ! id -u "${wsl_user}" >/dev/null 2>&1; then
+    print -ru2 -- "render: current user '${wsl_user}' has no passwd entry — refusing"
+    exit 1
+fi
+
+# Host RAM, in whole GB. WSL cannot see it from inside the VM — /proc/meminfo reports the
+# CURRENT cap, so reading that and sizing from it would ratchet the VM smaller on every
+# run. It has to come from Windows.
+local -i host_gb=0
+if [[ -n "${WSL_HOST_GB:-}" ]]; then
+    host_gb=${WSL_HOST_GB}
+else
+    local ps_exe="" bytes=""
+    local -a candidates=(
+        "/mnt/c/Program Files/PowerShell/7/pwsh.exe"
+        "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+    )
+    local c
+    for c in "${candidates[@]}"; do
+        [[ -x "${c}" ]] && { ps_exe="${c}"; break }
+    done
+    if [[ -n "${ps_exe}" ]]; then
+        bytes="$("${ps_exe}" -NoProfile -Command \
+            '(Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory' 2>/dev/null | tr -d '\r ')"
+        # Round to nearest GB: a 32GB stick reports slightly under 32 * 2^30.
+        [[ "${bytes}" == <-> ]] && (( host_gb = (bytes + 536870912) / 1073741824 ))
+    fi
+fi
+
+# --- substitute ---------------------------------------------------------------
+
+local out
+out="$(<"${template}")"
+out="${out//@WSL_USER@/${wsl_user}}"
+
+if (( host_gb >= 2 )); then
+    # 5/8 of host for the VM, 1/2 for swap. See .wslconfig.in for why those numbers.
+    local -i mem_gb swap_gb
+    (( mem_gb  = (host_gb * 5 + 4) / 8 ))
+    (( swap_gb = host_gb / 2 ))
+    (( mem_gb < 4 )) && mem_gb=4
+    out="${out//@WSL_MEMORY@/${mem_gb}GB}"
+    out="${out//@WSL_SWAP@/${swap_gb}GB}"
+else
+    # Host size unknown — drop the lines rather than guess. WSL then applies its own
+    # defaults (half of RAM), which is a worse fit but never a wrong absolute number.
+    local -a lines
+    lines=( ${(f)out} )
+    lines=( ${lines:#(memory|swap) = @WSL_*} )
+    out="${(F)lines}"
+    print -ru2 -- "render: host RAM unknown — memory/swap left to WSL's defaults"
+fi
+
+if [[ -n "${dest}" ]]; then
+    print -r -- "${out}" > "${dest}" || exit 1
+else
+    print -r -- "${out}"
+fi

@@ -144,6 +144,52 @@ migrate_to_config() {
     done
 }
 
+# Relocate leftovers from the pre-wsl/ repo layout.
+#
+# windows-terminal/, wsl.conf and .wslconfig moved from the repo root into wsl/, and the
+# two config files became TEMPLATES — wsl/wsl.conf.in and wsl/.wslconfig.in, whose
+# host-specific values wsl/render fills in per machine. `git pull` relocates the tracked
+# half. What it cannot move is anything untracked at the old paths: a settings.json.bak,
+# or a locally-edited wsl.conf that git declines to delete.
+#
+# The two config files are deliberately NOT merged forward. A root wsl.conf holds one
+# machine's literal values — the very thing the templates exist to stop being tracked —
+# so it is set aside and reported rather than copied over a template.
+migrate_to_wsl_dir() {
+    local old_wt="${DOTFILES_ROOT}/windows-terminal"
+    local new_wt="${DOTFILES_ROOT}/wsl/windows-terminal"
+    local base f
+
+    # A checkout that predates the move has no wsl/ yet; git pull creates it.
+    [[ -d "${DOTFILES_ROOT}/wsl" ]] || return 0
+
+    if [[ -d "${old_wt}" && ! -L "${old_wt}" ]]; then
+        if command -v rsync &>/dev/null; then
+            ensure_dir "${new_wt}"
+            rsync -a --ignore-existing --remove-source-files "${old_wt}/" "${new_wt}/"
+            find "${old_wt}" -depth -type d -empty -delete 2>/dev/null || true
+            if [[ -d "${old_wt}" ]]; then
+                echo "⚠ ${old_wt} still holds files that also exist under wsl/ — reconcile by hand:"
+                find "${old_wt}" -type f | sed 's|^|    |'
+            else
+                echo "✓ Migrated leftovers: windows-terminal/ → wsl/windows-terminal/"
+            fi
+        else
+            echo "⚠ rsync not available yet — skipping wsl/ migration (re-run install.sh later)"
+        fi
+    fi
+
+    for base in wsl.conf .wslconfig; do
+        f="${DOTFILES_ROOT}/${base}"
+        [[ -f "${f}" && ! -L "${f}" ]] || continue
+        mv "${f}" "${DOTFILES_ROOT}/wsl/${base}.pre-template"
+        echo "⚠ ${base} is now generated from wsl/${base}.in by wsl/render."
+        echo "  Your old copy is at wsl/${base}.pre-template — fold any real change into"
+        echo "  the template, then delete it. Host-specific values need no folding: the"
+        echo "  username and the memory/swap caps are filled in per machine."
+    done
+}
+
 #=======================================================================================
 # Argument parsing
 #=======================================================================================
@@ -336,7 +382,7 @@ declare -A ZSH_LINKS=(
 
 # Rescue leftovers from the pre-config/ layout BEFORE anything reads a repo path, so every
 # step below — starting with the detect_os.sh source right after — sees the final layout.
-[[ -d "${DOTFILES_ROOT}" ]] && migrate_to_config
+[[ -d "${DOTFILES_ROOT}" ]] && { migrate_to_config; migrate_to_wsl_dir; }
 
 # Source centralized POSIX-compatible OS detection
 # Shared with .zshrc for consistency
@@ -924,20 +970,51 @@ if [[ "${HOST_OS}" == "wsl" && "${IS_DEVCONTAINER}" != "true" ]]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     
     # Setup Windows home
+    windows_home=""
     if windows_profile="$(wslvar USERPROFILE 2>/dev/null)"; then
         if windows_home="$(wslpath "${windows_profile}" 2>/dev/null)"; then
             echo "Windows home: ${windows_home}"
-            if [[ -f "${DOTFILES_ROOT}/.wslconfig" ]]; then
-                cp "${DOTFILES_ROOT}/.wslconfig" "${windows_home}/.wslconfig"
-                echo "✓ Copied .wslconfig"
-            fi
         fi
     fi
 
-    # Setup wsl.conf (idempotent: only if not exists)
-    if [[ -f "${DOTFILES_ROOT}/wsl.conf" && ! -f "/etc/wsl.conf" ]]; then
-        sudo cp "${DOTFILES_ROOT}/wsl.conf" /etc/wsl.conf
-        echo "✓ Installed wsl.conf (run 'update-wsl-settings' to sync changes)"
+    # Deploy the generated WSL configs.
+    #
+    # Both are rendered for THIS machine by wsl/render: the default username in wsl.conf
+    # and the memory/swap caps in .wslconfig are properties of the host, not of the
+    # configuration, and hardcoding them has bitten this repo twice — a `[user] default`
+    # naming an account that does not exist here, and a 10GB cap written "for this 16GB
+    # host" on a 32GB machine.
+    #
+    # Deliberately NOT "install only if absent", which is what the wsl.conf step used to
+    # be. That is precisely how a stale /etc/wsl.conf — hand-trimmed months ago to work
+    # around the bad [user] line — survived every install.sh run since. Render, compare,
+    # update on a difference; identical is a silent no-op, so this stays idempotent.
+    if [[ -x "${DOTFILES_ROOT}/wsl/render" ]]; then
+        rendered="$(mktemp)"
+
+        if "${DOTFILES_ROOT}/wsl/render" wsl.conf "${rendered}" 2>/dev/null; then
+            if cmp -s "${rendered}" /etc/wsl.conf 2>/dev/null; then
+                echo "✓ /etc/wsl.conf already current"
+            else
+                [[ -f /etc/wsl.conf ]] && sudo cp /etc/wsl.conf "/etc/wsl.conf.bak.$(date +%s)"
+                sudo cp "${rendered}" /etc/wsl.conf
+                echo "✓ Updated /etc/wsl.conf (run 'wsl --shutdown' to apply)"
+            fi
+        fi
+
+        if [[ -n "${windows_home}" ]] \
+            && "${DOTFILES_ROOT}/wsl/render" wslconfig "${rendered}" 2>/dev/null; then
+            if cmp -s "${rendered}" "${windows_home}/.wslconfig" 2>/dev/null; then
+                echo "✓ .wslconfig already current"
+            else
+                [[ -f "${windows_home}/.wslconfig" ]] \
+                    && cp "${windows_home}/.wslconfig" "${windows_home}/.wslconfig.bak.$(date +%s)"
+                cp "${rendered}" "${windows_home}/.wslconfig"
+                echo "✓ Updated .wslconfig (run 'wsl --shutdown' to apply)"
+            fi
+        fi
+
+        rm -f "${rendered}"
     fi
 
     # Setup memwatch — records memory pressure so a WSL power-off (RAM+swap
@@ -980,7 +1057,7 @@ if [[ "${HOST_OS}" == "wsl" && "${IS_DEVCONTAINER}" != "true" ]]; then
         windows_user="$(powershell.exe '$env:UserName' 2>&1 | tr -d '\r\n')"
         
         if [[ -n "${windows_user}" && ! "${windows_user}" =~ ^[Ee]rror ]]; then
-            settings_src="${DOTFILES_ROOT}/windows-terminal/settings.json"
+            settings_src="${DOTFILES_ROOT}/wsl/windows-terminal/settings.json"
             settings_dest="/mnt/c/Users/${windows_user}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json"
 
             if [[ -f "${settings_src}" ]]; then

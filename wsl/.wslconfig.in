@@ -1,0 +1,38 @@
+[wsl2]
+autoProxy = true
+firewall = true
+
+# Memory and swap are SIZED PER HOST by wsl/render — 5/8 and 1/2 of physical RAM. Do not
+# hardcode a number here. That is exactly how this went wrong before: b39f25d wrote 10GB
+# "for this 16GB host" on a machine that has 32GB, halving the cap for no reason, and it
+# took until 2026-09-04 to notice. A ratio cannot be wrong about the machine it runs on.
+#
+# The 5/8 memory figure is deliberate, not a default — WSL's own default is half. On a
+# 32GB host that is 20GB, and autoMemoryReclaim hands back what the VM is not using.
+#
+# Swap at 1/2 is generous on purpose, because the evidence says swap is not the binding
+# constraint: memwatch (/var/log/memwatch, Aug 31 - Sep 4) never once fired LOW_SWAP —
+# SwapFree never dropped below ~71% of 16GB, so under 5GB was ever in use. What did bind
+# was MemAvailable, dipping to 461-681MB with memory PSI full/avg10 peaking at 17.69 and
+# LOW_MEM alerts trending 0,1,1,4,8 per day. The VM stalls in reclaim; it does not exhaust
+# swap. More swap would not have helped — headroom would, which is what 5/8 buys.
+memory = @WSL_MEMORY@
+swap = @WSL_SWAP@
+
+# disabled due to docker not working with localhost
+#networkingMode = "mirrored"
+
+dnsTunneling = true
+localhostForwarding = true
+
+# Pin the clocksource. The guest was defaulting to raw "tsc", whose monotonic clock runs
+# ~2% slow inside the VM; hv_utils then stepped CLOCK_REALTIME forward ~0.65s every ~33s to
+# compensate — 1945 "Clock change detected" events in a single boot (2026-09-04), which
+# breaks timeouts, keepalives and watchdogs across the guest.
+# Verify after restart: cat /sys/devices/system/clocksource/clocksource0/current_clocksource
+kernelCommandLine = clocksource=hyperv_clocksource_tsc_page
+
+[experimental]
+autoMemoryReclaim = "gradual"
+# no-op unless networkingMode = "mirrored" is re-enabled
+#hostAddressLoopback = true
