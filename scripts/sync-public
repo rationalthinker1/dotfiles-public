@@ -1,0 +1,234 @@
+#!/usr/bin/env zsh
+# ==============================================================================
+# sync-public — replay every unsynced master commit onto the public branch
+#
+# Why this exists alongside git-hooks/post-commit: the hook is per-commit and
+# fire-and-forget. When it fails it prints an error into the tail of `git commit`
+# output — where it is easy to miss — and gives up. Nothing ever retries, so master
+# runs ahead of public silently and the gap only grows.
+#
+# Its most common failure needs no bad luck at all: `git checkout public` refuses
+# whenever the working tree is dirty, which it usually is when you commit one file
+# out of several. Three commits went missing that way in a single sitting, including
+# the one that had to reach public most.
+#
+# So this is the catch-up path. It compares by PATCH, not by hash — cherry-picked
+# commits have different hashes on public, and `git cherry` is the only comparison
+# that sees through that — then classifies every missing commit and applies the safe
+# ones oldest-first.
+#
+# What it checks, in order (any failure stops before anything is pushed):
+#   1. repo sanity      — master and public exist, the public remote is configured
+#   2. clean tree       — refuses on a dirty tree instead of half-failing a checkout
+#   3. public is current — refetches, refuses if public/master has commits you lack
+#   4. per commit       — skipped entirely if it touches a sensitive path
+#   5. after applying   — rescans the whole tracked tree for sensitive paths
+#   6. only then        — pushes
+#
+# The sensitive-path lists live in git-hooks/sensitive-paths.zsh, shared with the
+# hook. If that file is missing this script refuses to run: no list, no sync.
+#
+# Usage:
+#   ./scripts/sync-public                 # dry run — classify every commit, apply nothing
+#   ./scripts/sync-public --go            # cherry-pick, verify, push
+#   ./scripts/sync-public --go --no-push  # apply locally, leave the push to you
+# ==============================================================================
+
+emulate -L zsh
+setopt extended_glob warn_create_global
+
+local -i dry_run=1 do_push=1
+local arg
+for arg in "$@"; do
+    case "${arg}" in
+        (--go)      dry_run=0 ;;
+        (--no-push) do_push=0 ;;
+        (-h|--help)
+            print -r -- "usage: sync-public [--go] [--no-push]"
+            exit 0
+            ;;
+        (*)
+            print -ru2 -- "sync-public: unknown option '${arg}'"
+            exit 2
+            ;;
+    esac
+done
+
+# ------------------------------------------------------------------ preflight
+
+local repo_root
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null)" || {
+    print -ru2 -- "sync-public: not inside a git repository"
+    exit 1
+}
+cd "${repo_root}" || exit 1
+
+# ${0:A} resolves the symlink .git/hooks/post-commit uses, so the sibling lookup
+# works whether this is run from the repo or from a link elsewhere.
+local guard="${0:A:h}/../git-hooks/sensitive-paths.zsh"
+if [[ ! -r "${guard}" ]]; then
+    print -ru2 -- "sync-public: cannot read ${guard}"
+    print -ru2 -- "  refusing to sync without the sensitive-path list (fail closed)"
+    exit 1
+fi
+source "${guard}"
+
+local b
+for b in master public; do
+    git show-ref --verify --quiet "refs/heads/${b}" || {
+        print -ru2 -- "sync-public: no local '${b}' branch"
+        exit 1
+    }
+done
+git remote get-url public >/dev/null 2>&1 || {
+    print -ru2 -- "sync-public: no 'public' remote configured"
+    exit 1
+}
+
+if [[ -n "$(git status --porcelain)" ]]; then
+    print -ru2 -- "sync-public: working tree is dirty — commit or stash first."
+    print -ru2 -- "  (this is the exact condition that makes the post-commit hook fail)"
+    git status --short >&2
+    exit 1
+fi
+
+local orig_branch
+orig_branch="$(git symbolic-ref --short HEAD)"
+
+# Always land back where we started, including on an error path or ^C.
+function _sp_restore() {
+    local now
+    now="$(git symbolic-ref --short HEAD 2>/dev/null)"
+    [[ "${now}" == "${orig_branch}" ]] || git checkout "${orig_branch}" >/dev/null 2>&1
+}
+trap _sp_restore EXIT INT TERM
+
+print -r -- "Fetching public…"
+git fetch public >/dev/null 2>&1 || {
+    print -ru2 -- "sync-public: could not fetch the public remote"
+    exit 1
+}
+if [[ -n "$(git rev-list public..public/master 2>/dev/null)" ]]; then
+    print -ru2 -- "sync-public: public/master has commits your local 'public' lacks."
+    print -ru2 -- "  Run: git checkout public && git pull --ff-only public master"
+    exit 1
+fi
+
+# ----------------------------------------------------------------- enumerate
+
+# `git cherry` compares patch-ids, so a commit already replayed onto public under a
+# different hash is correctly reported as present ('-'). Output is oldest-first,
+# which is the order the cherry-picks must run in.
+local -a missing
+missing=( ${(f)"$(git cherry public master | awk '$1 == "+" { print $2 }')"} )
+
+if (( ! ${#missing} )); then
+    print -r -- "Nothing to sync — public already has every master commit."
+    exit 0
+fi
+
+local -a to_apply skipped
+local c reasons
+for c in "${missing[@]}"; do
+    reasons="$(sensitive_paths_in_commit "${c}")"
+    if [[ -n "${reasons}" ]]; then
+        skipped+=( "${c}" )
+    else
+        to_apply+=( "${c}" )
+    fi
+done
+
+# -------------------------------------------------------------------- report
+
+print -r -- ""
+print -r -- "=================================================="
+print -r -- " master → public"
+print -r -- "=================================================="
+(( dry_run )) \
+    && print -r -- "mode:      DRY RUN (pass --go to execute)" \
+    || print -r -- "mode:      EXECUTE"
+print -r -- "missing:   ${#missing} commit(s) not in public"
+print -r -- "to apply:  ${#to_apply}"
+print -r -- "skipped:   ${#skipped} (sensitive)"
+print -r -- ""
+
+for c in "${to_apply[@]}"; do
+    print -r -- "  ✓ $(git log -1 --format='%h %s' "${c}")"
+done
+for c in "${skipped[@]}"; do
+    print -r -- "  ✗ $(git log -1 --format='%h %s' "${c}")"
+    print -r -- "      touches: ${(j:, :)${(f)$(sensitive_paths_in_commit ${c})}}"
+done
+print -r -- ""
+
+if (( dry_run )); then
+    print -r -- "Dry run complete. Re-run with --go to execute."
+    exit 0
+fi
+if (( ! ${#to_apply} )); then
+    print -r -- "Nothing safe to apply — every missing commit is sensitive."
+    exit 0
+fi
+
+# --------------------------------------------------------------------- apply
+
+# .gitconfig is tracked on master but gitignored on public, so checking out public
+# can remove the identity from the working tree mid-run. Capture it first.
+local git_name git_email
+git_name="$(git config user.name)"
+git_email="$(git config user.email)"
+
+git checkout public >/dev/null 2>&1 || {
+    print -ru2 -- "sync-public: could not checkout public"
+    exit 1
+}
+
+local -i applied=0
+for c in "${to_apply[@]}"; do
+    print -r -- "  cherry-pick $(git log -1 --format='%h %s' "${c}")"
+    if git -c user.name="${git_name}" -c user.email="${git_email}" \
+           cherry-pick "${c}" >/dev/null 2>&1; then
+        (( applied++ ))
+        continue
+    fi
+    # An empty result means the change is already present by other means — skip it
+    # and keep going. Anything else is a real conflict: stop, leave nothing behind.
+    if [[ -z "$(git diff --cached --name-only)" ]]; then
+        git cherry-pick --skip >/dev/null 2>&1
+        print -r -- "      (empty — already present, skipped)"
+        continue
+    fi
+    print -ru2 -- "sync-public: conflict on ${c} — resolve manually:"
+    print -ru2 -- "  git checkout public && git cherry-pick ${c}"
+    git cherry-pick --abort >/dev/null 2>&1
+    exit 1
+done
+
+# --------------------------------------------------------------- safety net
+
+# Defense-in-depth: even for commits the per-commit check passed, refuse to push if
+# anything sensitive is tracked on public. Roll back to the pushed state so a failure
+# here leaves no partially-applied local public branch.
+local leaked
+leaked="$(sensitive_paths_in_tree)"
+if [[ -n "${leaked}" ]]; then
+    print -ru2 -- "sync-public: sensitive path(s) tracked in the public tree — nothing pushed:"
+    print -ru2 -- "${leaked}"
+    git reset --hard public/master >/dev/null 2>&1
+    exit 1
+fi
+
+print -r -- ""
+print -r -- "Applied ${applied} commit(s); tree scan clean."
+
+if (( ! do_push )); then
+    print -r -- "--no-push given — local 'public' is ready, push it yourself:"
+    print -r -- "  git push public public:master"
+    exit 0
+fi
+
+git push public HEAD:master || {
+    print -ru2 -- "sync-public: push failed — local 'public' still holds the commits"
+    exit 1
+}
+print -r -- "Pushed to public."
