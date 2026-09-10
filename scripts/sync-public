@@ -33,20 +33,23 @@
 #   ./scripts/sync-public --go            # cherry-pick, verify, push
 #   ./scripts/sync-public --go --no-push  # apply locally, leave the push to you
 #   ./scripts/sync-public --all           # also consider commits predating the public branch
+#   ./scripts/sync-public --snapshot      # preview publishing master's CONTENT as one commit
+#   ./scripts/sync-public --go --snapshot # do it — the only path that closes a large gap
 # ==============================================================================
 
 emulate -L zsh
 setopt extended_glob warn_create_global
 
-local -i dry_run=1 do_push=1 consider_all=0
+local -i dry_run=1 do_push=1 consider_all=0 snapshot=0
 local arg
 for arg in "$@"; do
     case "${arg}" in
         (--go)      dry_run=0 ;;
         (--no-push) do_push=0 ;;
         (--all)     consider_all=1 ;;
+        (--snapshot) snapshot=1 ;;
         (-h|--help)
-            print -r -- "usage: sync-public [--go] [--no-push] [--all]"
+            print -r -- "usage: sync-public [--go] [--no-push] [--all] [--snapshot]"
             exit 0
             ;;
         (*)
@@ -94,6 +97,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
     exit 1
 fi
 
+local leaked
 local orig_branch
 orig_branch="$(git symbolic-ref --short HEAD)"
 
@@ -114,6 +118,125 @@ if [[ -n "$(git rev-list public..public/master 2>/dev/null)" ]]; then
     print -ru2 -- "sync-public: public/master has commits your local 'public' lacks."
     print -ru2 -- "  Run: git checkout public && git pull --ff-only public master"
     exit 1
+fi
+
+# ------------------------------------------------------------------ snapshot
+#
+# Commit replay cannot close a large gap. Cherry-picking months of patches onto a tree
+# that has drifted conflicts on the first one — this backlog conflicted on a June commit
+# about install.sh — and 56 hand-resolved conflicts is not a sync.
+#
+# So publish master's CONTENT instead of its history, as one commit. It cannot conflict,
+# because nothing is merged: every safe path is overwritten from master, every path that
+# no longer exists on master is deleted, and the result is committed as-is. This is what
+# the repo's own guidance prescribes for manual reconciliation.
+#
+# Two classes of path never come from master:
+#   - sensitive ones, which must not exist on public in any form
+#   - .gitignore and git-hooks/, which legitimately DIFFER on public and belong to it
+local divergent='^(\.gitignore$|git-hooks/)'
+
+function _sp_snapshot() {
+    local -a safe stale to_delete
+    local f spec
+    local -A keep
+
+    safe=( ${(f)"$(git ls-tree -r --name-only master \
+                    | grep -vE "${SENSITIVE_TREE_REGEX}" \
+                    | grep -vE "${divergent}")"} )
+    (( ${#safe} )) || { print -ru2 -- "sync-public: master has no safe files?"; return 1 }
+
+    git checkout public >/dev/null 2>&1 || {
+        print -ru2 -- "sync-public: could not checkout public"
+        return 1
+    }
+
+    # Deletions first, computed against the CURRENT public tree: anything tracked here
+    # that master no longer carries as a safe path. Without this a file removed on
+    # master lives on forever in public.
+    for f in "${safe[@]}"; do keep[${f}]=1; done
+    stale=( ${(f)"$(git ls-files | grep -vE "${divergent}")"} )
+    for f in "${stale[@]}"; do (( ${+keep[${f}]} )) || to_delete+=( "${f}" ); done
+
+    # 385 paths overflow a command line, so both sides go through a pathspec file.
+    spec="$(mktemp)" || return 1
+    print -rl -- "${safe[@]}" > "${spec}"
+    git checkout master --pathspec-from-file="${spec}" 2>/dev/null || {
+        rm -f "${spec}"
+        print -ru2 -- "sync-public: failed to take master's files"
+        return 1
+    }
+    if (( ${#to_delete} )); then
+        print -rl -- "${to_delete[@]}" > "${spec}"
+        git rm -q --pathspec-from-file="${spec}" >/dev/null 2>&1
+    fi
+    rm -f "${spec}"
+
+    print -r -- "  files taken from master: ${#safe}"
+    print -r -- "  files removed:           ${#to_delete}"
+    return 0
+}
+
+if (( snapshot )); then
+    print -r -- ""
+    print -r -- "=================================================="
+    print -r -- " master → public  (snapshot: content, not history)"
+    print -r -- "=================================================="
+
+    # Preview against master without touching the branch: what public would gain or lose.
+    local -a preview
+    preview=( ${(f)"$(git diff --name-status public master -- . \
+                        | grep -vE "	(${SENSITIVE_TREE_REGEX#^}|\.gitignore$|git-hooks/)")"} )
+    print -r -- "changed paths: ${#preview}"
+    print -r -- ""
+    print -rl -- "${preview[@]:0:40}"
+    (( ${#preview} > 40 )) && print -r -- "  … and $(( ${#preview} - 40 )) more"
+    print -r -- ""
+
+    if (( dry_run )); then
+        print -r -- "Dry run complete. Re-run with --go --snapshot to execute."
+        exit 0
+    fi
+
+    _sp_snapshot || exit 1
+
+    leaked="$(sensitive_paths_in_tree)"
+    if [[ -n "${leaked}" ]]; then
+        print -ru2 -- "sync-public: sensitive path(s) tracked in the public tree — nothing pushed:"
+        print -ru2 -- "${leaked}"
+        git reset --hard public/master >/dev/null 2>&1
+        exit 1
+    fi
+
+    if git diff --cached --quiet; then
+        print -r -- "Public already matches master's public-safe content — nothing to commit."
+        exit 0
+    fi
+
+    git -c user.name="$(git config user.name)" -c user.email="$(git config user.email)" \
+        commit -q -m "🔄 chore(public): snapshot master's public-safe tree
+
+Catch-up sync. The per-commit hook had been failing silently, leaving public months
+behind, and replaying the backlog conflicts on patches that no longer apply. This
+publishes master's content as of $(git log -1 --format=%h master) instead of its history.
+
+Excluded, as always: every sensitive path, plus .gitignore and git-hooks/ which
+legitimately differ on this branch." || {
+        print -ru2 -- "sync-public: commit failed"
+        exit 1
+    }
+
+    print -r -- "Tree scan clean; snapshot committed."
+    if (( ! do_push )); then
+        print -r -- "--no-push given — push it yourself: git push public public:master"
+        exit 0
+    fi
+    git push public HEAD:master || {
+        print -ru2 -- "sync-public: push failed — the snapshot is committed locally"
+        exit 1
+    }
+    print -r -- "Pushed to public."
+    exit 0
 fi
 
 # ----------------------------------------------------------------- enumerate
