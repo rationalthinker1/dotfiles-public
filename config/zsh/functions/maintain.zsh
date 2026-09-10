@@ -293,6 +293,67 @@ function maintain::zi_audit() {
     return ${rc}
 }
 
+# mise never garbage-collects on its own: every `mise up` leaves the previous version
+# installed forever, so ~/.local/share/mise grows without bound (node/python runtimes are
+# 200-450MB each). `mise prune` keeps whatever is current per tracked config and drops the
+# superseded versions — including anything installed ad-hoc and never pinned in
+# mise/config.toml, which is the whole problem here.
+#
+# WHY this is not just `mise prune -y`: qsv's qsvpy31N binary dynamically links a
+# libpython3.N that the distro may not package at all (Ubuntu 26.04 ships only 3.14, qsv
+# builds only 3.11-3.13), so _qsv_fetch_python in .zshrc installs one via mise. It is
+# deliberately absent from mise/config.toml — pinning it would put a second python on every
+# machine and move the shims — so prune sees an unreferenced version and reclaims it. And
+# it cannot be repaired on the next pass: `zi update` runs in phase 2, this in phase 5, so
+# atpull can never win that race.
+#
+# `mise prune` takes a TOOL, not a tool@version, so protecting one version would drag every
+# other version of that tool to safety with it. Enumerate `mise ls --prunable` and uninstall
+# exactly instead. Entries are matched on tool@version and also on tool@<version minus its
+# patch>, so a hand-written `python@3.13` covers whichever 3.13.x mise resolved. Append to
+# the array from local.zsh for anything else this machine keeps unpinned.
+# -U so the derived qsv entry does not accumulate across repeated `maintain` runs.
+typeset -gaU MAINTAIN_MISE_PRUNE_KEEP=(${MAINTAIN_MISE_PRUNE_KEEP[@]})
+
+# Reads the protected version out of the qsvpy wrapper rather than hardcoding one, so this
+# cannot go stale when qsv adds a qsvpy314. Nothing is protected unless the wrapper exists:
+# a host whose apt libpython works leaves qsvpy a plain SYMLINK to the binary and needs no
+# mise python at all, and one that never shipped a qsvpy has no file there either.
+function maintain::mise_prune_keep_qsv() {
+    local wrapper="${ZINIT[PLUGINS_DIR]:-${HOME}/.local/share/zinit/plugins}/dathere---qsv/qsvpy" home
+    [[ -f "${wrapper}" && ! -L "${wrapper}" ]] || return 0
+    # Held in a real array first: ${${(M)…}[1]} would subscript the JOINED string and hand
+    # back its first character.
+    local -a hits=(${(M)${(f)"$(<${wrapper})"}:#PYTHONHOME=*})
+    (( ${#hits} )) || return 0
+    home="${${hits[1]#*\'}%%\'*}"
+    [[ "${home}" == */installs/python/* ]] && MAINTAIN_MISE_PRUNE_KEEP+=("python@${home:t}")
+    return 0
+}
+
+function maintain::mise_prune() {
+    local line tool ver id
+    local -a prunable failed=()
+    maintain::mise_prune_keep_qsv
+
+    prunable=(${(f)"$(mise ls --prunable 2>/dev/null)"})
+    for line in "${prunable[@]}"; do
+        tool="${${(z)line}[1]}" ver="${${(z)line}[2]}"
+        [[ -n "${tool}" && -n "${ver}" ]] || continue
+        id="${tool}@${ver}"
+        if (( ${MAINTAIN_MISE_PRUNE_KEEP[(Ie)${id}]} || ${MAINTAIN_MISE_PRUNE_KEEP[(Ie)${tool}@${ver%.*}]} )); then
+            print -r -- "  keeping ${id} (MAINTAIN_MISE_PRUNE_KEEP)"
+            continue
+        fi
+        mise uninstall "${id}" || failed+=("${id}")
+    done
+    (( ${#prunable} )) || print -r -- "  no superseded tool versions"
+    # Version pruning is handled above; this is the other half of `mise prune` — tracked
+    # config links pointing at configs that no longer exist.
+    mise prune --configs -y || failed+=("configs")
+    (( ${#failed} == 0 ))
+}
+
 # Phase-6 sub-section header: a blank line then a titled rule, so each audit reads as its own
 # block instead of a flat bullet list. Fixed rule (not zsh `(l:)` padding) because that counts
 # BYTES, and the multibyte ─ would be split into mojibake.
@@ -856,13 +917,7 @@ function maintain::run() {
 
     (( $+commands[tldr] )) && { maintain::hdr "Updating tldr pages"; tldr --update || failures+=("tldr") }
 
-    # mise never garbage-collects on its own: every `mise up` leaves the previous version
-    # installed forever, so ~/.local/share/mise grows without bound (node/python runtimes
-    # are 200-450MB each). prune keeps whatever is current per tracked config and drops the
-    # superseded versions. It only removes versions no config still references, so it is
-    # safe to run unattended — but note it will also drop tools you installed ad-hoc and
-    # never pinned in mise/config.toml.
-    (( $+commands[mise] )) && { maintain::hdr "mise (prune superseded tool versions)"; mise prune -y || failures+=("mise prune") }
+    (( $+commands[mise] )) && { maintain::hdr "mise (prune superseded tool versions)"; maintain::mise_prune || failures+=("mise prune") }
 
     # Nix store garbage collection (only when nix is installed)
     (( $+commands[nix-collect-garbage] )) && { maintain::hdr "Nix store garbage collection"; nix-collect-garbage -d || failures+=("nix gc") }
