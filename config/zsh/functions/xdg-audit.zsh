@@ -98,6 +98,11 @@ typeset -gA XDG_AUDIT_PARTIAL=(
     '.aws'         'AWS_CONFIG_FILE/AWS_SHARED_CREDENTIALS_FILE cover config+credentials only; .aws/cli is the SSO cache'
     '.ollama'      'OLLAMA_MODELS relocates the model blobs only; config.json and history have no override and stay here'
     '.yarn'        'YARN_CACHE_FOLDER governs the cache only; ~/.yarn/bin holds global binaries and has no override'
+    # Both of these read their env var AND the hardcoded ~/.<name> default, on purpose. The
+    # two trees are live at once by design, so there is nothing to reconcile and nothing to
+    # delete — which is why they belong here rather than in the divergent class.
+    '.claude'      'CLAUDE_CONFIG_DIR moves most state, but Claude Code still reads ~/.claude/CLAUDE.md and ~/.claude/settings.json (hooks) from the default path'
+    '.codex'       'CODEX_HOME moves most state, but codex still writes ~/.codex/sqlite/ (queue, thread_history, memories)'
     '.wget-hsts'   'WGETRC relocates wgetrc itself; the HSTS store needs a separate hsts-file= inside it'
     '.viminfo'     'vim writes $XDG_DATA_HOME/vim/viminfo; a stray file here means some vim ran without the config'
 )
