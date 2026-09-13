@@ -163,6 +163,9 @@ function xdg_audit::usage() {
     print -r -- "silently absorbed. That is what keeps the tables above from going stale."
     print -r -- ""
     print -r -- "Options:"
+    print -r -- "  --verbose Also list partial-coverage paths and large unmanaged directories."
+    print -r -- "            Both are permanent facts rather than work items, so they are"
+    print -r -- "            summarised in one line by default and excluded from the count."
     print -r -- "  --quiet   Suppress the per-finding detail; print only the verdict line."
     print -r -- "  --ids     Print just the offending paths, one per line (for scripting)."
 }
@@ -245,12 +248,13 @@ function xdg_audit() {
     emulate -L zsh
     setopt local_options null_glob extended_glob
 
-    local quiet=0 ids_only=0 arg
+    local quiet=0 ids_only=0 verbose=0 noted_shown=0 arg
     for arg in "$@"; do
         case "${arg}" in
             (-h|--help) xdg_audit::usage; return 0 ;;
             (--quiet)   quiet=1 ;;
             (--ids)     ids_only=1 ;;
+            (--verbose|-v) verbose=1 ;;
             (*) print -ru2 -- "xdg-audit: unknown option '${arg}'"; return 2 ;;
         esac
     done
@@ -341,7 +345,12 @@ function xdg_audit() {
         done
     fi
 
-    local -i findings=$(( ${#f_stale} + ${#f_divergent} + ${#f_incomplete} + ${#f_partial} + ${#f_available} + ${#f_unclassified} ))
+    # ACTIONABLE findings only. f_partial is deliberately excluded: every entry in it ends
+    # with "and stays here" or "has no override" — they are permanent properties of how those
+    # tools behave, not work items. Counting them meant a fully clean machine reported six
+    # findings every week and maintain raised a health warning about it, which is exactly the
+    # fire-on-healthy-state failure this tool exists to avoid.
+    local -i findings=$(( ${#f_stale} + ${#f_divergent} + ${#f_incomplete} + ${#f_available} + ${#f_unclassified} ))
 
     # --ids: the offending paths only, for a caller that wants to act on them.
     if (( ids_only )); then
@@ -387,7 +396,7 @@ function xdg_audit() {
             print -r -- "    → the legacy path is still the only copy; move it, or unset the variable"
         fi
 
-        if (( ${#f_partial} )); then
+        if (( ${#f_partial} && verbose )); then
             print -r -- "  partial (variable set, but does not cover everything the tool writes):"
             for entry in "${(o)f_partial[@]}"; do
                 printf '    %-24s %s\n' "~/${entry%%|*}" "${entry#*|}"
@@ -407,21 +416,32 @@ function xdg_audit() {
             print -rl -- ${${(o)f_unclassified[@]}/#/    \~/}
         fi
 
-        if (( ${#f_large} )); then
+        if (( ${#f_large} && verbose )); then
             print -r -- "  large unmanaged (not an XDG question — just what is using the space):"
             for entry in "${(On)f_large[@]}"; do
                 printf '    %-24s %s\n' "~/${entry#*|}" "$(numfmt --to=iec --suffix=B ${entry%%|*} 2>/dev/null || print -r -- "${entry%%|*} bytes")"
             done
         fi
 
-        (( findings )) || print -r -- "  ✓ no XDG findings"
+        if (( ! verbose )); then
+            local -a noted=()
+            (( ${#f_partial} )) && noted+=( "${#f_partial} partial-coverage path(s)" )
+            (( ${#f_large} ))   && noted+=( "${#f_large} large unmanaged dir(s)" )
+            if (( ${#noted} )); then
+                print -r -- "  ${(j:, :)noted} — no action needed (--verbose to list)"
+                noted_shown=1
+            fi
+        fi
+        # The closing verdict already says "nothing actionable", so only add the inline ✓
+        # when nothing else was printed at all — otherwise it is the same sentence twice.
+        (( findings || noted_shown )) || print -r -- "  ✓ nothing actionable"
         print -r -- "  (${ignored} known-unrelocatable entr$( (( ignored == 1 )) && print -n y || print -n ies) ignored)"
     fi
 
     if (( findings )); then
-        print -r -- "${findings} XDG finding(s): ${#f_stale} stale, ${#f_divergent} divergent, ${#f_incomplete} incomplete, ${#f_partial} partial, ${#f_available} available, ${#f_unclassified} unclassified"
+        print -r -- "${findings} XDG finding(s): ${#f_stale} stale, ${#f_divergent} divergent, ${#f_incomplete} incomplete, ${#f_available} available, ${#f_unclassified} unclassified"
     else
-        print -r -- "XDG layout clean — nothing relocatable left in \$HOME"
+        print -r -- "XDG layout clean — nothing actionable in \$HOME"
     fi
     return $(( findings > 0 ))
 }
