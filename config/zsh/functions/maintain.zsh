@@ -79,13 +79,14 @@
 function maintain::usage() {
     print -r -- "Usage: maintain [-h|--help] [--install] [--zinit] [--windows] [--only N,…|--skip N,…]"
     print -r -- ""
-    print -r -- "Full-spectrum system maintenance — update, clean, fix, and verify — in six phases:"
+    print -r -- "Full-spectrum system maintenance — update, clean, fix, and verify — in seven phases:"
     print -r -- "  1. System & OS package managers (brew/apt/pacman, flatpak, snap+cleanup, firmware/macOS updates)"
     print -r -- "  2. Runtimes & version managers (gh, zinit update + ice audit, vim-plug, tmux/TPM, Claude Code, mise, rustup, …)"
     print -r -- "  3. Global packages & language build caches (npm, pnpm, bun, uv, pipx, pynvim, composer, go, cargo, atuin sync)"
     print -r -- "  4. Container hygiene (docker/podman prune safe mode; WSL: re-pin containers to restart=no and disable docker units at boot)"
     print -r -- "  5. Cleanup & caches (TRIM, journal, coredumps, macOS/dev caches, DNS flush, zsh recompile, font/desktop DBs)"
     print -r -- "  6. Health, integrity & security (doctors, PATH shadows, XDG audit, broken-link & dotfiles audit, config-merge/security report, permission audit, pending reboot, disk report)"
+    print -r -- "  7. Service audits — whatever this host actually runs (nginx, MariaDB, Redis, PHP-FPM, Supervisor, FreeSWITCH, PM2, Docker, mail, UFW, Fail2Ban, TLS, log growth, inodes). Skips what is absent."
     print -r -- ""
     print -r -- "Options:"
     print -r -- "  --install   Run the dotfiles install.sh bootstrap first (skips its prompt)."
@@ -95,7 +96,7 @@ function maintain::usage() {
     print -r -- "              cannot see (it compares ice names, not values)."
     print -r -- "  --windows   On WSL only, run the deployed Windows maintain command after profile sync."
     print -r -- "              It suppresses the Windows bootstrap prompt and requests one UAC elevation."
-    print -r -- "  --only N,…  Run ONLY these phases (1-6). 'maintain --only 6' is a read-only health"
+    print -r -- "  --only N,…  Run ONLY these phases (1-7). 'maintain --only 6,7' is a read-only health"
     print -r -- "              report; --only 3 redoes the package/cache pass without a 30-minute rerun."
     print -r -- "  --skip N,…  Run every phase EXCEPT these. Mutually exclusive with --only."
     print -r -- ""
@@ -193,7 +194,7 @@ function maintain() {
     local run_windows=0
     # All six unless --only/--skip narrow it. maintain::run reads this through dynamic
     # scoping, same as log_file below.
-    local -a maintain_phases=( 1 2 3 4 5 6 )
+    local -a maintain_phases=( 1 2 3 4 5 6 7 )
     local only_list="" skip_list=""
     # A while loop, not `for arg in "$@"`: --only and --skip take a value, which may arrive
     # either as the next word or glued on with '='. Both spellings are accepted because
@@ -261,8 +262,8 @@ function maintain() {
         fi
         local ph
         for ph in "${requested[@]}"; do
-            if [[ "${ph}" != <1-6> ]]; then
-                print -ru2 -- "maintain: '${ph}' is not a phase number (1-6)"
+            if [[ "${ph}" != <1-7> ]]; then
+                print -ru2 -- "maintain: '${ph}' is not a phase number (1-7)"
                 return 2
             fi
         done
@@ -348,7 +349,18 @@ function maintain() {
     mkdir -p "${log_dir}"
     local log_file="${log_dir}/maintain-$(date +%Y%m%d-%H%M%S).log"
 
-    maintain::run 2>&1 | tee "${log_file}"
+    # Decide about colour HERE, where stdout is still the terminal. Inside the pipeline every
+    # stage's stdout is a pipe, so a `-t 1` test down there is always false and would disable
+    # colour on exactly the interactive runs it is meant for. maintain::colorize reads this
+    # through the same dynamic scoping as log_file.
+    local maintain_color=0
+    [[ -t 1 ]] && maintain_color=1
+
+    # Three stages, and the order is the point: tee writes the RAW stream to the log, then
+    # only the copy heading for the terminal gets painted. Archived logs stay greppable
+    # plain text. pipestatus[1] is still maintain::run — neither tee nor the filter can mask
+    # its exit status.
+    maintain::run 2>&1 | tee "${log_file}" | maintain::colorize
     local ret=${pipestatus[1]}
 
     # Retention: filenames sort chronologically; On = newest first; [11,-1] = older ones.
@@ -443,6 +455,79 @@ function maintain::mise_prune() {
     (( ${#failed} == 0 ))
 }
 
+# Paint the run's output for the terminal.
+#
+# WHY THIS IS A FILTER AND NOT ~50 COLOURED print STATEMENTS: the run is tee'd to a log
+# file. Colour emitted at the call site lands in that file too, and every archived log turns
+# into escape-sequence soup that `grep`, `less` without -R, and any later diff all choke on.
+# The log is the artefact you read a week later when something broke; it must stay plain.
+#
+# So the pipeline splits first and paints second — `maintain::run | tee "${log}" | colorize`.
+# tee writes the raw stream to disk, and only what continues to the terminal is styled. As a
+# bonus every existing `print -r -- "    ✓ …"` keeps working untouched, so this adds no risk
+# to the 50-odd sites that produce the output.
+#
+# Matching is on the markers the phases already emit (✓ ⚠️ ℹ️ ▸ ── •), which is why those
+# were worth keeping consistent. The summary's bullets are ambiguous on their own — the same
+# "• foo" is a failure under one heading and a health warning under another — so the parser
+# holds a little state and recolours them from whichever heading it last saw.
+function maintain::colorize() {
+    emulate -L zsh
+    # Pass straight through when colour is unwanted or meaningless: NO_COLOR (the informal
+    # standard), a dumb terminal, or stdout that is not a terminal at all — a cron run, or
+    # `maintain | less`. maintain() computes the tty test before the pipe, since by the time
+    # this function runs its own stdout may be anything.
+    if [[ -n "${NO_COLOR:-}" || "${TERM:-dumb}" == dumb || "${maintain_color:-0}" != 1 ]]; then
+        command cat
+        return
+    fi
+
+    command awk '
+    BEGIN {
+        R  = "\033[0m";   B  = "\033[1m";   D = "\033[2m"
+        GR = "\033[32m";  YE = "\033[33m";  RD = "\033[31m"
+        CY = "\033[36m";  MA = "\033[35m";  BL = "\033[34m"
+        mode = ""
+    }
+    # Summary headings set how the bullets beneath them are read.
+    /step\(s\) failed:/            { mode = "fail" }
+    /health warning\(s\)/          { mode = "warn" }
+    /Zinit plugins:/               { mode = "zi"   }
+
+    # Rules and banners.
+    /^[=━]{10,}$/                  { print D $0 R; next }
+    /🚀/                           { print B MA $0 R; next }
+    /^✅/                          { print B GR $0 R; next }
+
+    # Phase banner: "▸ [3/7] Global Packages & Build Caches".
+    /^▸ \[[0-9]+\/[0-9]+\]/        { print B CY $0 R; next }
+    # Other ▸ lines are the pre-flight prompts and notices.
+    /^▸ /                          { print CY $0 R; next }
+    # Section rule: "  ── Homebrew (…) ──────".
+    /^  ── /                       { print B BL $0 R; next }
+
+    # Per-line status markers.
+    /⚠️/                            { print YE $0 R; next }
+    /ℹ️/                            { print CY $0 R; next }
+    /✓/                            { print GR $0 R; next }
+    /✗/                            { print RD $0 R; next }
+
+    # Summary bullets, coloured by the heading above them.
+    /^ *• / {
+        if (mode == "fail")      { print RD $0 R; next }
+        else if (mode == "warn") { print YE $0 R; next }
+        else                     { print CY $0 R; next }
+    }
+    # Summary key/value rows — dim the label, leave the value legible.
+    /^   [A-Z][a-z].*: / {
+        i = index($0, ":")
+        print D substr($0, 1, i) R substr($0, i + 1)
+        next
+    }
+    { print }
+    '
+}
+
 # Phase-6 sub-section header: a blank line then a titled rule, so each audit reads as its own
 # block instead of a flat bullet list. Fixed rule (not zsh `(l:)` padding) because that counts
 # BYTES, and the multibyte ─ would be split into mojibake.
@@ -527,9 +612,9 @@ function maintain::run() {
     local -a zi_flagged
     local initial_df="$(command df -h / | awk 'NR==2 {print $4}')"
 
-    print -r -- "=================================================="
+    print -r -- "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     print -r -- "          🚀 Starting System Maintenance          "
-    print -r -- "=================================================="
+    print -r -- "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     # sudo shim: an EMPTY array when already root (servers/containers), so
     # "${sudo_cmd[@]}" <cmd> works everywhere without sprinkling EUID checks through the
@@ -571,7 +656,7 @@ function maintain::run() {
     # 1. OS & SYSTEM PACKAGE MANAGERS
     # ----------------------------------------------------
     if maintain::phase_enabled 1; then
-    print -r -- $'\n▸ [1/6] System & OS Package Managers'
+    print -r -- $'\n▸ [1/7] 📦 System & OS Package Managers'
 
     if [[ "${in_container}" == "true" ]]; then
         # Homebrew is user-scoped and works fine in a container, so it still runs below;
@@ -715,7 +800,7 @@ function maintain::run() {
     # 2. RUNTIMES & TOOLCHAIN MANAGERS
     # ----------------------------------------------------
     if maintain::phase_enabled 2; then
-    print -r -- $'\n▸ [2/6] Runtimes & Version Managers'
+    print -r -- $'\n▸ [2/7] 🧰 Runtimes & Version Managers'
 
     # gh runs BEFORE the zinit wipe: gh is zinit-managed at a VERSIONED path
     # (cli---cli/gh_<ver>_linux_amd64/bin/gh). The wipe+reinstall happens in a child
@@ -1089,7 +1174,7 @@ function maintain::run() {
     # 3. GLOBAL PACKAGES & LANGUAGE CACHES
     # ----------------------------------------------------
     if maintain::phase_enabled 3; then
-    print -r -- $'\n▸ [3/6] Global Packages & Build Caches'
+    print -r -- $'\n▸ [3/7] 🌐 Global Packages & Build Caches'
 
     # Node / JS ecosystem
     # The cache is cleared by path, not via `bun pm cache rm`: every `bun pm` subcommand
@@ -1302,7 +1387,7 @@ function maintain::run() {
     # 4. DEVOPS & CONTAINER HYGIENE (SAFE MODES)
     # ----------------------------------------------------
     if maintain::phase_enabled 4; then
-    print -r -- $'\n▸ [4/6] Containers & Cloud Tools'
+    print -r -- $'\n▸ [4/7] 🐳 Containers & Cloud Tools'
 
     # Safe Docker prune: keeps volumes intact, only removes items older than 7 days
     # (168h). If the user isn't in the docker group (common on servers), fall back to
@@ -1384,7 +1469,7 @@ function maintain::run() {
     # 5. SYSTEM CLEANUP & DOCUMENTATION REFRESH
     # ----------------------------------------------------
     if maintain::phase_enabled 5; then
-    print -r -- $'\n▸ [5/6] System Cleanup & Docs'
+    print -r -- $'\n▸ [5/7] 🧹 System Cleanup & Docs'
 
     (( $+commands[tldr] )) && { maintain::hdr "Updating tldr pages"; maintain::step "tldr" 5m tldr --update }
 
@@ -1560,7 +1645,7 @@ function maintain::run() {
     # 6. DIAGNOSTICS, INTEGRITY & SECURITY
     # ----------------------------------------------------
     if maintain::phase_enabled 6; then
-    print -r -- $'\n▸ [6/6] Health, Integrity & Security'
+    print -r -- $'\n▸ [6/7] 🩺 Health, Integrity & Security'
 
     maintain::hdr "Tool doctors"
     if [[ "${HOST_OS}" == "darwin" ]] && (( $+commands[brew] )); then
@@ -1816,137 +1901,19 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
         fi
     fi
 
-    # Read-only server status report — highlights action items, never changes state.
-    if [[ "${HOST_LOCATION:-}" == "server" && "${HOST_OS}" == "linux" ]]; then
-        maintain::hdr "Server status"
-        local -i srv_clean=1
-        [[ -f /var/run/reboot-required ]] && srv_clean=0
-
-        if (( $+commands[journalctl] && can_sudo )); then
-            local err_count="$("${sudo_cmd[@]}" journalctl -b -p err --no-pager -q 2>/dev/null | wc -l)"
-            err_count="${err_count// /}"
-            (( err_count > 0 )) && { srv_clean=0; maintain::health_warn "${err_count} journal error(s) since boot — inspect: journalctl -b -p err" }
-        fi
-
-        (( srv_clean )) && print -r -- "    ✓ no reboot required and no boot errors"
-        # DEBIAN_FRONTEND is load-bearing here, not decoration. Without it needrestart renders
-        # its "Pending kernel upgrade" notice through debconf/whiptail, and because sudo gives
-        # the command its OWN pty that dialog paints onto a different tty than the one you are
-        # typing into — no keystroke can reach it and the whole run wedges until the process is
-        # killed from another host. `2>/dev/null` does not help: debconf writes to the tty, not
-        # stderr. `env` for the same reason as apt_env above: sudo's env_reset drops the var.
-        # Only reproduces where a -generic kernel is installed, so WSL never shows it.
-        (( $+commands[needrestart] && can_sudo )) && { print -r -- "    services needing restart (needrestart):"; "${sudo_cmd[@]}" env DEBIAN_FRONTEND=noninteractive needrestart -r l 2>/dev/null }
-
-        # Fail2Ban's client counters are since daemon start; the journal adds a rolling
-        # seven-day event count. Neither output contains source IP addresses or log lines.
-        if (( $+commands[fail2ban-client] && can_sudo )); then
-            maintain::hdr "Fail2Ban (jail and 7-day event stats)"
-            local f2b_status
-            f2b_status="$("${sudo_cmd[@]}" fail2ban-client status 2>/dev/null)"
-            if [[ -z "${f2b_status}" ]]; then
-                maintain::health_warn "Fail2Ban status is unavailable"
-            else
-                local jail_line="${${(M)${(f)f2b_status}:#*Jail list:*}[1]}"
-                local jail_csv="${jail_line##*:}"
-                local -a f2b_jails=( ${(s:,:)jail_csv} )
-                f2b_jails=( ${f2b_jails//[[:space:]]/} )
-                f2b_jails=( ${f2b_jails:#} )
-                # A successful client query proves the daemon/socket is live. Show that
-                # separately from the event counters so a quiet week is not mistaken for
-                # an absent or stopped Fail2Ban service.
-                print -r -- "    ✓ Fail2Ban daemon active — ${#f2b_jails} active jail(s)"
-                if (( ${#f2b_jails} )); then
-                    local jail jail_status
-                    for jail in "${f2b_jails[@]}"; do
-                        [[ -n "${jail}" ]] || continue
-                        jail_status="$("${sudo_cmd[@]}" fail2ban-client status "${jail}" 2>/dev/null)"
-                        print -r -- "${jail_status}" | awk -v jail="${jail}" '
-                            /Currently failed:|Total failed:|Currently banned:|Total banned:/ {
-                                sub(/^[[:space:]|`-]+/, "")
-                                printf "    %s %s\n", jail, $0
-                            }'
-                    done
-                else
-                    print -r -- "    ✓ no active Fail2Ban jails"
-                fi
-                if (( $+commands[journalctl] )); then
-                    local f2b_events
-                    f2b_events="$("${sudo_cmd[@]}" journalctl -u fail2ban --since '7 days ago' --no-pager -o cat 2>/dev/null \
-                        | awk '/ Ban / {ban++} / Unban / {unban++} / Found / {found++} END {printf "ban=%d unban=%d found=%d", ban+0, unban+0, found+0}')"
-                    [[ -n "${f2b_events}" ]] && print -r -- "    7-day events: ${f2b_events}"
-                fi
-            fi
-        fi
-
-        # UFW can carry many site-specific rules. Report only the active state and default
-        # policy — enough to expose an accidentally disabled firewall without leaking rules.
-        if (( $+commands[ufw] && can_sudo )); then
-            maintain::hdr "Firewall (UFW)"
-            local ufw_status="$("${sudo_cmd[@]}" ufw status verbose 2>/dev/null)"
-            if [[ "${ufw_status}" == *'Status: active'* ]]; then
-                local ufw_default="${${(M)${(f)ufw_status}:#Default:*}[1]}"
-                print -r -- "    ✓ UFW active${ufw_default:+ — ${ufw_default}}"
-            elif [[ "${ufw_status}" == *'Status: inactive'* ]]; then
-                maintain::health_warn "UFW is inactive"
-            else
-                maintain::health_warn "UFW status is unavailable"
-            fi
-        fi
-
-        # Certificate inspection is read-only. Certbot needs root merely to read its lock
-        # and renewal state, so use the sudo credential primed at the start of the run.
-        if (( $+commands[certbot] )); then
-            maintain::hdr "TLS certificates (Certbot)"
-            if (( $+commands[systemctl] )); then
-                local cert_timer="$(systemctl is-enabled certbot.timer 2>/dev/null)"
-                local cert_active="$(systemctl is-active certbot.timer 2>/dev/null)"
-                [[ "${cert_timer}" == enabled && "${cert_active}" == active ]] \
-                    || maintain::health_warn "certbot.timer is ${cert_timer:-unavailable}/${cert_active:-inactive}"
-                local cert_result="$(systemctl show certbot.service -p Result --value 2>/dev/null)"
-                [[ -z "${cert_result}" || "${cert_result}" == success ]] \
-                    || maintain::health_warn "last certbot.service result: ${cert_result}"
-            fi
-            if (( can_sudo )); then
-                local certs
-                certs="$("${sudo_cmd[@]}" certbot certificates 2>/dev/null | awk '
-                    /^ *Certificate Name:/ {name=$0; sub(/^ *Certificate Name: */, "", name)}
-                    /^ *Expiry Date:/ {
-                        days=$0
-                        sub(/^.*VALID: /, "", days)
-                        sub(/ days.*$/, "", days)
-                        if (days ~ /^[0-9]+$/) {
-                            printf "%s: %s days\n", name ? name : "certificate", days
-                        }
-                    }' | LC_ALL=C sort -t: -k2,2n)"
-                if [[ -n "${certs}" ]]; then
-                    local cert_line cert_days
-                    print -r -- "${certs}" | while IFS= read -r cert_line; do print -r -- "    ${cert_line}"; done
-                    while IFS= read -r cert_line; do
-                        cert_days="${cert_line##*: }"; cert_days="${cert_days% days}"
-                        [[ "${cert_days}" == <-> && ${cert_days} -le 21 ]] \
-                            && maintain::health_warn "certificate expires in ${cert_days} days (${cert_line%%:*})"
-                    done <<< "${certs}"
-                else
-                    maintain::health_warn "could not inspect Certbot certificates"
-                fi
-            fi
-        fi
-
-        # A running Docker daemon can still have failing health checks. Do not mention
-        # normally stopped containers: one-shot jobs and deliberately stopped stacks are not
-        # health failures. Names only; no inspect payloads or restart actions.
-        if (( ${#docker_cmd} )); then
-            maintain::hdr "Docker health"
-            local unhealthy="$("${docker_cmd[@]}" ps --filter health=unhealthy --format '{{.Names}}' 2>/dev/null)"
-            if [[ -n "${unhealthy}" ]]; then
-                local -a unhealthy_containers=( ${(f)unhealthy} )
-                maintain::health_warn "unhealthy Docker container(s): ${(j:, :)unhealthy_containers}"
-            else
-                print -r -- "    ✓ no unhealthy Docker containers"
-            fi
-        fi
-    fi
+    # The server-only status block that used to sit here — UFW, Fail2Ban, Certbot expiry,
+    # needrestart, journal error counts, Docker health — has moved to phase 7 and its
+    # service-audit. Two reasons it had to move:
+    #
+    #   1. It was gated on HOST_LOCATION == "server", so the machine you sit in front of
+    #      never saw any of it. An inactive firewall or an expired certificate is not less
+    #      interesting on a desktop.
+    #   2. Gating on a host ROLE was the wrong axis entirely. What decides whether a UFW
+    #      check makes sense is whether ufw is installed, not what kind of box this is.
+    #      service-audit gates every check on the thing it inspects existing, so the same
+    #      pass is correct on a WSL laptop and on a 38-vhost web server.
+    #
+    # Nothing was dropped; it all runs in more places than before.
 
     # WSL runtime/kernel updates live on the WINDOWS side: `wsl --update` targets the WSL2
     # platform itself and cannot run from inside the distro (apt only updates the Ubuntu
@@ -2047,6 +2014,49 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
 
     fi  # phase 6
 
+
+    # ----------------------------------------------------
+    # 7. SERVICE AUDITS (WHATEVER THIS HOST ACTUALLY RUNS)
+    # ----------------------------------------------------
+    #
+    # Phase 6 audits the MACHINE — its dotfiles, PATH, permissions, packages. This phase
+    # audits the SERVICES on it, and the two want different shapes. There is no useful
+    # "server" flag to gate on: hvac-portal runs nginx + MariaDB + Redis + Supervisor,
+    # freeswitch runs FreeSWITCH + Postgres + Exim, guhs runs nginx + PM2, and this WSL box
+    # runs none of them. So every check inside is gated on the thing it inspects existing,
+    # and the same command is correct on all four.
+    #
+    # It lives in its own file and runs standalone as `service-audit`, like zi-audit and
+    # xdg-audit — a service check is useful on a server where you would never sit through a
+    # full maintain pass.
+    #
+    # --quiet here: the verdict plus the summary entry is what a maintenance run needs. The
+    # bare `service-audit` gives the per-service detail and the fix for each finding.
+    if maintain::phase_enabled 7; then
+    print -r -- $'\n▸ [7/7] 🔎 Service Audits'
+
+    if (( $+functions[service_audit] )); then
+        # --no-prompt, NOT --no-sudo-at-all: the credential maintain primed at the start is
+        # still used, so the root-only checks (certbot expiry, Fail2Ban jails, MariaDB
+        # running config) genuinely run here rather than reporting themselves skipped.
+        # What it forbids is the interactive fallback. This call is a command substitution
+        # with stderr discarded, so a sudo password prompt would be invisible AND blocking —
+        # the run would appear to hang for no reason anyone could see.
+        local svc_verdict
+        svc_verdict="$(service_audit --quiet --no-prompt 2>/dev/null)"
+        svc_verdict="${svc_verdict##*$'\n'}"
+        if [[ "${svc_verdict}" == *finding* ]]; then
+            maintain::health_warn "${svc_verdict} — run 'service-audit' for detail"
+        elif [[ -n "${svc_verdict}" ]]; then
+            print -r -- "    ✓ ${svc_verdict}"
+        else
+            print -r -- "    (service audit produced no verdict)"
+        fi
+    else
+        print -r -- "    (service-audit not loaded in this shell)"
+    fi
+    fi  # phase 7
+
     # Stop the sudo keep-alive before handing the terminal back (trap covers Ctrl-C).
     if [[ -n "${sudo_keepalive_pid}" ]]; then
         kill "${sudo_keepalive_pid}" 2>/dev/null
@@ -2056,7 +2066,7 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
     local final_df="$(command df -h / | awk 'NR==2 {print $4}')"
     local elapsed=$(( SECONDS - start ))
 
-    print -r -- $'\n=================================================='
+    print -r -- $'\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
     print -r -- "✅ Maintenance Complete!"
     printf '   Elapsed:           %dm %02ds\n' $(( elapsed / 60 )) $(( elapsed % 60 ))
     print -r -- "   Storage Available: ${initial_df} ➔ ${final_df}"
@@ -2066,11 +2076,11 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
         for zf in "${zi_flagged[@]}"; do print -r -- "        • ${zf}"; done
     fi
     if (( ${#failures} )); then
-        print -r -- "   ⚠️ ${#failures} step(s) failed:"
+        print -r -- "   ✗ ${#failures} step(s) failed:"
         local f
         for f in "${failures[@]}"; do print -r -- "        • ${f}"; done
     elif (( ! ${#health_warnings} )); then
-        print -r -- "   All steps completed successfully."
+        print -r -- "   ✓ All steps completed successfully."
     fi
     if (( ${#health_warnings} )); then
         print -r -- "   ⚠️ ${#health_warnings} read-only health warning(s) require review:"
@@ -2079,7 +2089,7 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
     fi
     print -r -- "   Log saved to:      ${log_file}"
     print -r -- "   Run 'exec zsh' to apply updated command paths."
-    print -r -- "=================================================="
+    print -r -- "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     return $(( ${#failures} > 0 ))
 }
