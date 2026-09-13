@@ -97,6 +97,7 @@ typeset -gA XDG_AUDIT_AVAILABLE=(
 typeset -gA XDG_AUDIT_PARTIAL=(
     '.aws'         'AWS_CONFIG_FILE/AWS_SHARED_CREDENTIALS_FILE cover config+credentials only; .aws/cli is the SSO cache'
     '.ollama'      'OLLAMA_MODELS relocates the model blobs only; config.json and history have no override and stay here'
+    '.yarn'        'YARN_CACHE_FOLDER governs the cache only; ~/.yarn/bin holds global binaries and has no override'
     '.wget-hsts'   'WGETRC relocates wgetrc itself; the HSTS store needs a separate hsts-file= inside it'
     '.viminfo'     'vim writes $XDG_DATA_HOME/vim/viminfo; a stray file here means some vim ran without the config'
 )
@@ -143,8 +144,10 @@ function xdg_audit::usage() {
     print -r -- "Read-only: prints findings and the fix for each, and never removes anything."
     print -r -- ""
     print -r -- "Findings are grouped into four classes:"
-    print -r -- "  stale       a relocation is declared, the new location has the data, and the"
-    print -r -- "              legacy path is left-over clutter — safe to remove"
+    print -r -- "  stale       a relocation is declared, the new location has the data, the legacy"
+    print -r -- "              path is older and holds nothing unique — genuinely safe to remove"
+    print -r -- "  divergent   both locations are live: the legacy path is newer, or holds files the"
+    print -r -- "              new one lacks. Two real copies. Never delete these blind"
     print -r -- "  incomplete  a relocation is declared but the new location does NOT exist, so"
     print -r -- "              the legacy path is still the only copy — never delete these"
     print -r -- "  partial     the variable is set but does not govern everything the tool writes"
@@ -170,22 +173,66 @@ function xdg_audit::usage() {
 # via `${target} == *.*` — and got the single most dangerous case exactly backwards:
 # RUSTUP_HOME=~/.config/.rustup contains a dot, so it walked up to ~/.config, found that
 # populated, and pronounced the 8.1M ~/.rustup safe to delete when it was the only copy.
-# A file target (AWS_CONFIG_FILE) is handled by -e just as well, with nothing to infer.
+#
+# "Twin exists and is populated" is ALSO not sufficient, which cost a second rewrite. Every
+# one of the four paths this originally called stale turned out to be unsafe to delete:
+#
+#   ~/.rustup  modified a week AFTER $RUSTUP_HOME — something still writes to the old path,
+#              so the variable is not being honoured by whatever that is
+#   ~/.codex   live sqlite databases (queue, thread_history, memories), touched the same day
+#   ~/.claude  settings.json and CLAUDE.md DIFFER from the XDG copies, and
+#              helpers/graft-hooks.cjs exists only in the legacy tree
+#   ~/.yarn    holds bin/create-playwright — a global binary, which YARN_CACHE_FOLDER was
+#              never going to relocate because it governs the cache and nothing else
+#
+# So a legacy path is only clutter when all three hold: the twin is populated, the twin is
+# at least as recently written as the legacy path, and the legacy tree contains nothing the
+# twin lacks. Anything else is DIVERGENT — two live copies needing a human — and calling
+# that "safe to remove" is the one failure mode here that destroys data.
 function xdg_audit::classify() {
-    local var="${1}"
+    local var="${1}" legacy="${2}"
     local target="${(P)var}"
     [[ -n "${target}" ]] || return 1
 
-    if [[ -f "${target}" ]]; then
-        print -r -- "stale"
-    elif [[ -d "${target}" ]]; then
+    [[ -e "${target}" ]] || { print -r -- "incomplete"; return 0 }
+
+    if [[ -d "${target}" ]]; then
         # "Populated" is stricter than "exists" on purpose: a relocation that created an
         # empty directory has not moved anything, and the legacy copy is still the data.
         local -a contents=( "${target}"/*(DN) )
-        (( ${#contents} )) && print -r -- "stale" || print -r -- "incomplete"
-    else
-        print -r -- "incomplete"
+        (( ${#contents} )) || { print -r -- "incomplete"; return 0 }
     fi
+
+    # \( -type f -o -type l \), never bare -type f: a tree holding only SYMLINKS has no
+    # regular files, so a -type f probe returns nothing, BOTH tests below are skipped, and
+    # the path falls through to "stale" without having been examined at all. ~/.yarn is
+    # exactly that shape — a single symlink pointing at a live global binary.
+    #
+    # Test 1 — is the legacy path still being written to? Compare the newest FILE in each
+    # tree, not the directory mtimes: a directory's mtime tracks only its own entries, so a
+    # write deep inside leaves the top level untouched and the check would miss it.
+    local newest_legacy newest_target
+    newest_legacy="$(find "${legacy}" \( -type f -o -type l \) -printf '%T@\n' 2>/dev/null | sort -rn | head -1)"
+    newest_target="$(find "${target}" \( -type f -o -type l \) -printf '%T@\n' 2>/dev/null | sort -rn | head -1)"
+    if [[ -n "${newest_legacy}" && -n "${newest_target}" ]]; then
+        (( ${newest_legacy%%.*} > ${newest_target%%.*} )) && { print -r -- "divergent"; return 0 }
+    fi
+
+    # Test 2 — does the legacy tree hold anything the twin lacks, by path or by content?
+    # Bounded at 5000 files: beyond that the comparison costs more than it is worth, and
+    # test 1 has already caught the common "still being written" case.
+    if [[ -d "${legacy}" && -d "${target}" ]]; then
+        local -i n=$(find "${legacy}" \( -type f -o -type l \) 2>/dev/null | wc -l)
+        if (( n > 0 && n <= 5000 )); then
+            local rel
+            for rel in ${(f)"$(find "${legacy}" \( -type f -o -type l \) -printf '%P\n' 2>/dev/null)"}; do
+                [[ -e "${target}/${rel}" ]] || { print -r -- "divergent"; return 0 }
+                cmp -s "${legacy}/${rel}" "${target}/${rel}" || { print -r -- "divergent"; return 0 }
+            done
+        fi
+    fi
+
+    print -r -- "stale"
     return 0
 }
 
@@ -205,7 +252,7 @@ function xdg_audit() {
 
     zmodload -F zsh/stat b:zstat 2>/dev/null
 
-    local -a f_stale=() f_incomplete=() f_partial=() f_available=() f_unclassified=() f_large=()
+    local -a f_stale=() f_divergent=() f_incomplete=() f_partial=() f_available=() f_unclassified=() f_large=()
     # hpath, NOT path. `path` is zsh's array tied to $PATH, and `local path` keeps the tie
     # rather than breaking it — so `for path in ~/.*` silently overwrites PATH for the whole
     # function. The symptom is not an error: every external command afterwards fails to
@@ -221,13 +268,13 @@ function xdg_audit() {
         # relocate part of what the tool writes, so "safe to remove" would be false and would
         # take the uncovered remainder (~/.aws/cli, the SSO cache) with it.
         (( ${+XDG_AUDIT_PARTIAL[${legacy}]} )) && continue
-        klass="$(xdg_audit::classify "${var}")" || continue
+        klass="$(xdg_audit::classify "${var}" "${hpath}")" || continue
         target="${(P)var}"
-        if [[ "${klass}" == "stale" ]]; then
-            f_stale+=( "${legacy}|${var}|${target}" )
-        else
-            f_incomplete+=( "${legacy}|${var}|${target}" )
-        fi
+        case "${klass}" in
+            (stale)     f_stale+=( "${legacy}|${var}|${target}" ) ;;
+            (divergent) f_divergent+=( "${legacy}|${var}|${target}" ) ;;
+            (*)         f_incomplete+=( "${legacy}|${var}|${target}" ) ;;
+        esac
     done
 
     # ---- class 1b: declared, set, but only partially governing -----------------------
@@ -289,12 +336,12 @@ function xdg_audit() {
         done
     fi
 
-    local -i findings=$(( ${#f_stale} + ${#f_incomplete} + ${#f_partial} + ${#f_available} + ${#f_unclassified} ))
+    local -i findings=$(( ${#f_stale} + ${#f_divergent} + ${#f_incomplete} + ${#f_partial} + ${#f_available} + ${#f_unclassified} ))
 
     # --ids: the offending paths only, for a caller that wants to act on them.
     if (( ids_only )); then
         local entry
-        for entry in "${f_stale[@]}" "${f_incomplete[@]}" "${f_partial[@]}" "${f_available[@]}"; do
+        for entry in "${f_stale[@]}" "${f_divergent[@]}" "${f_incomplete[@]}" "${f_partial[@]}" "${f_available[@]}"; do
             print -r -- "~/${entry%%|*}"
         done
         print -rl -- ${f_unclassified[@]/#/\~/}
@@ -314,6 +361,16 @@ function xdg_audit() {
             local -a stale_paths=()
             for entry in "${(o)f_stale[@]}"; do stale_paths+=( "~/${entry%%|*}" ); done
             print -r -- "    → verify, then remove: ${(j: :)stale_paths}"
+        fi
+
+        if (( ${#f_divergent} )); then
+            print -r -- "  divergent (BOTH locations are live — reconcile by hand, do NOT delete):"
+            for entry in "${(o)f_divergent[@]}"; do
+                rest="${entry#*|}"
+                printf '    %-24s %-22s ↔ %s\n' "~/${entry%%|*}" "${rest%%|*}" "${rest#*|}"
+            done
+            print -r -- "    → the legacy tree is newer, or holds files the new location lacks"
+            print -r -- "    → diff -rq <legacy> <new>   to see what differs"
         fi
 
         if (( ${#f_incomplete} )); then
@@ -357,7 +414,7 @@ function xdg_audit() {
     fi
 
     if (( findings )); then
-        print -r -- "${findings} XDG finding(s): ${#f_stale} stale, ${#f_incomplete} incomplete, ${#f_partial} partial, ${#f_available} available, ${#f_unclassified} unclassified"
+        print -r -- "${findings} XDG finding(s): ${#f_stale} stale, ${#f_divergent} divergent, ${#f_incomplete} incomplete, ${#f_partial} partial, ${#f_available} available, ${#f_unclassified} unclassified"
     else
         print -r -- "XDG layout clean — nothing relocatable left in \$HOME"
     fi
