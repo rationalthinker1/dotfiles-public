@@ -711,6 +711,18 @@ function maintain::run() {
             -c 'PlugClean!' -c 'qall!' </dev/null || true
     fi
 
+    # Neovim 0.12 uses its built-in vim.pack rather than vim-plug. Unlike the
+    # interactive command, force=true makes the weekly headless run apply every resolved
+    # update without opening a review buffer. vim.pack persists the resolved revisions in
+    # nvim-pack-lock.json, deliberately tracked with this config, so a changed lockfile is
+    # the expected record of plugin updates to review and commit.
+    if (( $+commands[nvim] )) && [[ -r "${XDG_CONFIG_HOME:-${HOME}/.config}/nvim/init.lua" ]]; then
+        maintain::hdr "Neovim plugins (vim.pack update)"
+        nvim --headless -i NONE \
+            -c 'lua if not vim.pack then error("vim.pack requires Neovim 0.12+") end; vim.pack.update(nil, { force = true })' \
+            -c 'qall!' </dev/null || failures+=("Neovim plugins")
+    fi
+
     # TPM (tmux plugin manager) — the tmux analog to the vim-plug step above. TPM lives at
     # $XDG_CONFIG_HOME/tmux/plugins/tpm (tmux.conf runs it from there), and install.sh never
     # updates it. update_plugins pulls new commits for every plugin; clean_plugins removes
@@ -1393,6 +1405,11 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
                 local jail_csv="${jail_line##*:}"
                 local -a f2b_jails=( ${(s:,:)jail_csv} )
                 f2b_jails=( ${f2b_jails//[[:space:]]/} )
+                f2b_jails=( ${f2b_jails:#} )
+                # A successful client query proves the daemon/socket is live. Show that
+                # separately from the event counters so a quiet week is not mistaken for
+                # an absent or stopped Fail2Ban service.
+                print -r -- "    ✓ Fail2Ban daemon active — ${#f2b_jails} active jail(s)"
                 if (( ${#f2b_jails} )); then
                     local jail jail_status
                     for jail in "${f2b_jails[@]}"; do
@@ -1401,7 +1418,7 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
                         print -r -- "${jail_status}" | awk -v jail="${jail}" '
                             /Currently failed:|Total failed:|Currently banned:|Total banned:/ {
                                 sub(/^[[:space:]|`-]+/, "")
-                                printf "    %s %s\\n", jail, $0
+                                printf "    %s %s\n", jail, $0
                             }'
                     done
                 else
@@ -1453,7 +1470,7 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
                         sub(/^.*VALID: /, "", days)
                         sub(/ days.*$/, "", days)
                         if (days ~ /^[0-9]+$/) {
-                            printf "%s: %s days\\n", name ? name : "certificate", days
+                            printf "%s: %s days\n", name ? name : "certificate", days
                         }
                     }')"
                 if [[ -n "${certs}" ]]; then
