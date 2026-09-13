@@ -724,8 +724,12 @@ function maintain::run() {
     # The copy is done here in zsh rather than by invoking the pwsh `dotsync` function,
     # because dotsync is DEFINED BY the profile being synced: if a bad edit breaks the
     # profile, dotsync no longer exists and the one command that could fix it is gone.
-    # This path keeps working regardless. Keep the two file lists in step — the pwsh side
-    # lives in aliases.ps1 (dotsync) and install.ps1 §3.
+    # This path keeps working regardless.
+    #
+    # The file set is GLOBBED, not listed, in all three places that copy it (here,
+    # dotsync in aliases.ps1, install.ps1 §3) — three hand-maintained lists in two trees
+    # drift, and the drift is invisible until a newly added fragment silently never
+    # deploys.
     if [[ "${HOST_OS}" == "wsl" && "${in_container}" != "true" ]] && (( $+commands[cmd.exe] )); then
         # cd to a drive path first so cmd.exe doesn't warn about a UNC cwd.
         local win_local_appdata pwsh_deploy
@@ -739,10 +743,11 @@ function maintain::run() {
             maintain::hdr "PowerShell profile sync (${pwsh_deploy})"
             {
                 local f rel dest
-                # local.ps1 is deliberately absent: machine-specific, exists only there.
-                for f in profile.ps1 psreadline.ps1 tools.ps1 aliases.ps1 hooks.ps1; do
-                    [[ -f "${DOTFILES_ROOT}/powershell/${f}" ]] || continue
-                    cp -f "${DOTFILES_ROOT}/powershell/${f}" "${pwsh_deploy}/powershell/${f}"
+                # local.ps1 is excluded: machine-specific, exists only in the deployment.
+                # install.ps1 too: it is the bootstrap, not part of the runtime profile.
+                for f in "${DOTFILES_ROOT}"/powershell/*.ps1(N.); do
+                    [[ "${f:t}" == (local.ps1|install.ps1) ]] && continue
+                    cp -f "${f}" "${pwsh_deploy}/powershell/${f:t}"
                 done
                 # Shared tool configs the profile reads at runtime; without these its env
                 # vars would point back into WSL and undo the whole point of the copy.
@@ -795,11 +800,12 @@ function maintain::run() {
     # and then fails on every single run. Exclude version-manager install trees, and let
     # the owning manager (mise upgrade, above) do the updating there.
     if (( $+commands[uv] )); then
-        maintain::hdr "UV (self-update & cache prune)"
+        maintain::hdr "UV (self-update, tools & cache prune)"
         if [[ "${commands[uv]}" == "${HOME}"/* && "${commands[uv]}" != *"/mise/installs/"* \
            && "${commands[uv]}" != *"/asdf/installs/"* ]]; then
             uv self update || failures+=("uv self-update")
         fi
+        uv tool upgrade --all || failures+=("uv tools")
         uv cache prune || failures+=("uv cache")
     fi
     (( $+commands[pipx] )) && { maintain::hdr "Pipx packages"; pipx upgrade-all || failures+=("pipx") }

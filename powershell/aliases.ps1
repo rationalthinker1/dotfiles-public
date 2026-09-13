@@ -492,15 +492,17 @@ function dotsync {
     if (-not $src)                          { Write-Error 'dotsync: no .source marker — run install.ps1 first'; return }
     if (-not (Test-Path -LiteralPath $src)) { Write-Error "dotsync: source '${src}' unreachable (is WSL running?)"; return }
 
+    # Globbed, not listed — see install.ps1 §3. A hardcoded list here cannot deploy a
+    # fragment added after the running aliases.ps1 was copied, which is the one case that
+    # matters: the new fragment is exactly what you are trying to sync.
+    #
+    # local.ps1 is excluded because it is machine-specific and exists only in the
+    # deployed directory; install.ps1 because it is the bootstrap, not the profile.
     $n = 0
-    foreach ($f in 'profile.ps1', 'psreadline.ps1', 'tools.ps1', 'aliases.ps1', 'hooks.ps1') {
-        # local.ps1 is deliberately absent from this list: it is machine-specific and
-        # exists only in the deployed directory.
-        $from = Join-Path $src "powershell/${f}"
-        if (Test-Path -LiteralPath $from) {
-            Copy-Item -LiteralPath $from -Destination (Join-Path $script:ProfileDir $f) -Force
-            $n++
-        }
+    foreach ($f in (Get-ChildItem -LiteralPath (Join-Path $src 'powershell') -Filter '*.ps1' -File -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Name -notin @('local.ps1', 'install.ps1') })) {
+        Copy-Item -LiteralPath $f.FullName -Destination (Join-Path $script:ProfileDir $f.Name) -Force
+        $n++
     }
     foreach ($rel in 'config/ripgrep/.ripgreprc', 'config/mise/config.toml', 'config/atuin', 'config/zsh/references') {
         $from = Join-Path $src $rel

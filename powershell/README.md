@@ -84,6 +84,10 @@ breaks the profile also removes the one command that could repair it. It only re
 deployment that already exists — creating one is `install.ps1`'s job, since linking
 `$PROFILE` is part of that.
 
+The Windows side has its own `maintain` / `update-all` whose phase 4 does the same sync
+from this end — see **Maintenance** below. Whichever shell you run maintenance from, the
+other one stops drifting.
+
 ## Layout
 
 | File | Role |
@@ -92,6 +96,7 @@ deployment that already exists — creating one is `install.ps1`'s job, since li
 | `psreadline.ps1` | Autosuggestions, key bindings, history filtering. |
 | `tools.ps1` | zoxide / atuin / PSFzf / oh-my-posh / completers, shared tool env. |
 | `aliases.ps1` | Aliases and helper functions. |
+| `maintain.ps1` | `maintain` / `update-all` — the six-phase maintenance run. |
 | `hooks.ps1` | Directory hooks — the `chpwd` equivalent. Sourced last. |
 | `local.ps1` | Machine-specific, gitignored. Copy from `local.example.ps1`. |
 
@@ -205,9 +210,111 @@ it is not.
 
 **Deliberately absent:** `gco` and `grs` (forgit owns those names in zsh — see the reserved
 list at `config/zsh/aliases.zsh:886-906`), and everything Linux-only — `dock`, `zi-audit`,
-`maintain`, the `apt` and `systemctl` blocks, suffix and global aliases (no PowerShell
+the `apt` and `systemctl` blocks, suffix and global aliases (no PowerShell
 equivalent exists), and the WSL `subl`/`code` shims, which are unnecessary because both
 binaries are already on PATH natively.
+
+## Maintenance — `maintain` (alias `update-all`)
+
+`maintain.ps1` is the pwsh counterpart of `config/zsh/functions/maintain.zsh`. Same name,
+same alias, same contract; a different six phases, because apt, snap, flatpak and zinit do
+not exist here.
+
+| Phase | What runs |
+|---|---|
+| 1. Package managers | `winget upgrade --all --include-unknown`, `scoop update`/`update *`/`cleanup *`, `choco upgrade all` |
+| 2. Runtimes & modules | PowerShell modules, `mise upgrade`, `rustup update`, `gh extension upgrade --all`, `claude update` |
+| 3. Global packages | npm, pnpm, uv (self + tools), pipx, `cargo install-update`, `atuin sync` |
+| 4. Dotfiles deployment | `dotsync` — refresh `%LOCALAPPDATA%\dotfiles` from the repo |
+| 5. Cleanup & caches | scoop/npm/pnpm/yarn/uv/pip/go caches, `%TEMP%` entries older than 30 days |
+| 6. Health & integrity | PATH shadows, dead PATH entries, pending reboot, disk report |
+
+```powershell
+maintain              # or: update-all
+maintain -Install     # run install.ps1 first (needs WSL up — the repo lives there)
+maintain -Elevate     # one UAC prompt for winget + chocolatey, no question asked
+maintain -NoElevate   # never elevate (chocolatey is then skipped)
+maintain -SkipCleanup # skip phase 5, the only phase that deletes anything
+maintain -Help
+```
+
+### One UAC prompt, not one per package
+
+Unelevated, `winget upgrade --all` prints *"The installer will request to run as
+administrator. Expect a prompt."* against every machine-scope package, and you sit
+through a dialog for each.
+
+**Windows has no sudo credential cache.** The zsh side primes `sudo -v` once and holds it
+with a keep-alive loop; there is no equivalent here. UAC consent is granted per *process*,
+at creation, and cannot be held or renewed. Microsoft's `sudo.exe` (Windows 11 24H2+,
+off by default behind Settings ▸ System ▸ For developers) is a launcher, not a cache — it
+prompts every invocation. Only third-party gsudo has a real cache.
+
+So the only way to collapse N prompts into one is to elevate **one** process and do all
+the privileged work inside it. That is what phase 1 does: winget and chocolatey are
+collected into a single elevated pwsh child — one UAC dialog — which tees its output so
+you watch it live and the parent replays the capture into the transcript. Per-step exit
+codes come back through a JSON file, because one process has only one exit code.
+
+The dialog is raised **before** the phases start, alongside the `-Install` question, so it
+never appears minutes into a run you walked away from. It is the one prompt here that
+defaults to **Y**: declining does not save you a dialog, it multiplies one into
+one-per-package. Cancelling the UAC dialog is treated as an answer, not a failure — the
+same commands then run unelevated.
+
+**scoop is never elevated.** It is a per-user install by design; run as admin it writes
+files owned by the admin token into `~\scoop`, and later user-mode updates fail on them.
+That is why elevation is scoped to winget and chocolatey rather than applied to the whole
+run — and why `maintain` should not be launched from an already-elevated shell if you can
+avoid it.
+
+**scoop runs concurrently with the elevated window**, rather than waiting behind it. The
+elevated child is started with `-PassThru` and *not* `-Wait`; scoop's bucket refresh and
+app upgrades run in the parent meanwhile, and the wait happens after. Phase 1 then costs
+roughly the longer of the two instead of their sum — measured at 2.20s vs 2.89s on a
+synthetic 2s/0.9s split, i.e. scoop's time is absorbed almost entirely.
+
+That overlap is safe because the two managers share nothing: winget writes Program Files
+/ WindowsApps and the machine PATH, scoop writes `~\scoop` and the user PATH — different
+stores, different registry values, no common lock. The one shared resource that could
+bite is Windows Installer's global `_MSIExecute` mutex (only one MSI machine-wide; the
+loser gets 1618, "another installation is already in progress"). winget hits MSIs
+constantly, scoop almost never — all 23 apps installed here are portable archives — so
+this is safe in practice rather than by guarantee. If it ever fires it surfaces as an
+ordinary failed scoop step, recorded not fatal, and a re-run clears it.
+
+What it inherits from the zsh version is the contract, not the step list: a missing tool
+is skipped with a reason, a failing step is **recorded and never fatal**, and the run ends
+with reclaimed disk plus every failure, returning `$false` if any occurred. Each run is
+transcribed to `%LOCALAPPDATA%\dotfiles\logs\maintain\` (10 kept).
+
+Three details worth knowing:
+
+- **Phase 4 is the one with no zsh equivalent**, and the reason this exists on Windows at
+  all: the profile is a *copy*, so repo edits are invisible until something syncs them.
+  From WSL, `update-all`'s phase 2 does it; this does it from the Windows side. It calls
+  `dotsync` rather than re-implementing the copy — the zsh side's reason for not doing
+  that (dotsync is defined by the profile it syncs) does not apply, since `maintain`
+  itself lives in that same profile.
+- **`-Install` shells out with `-ExecutionPolicy Bypass`.** It runs the *repo* copy of
+  `install.ps1`, which is reached over `\\wsl.localhost\` — the Internet zone, so without
+  the flag pwsh refuses it as "not digitally signed". Same flag and same reason as the
+  install command in **Install** above; you do not pass it yourself.
+- **winget's exit code is not a boolean.** `0x8A150014` (nothing matched) and `0x8A15002B`
+  (nothing applicable) are routine and are allowlisted; everything else, including
+  `0x8A15002C` (some package in `--all` failed), is reported as a failure.
+- **Only user-installed modules are updated.** `Get-Module -ListAvailable` also returns the
+  copy bundled with pwsh and the Windows PowerShell 5.1 copy under `Program
+  Files\WindowsPowerShell\Modules`; `Update-PSResource -Scope CurrentUser` cannot touch
+  either and fails on both. So the *package manager* is asked what it installed
+  (`Get-PSResource` / `Get-InstalledModule`), not the module loader. Without that,
+  PSReadLine reports a failure on every stock machine.
+
+The phase-6 PATH audit is read-only and mirrors `maintain::path_dupes` — it prints
+commands that resolve from more than one PATH directory (the classic case: a Store
+execution-alias stub or an old chocolatey shim winning over the real install) and never
+reorders or deletes anything. Its allowlist starts empty on purpose; add entries with
+their reason attached as you verify each shadow is deliberate.
 
 ## Shared with the ZSH side
 

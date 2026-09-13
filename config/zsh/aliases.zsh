@@ -370,8 +370,10 @@ function psg() {
 # Prints out your public IP (myip_public in Power User section is the same thing)
 alias myip="curl -s https://api.ipify.org && echo"
 
-# Searches up history commands
-alias hgrep="history | grep"
+# Searches up history commands. `history` with no range prints only the last 16
+# events, so a bare `history | grep` silently misses everything older -- `1` is
+# the first event, i.e. search the whole history.
+alias hgrep="history 1 | grep"
 
 alias br="broot"
 

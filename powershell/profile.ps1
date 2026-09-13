@@ -32,7 +32,7 @@ try {
         # wrong for a link pointing at a UNC path: it splices the raw reparse data
         # (\??\UNC\server\share\...) onto the link's own directory, producing e.g.
         #
-        #   \\wsl.localhost\Ubuntu\home\razaf\.dotfiles\UNC\wsl.localhost\...\profile.ps1
+        #   \\wsl.localhost\Ubuntu\home\$USER\.dotfiles\UNC\wsl.localhost\...\profile.ps1
         #
         # from a link whose target is plainly \\wsl.localhost\...\powershell\profile.ps1.
         # ProfileDir then points somewhere that exists in name only, every fragment
@@ -198,10 +198,15 @@ function Get-ToolInitScript {
 # Fragments
 #---------------------------------------------------------------------------------------
 
-# hooks.ps1 last of the four: it registers a LocationChangedAction that zoxide's `cd`
+# hooks.ps1 last of the five: it registers a LocationChangedAction that zoxide's `cd`
 # (installed in tools.ps1) triggers, and aliases.ps1 may define functions it calls.
+#
+# maintain.ps1 sits after aliases.ps1 because it calls `dotsync` and `Get-DotfilesSource`
+# from there. Ordering is not strictly required — PowerShell resolves function calls at
+# invocation time, not definition time — but declaring after the dependency keeps the
+# file readable in load order.
 $script:LoadedFragments = 0
-foreach ($fragment in @('psreadline.ps1', 'tools.ps1', 'aliases.ps1', 'hooks.ps1')) {
+foreach ($fragment in @('psreadline.ps1', 'tools.ps1', 'aliases.ps1', 'maintain.ps1', 'hooks.ps1')) {
     $path = Join-Path $script:ProfileDir $fragment
     if (Test-Path -LiteralPath $path) {
         . $path

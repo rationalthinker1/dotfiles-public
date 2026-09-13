@@ -273,13 +273,20 @@ foreach ($d in @($deployRoot, $deployPwsh)) {
     if (-not (Test-Path -LiteralPath $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null }
 }
 
-# local.ps1 is machine-specific and lives only here — never copy over it.
-$fragments = @('profile.ps1', 'psreadline.ps1', 'tools.ps1', 'aliases.ps1', 'hooks.ps1', 'local.example.ps1')
+# Globbed rather than listed, because THREE places copy this set — here, `dotsync` in
+# aliases.ps1, and the PowerShell step of config/zsh/functions/maintain.zsh — and a
+# hand-maintained list in three trees drifts. It already did: a newly added fragment is
+# invisible to `dotsync` until the deployed aliases.ps1 is itself refreshed, which needs
+# the very sync that does not know about it yet.
+#
+# Two exclusions:
+#   local.ps1    machine-specific, exists only in the deployment — never copy over it.
+#   install.ps1  the bootstrap, not part of the runtime profile.
+$fragments = Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.ps1' -File |
+    Where-Object { $_.Name -notin @('local.ps1', 'install.ps1') }
 $copied = 0
 foreach ($f in $fragments) {
-    $src = Join-Path $PSScriptRoot $f
-    if (-not (Test-Path -LiteralPath $src)) { continue }
-    Copy-Item -LiteralPath $src -Destination (Join-Path $deployPwsh $f) -Force
+    Copy-Item -LiteralPath $f.FullName -Destination (Join-Path $deployPwsh $f.Name) -Force
     $copied++
 }
 Write-Ok "${copied} profile file(s) -> ${deployPwsh}"
