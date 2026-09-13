@@ -137,11 +137,6 @@ typeset -ga XDG_AUDIT_IGNORE=(
     '.aws.bak' '.rustup.bak' '.docker.bak' '.wget-hsts.bak'
 )
 
-# Anything at or above this many bytes gets a size line in the "large unmanaged" section.
-# Not an XDG question — it answers the adjacent one ("what IS all this in my home"), which
-# is what people actually open this report wanting to know.
-typeset -g XDG_AUDIT_LARGE_BYTES=$(( 100 * 1024 * 1024 ))
-
 function xdg_audit::usage() {
     print -r -- "Usage: xdg-audit [-h|--help] [--quiet] [--ids]"
     print -r -- ""
@@ -163,9 +158,6 @@ function xdg_audit::usage() {
     print -r -- "silently absorbed. That is what keeps the tables above from going stale."
     print -r -- ""
     print -r -- "Options:"
-    print -r -- "  --verbose Also list partial-coverage paths and large unmanaged directories."
-    print -r -- "            Both are permanent facts rather than work items, so they are"
-    print -r -- "            summarised in one line by default and excluded from the count."
     print -r -- "  --quiet   Suppress the per-finding detail; print only the verdict line."
     print -r -- "  --ids     Print just the offending paths, one per line (for scripting)."
 }
@@ -248,20 +240,19 @@ function xdg_audit() {
     emulate -L zsh
     setopt local_options null_glob extended_glob
 
-    local quiet=0 ids_only=0 verbose=0 noted_shown=0 arg
+    local quiet=0 ids_only=0 arg
     for arg in "$@"; do
         case "${arg}" in
             (-h|--help) xdg_audit::usage; return 0 ;;
             (--quiet)   quiet=1 ;;
             (--ids)     ids_only=1 ;;
-            (--verbose|-v) verbose=1 ;;
             (*) print -ru2 -- "xdg-audit: unknown option '${arg}'"; return 2 ;;
         esac
     done
 
     zmodload -F zsh/stat b:zstat 2>/dev/null
 
-    local -a f_stale=() f_divergent=() f_incomplete=() f_partial=() f_available=() f_unclassified=() f_large=()
+    local -a f_stale=() f_divergent=() f_incomplete=() f_partial=() f_available=() f_unclassified=()
     # hpath, NOT path. `path` is zsh's array tied to $PATH, and `local path` keeps the tie
     # rather than breaking it — so `for path in ~/.*` silently overwrites PATH for the whole
     # function. The symptom is not an error: every external command afterwards fails to
@@ -320,31 +311,6 @@ function xdg_audit() {
         f_unclassified+=( "${name}" )
     done
 
-    # ---- large unmanaged directories --------------------------------------------------
-    # Skipped under --quiet, which is how maintain calls this: the scan is ~2.5s of pure
-    # stat() over every dotdir in $HOME and phase 6 gains nothing from it, since the sizes
-    # are advisory and the disk report already ran. Interactive `xdg-audit` pays it.
-    if (( ! ids_only && ! quiet )); then
-        local sz
-        for hpath in "${HOME}"/.*(DN/); do
-            name="${hpath:t}"
-            [[ "${name}" == (.|..|.cache|.config|.local|.dotfiles) ]] && continue
-            # `command du`, never bare du: an interactive shell has this shadowed (the
-            # repo swaps in dust/dua), and the replacement does not accept -sb — it fails,
-            # the capture comes back empty, and every directory silently looks small. The
-            # file uses `command df` / `command stat` elsewhere for exactly this reason.
-            #
-            # du -sb prints one line, "<bytes>\t<path>"; strip from the first whitespace.
-            # NOT ${${(f)raw}[1]%%...}: (f) inside a nested expansion does not produce an
-            # array, so [1] subscripts the STRING and yields its first character — that
-            # silently turned 895757533 into 8 and no directory ever looked large.
-            sz="$(command du -sb "${hpath}" 2>/dev/null)"
-            sz="${sz%%[[:space:]]*}"
-            [[ "${sz}" == <-> ]] || continue
-            (( sz >= XDG_AUDIT_LARGE_BYTES )) && f_large+=( "${sz}|${name}" )
-        done
-    fi
-
     # ACTIONABLE findings only. f_partial is deliberately excluded: every entry in it ends
     # with "and stays here" or "has no override" — they are permanent properties of how those
     # tools behave, not work items. Counting them meant a fully clean machine reported six
@@ -355,10 +321,15 @@ function xdg_audit() {
     # --ids: the offending paths only, for a caller that wants to act on them.
     if (( ids_only )); then
         local entry
-        for entry in "${f_stale[@]}" "${f_divergent[@]}" "${f_incomplete[@]}" "${f_partial[@]}" "${f_available[@]}"; do
+        # ACTIONABLE paths only, matching what `findings` counts. f_partial is excluded: a
+        # caller piping --ids into something wants paths it can act on, and a partial-coverage
+        # path is one it must not touch.
+        for entry in "${f_stale[@]}" "${f_divergent[@]}" "${f_incomplete[@]}" "${f_available[@]}"; do
             print -r -- "~/${entry%%|*}"
         done
-        print -rl -- ${f_unclassified[@]/#/\~/}
+        # Guarded: `print -rl --` on an empty array emits a blank line, which a caller reading
+        # the list line-by-line would treat as a path.
+        (( ${#f_unclassified} )) && print -rl -- ${f_unclassified[@]/#/\~/}
         return $(( findings > 0 ))
     fi
 
@@ -396,45 +367,16 @@ function xdg_audit() {
             print -r -- "    → the legacy path is still the only copy; move it, or unset the variable"
         fi
 
-        if (( ${#f_partial} && verbose )); then
-            print -r -- "  partial (variable set, but does not cover everything the tool writes):"
-            for entry in "${(o)f_partial[@]}"; do
-                printf '    %-24s %s\n' "~/${entry%%|*}" "${entry#*|}"
-            done
-        fi
-
-        if (( ${#f_available} )); then
-            print -r -- "  available (relocatable, no variable set):"
-            for entry in "${(o)f_available[@]}"; do
-                printf '    %-24s set %s\n' "~/${entry%%|*}" "${entry#*|}"
-            done
-            print -r -- "    → setting the variable does NOT migrate existing data; move it too"
-        fi
-
         if (( ${#f_unclassified} )); then
             print -r -- "  unclassified (in none of the tables — triage and add it to one):"
             print -rl -- ${${(o)f_unclassified[@]}/#/    \~/}
         fi
 
-        if (( ${#f_large} && verbose )); then
-            print -r -- "  large unmanaged (not an XDG question — just what is using the space):"
-            for entry in "${(On)f_large[@]}"; do
-                printf '    %-24s %s\n' "~/${entry#*|}" "$(numfmt --to=iec --suffix=B ${entry%%|*} 2>/dev/null || print -r -- "${entry%%|*} bytes")"
-            done
-        fi
-
-        if (( ! verbose )); then
-            local -a noted=()
-            (( ${#f_partial} )) && noted+=( "${#f_partial} partial-coverage path(s)" )
-            (( ${#f_large} ))   && noted+=( "${#f_large} large unmanaged dir(s)" )
-            if (( ${#noted} )); then
-                print -r -- "  ${(j:, :)noted} — no action needed (--verbose to list)"
-                noted_shown=1
-            fi
-        fi
-        # The closing verdict already says "nothing actionable", so only add the inline ✓
-        # when nothing else was printed at all — otherwise it is the same sentence twice.
-        (( findings || noted_shown )) || print -r -- "  ✓ nothing actionable"
+        # Partial coverage is counted, never listed. Each entry is a permanent property of
+        # how that tool behaves — "and stays here", "has no override" — so the detail is
+        # reference material that belongs in XDG_AUDIT_PARTIAL, not in a report you read
+        # weekly. The count alone says "checked, nothing to do".
+        (( ${#f_partial} )) && print -r -- "  ${#f_partial} path(s) with documented partial coverage — no action needed"
         print -r -- "  (${ignored} known-unrelocatable entr$( (( ignored == 1 )) && print -n y || print -n ies) ignored)"
     fi
 
