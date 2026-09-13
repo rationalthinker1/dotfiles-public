@@ -614,6 +614,38 @@ zi load BurntSushi/ripgrep
 zi ice wait'2' lucid from'gh-r' as'program' nocompile'!'
 zi load ast-grep/ast-grep
 
+# 🌱 graft - prebuilt code graph (symbols, file:line spans, call edges) for coding agents
+# Usage: `graft init` once per repo, then `graft ask "how does X work" --source`,
+#        `graft callers <symbol> --depth all`, `graft skeleton <file>`, `graft map`
+# Also serves the same graph over MCP (`graft mcp`), which Claude Code picks up.
+#
+# npm, not gh-r: upstream ships no release binary — the bin is a node script (dist/cli.js)
+# that pulls in ~12 tree-sitter grammars as native addons, so there is nothing to download
+# and chmod. as'null' over an empty repo is zinit's documented way to let atclone/atpull
+# own an install it has no other opinion about.
+#
+# --prefix "${ZPFX}" rather than npm's own NPM_CONFIG_PREFIX (~/.local/share/npm) is the
+# point of doing this through zi at all: the install lands inside zinit's tree, which is
+# already on PATH, and `zi update` owns its lifecycle. Note the two prefixes are BOTH on
+# PATH with npm's first — so a stray `npm i -g @nanonets/graft` would shadow this copy
+# and win silently. maintain's path-dupe audit is what catches that; don't allowlist it.
+#
+# run-atpull is load-bearing. The null repo never gets a new commit, so without it atpull
+# never fires, and graft would install once and stay frozen at that version forever —
+# there is no `ver`/tag for zinit to notice moving. Reinstalling unconditionally also
+# repairs the one failure this shape can hit: the grammars resolve a prebuilt addon per
+# node ABI, so a `mise upgrade` that bumps node LTS past the prebuilds in the installed
+# tree leaves graft dying with ERR_DLOPEN_FAILED until something reinstalls it.
+#
+# Roughly 45 packages, ~35s on a fresh install and the same on every `zi update`; wait'2'
+# lucid keeps all of it off the startup path.
+if (( $+commands[npm] )); then
+    zi ice wait'2' lucid id-as'graft' as'null' nocompile \
+        atclone'npm install --global --prefix "${ZPFX}" @nanonets/graft' \
+        atpull'%atclone' run-atpull
+    zi light zdharma-continuum/null
+fi
+
 # 🦇 Bat - Cat clone with syntax highlighting and git integration
 # Usage: Already aliased to `cat` - shows line numbers and syntax colors
 # Original cat available as `rcat`
