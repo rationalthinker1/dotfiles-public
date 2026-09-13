@@ -232,6 +232,7 @@ not exist here.
 ```powershell
 maintain              # or: update-all
 maintain -Install     # run install.ps1 first (needs WSL up — the repo lives there)
+maintain -NoInstall   # suppress the install prompt (used by WSL's explicit --windows bridge)
 maintain -Elevate     # one UAC prompt for winget + chocolatey, no question asked
 maintain -NoElevate   # never elevate (chocolatey is then skipped)
 maintain -SkipCleanup # skip phase 5, the only phase that deletes anything

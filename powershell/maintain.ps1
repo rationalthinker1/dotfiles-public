@@ -358,7 +358,7 @@ function script:Format-MaintainBytes {
 
 function script:Show-MaintainUsage {
     @'
-Usage: maintain [-Install] [-SkipCleanup] [-Elevate|-NoElevate] [-Help]   (alias: update-all)
+Usage: maintain [-Install|-NoInstall] [-SkipCleanup] [-Elevate|-NoElevate] [-Help]   (alias: update-all)
 
 Full-spectrum Windows maintenance — update, sync, clean, and verify — in six phases:
   1. Package managers      winget upgrade --all, scoop update/cleanup, chocolatey
@@ -371,6 +371,7 @@ Full-spectrum Windows maintenance — update, sync, clean, and verify — in six
 Options:
   -Install      Run powershell/install.ps1 first (skips its prompt). Needs WSL running,
                 since the repo lives there.
+  -NoInstall    Suppress the install.ps1 prompt. Used by the explicit WSL --windows bridge.
   -SkipCleanup  Skip phase 5. Nothing in it is destructive beyond 30-day-old temp files,
                 but it is the only phase that deletes anything.
   -Elevate      Run winget and chocolatey in one elevated process: ONE UAC prompt for the
@@ -407,6 +408,7 @@ function maintain {
     [CmdletBinding()]
     param(
         [switch] $Install,
+        [switch] $NoInstall,
         [switch] $SkipCleanup,
         [switch] $Elevate,
         [switch] $NoElevate,
@@ -414,6 +416,10 @@ function maintain {
     )
 
     if ($Help) { Show-MaintainUsage; return }
+    if ($Install -and $NoInstall) {
+        Write-Error 'maintain: -Install and -NoInstall cannot be used together.'
+        return $false
+    }
 
     $script:MaintainFailures = @()
     $script:MaintainRan      = 0
@@ -430,7 +436,7 @@ function maintain {
 
     $interactive = [bool] ([Environment]::UserInteractive -and $Host.UI.RawUI)
 
-    if (-not $runInstall -and $installScript -and (Test-Path -LiteralPath $installScript) -and $interactive) {
+    if (-not $runInstall -and -not $NoInstall -and $installScript -and (Test-Path -LiteralPath $installScript) -and $interactive) {
         $reply = Read-Host '▸ Run the dotfiles install.ps1 bootstrap as part of this run? [y/N]'
         if ($reply -match '^[yY]') { $runInstall = $true }
     }

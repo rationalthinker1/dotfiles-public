@@ -68,7 +68,7 @@
 # ones you deleted. See docs/ZINIT_UPDATE_MECHANICS.md for the measurements.
 
 function maintain::usage() {
-    print -r -- "Usage: maintain [-h|--help] [--install] [--zinit]"
+    print -r -- "Usage: maintain [-h|--help] [--install] [--zinit] [--windows]"
     print -r -- ""
     print -r -- "Full-spectrum system maintenance — update, clean, fix, and verify — in six phases:"
     print -r -- "  1. System & OS package managers (brew/apt/pacman, flatpak, snap+cleanup, firmware/macOS updates)"
@@ -84,6 +84,8 @@ function maintain::usage() {
     print -r -- "              update: every run updates plugins and reinstalls any that drifted from"
     print -r -- "              .zshrc. Use it after editing an ice VALUE in place, which the audit"
     print -r -- "              cannot see (it compares ice names, not values)."
+    print -r -- "  --windows   On WSL only, run the deployed Windows maintain command after profile sync."
+    print -r -- "              It suppresses the Windows bootstrap prompt and requests one UAC elevation."
     print -r -- ""
     print -r -- "Two steps are opt-in. Before the phases begin, maintain asks whether to run the"
     print -r -- "dotfiles install.sh bootstrap and whether to do a FULL zinit wipe (both default N —"
@@ -172,6 +174,7 @@ function maintain() {
     # (no prompt); without it we ask on a tty (default N) and skip when non-interactive.
     local run_install=0
     local run_zinit=0
+    local run_windows=0
     local arg
     for arg in "$@"; do
         case "${arg}" in
@@ -184,6 +187,9 @@ function maintain() {
                 ;;
             (--zinit)
                 run_zinit=1
+                ;;
+            (--windows)
+                run_windows=1
                 ;;
             (*)
                 print -ru2 -- "maintain: unknown option '${arg}'"
@@ -366,12 +372,22 @@ function maintain::hdr() {
     print -r -- "  ── ${1} ────────────────────────────────"
 }
 
+# Read-only health findings are deliberately separate from failed maintenance commands.
+# A held package, expiring certificate, or failed unit needs attention, but does not mean
+# that the updater itself failed. `health_warnings` is local to maintain::run and reached
+# through zsh's dynamic scoping, just like failures and the zinit summary state.
+function maintain::health_warn() {
+    health_warnings+=( "${1}" )
+    print -r -- "    ⚠️ ${1}"
+}
+
 function maintain::run() {
     # Keep option/trap changes local so we never leak state into the caller's shell.
     setopt local_options local_traps
 
     local start=${SECONDS}
     local -a failures
+    local -a health_warnings
     # zi-audit's one-line verdict plus the plugins it flagged, surfaced in the closing
     # summary. zi_report stays empty when the zinit step is skipped (no zinit in this
     # shell), which drops the summary line; zi_flagged is empty on a clean audit.
@@ -759,6 +775,47 @@ function maintain::run() {
                 done
             } || failures+=("pwsh profile sync")
         fi
+
+        # The normal WSL run deliberately stops at syncing the Windows profile: a bare
+        # `maintain` must not unexpectedly open a UAC dialog or update Windows packages.
+        # --windows is the explicit bridge. It loads the LOCAL deployed profile (never the
+        # UNC repo) and tells its maintain function both answers in advance: no bootstrap,
+        # one elevated package-manager child. The PowerShell command turns a `$false`
+        # function result into a native non-zero exit so this side can report it honestly.
+        if (( run_windows )); then
+            maintain::hdr "Windows maintenance (--windows)"
+            local win_profile="${pwsh_deploy}/powershell/profile.ps1"
+            if (( ! $+commands[pwsh.exe] )); then
+                print -r -- "    pwsh.exe is not reachable from WSL"
+                failures+=("Windows maintain (pwsh.exe unavailable)")
+            elif [[ ! -r "${win_profile}" ]]; then
+                print -r -- "    deployed profile missing: ${win_profile}"
+                failures+=("Windows maintain (deployment unavailable)")
+            else
+                local win_profile_win="$(wslpath -w "${win_profile}" 2>/dev/null)"
+                if [[ -z "${win_profile_win}" ]]; then
+                    print -r -- "    could not translate deployed profile path for Windows"
+                    failures+=("Windows maintain (path translation)")
+                else
+                    # Pass the Windows path as base64 rather than interpolating a quoted path
+                    # into PowerShell source. This remains correct for a Windows username
+                    # containing spaces or an apostrophe and never relies on pwsh argument
+                    # forwarding through WSL interop.
+                    local win_profile_b64="$(print -rn -- "${win_profile_win}" | base64 | tr -d '\n')"
+                    pwsh.exe -NoProfile -ExecutionPolicy Bypass -Command \
+                        "\$profilePath = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${win_profile_b64}')); . \$profilePath; if (-not (maintain -NoInstall -Elevate)) { exit 1 }" \
+                        || failures+=("Windows maintain")
+                fi
+            fi
+        fi
+    elif (( run_windows )) && [[ "${HOST_OS}" == "wsl" && "${in_container}" != "true" ]]; then
+        maintain::hdr "Windows maintenance (--windows)"
+        print -r -- "    cmd.exe is not reachable from WSL; cannot locate the deployed Windows profile"
+        failures+=("Windows maintain (cmd.exe unavailable)")
+    elif (( run_windows )); then
+        maintain::hdr "Windows maintenance (--windows)"
+        print -r -- "    --windows is available only from a non-container WSL host"
+        failures+=("Windows maintain (not WSL)")
     fi
 
 
@@ -1205,6 +1262,41 @@ function maintain::run() {
         fi
         local sec="$(LANG=C apt-get -s upgrade 2>/dev/null | grep -ciE '^Inst .*securi')"
         (( sec > 0 )) && { (( pkg_issues++ )); print -r -- "    ⚠️ ${sec} pending security update(s) — run apt full-upgrade" }
+        if (( $+commands[apt-mark] )); then
+            local held="$(apt-mark showhold 2>/dev/null)"
+            if [[ -n "${held}" ]]; then
+                local -a held_packages=( ${(f)held} )
+                maintain::health_warn "held apt package(s) will not be upgraded: ${(j:, :)held_packages}"
+            else
+                print -r -- "    ✓ no held apt packages"
+            fi
+        fi
+        # `apt-get -s` only recognizes updates whose package description happens to contain
+        # “security”. Ubuntu Pro has the authoritative repository-coverage view, including
+        # pending ESM updates and third-party/unknown package origins. Print counts only —
+        # never package names — and keep it advisory because ESM availability is not a broken
+        # package state or an instruction to enroll in Pro.
+        if (( $+commands[pro] && $+commands[python3] )); then
+            local pro_summary
+            pro_summary="$(pro security-status --format json 2>/dev/null | python3 -c '
+import json, sys
+summary = json.load(sys.stdin).get("summary", {})
+standard = int(summary.get("num_standard_security_updates", 0))
+apps = int(summary.get("num_esm_apps_updates", 0))
+infra = int(summary.get("num_esm_infra_updates", 0))
+third_party = int(summary.get("num_third_party_packages", 0))
+unknown = int(summary.get("num_unknown_packages", 0))
+reboot = bool(summary.get("reboot_required", False))
+needs_review = standard > 0 or apps > 0 or infra > 0 or unknown > 0 or reboot
+print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third_party} unknown={unknown} reboot={str(reboot).lower()} review={int(needs_review)}")
+' 2>/dev/null)"
+            if [[ -n "${pro_summary}" ]]; then
+                print -r -- "    Ubuntu security coverage: ${pro_summary% review=*}"
+                [[ "${pro_summary}" == *'review=1' ]] && maintain::health_warn "Ubuntu security-status reports updates, unknown packages, or a reboot requirement"
+            else
+                maintain::health_warn "could not read Ubuntu security-status"
+            fi
+        fi
         [[ "${HOST_LOCATION:-}" == "server" ]] && (( ! $+commands[unattended-upgrade] )) && print -r -- "    ℹ️ unattended-upgrades not installed (recommended on servers)"
         (( pkg_issues == 0 )) && print -r -- "    ✓ no pending config merges, broken packages, or security updates"
     elif (( $+commands[pacman] )); then
@@ -1216,6 +1308,46 @@ function maintain::run() {
         fi
     else
         print -r -- "    (no apt/pacman on this host)"
+    fi
+
+    # Unit failures are relevant on desktops and WSL as much as on servers: this host's
+    # memory guardrails and cron-based jobs can be dead while package updates are green.
+    # Do not start, enable, or restart anything here; this is an operational report only.
+    if [[ "${in_container}" != "true" ]] && [[ -d /run/systemd/system ]] && (( $+commands[systemctl] )); then
+        maintain::hdr "Systemd health"
+        local failed_units="$(systemctl list-units --failed --no-legend --plain 2>/dev/null)"
+        if [[ -n "${failed_units}" ]]; then
+            maintain::health_warn "failed systemd unit(s) detected"
+            local unit_line
+            print -r -- "${failed_units}" | while IFS= read -r unit_line; do print -r -- "        ${unit_line}"; done
+        else
+            print -r -- "    ✓ no failed systemd units"
+        fi
+
+        if [[ "${HOST_OS}" == "wsl" ]]; then
+            local critical_unit enabled_state active_state
+            for critical_unit in memwatch.service earlyoom.service cron.service; do
+                systemctl cat "${critical_unit}" >/dev/null 2>&1 || continue
+                enabled_state="$(systemctl is-enabled "${critical_unit}" 2>/dev/null)"
+                [[ "${enabled_state}" == enabled || "${enabled_state}" == enabled-runtime ]] || continue
+                active_state="$(systemctl is-active "${critical_unit}" 2>/dev/null)"
+                [[ "${active_state}" == active ]] || maintain::health_warn "${critical_unit} is enabled but ${active_state:-inactive}"
+            done
+        fi
+    fi
+
+    # NTP is a native-Linux health concern (WSL takes host time). Bad time breaks package
+    # signatures, TLS and scheduled jobs, so report it without attempting to reconfigure it.
+    if [[ "${HOST_OS}" == "linux" && "${in_container}" != "true" ]] && (( $+commands[timedatectl] )); then
+        maintain::hdr "Time synchronization"
+        local ntp_sync="$(timedatectl show -p NTPSynchronized --value 2>/dev/null)"
+        if [[ "${ntp_sync}" == yes ]]; then
+            print -r -- "    ✓ NTP synchronized"
+        elif [[ -n "${ntp_sync}" ]]; then
+            maintain::health_warn "NTP is not synchronized"
+        else
+            print -r -- "    (time synchronization status unavailable)"
+        fi
     fi
 
     # Read-only server status report — highlights action items, never changes state.
@@ -1232,23 +1364,13 @@ function maintain::run() {
             fi
         fi
 
-        if [[ -d /run/systemd/system ]] && (( $+commands[systemctl] )); then
-            local failed_units="$(systemctl list-units --failed --no-legend --plain 2>/dev/null)"
-            if [[ -n "${failed_units}" ]]; then
-                srv_clean=0
-                local unit_line
-                print -r -- "    ⚠️ Failed systemd units:"
-                print -r -- "${failed_units}" | while IFS= read -r unit_line; do print -r -- "        ${unit_line}"; done
-            fi
-        fi
-
         if (( $+commands[journalctl] && can_sudo )); then
             local err_count="$("${sudo_cmd[@]}" journalctl -b -p err --no-pager -q 2>/dev/null | wc -l)"
             err_count="${err_count// /}"
             (( err_count > 0 )) && { srv_clean=0; print -r -- "    ⚠️ ${err_count} journal error(s) since boot — inspect: journalctl -b -p err" }
         fi
 
-        (( srv_clean )) && print -r -- "    ✓ no reboot required, no failed units, no boot errors"
+        (( srv_clean )) && print -r -- "    ✓ no reboot required and no boot errors"
         # DEBIAN_FRONTEND is load-bearing here, not decoration. Without it needrestart renders
         # its "Pending kernel upgrade" notice through debconf/whiptail, and because sudo gives
         # the command its OWN pty that dialog paints onto a different tty than the one you are
@@ -1257,6 +1379,110 @@ function maintain::run() {
         # stderr. `env` for the same reason as apt_env above: sudo's env_reset drops the var.
         # Only reproduces where a -generic kernel is installed, so WSL never shows it.
         (( $+commands[needrestart] && can_sudo )) && { print -r -- "    services needing restart (needrestart):"; "${sudo_cmd[@]}" env DEBIAN_FRONTEND=noninteractive needrestart -r l 2>/dev/null }
+
+        # Fail2Ban's client counters are since daemon start; the journal adds a rolling
+        # seven-day event count. Neither output contains source IP addresses or log lines.
+        if (( $+commands[fail2ban-client] && can_sudo )); then
+            maintain::hdr "Fail2Ban (jail and 7-day event stats)"
+            local f2b_status
+            f2b_status="$("${sudo_cmd[@]}" fail2ban-client status 2>/dev/null)"
+            if [[ -z "${f2b_status}" ]]; then
+                maintain::health_warn "Fail2Ban status is unavailable"
+            else
+                local jail_line="${${(M)${(f)f2b_status}:#*Jail list:*}[1]}"
+                local jail_csv="${jail_line##*:}"
+                local -a f2b_jails=( ${(s:,:)jail_csv} )
+                f2b_jails=( ${f2b_jails//[[:space:]]/} )
+                if (( ${#f2b_jails} )); then
+                    local jail jail_status
+                    for jail in "${f2b_jails[@]}"; do
+                        [[ -n "${jail}" ]] || continue
+                        jail_status="$("${sudo_cmd[@]}" fail2ban-client status "${jail}" 2>/dev/null)"
+                        print -r -- "${jail_status}" | awk -v jail="${jail}" '
+                            /Currently failed:|Total failed:|Currently banned:|Total banned:/ {
+                                sub(/^[[:space:]|`-]+/, "")
+                                printf "    %s %s\\n", jail, $0
+                            }'
+                    done
+                else
+                    print -r -- "    ✓ no active Fail2Ban jails"
+                fi
+                if (( $+commands[journalctl] )); then
+                    local f2b_events
+                    f2b_events="$("${sudo_cmd[@]}" journalctl -u fail2ban --since '7 days ago' --no-pager -o cat 2>/dev/null \
+                        | awk '/ Ban / {ban++} / Unban / {unban++} / Found / {found++} END {printf "ban=%d unban=%d found=%d", ban+0, unban+0, found+0}')"
+                    [[ -n "${f2b_events}" ]] && print -r -- "    7-day events: ${f2b_events}"
+                fi
+            fi
+        fi
+
+        # UFW can carry many site-specific rules. Report only the active state and default
+        # policy — enough to expose an accidentally disabled firewall without leaking rules.
+        if (( $+commands[ufw] && can_sudo )); then
+            maintain::hdr "Firewall (UFW)"
+            local ufw_status="$("${sudo_cmd[@]}" ufw status verbose 2>/dev/null)"
+            if [[ "${ufw_status}" == *'Status: active'* ]]; then
+                local ufw_default="${${(M)${(f)ufw_status}:#Default:*}[1]}"
+                print -r -- "    ✓ UFW active${ufw_default:+ — ${ufw_default}}"
+            elif [[ "${ufw_status}" == *'Status: inactive'* ]]; then
+                maintain::health_warn "UFW is inactive"
+            else
+                maintain::health_warn "UFW status is unavailable"
+            fi
+        fi
+
+        # Certificate inspection is read-only. Certbot needs root merely to read its lock
+        # and renewal state, so use the sudo credential primed at the start of the run.
+        if (( $+commands[certbot] )); then
+            maintain::hdr "TLS certificates (Certbot)"
+            if (( $+commands[systemctl] )); then
+                local cert_timer="$(systemctl is-enabled certbot.timer 2>/dev/null)"
+                local cert_active="$(systemctl is-active certbot.timer 2>/dev/null)"
+                [[ "${cert_timer}" == enabled && "${cert_active}" == active ]] \
+                    || maintain::health_warn "certbot.timer is ${cert_timer:-unavailable}/${cert_active:-inactive}"
+                local cert_result="$(systemctl show certbot.service -p Result --value 2>/dev/null)"
+                [[ -z "${cert_result}" || "${cert_result}" == success ]] \
+                    || maintain::health_warn "last certbot.service result: ${cert_result}"
+            fi
+            if (( can_sudo )); then
+                local certs
+                certs="$("${sudo_cmd[@]}" certbot certificates 2>/dev/null | awk '
+                    /^ *Certificate Name:/ {name=$0; sub(/^ *Certificate Name: */, "", name)}
+                    /^ *Expiry Date:/ {
+                        days=$0
+                        sub(/^.*VALID: /, "", days)
+                        sub(/ days.*$/, "", days)
+                        if (days ~ /^[0-9]+$/) {
+                            printf "%s: %s days\\n", name ? name : "certificate", days
+                        }
+                    }')"
+                if [[ -n "${certs}" ]]; then
+                    local cert_line cert_days
+                    print -r -- "${certs}" | while IFS= read -r cert_line; do print -r -- "    ${cert_line}"; done
+                    while IFS= read -r cert_line; do
+                        cert_days="${cert_line##*: }"; cert_days="${cert_days% days}"
+                        [[ "${cert_days}" == <-> && ${cert_days} -le 21 ]] \
+                            && maintain::health_warn "certificate expires in ${cert_days} days (${cert_line%%:*})"
+                    done <<< "${certs}"
+                else
+                    maintain::health_warn "could not inspect Certbot certificates"
+                fi
+            fi
+        fi
+
+        # A running Docker daemon can still have failing health checks. Do not mention
+        # normally stopped containers: one-shot jobs and deliberately stopped stacks are not
+        # health failures. Names only; no inspect payloads or restart actions.
+        if (( ${#docker_cmd} )); then
+            maintain::hdr "Docker health"
+            local unhealthy="$("${docker_cmd[@]}" ps --filter health=unhealthy --format '{{.Names}}' 2>/dev/null)"
+            if [[ -n "${unhealthy}" ]]; then
+                local -a unhealthy_containers=( ${(f)unhealthy} )
+                maintain::health_warn "unhealthy Docker container(s): ${(j:, :)unhealthy_containers}"
+            else
+                print -r -- "    ✓ no unhealthy Docker containers"
+            fi
+        fi
     fi
 
     # WSL runtime/kernel updates live on the WINDOWS side: `wsl --update` targets the WSL2
@@ -1303,8 +1529,13 @@ function maintain::run() {
         print -r -- "   ⚠️ ${#failures} step(s) failed:"
         local f
         for f in "${failures[@]}"; do print -r -- "        • ${f}"; done
-    else
+    elif (( ! ${#health_warnings} )); then
         print -r -- "   All steps completed successfully."
+    fi
+    if (( ${#health_warnings} )); then
+        print -r -- "   ⚠️ ${#health_warnings} read-only health warning(s) require review:"
+        local health_warning
+        for health_warning in "${health_warnings[@]}"; do print -r -- "        • ${health_warning}"; done
     fi
     print -r -- "   Log saved to:      ${log_file}"
     print -r -- "   Run 'exec zsh' to apply updated command paths."
