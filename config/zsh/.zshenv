@@ -37,6 +37,11 @@ export DOTFILES_ROOT="${HOME}/.dotfiles"
 export XDG_CONFIG_HOME="${HOME}/.config"
 export XDG_DATA_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}"
 export XDG_CACHE_HOME="${XDG_CACHE_HOME:-${HOME}/.cache}"
+# STATE is the fourth XDG root and was the only one never exported — it was referenced with
+# an inline `${XDG_STATE_HOME:-…}` default in a handful of places instead. That works until
+# something outside this file wants it, which is exactly what the history-file relocations
+# below need. Declared here so there is one definition rather than N copies of the fallback.
+export XDG_STATE_HOME="${XDG_STATE_HOME:-${HOME}/.local/state}"
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 export ZSH_CACHE_DIR="${ZDOTDIR}/cache"
 
@@ -57,6 +62,28 @@ export CODEX_HOME="${XDG_CONFIG_HOME}/codex"
 export GNUPGHOME="${XDG_CONFIG_HOME}/gnupg"
 export PASSWORD_STORE_DIR="${XDG_CONFIG_HOME}/password-store"
 export FNM_PATH="${XDG_CONFIG_HOME}/.fnm"
+
+# Relocations found by `xdg-audit`. Each of these tools reads an env var but defaults to a
+# dotfile in $HOME, so without these four lines they scatter state across the home directory
+# for no reason other than that nobody set the variable.
+#
+# Setting a variable does NOT move existing data — install.sh's migrate_to_xdg block does
+# that, and these paths must stay in step with it.
+#
+# The two history files are STATE, not config: they are written by the program, never edited
+# by hand, and losing one costs nothing. That is the distinction XDG_STATE_HOME exists for.
+export NODE_REPL_HISTORY="${XDG_STATE_HOME}/node_repl_history"
+# Python 3.13+ only. Older interpreters ignore it and keep using ~/.python_history, which is
+# harmless — the variable simply has no effect until the interpreter is new enough.
+export PYTHON_HISTORY="${XDG_STATE_HOME}/python_history"
+# DOTNET_CLI_HOME is a HOME substitute, not a target directory: the CLI creates its own
+# `.dotnet` folder inside whatever this points at. So this yields …/share/dotnet/.dotnet,
+# and the migration moves ~/.dotnet to exactly that path rather than to the parent.
+export DOTNET_CLI_HOME="${XDG_DATA_HOME}/dotnet"
+# Covers the model blobs only — the part actually worth relocating, since models run to
+# gigabytes. ~/.ollama/config.json and ~/.ollama/history have no override and stay put;
+# xdg-audit reports that as partial coverage rather than pretending the directory is gone.
+export OLLAMA_MODELS="${XDG_DATA_HOME}/ollama/models"
 
 # 🖥️ Terminal & editor defaults
 #

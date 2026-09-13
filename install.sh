@@ -847,6 +847,17 @@ migrate_to_xdg "${HOME}/.gnupg"          "${GNUPGHOME}"
 migrate_to_xdg "${HOME}/.cargo"          "${XDG_CONFIG_HOME}/.cargo"
 migrate_to_xdg "${HOME}/.rustup"         "${XDG_CONFIG_HOME}/.rustup"
 migrate_to_xdg "${HOME}/go"              "${XDG_DATA_HOME:-${HOME}/.local/share}/go"
+# Relocations added after an xdg-audit pass. Targets must match the exports in
+# config/zsh/.zshenv exactly — a variable pointing somewhere the data was never moved to is
+# worse than no variable at all, because the tool then silently starts from empty.
+migrate_to_xdg "${HOME}/.node_repl_history" "${XDG_STATE_HOME:-${HOME}/.local/state}/node_repl_history"
+migrate_to_xdg "${HOME}/.python_history"    "${XDG_STATE_HOME:-${HOME}/.local/state}/python_history"
+# Note the trailing /.dotnet: DOTNET_CLI_HOME is a HOME substitute and the CLI creates its
+# own .dotnet folder inside it, so the data belongs one level deeper than the variable.
+migrate_to_xdg "${HOME}/.dotnet"            "${XDG_DATA_HOME:-${HOME}/.local/share}/dotnet/.dotnet"
+# Models only. ~/.ollama/config.json and ~/.ollama/history have no env override, so the
+# directory legitimately survives this — do not "tidy up" by moving the whole thing.
+migrate_to_xdg "${HOME}/.ollama/models"     "${XDG_DATA_HOME:-${HOME}/.local/share}/ollama/models"
 
 # npm config may carry a registry auth token — keep it private
 [[ -f "${XDG_CONFIG_HOME}/npm/npmrc" ]] && chmod 600 "${XDG_CONFIG_HOME}/npm/npmrc"

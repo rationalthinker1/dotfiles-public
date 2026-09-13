@@ -78,10 +78,9 @@ typeset -gA XDG_AUDIT_DECLARED=(
 # existing data, which the report says explicitly — that caveat is the whole reason these
 # are suggestions rather than something install.sh does silently.
 typeset -gA XDG_AUDIT_AVAILABLE=(
-    '.node_repl_history'  'NODE_REPL_HISTORY'
-    '.python_history'     'PYTHON_HISTORY'
-    '.dotnet'             'DOTNET_CLI_HOME'
-    '.ollama'             'OLLAMA_MODELS'
+    # NODE_REPL_HISTORY, PYTHON_HISTORY, DOTNET_CLI_HOME and OLLAMA_MODELS used to live here.
+    # They are now exported by .zshenv and migrated by install.sh, so they are declared
+    # relocations (see XDG_AUDIT_DECLARED) rather than pending suggestions.
     '.docker'             'DOCKER_CONFIG'
     '.gradle'             'GRADLE_USER_HOME'
     '.m2'                 'MAVEN_OPTS (-Dmaven.repo.local)'
@@ -97,6 +96,7 @@ typeset -gA XDG_AUDIT_AVAILABLE=(
 # deletion that breaks the tool.
 typeset -gA XDG_AUDIT_PARTIAL=(
     '.aws'         'AWS_CONFIG_FILE/AWS_SHARED_CREDENTIALS_FILE cover config+credentials only; .aws/cli is the SSO cache'
+    '.ollama'      'OLLAMA_MODELS relocates the model blobs only; config.json and history have no override and stay here'
     '.wget-hsts'   'WGETRC relocates wgetrc itself; the HSTS store needs a separate hsts-file= inside it'
     '.viminfo'     'vim writes $XDG_DATA_HOME/vim/viminfo; a stray file here means some vim ran without the config'
 )
