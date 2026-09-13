@@ -667,17 +667,46 @@ function sa::audit_logs() {
     if [[ -d /etc/logrotate.d ]]; then
         local -a rules=( /etc/logrotate.d/*(N.) )
         local rule_text; rule_text="$(cat "${rules[@]}" /etc/logrotate.conf 2>/dev/null)"
-        local -a uncovered=()
+        # A missing logrotate rule only matters if something is actually accumulating.
+        # Plenty of programs prune their own logs — this repo's own scripts/memwatch deletes
+        # anything past RETAIN_DAYS — and reporting those as unrotated produced 14 findings
+        # about files totalling a few hundred KB. A check that fires on healthy state is a
+        # check you stop reading, so the rule is: no logrotate coverage AND real size, either
+        # in one file or accumulated across the directory.
+        local -i uncov_file_min=$(( 10 * 1024 * 1024 ))
+        local -i uncov_dir_min=$(( 50 * 1024 * 1024 ))
+        local -A dir_bytes=()
+        local -a candidates=() uncovered=()
         local lg d
+        local -i sz
+
+        # zstat, not `stat -c %s … || fallback`: the command-substitution-plus-|| form leaks
+        # an empty assignment into the output when the file cannot be read, and this is a
+        # builtin the repo already relies on elsewhere.
+        zmodload -F zsh/stat b:zstat 2>/dev/null
+
         for lg in /var/log/*.log(N.) /var/log/*/*.log(N.); do
             d="${lg:h}"
             [[ "${rule_text}" == *"${lg}"* || "${rule_text}" == *"${d}/"* ]] && continue
-            uncovered+=( "${lg}" )
+            candidates+=( "${lg}" )
+            sz=$(zstat +size "${lg}" 2>/dev/null)
+            dir_bytes[${d}]=$(( ${dir_bytes[${d}]:-0} + sz ))
         done
+
+        for lg in "${candidates[@]}"; do
+            d="${lg:h}"
+            sz=$(zstat +size "${lg}" 2>/dev/null)
+            (( sz >= uncov_file_min || ${dir_bytes[${d}]:-0} >= uncov_dir_min )) && uncovered+=( "${lg}" )
+        done
+
+        # Mutually exclusive, and in severity order — an earlier version printed both the
+        # "small or self-pruned" note and "every file is covered", which flatly contradict.
         if (( ${#uncovered} )); then
-            sa::warn "${#uncovered} log file(s) with no logrotate rule"
+            sa::warn "${#uncovered} log file(s) with no logrotate rule and real size"
             local u; for u in "${uncovered[@]:0:8}"; do sa::item "${u}"; done
             sa::fix "add a rule under /etc/logrotate.d/"
+        elif (( ${#candidates} )); then
+            sa::ok "${#candidates} log file(s) have no logrotate rule, but are small or self-pruned"
         else
             sa::ok "every /var/log file is covered by a logrotate rule"
         fi

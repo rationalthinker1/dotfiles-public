@@ -212,6 +212,23 @@ path=(
   "${XDG_DATA_HOME}/mise/shims"
 )
 
+# Drop entries whose directory does not exist.
+#
+# `typeset -U path` above dedupes but keeps dead entries, and every one of them costs a
+# failed stat() on EVERY command lookup for the life of the shell. Worse, a dead entry hides
+# a broken assumption: FNM_PATH pointed at ~/.config/.fnm long after fnm stopped being
+# installed, and /usr/local/go/bin survived a go uninstall — both looked correct in this
+# file while doing nothing. Three of the entries above were dead on the machine this was
+# written on.
+#
+# (N-/) is the whole fix: N so an absent path expands to nothing instead of erroring, - to
+# follow symlinks before testing, / to keep only directories. ${^path} distributes the
+# qualifier across the array rather than applying it once to the joined string.
+#
+# Deliberately AFTER the array is built, not a guard on each line: entries are added
+# unconditionally so the list stays readable, and the filter runs once over the result.
+path=( ${^path}(N-/) )
+
 if [[ "${HOST_OS:-}" == "wsl" ]]; then
   # Filter Windows PATH to only essential directories (performance optimization)
   # WSL automatically appends Windows PATH, but it includes 20+ slow NTFS-mounted dirs

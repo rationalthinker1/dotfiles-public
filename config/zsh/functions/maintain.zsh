@@ -1316,6 +1316,7 @@ function maintain::run() {
     # is the one a fresh `npx playwright install` resolves to.
     maintain::hdr "Stale toolchain caches"
     local -i tc_removed=0
+    local -a tc_super=()
     local tc_cache="${XDG_CACHE_HOME:-${HOME}/.cache}"
 
     # node-gyp: one directory per node version, named by version. Keep whatever mise has
@@ -1372,14 +1373,29 @@ function maintain::run() {
         for tc_group in "${tc_groups[@]}"; do
             local -a tc_revs=( ${(On)${(M)tc_versioned:#${tc_group}-[0-9]*}} )
             (( ${#tc_revs} > 1 )) || continue
+            # REPORTED, NOT DELETED. Keep-newest is the right rule for finding superseded
+            # revisions and the wrong rule for acting on them: a project pinned to an older
+            # Playwright needs exactly the revision this would remove, and the first sign
+            # would be a test run failing to launch a browser. It re-downloads, so the cost
+            # is minutes rather than data — but it is still a surprise nobody asked for.
+            # node-gyp above stays automatic because it is keyed to the node versions mise
+            # actually has installed, not to "newest wins".
             for tc_name in "${tc_revs[@]:1}"; do
-                print -r -- "    ${tc_parent:t}: removing superseded ${tc_name}"
-                rm -rf -- "${tc_parent}/${tc_name}" && (( tc_removed++ ))
+                tc_super+=( "${tc_parent:t}/${tc_name}" )
             done
         done
         unset tc_groups
     done
-    (( tc_removed )) || print -r -- "    ✓ no superseded toolchain downloads"
+    if (( ${#tc_super} )); then
+        local tc_bytes=0 tc_one
+        for tc_one in "${tc_super[@]}"; do
+            tc_bytes=$(( tc_bytes + $(command du -sb "${tc_cache}/${tc_one}" 2>/dev/null | cut -f1) ))
+        done
+        maintain::health_warn "${#tc_super} superseded browser revision(s) ($(( tc_bytes / 1048576 ))M) — kept, a pinned project may still need them"
+        for tc_one in "${tc_super[@]}"; do print -r -- "        ${tc_cache}/${tc_one}"; done
+        print -r -- "       → if nothing pins an old version: rm -rf the paths above"
+    fi
+    (( tc_removed || ${#tc_super} )) || print -r -- "    ✓ no superseded toolchain downloads"
     fi  # phase 3
 
 
