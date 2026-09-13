@@ -1,5 +1,9 @@
 .vim/bundle
 .vim/plugged
+# tmux plugin checkouts, same reasoning as .vim/plugged above: third-party runtime
+# state, fetched by TPM. Previously tracked as gitlinks (mode 160000) with no
+# .gitmodules, so clones produced empty placeholder dirs and tmux plugins never worked.
+config/tmux/plugins/
 .ssh.bak
 .ssh/known_hosts
 oh-my-zsh

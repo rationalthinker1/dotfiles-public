@@ -39,6 +39,15 @@
 # Destructive steps are conservative: trash/thumbnails only drop items older than 30
 # days, and docker prune keeps volumes and anything younger than 7 days.
 #
+# One deletion looks wrong and is not: phase 3 removes $npm_cache/_npx, $npm_cache/.npm
+# and ~/.npm by PATH, immediately after running `npm cache clean --force`. That is not
+# redundancy — `npm cache clean` only ever empties _cacache inside the ONE directory
+# `npm config get cache` names. _npx is its sibling and is never cleaned; $cache/.npm is a
+# nested orphan from a run whose HOME resolved to the cache dir; ~/.npm is the pre-XDG
+# location, dead since npm_config_cache moved and unreachable by any npm command since.
+# Measured here: 7.5G across the three, against a 48K _cacache that the weekly run had
+# been dutifully emptying for months. See the comment at the npm step for the guards.
+#
 # On WSL only, phase 4 also re-asserts that Docker cannot autostart — every container
 # back to restart=no, docker.service/.socket/containerd.service disabled at boot. Both
 # drift back on their own (tools rewrite restart policies; a docker-ce upgrade re-enables
@@ -68,7 +77,7 @@
 # ones you deleted. See docs/ZINIT_UPDATE_MECHANICS.md for the measurements.
 
 function maintain::usage() {
-    print -r -- "Usage: maintain [-h|--help] [--install] [--zinit] [--windows]"
+    print -r -- "Usage: maintain [-h|--help] [--install] [--zinit] [--windows] [--only N,…|--skip N,…]"
     print -r -- ""
     print -r -- "Full-spectrum system maintenance — update, clean, fix, and verify — in six phases:"
     print -r -- "  1. System & OS package managers (brew/apt/pacman, flatpak, snap+cleanup, firmware/macOS updates)"
@@ -76,7 +85,7 @@ function maintain::usage() {
     print -r -- "  3. Global packages & language build caches (npm, pnpm, bun, uv, pipx, pynvim, composer, go, cargo, atuin sync)"
     print -r -- "  4. Container hygiene (docker/podman prune safe mode; WSL: re-pin containers to restart=no and disable docker units at boot)"
     print -r -- "  5. Cleanup & caches (TRIM, journal, coredumps, macOS/dev caches, DNS flush, zsh recompile, font/desktop DBs)"
-    print -r -- "  6. Health, integrity & security (doctors, PATH shadows, broken-link & dotfiles audit, config-merge/security report, permission audit, disk report)"
+    print -r -- "  6. Health, integrity & security (doctors, PATH shadows, XDG audit, broken-link & dotfiles audit, config-merge/security report, permission audit, pending reboot, disk report)"
     print -r -- ""
     print -r -- "Options:"
     print -r -- "  --install   Run the dotfiles install.sh bootstrap first (skips its prompt)."
@@ -86,6 +95,13 @@ function maintain::usage() {
     print -r -- "              cannot see (it compares ice names, not values)."
     print -r -- "  --windows   On WSL only, run the deployed Windows maintain command after profile sync."
     print -r -- "              It suppresses the Windows bootstrap prompt and requests one UAC elevation."
+    print -r -- "  --only N,…  Run ONLY these phases (1-6). 'maintain --only 6' is a read-only health"
+    print -r -- "              report; --only 3 redoes the package/cache pass without a 30-minute rerun."
+    print -r -- "  --skip N,…  Run every phase EXCEPT these. Mutually exclusive with --only."
+    print -r -- ""
+    print -r -- "Every network step runs under a timeout (60s for probes, 20-30m for real"
+    print -r -- "downloads) and a step killed on its deadline is reported as such, so a stalled"
+    print -r -- "mirror fails the step instead of hanging the run forever."
     print -r -- ""
     print -r -- "Two steps are opt-in. Before the phases begin, maintain asks whether to run the"
     print -r -- "dotfiles install.sh bootstrap and whether to do a FULL zinit wipe (both default N —"
@@ -175,9 +191,15 @@ function maintain() {
     local run_install=0
     local run_zinit=0
     local run_windows=0
-    local arg
-    for arg in "$@"; do
-        case "${arg}" in
+    # All six unless --only/--skip narrow it. maintain::run reads this through dynamic
+    # scoping, same as log_file below.
+    local -a maintain_phases=( 1 2 3 4 5 6 )
+    local only_list="" skip_list=""
+    # A while loop, not `for arg in "$@"`: --only and --skip take a value, which may arrive
+    # either as the next word or glued on with '='. Both spellings are accepted because
+    # both are what one actually types.
+    while (( $# )); do
+        case "${1}" in
             (-h|--help)
                 maintain::usage
                 return 0
@@ -191,12 +213,69 @@ function maintain() {
             (--windows)
                 run_windows=1
                 ;;
+            (--only)
+                # Guard the shift: with --only as the last word there is no ${2}, and the
+                # extra shift underflows with "shift count must be <= $#" before the empty
+                # value is ever validated below.
+                (( $# >= 2 )) || { print -ru2 -- "maintain: --only needs a phase list, e.g. --only 3,5"; return 2 }
+                only_list="${2}"; shift
+                ;;
+            (--only=*)
+                only_list="${1#*=}"
+                ;;
+            (--skip)
+                (( $# >= 2 )) || { print -ru2 -- "maintain: --skip needs a phase list, e.g. --skip 1"; return 2 }
+                skip_list="${2}"; shift
+                ;;
+            (--skip=*)
+                skip_list="${1#*=}"
+                ;;
             (*)
-                print -ru2 -- "maintain: unknown option '${arg}'"
+                print -ru2 -- "maintain: unknown option '${1}'"
                 return 2
                 ;;
         esac
+        shift
     done
+
+    # Refuse the combination rather than inventing a precedence. "--only 3 --skip 3" has no
+    # defensible answer, and a run that silently did something other than what was asked is
+    # the worst outcome for a command that installs and deletes things.
+    if [[ -n "${only_list}" && -n "${skip_list}" ]]; then
+        print -ru2 -- "maintain: --only and --skip are mutually exclusive"
+        return 2
+    fi
+
+    if [[ -n "${only_list}${skip_list}" ]]; then
+        # Concatenate into a plain variable first. ${(s:,:)${a}${b}} is not valid — a flag
+        # applies to ONE nested expansion, not to two glued together, and zsh rejects the
+        # whole thing as "bad substitution". Exactly one of the two is ever non-empty here
+        # (the mutual-exclusion check above guarantees it), so this is just the chosen list.
+        local phase_arg="${only_list}${skip_list}"
+        local -a requested=( ${(s:,:)phase_arg} )
+        requested=( ${requested//[[:space:]]/} )
+        requested=( ${requested:#} )
+        if (( ! ${#requested} )); then
+            print -ru2 -- "maintain: --${only_list:+only}${skip_list:+skip} needs a phase list, e.g. --${only_list:+only}${skip_list:+skip} 3,5"
+            return 2
+        fi
+        local ph
+        for ph in "${requested[@]}"; do
+            if [[ "${ph}" != <1-6> ]]; then
+                print -ru2 -- "maintain: '${ph}' is not a phase number (1-6)"
+                return 2
+            fi
+        done
+        if [[ -n "${only_list}" ]]; then
+            maintain_phases=( ${(on)requested} )
+        else
+            maintain_phases=( ${maintain_phases:|requested} )
+        fi
+        # Joined separately: a (j:…:) flag and a :- default cannot share one expansion
+        # (zsh rejects it as "bad substitution"), and --skip 1,2,3,4,5,6 makes empty real.
+        local phases_desc="${(j:, :)maintain_phases}"
+        print -r -- "▸ Phases this run: ${phases_desc:-none}"
+    fi
 
     # Two opt-in steps are asked HERE, not inside maintain::run: that function's stdout is the
     # tee pipe, and a prompt written into a pipe is exactly the trap that made the apt/debconf
@@ -227,7 +306,7 @@ function maintain() {
     # compares each plugin's ._zinit metadata against .zshrc), no network and no plugin
     # loading. --ids lists what a wipe would repair; the full pass supplies the verdict
     # line, which also counts findings a wipe canNOT fix, such as declaration bugs.
-    if (( ! run_zinit )) && [[ -t 0 ]] && (( $+functions[zi_audit] )); then
+    if (( ! run_zinit )) && [[ -t 0 ]] && (( $+functions[zi_audit] )) && maintain::phase_enabled 2; then
         local -a pre_drift
         pre_drift=( ${(f)"$(zi_audit --ids 2>/dev/null)"} )
         pre_drift=( ${pre_drift:#} )
@@ -259,7 +338,7 @@ function maintain() {
     # discards everything from the first quote on. Both sides still read "atclone", so
     # nothing detects the change and the old value keeps firing forever. Only a wipe
     # re-reads .zshrc and re-snapshots.
-    if (( ! run_zinit )) && [[ -t 0 ]]; then
+    if (( ! run_zinit )) && [[ -t 0 ]] && maintain::phase_enabled 2; then
         local zreply=""
         read -r "zreply?▸ FULL zinit wipe + reinstall (~400MB)? Plugins update either way. [y/N] "
         [[ "${zreply}" == [yY]* ]] && run_zinit=1
@@ -381,6 +460,59 @@ function maintain::health_warn() {
     print -r -- "    ⚠️ ${1}"
 }
 
+# Run one maintenance command under a deadline and book its failure.
+#
+# WHY a deadline at all: `maintain` is an unattended weekly run, and until now nothing in
+# it could time out. A registry that accepts the TCP connection and then stops sending —
+# the normal shape of a rate-limited or half-dead mirror — leaves `zi update`, `brew
+# update` or `cargo install-update -a` blocked on read() forever. The run never finishes
+# and never reports, which is strictly worse than failing: a failure is in the summary.
+#
+# Tiers are chosen per call site, not guessed here. 60s is for a PROBE — a metadata fetch
+# or a doctor, where anything slower is already broken. 20m is for real work that
+# legitimately downloads hundreds of megabytes over a slow link.
+#
+# rc 124 is timeout(1)'s own "killed on deadline" code, and it is reported distinctly:
+# "zi update (timed out after 20m)" says something different to the reader than
+# "zi update", and the difference is what tells you to look at the network rather than
+# at the tool. --kill-after follows SIGTERM with SIGKILL for anything that ignores the
+# first signal. Where coreutils' timeout is absent (a stripped container), the command
+# runs unwrapped rather than not at all.
+#
+# CONSTRAINT: timeout(1) execs a BINARY, so this wraps external commands only — never a
+# zsh function (maintain::mise_prune, maintain::zi_audit) and never a `{ a && b }` block.
+# A multi-command chain is therefore written as several maintain::step calls joined with
+# `&&`, all sharing one label: the short-circuit guarantees only the FIRST failure books
+# an entry, so the summary still shows "apt" once rather than once per sub-command.
+# Functions stay unwrapped; they are filesystem work, and the network calls nested inside
+# them (zi_audit --online) carry their own per-request timeouts.
+function maintain::step() {
+    local label="${1}" limit="${2}"
+    shift 2
+
+    if (( $+commands[timeout] )); then
+        timeout --kill-after=30s "${limit}" "$@"
+    else
+        "$@"
+    fi
+    local rc=${?}
+
+    if (( rc == 124 )); then
+        failures+=( "${label} (timed out after ${limit})" )
+    elif (( rc != 0 )); then
+        failures+=( "${label}" )
+    fi
+    return ${rc}
+}
+
+# Phase gate for --only / --skip. `maintain_phases` is set by the argument parser in
+# maintain() and reached here through the same dynamic scoping as run_install and
+# log_file; when neither flag was passed it holds all six, so the default path is
+# unchanged and this is a constant-time array lookup per phase.
+function maintain::phase_enabled() {
+    (( ${maintain_phases[(Ie)${1}]} ))
+}
+
 function maintain::run() {
     # Keep option/trap changes local so we never leak state into the caller's shell.
     setopt local_options local_traps
@@ -438,6 +570,7 @@ function maintain::run() {
     # ----------------------------------------------------
     # 1. OS & SYSTEM PACKAGE MANAGERS
     # ----------------------------------------------------
+    if maintain::phase_enabled 1; then
     print -r -- $'\n▸ [1/6] System & OS Package Managers'
 
     if [[ "${in_container}" == "true" ]]; then
@@ -449,17 +582,20 @@ function maintain::run() {
     # Homebrew covers macOS AND Linuxbrew (Linux/WSL) alike.
     if (( $+commands[brew] )); then
         maintain::hdr "Homebrew (update, upgrade, cleanup, autoremove)"
-        { brew update && brew upgrade && brew cleanup -s && brew autoremove } || failures+=("Homebrew")
+        maintain::step "Homebrew" 20m brew update \
+            && maintain::step "Homebrew" 20m brew upgrade \
+            && maintain::step "Homebrew" 10m brew cleanup -s \
+            && maintain::step "Homebrew" 10m brew autoremove
     fi
 
     if [[ "${HOST_OS}" == "darwin" ]]; then
-        (( $+commands[mas] )) && { maintain::hdr "Mac App Store (mas)"; mas upgrade || failures+=("mas") }
+        (( $+commands[mas] )) && { maintain::hdr "Mac App Store (mas)"; maintain::step "mas" 20m mas upgrade }
         # macOS system updates (uses the sudo primed above). Deliberately -ir, not -ia:
         # -a installs EVERY available update including major OS upgrades, which can run
         # for half an hour and leave the machine demanding a reboot — not something an
         # unattended cache-pruning pass should decide on your behalf. -r restricts it to
         # Apple's recommended (security/point-release) set.
-        (( can_sudo )) && { maintain::hdr "macOS system updates (softwareupdate, recommended only)"; "${sudo_cmd[@]}" softwareupdate -ir || failures+=("softwareupdate") }
+        (( can_sudo )) && { maintain::hdr "macOS system updates (softwareupdate, recommended only)"; maintain::step "softwareupdate" 30m "${sudo_cmd[@]}" softwareupdate -ir }
     elif [[ "${in_container}" != "true" ]] && (( $+commands[apt-get] && can_sudo )); then
         maintain::hdr "Apt (update, upgrade, autoremove, clean)"
         # A debconf dialog here is unrecoverable, not merely awkward: maintain::run's
@@ -497,10 +633,10 @@ function maintain::run() {
         # and can fill a small /boot partition), plus leftover /etc cruft. It only ever
         # touches packages apt already considers orphaned, so it is as safe as plain
         # autoremove, just more thorough.
-        { "${sudo_cmd[@]}" "${apt_env[@]}" apt-get update \
-            && "${sudo_cmd[@]}" "${apt_env[@]}" apt-get "${apt_opts[@]}" full-upgrade -y \
-            && "${sudo_cmd[@]}" "${apt_env[@]}" apt-get autoremove --purge -y \
-            && "${sudo_cmd[@]}" "${apt_env[@]}" apt-get clean } || failures+=("apt")
+        maintain::step "apt" 10m "${sudo_cmd[@]}" "${apt_env[@]}" apt-get update \
+            && maintain::step "apt" 30m "${sudo_cmd[@]}" "${apt_env[@]}" apt-get "${apt_opts[@]}" full-upgrade -y \
+            && maintain::step "apt" 10m "${sudo_cmd[@]}" "${apt_env[@]}" apt-get autoremove --purge -y \
+            && maintain::step "apt" 5m "${sudo_cmd[@]}" "${apt_env[@]}" apt-get clean
     elif [[ "${in_container}" != "true" ]] && (( $+commands[pacman] && can_sudo )); then
         # Arch / Manjaro / EndeavourOS — parity with install.sh, which does the initial
         # -Syu. Without this, pacman boxes only got upgrades on a full install.sh re-run.
@@ -509,13 +645,12 @@ function maintain::run() {
         # `-Sy` then `-S` (that path bricks systems). Prefer an AUR helper so AUR packages
         # upgrade too — but ONLY as a non-root user: paru/yay refuse to run as root because
         # they invoke sudo themselves for the privileged steps.
-        local pac_rc=0
         if (( EUID != 0 && $+commands[paru] )); then
-            paru -Syu --noconfirm || pac_rc=1
+            maintain::step "pacman" 30m paru -Syu --noconfirm
         elif (( EUID != 0 && $+commands[yay] )); then
-            yay -Syu --noconfirm || pac_rc=1
+            maintain::step "pacman" 30m yay -Syu --noconfirm
         else
-            "${sudo_cmd[@]}" pacman -Syu --noconfirm || pac_rc=1
+            maintain::step "pacman" 30m "${sudo_cmd[@]}" pacman -Syu --noconfirm
         fi
         # Trim the download cache to the currently-installed set (-Sc) and remove true
         # orphans (-Qtdq = deps nothing installed still needs). An empty orphan list makes
@@ -525,18 +660,17 @@ function maintain::run() {
         if [[ -n "${pac_orphans}" ]]; then
             print -r -- "${pac_orphans}" | "${sudo_cmd[@]}" pacman -Rns --noconfirm - 2>/dev/null || true
         fi
-        (( pac_rc )) && failures+=("pacman")
     fi
 
     # Universal Linux distribution packages
-    [[ "${in_container}" != "true" ]] && (( $+commands[flatpak] )) && { maintain::hdr "Flatpak packages"; { flatpak update -y && flatpak uninstall --unused -y } || failures+=("flatpak") }
+    [[ "${in_container}" != "true" ]] && (( $+commands[flatpak] )) && { maintain::hdr "Flatpak packages"; maintain::step "flatpak" 30m flatpak update -y && maintain::step "flatpak" 10m flatpak uninstall --unused -y }
 
     # Snap: snapd never runs under WSL (the command exists but every call fails) and it
     # requires systemd — check the socket is actually active before trying.
     if [[ "${in_container}" != "true" && "${HOST_OS}" != "wsl" ]] && (( $+commands[snap] && can_sudo )); then
         if (( $+commands[systemctl] )) && systemctl is-active -q snapd.socket 2>/dev/null; then
             maintain::hdr "Snap packages"
-            "${sudo_cmd[@]}" snap refresh || failures+=("snap")
+            maintain::step "snap" 30m "${sudo_cmd[@]}" snap refresh
             # Reclaim space: snap keeps old revisions of every package forever by default
             # (each is a mounted squashfs — they add up fast). Cap retention at 2, then drop
             # the revisions already marked 'disabled' (superseded). LANG=C pins the column
@@ -562,16 +696,25 @@ function maintain::run() {
         # still fresh) and `update` (no devices need updating) return it on a perfectly
         # healthy machine. Treating that as failure would book a phantom fwupd entry in
         # the summary on every run, so only >2 counts as a real error.
+        #
+        # Deliberately NOT maintain::step: that helper books any non-zero rc as a failure,
+        # which would fire on the rc 2 this step treats as success. Wrapped in a bare
+        # timeout instead, with 124 folded into the same >2 test — a firmware fetch that
+        # hangs is a failure by either reading.
         local fwupd_rc=0
-        "${sudo_cmd[@]}" fwupdmgr refresh --force; (( $? > 2 )) && fwupd_rc=1
-        "${sudo_cmd[@]}" fwupdmgr update -y;       (( $? > 2 )) && fwupd_rc=1
+        local -a fwupd_to=()
+        (( $+commands[timeout] )) && fwupd_to=( timeout --kill-after=30s 20m )
+        "${fwupd_to[@]}" "${sudo_cmd[@]}" fwupdmgr refresh --force; (( $? > 2 )) && fwupd_rc=1
+        "${fwupd_to[@]}" "${sudo_cmd[@]}" fwupdmgr update -y;       (( $? > 2 )) && fwupd_rc=1
         (( fwupd_rc )) && failures+=("fwupd")
     fi
+    fi  # phase 1
 
 
     # ----------------------------------------------------
     # 2. RUNTIMES & TOOLCHAIN MANAGERS
     # ----------------------------------------------------
+    if maintain::phase_enabled 2; then
     print -r -- $'\n▸ [2/6] Runtimes & Version Managers'
 
     # gh runs BEFORE the zinit wipe: gh is zinit-managed at a VERSIONED path
@@ -581,7 +724,7 @@ function maintain::run() {
     # gh. The $+commands guard then passes on the stale hash and execution dies with
     # "command not found". mise-managed tools hit the SAME trap a few lines below — see
     # the PATH re-float after `mise upgrade`.
-    (( $+commands[gh] )) && { maintain::hdr "GitHub CLI extensions"; gh extension upgrade --all || failures+=("gh extensions") }
+    (( $+commands[gh] )) && { maintain::hdr "GitHub CLI extensions"; maintain::step "gh extensions" 5m gh extension upgrade --all }
 
     # The zinit reset is a full wipe+reinstall (~400MB re-download), so it is opt-in: enabled
     # by --zinit or by answering y to the prompt in maintain(). Off by default (bare Enter,
@@ -607,6 +750,17 @@ function maintain::run() {
     # values contain unevaluated command substitution (bpick"$(gh_asset …)"). Adding or
     # removing an ice is caught here; editing one IN PLACE is not — for that, run --zinit.
     # See docs/ZINIT_UPDATE_MECHANICS.md.
+    # Zinit ITSELF, before its plugins. install.sh clones zinit.git once at bootstrap and
+    # nothing ever moved it again — and `zinit-reset` deliberately preserves that checkout
+    # while wiping everything else, so even the full-wipe path left the manager pinned at
+    # whatever version the machine was built with. `zi update --all` updates the PLUGINS,
+    # never the updater. Not maintain::step: `zi` is a shell function, and timeout(1) execs
+    # a binary (see the helper's CONSTRAINT note).
+    if (( $+functions[zi] )); then
+        maintain::hdr "Zinit self-update"
+        zi self-update </dev/null || failures+=("zi self-update")
+    fi
+
     if (( run_zinit )); then
         maintain::hdr "Resetting Zinit Plugins (full wipe, ~400MB)"
         "${ZDOTDIR}/functions/zinit-reset" --go || failures+=("zinit reset")
@@ -658,8 +812,8 @@ function maintain::run() {
     # installs (brew/apt) can't self-update and would record a spurious failure.
     if (( $+commands[mise] )); then
         maintain::hdr "Mise runtimes"
-        mise upgrade || failures+=("mise")
-        [[ "${commands[mise]}" == "${HOME}"/* ]] && { mise self-update --yes || failures+=("mise self-update") }
+        maintain::step "mise" 30m mise upgrade
+        [[ "${commands[mise]}" == "${HOME}"/* ]] && maintain::step "mise self-update" 10m mise self-update --yes
 
         # mise install dirs are VERSIONED wherever a backend has no `latest` symlink (the
         # asdf vim pin resolves to .../mise-vim/9.2.0926/bin). The upgrade above deletes the
@@ -676,9 +830,10 @@ function maintain::run() {
         (( ${#mise_bins} )) && path=( "${mise_bins[@]}" ${(@)path:#*/mise/installs/*} )
         rehash
     fi
-    (( $+commands[asdf] ))   && { maintain::hdr "Asdf plugins";      asdf plugin update --all || failures+=("asdf") }
-    (( $+commands[rustup] )) && { maintain::hdr "Rustup toolchains"; rustup update || failures+=("rustup") }
-    # `yes |` pre-answers sdkman's interactive "Do you want to install?" prompt.
+    (( $+commands[asdf] ))   && { maintain::hdr "Asdf plugins";      maintain::step "asdf" 20m asdf plugin update --all }
+    (( $+commands[rustup] )) && { maintain::hdr "Rustup toolchains"; maintain::step "rustup" 30m rustup update }
+    # `yes |` pre-answers sdkman's interactive "Do you want to install?" prompt. `sdk` is a
+    # shell function, so this one stays unwrapped (see maintain::step's CONSTRAINT note).
     (( $+commands[sdk] ))    && { maintain::hdr "SDKMAN!";           { sdk update && yes | sdk upgrade } || failures+=("sdkman") }
 
     # Vim-plug plugins: install.sh runs PlugInstall ONCE at bootstrap, so already-installed
@@ -694,9 +849,8 @@ function maintain::run() {
         # viminfo. PlugUpgrade self-updates plug.vim itself before the plugin pass, and
         # PlugClean! (banged = no prompt) removes plugin dirs no longer declared in .vimrc,
         # mirroring what the zinit reset does for shell plugins.
-        vim -N -es -u "${HOME}/.vimrc" -i NONE \
-            -c 'PlugUpgrade' -c 'PlugUpdate --sync' -c 'qall!' </dev/null \
-            || failures+=("vim-plug")
+        maintain::step "vim-plug" 20m vim -N -es -u "${HOME}/.vimrc" -i NONE \
+            -c 'PlugUpgrade' -c 'PlugUpdate --sync' -c 'qall!' </dev/null
         # PlugClean! gets its own vim and its status is deliberately NOT tracked. Under -es
         # it has no real window, so its range op raises "E16: Invalid range" and vim exits 1
         # even on the success path — it prints "Already clean." first, then fails. Chained
@@ -709,6 +863,20 @@ function maintain::run() {
         # "Already clean." / "Removed X" in the log, which is the whole point of running it.
         vim -N -es -u "${HOME}/.vimrc" -i NONE \
             -c 'PlugClean!' -c 'qall!' </dev/null || true
+
+        # coc.nvim's EXTENSIONS are a separate package tree under ~/.config/coc/extensions,
+        # installed by coc itself and untouched by PlugUpdate — which only moves the coc.nvim
+        # repo. Without this they stay at whatever version was first resolved. CocUpdateSync
+        # is the blocking form; the async :CocUpdate would return before anything downloaded
+        # and `qall!` would kill it mid-flight. Guarded on the plugin directory rather than
+        # on exists(':CocUpdateSync'): the command is defined by coc's autoload, which has
+        # not run yet at this point — the same trap documented for after/plugin guards in
+        # the repo CLAUDE.md.
+        if [[ -d "${HOME}/.vim/plugged/coc.nvim" ]]; then
+            maintain::hdr "coc.nvim extensions"
+            maintain::step "coc extensions" 20m vim -N -es -u "${HOME}/.vimrc" -i NONE \
+                -c 'CocUpdateSync' -c 'qall!' </dev/null
+        fi
     fi
 
     # Neovim 0.12 uses its built-in vim.pack rather than vim-plug. Unlike the
@@ -718,9 +886,26 @@ function maintain::run() {
     # the expected record of plugin updates to review and commit.
     if (( $+commands[nvim] )) && [[ -r "${XDG_CONFIG_HOME:-${HOME}/.config}/nvim/init.lua" ]]; then
         maintain::hdr "Neovim plugins (vim.pack update)"
-        nvim --headless -i NONE \
+        maintain::step "Neovim plugins" 20m nvim --headless -i NONE \
             -c 'lua if not vim.pack then error("vim.pack requires Neovim 0.12+") end; vim.pack.update(nil, { force = true })' \
-            -c 'qall!' </dev/null || failures+=("Neovim plugins")
+            -c 'qall!' </dev/null
+
+        # Mason's LSP servers/DAP adapters and nvim-treesitter's compiled parsers are both
+        # installed OUTSIDE the plugin tree (~/.local/share/nvim/mason and .../parser), so
+        # vim.pack.update moves neither. They are the only Neovim components with no update
+        # path at all.
+        #
+        # Each is gated on its command actually existing at runtime rather than on the plugin
+        # being declared, because either can be absent on a machine whose nvim config has
+        # drifted — and an unknown command aborts the whole headless invocation. Run in one
+        # nvim rather than two: both are async, and `sleep` inside the lua keeps the process
+        # alive long enough for them to land before qall!.
+        local -a nvim_post=()
+        nvim_post+=( -c 'lua if vim.fn.exists(":MasonUpdate") == 2 then vim.cmd("MasonUpdate") end' )
+        nvim_post+=( -c 'lua if vim.fn.exists(":TSUpdateSync") == 2 then vim.cmd("TSUpdateSync") elseif vim.fn.exists(":TSUpdate") == 2 then vim.cmd("TSUpdate") end' )
+        maintain::hdr "Neovim LSP servers & treesitter parsers"
+        maintain::step "Neovim mason/treesitter" 20m nvim --headless -i NONE \
+            "${nvim_post[@]}" -c 'qall!' </dev/null
     fi
 
     # TPM (tmux plugin manager) — the tmux analog to the vim-plug step above. TPM lives at
@@ -728,10 +913,78 @@ function maintain::run() {
     # updates it. update_plugins pulls new commits for every plugin; clean_plugins removes
     # plugin dirs no longer declared in tmux.conf. The bin/ scripts run standalone (no
     # attached session needed); </dev/null keeps them off the tty inside the tee pipe.
-    local tpm_dir="${XDG_CONFIG_HOME:-${HOME}/.config}/tmux/plugins/tpm"
-    if (( $+commands[tmux] )) && [[ -x "${tpm_dir}/bin/update_plugins" ]]; then
-        maintain::hdr "Tmux plugins (TPM update + clean)"
-        { "${tpm_dir}/bin/update_plugins" all && "${tpm_dir}/bin/clean_plugins" } </dev/null || failures+=("tpm")
+    #
+    # TPM is also BOOTSTRAPPED here, not just updated. tmux.conf runs it unconditionally but
+    # install.sh never clones it, so a fresh machine had a tmux.conf referencing a directory
+    # that did not exist — every plugin silently absent with no error anywhere. And TPM
+    # itself was never updated even where present: update_plugins moves the PLUGINS, the
+    # same distinction as zinit above.
+    local tpm_root="${XDG_CONFIG_HOME:-${HOME}/.config}/tmux/plugins"
+    local tpm_dir="${tpm_root}/tpm"
+    if (( $+commands[tmux] )); then
+        # Bootstrap. `git clone` refuses a non-empty target, so the guard is "no .git" and
+        # the directory is removed first when it is empty — which is exactly how this repo
+        # found it: config/tmux/plugins/ held orphaned gitlinks (mode 160000 with no
+        # .gitmodules), so `git clone` of the dotfiles created empty placeholder dirs that
+        # no `submodule update` could ever fill. tmux plugins had never once worked.
+        if [[ ! -d "${tpm_dir}/.git" ]] && (( $+commands[git] )); then
+            maintain::hdr "Tmux plugin manager (TPM bootstrap)"
+            [[ -d "${tpm_dir}" ]] && rmdir "${tpm_dir}" 2>/dev/null
+            maintain::step "tpm clone" 5m git clone --depth 1 \
+                https://github.com/tmux-plugins/tpm "${tpm_dir}" </dev/null
+        fi
+        if [[ -x "${tpm_dir}/bin/update_plugins" ]]; then
+            maintain::hdr "Tmux plugins (TPM self-update, install, update + clean)"
+
+            # Drop EMPTY plugin directories first. They are the residue of the orphaned
+            # gitlinks described above, and they poison both remaining steps: TPM decides a
+            # plugin is "Already installed" from the directory's existence alone, so install
+            # skips it, and update then runs `git pull` inside something that is not a
+            # repository ("cannot pull with rebase: You have unstaged changes"). rmdir, not
+            # rm -rf: it refuses anything non-empty, so a real checkout can never be hit.
+            local stale_plugin
+            for stale_plugin in "${tpm_root}"/*(N/); do
+                [[ "${stale_plugin:t}" == tpm ]] && continue
+                rmdir "${stale_plugin}" 2>/dev/null
+            done
+
+            # TMUX_PLUGIN_MANAGER_PATH must be set on the tmux SERVER, not merely exported
+            # into this process: TPM resolves it in scripts/helpers/plugin_functions.sh with
+            # `tmux start-server\; show-environment -g TMUX_PLUGIN_MANAGER_PATH`, so a plain
+            # export is invisible to it. Without the variable, update_plugins prints
+            # "FATAL: Tmux Plugin Manager not configured in tmux.conf" and aborts — the
+            # normal case for an unattended run, where no tmux server is up.
+            #
+            # A DETACHED SESSION, not a bare `start-server`. A tmux server with no sessions
+            # exits immediately, taking its environment with it, so `start-server \;
+            # set-environment` sets a variable on a server that is gone before TPM's own
+            # `start-server` spawns a fresh, empty one — which fails in exactly the same way
+            # while looking like it should have worked. Holding one throwaway session open
+            # keeps the server, and its environment, alive for the three steps below.
+            #
+            # Named distinctively and killed afterwards, so it cannot collide with or
+            # disturb a real session. Where a server is ALREADY running this just adds and
+            # removes one session; -g then sets the same value tmux.conf sets anyway. The
+            # trailing slash is load-bearing: TPM concatenates it with the plugin name.
+            local tpm_session="maintain-tpm-$$"
+            local tpm_env_ok=0
+            if tmux new-session -d -s "${tpm_session}" 2>/dev/null; then
+                tmux set-environment -g TMUX_PLUGIN_MANAGER_PATH "${tpm_root}/" 2>/dev/null && tpm_env_ok=1
+            fi
+
+            if (( tpm_env_ok )); then
+                # --ff-only: never leave a half-merged TPM behind if the checkout was edited.
+                maintain::step "tpm self-update" 5m git -C "${tpm_dir}" pull --ff-only </dev/null
+                # install before update: tmux.conf declares plugins that may never have been
+                # fetched, and update_plugins only moves what is already on disk.
+                maintain::step "tpm install" 10m "${tpm_dir}/bin/install_plugins" </dev/null
+                maintain::step "tpm" 20m "${tpm_dir}/bin/update_plugins" all </dev/null \
+                    && maintain::step "tpm" 5m "${tpm_dir}/bin/clean_plugins" </dev/null
+            else
+                maintain::health_warn "could not start a tmux server; skipped TPM plugin update"
+            fi
+            tmux kill-session -t "${tpm_session}" 2>/dev/null
+        fi
     fi
 
     # Claude Code self-updates in place. Guard to the standalone install under $HOME (the
@@ -739,7 +992,7 @@ function maintain::run() {
     # would only book a spurious failure — same contract as the mise/uv self-update guards.
     if (( $+commands[claude] )) && [[ "${commands[claude]}" == "${HOME}"/* ]]; then
         maintain::hdr "Claude Code"
-        claude update </dev/null || failures+=("Claude Code")
+        maintain::step "Claude Code" 10m claude update </dev/null
     fi
 
     # PowerShell profile (WSL only). Unlike everything under config/, powershell/ is
@@ -829,11 +1082,13 @@ function maintain::run() {
         print -r -- "    --windows is available only from a non-container WSL host"
         failures+=("Windows maintain (not WSL)")
     fi
+    fi  # phase 2
 
 
     # ----------------------------------------------------
     # 3. GLOBAL PACKAGES & LANGUAGE CACHES
     # ----------------------------------------------------
+    if maintain::phase_enabled 3; then
     print -r -- $'\n▸ [3/6] Global Packages & Build Caches'
 
     # Node / JS ecosystem
@@ -844,23 +1099,67 @@ function maintain::run() {
     # BUN_INSTALL_CACHE_DIR overrides it when set, matching bun's own resolution order.
     if (( $+commands[bun] )); then
         maintain::hdr "Bun (upgrade & cache clear)"
-        bun upgrade || failures+=("bun")
+        maintain::step "bun" 10m bun upgrade
         rm -rf "${BUN_INSTALL_CACHE_DIR:-${BUN_INSTALL:-${HOME}/.bun}/install/cache}"
     fi
-    (( $+commands[npm] )) && { maintain::hdr "NPM globals & cache"; { npm update -g && npm cache clean --force } || failures+=("npm") }
+    # npm: the global packages, then the caches npm's own `cache clean` structurally cannot
+    # reach.
+    #
+    # `npm cache clean --force` works — it just has a far narrower scope than the name
+    # suggests. It empties _cacache inside the ONE directory `npm config get cache` names,
+    # and nothing else. Three trees therefore grow forever, and this ran weekly for months
+    # while they did (measured 2026-09-13, against a 48K _cacache):
+    #
+    #   $cache/_npx   1.2G  npx's package cache — a SIBLING of _cacache, never cleaned
+    #   $cache/.npm   5.3G  a nested orphan, from a run whose HOME resolved to $cache itself
+    #   ~/.npm        1.0G  the pre-XDG location, dead since npm_config_cache moved to
+    #                       $XDG_CACHE_HOME/npm, and unreachable by every npm command since
+    #
+    # All three are pure cache: regenerated on demand, never configuration. The ~/.npm
+    # removal is guarded on it not BEING the live cache (both sides resolved with :A), so a
+    # machine with no XDG override — where ~/.npm is what npm actually uses — is left alone
+    # and only its _npx sibling is taken.
+    if (( $+commands[npm] )); then
+        maintain::hdr "NPM globals & cache"
+        maintain::step "npm" 20m npm update -g
+        npm cache clean --force || failures+=("npm cache clean")
+
+        local npm_cache="$(npm config get cache 2>/dev/null)"
+        local -a npm_orphans=()
+        if [[ -n "${npm_cache}" && "${npm_cache}" != undefined && -d "${npm_cache}" ]]; then
+            npm_orphans+=( "${npm_cache}/_npx"(N/) "${npm_cache}/.npm"(N/) )
+            local npm_legacy="${HOME}/.npm"
+            [[ "${npm_cache:A}" != "${npm_legacy:A}" ]] && npm_orphans+=( "${npm_legacy}"(N/) )
+        fi
+        if (( ${#npm_orphans} )); then
+            local npm_orphan npm_sz
+            for npm_orphan in "${npm_orphans[@]}"; do
+                npm_sz="$(du -sh "${npm_orphan}" 2>/dev/null | cut -f1)"
+                print -r -- "    reclaiming ${npm_orphan} (${npm_sz:-?})"
+                rm -rf -- "${npm_orphan}" || failures+=("npm orphan cache")
+            done
+        else
+            print -r -- "    ✓ no orphaned npm/npx cache trees"
+        fi
+    fi
 
     # pnpm: bump globally-installed packages, and self-update ONLY the standalone install
     # (under PNPM_HOME, set in .zshenv) — a corepack/npm-managed pnpm can't self-update and
     # would just book a spurious failure, same reasoning as the mise/uv self-update guards.
     if (( $+commands[pnpm] )); then
-        maintain::hdr "pnpm (self-update & global packages)"
-        [[ -n "${PNPM_HOME}" && "${commands[pnpm]}" == "${PNPM_HOME}"/* ]] && { pnpm self-update </dev/null || failures+=("pnpm self-update") }
-        pnpm update -g </dev/null || failures+=("pnpm globals")
+        maintain::hdr "pnpm (self-update, global packages & store prune)"
+        [[ -n "${PNPM_HOME}" && "${commands[pnpm]}" == "${PNPM_HOME}"/* ]] && maintain::step "pnpm self-update" 10m pnpm self-update </dev/null
+        maintain::step "pnpm globals" 20m pnpm update -g </dev/null
+        # The content-addressable store keeps every package version ever linked into any
+        # project, including ones no lockfile references any more. Nothing else reclaims it;
+        # the PowerShell side has done this since maintain.ps1 was written.
+        maintain::step "pnpm store prune" 10m pnpm store prune </dev/null
     fi
 
     if (( $+commands[yarn] )) && [[ "$(yarn --version 2>/dev/null)" == 1.* ]]; then
         maintain::hdr "Yarn v1 globals & cache"
-        { yarn global upgrade && yarn cache clean } || failures+=("yarn")
+        maintain::step "yarn" 20m yarn global upgrade \
+            && maintain::step "yarn" 10m yarn cache clean
     fi
 
     # Python ecosystem. `uv self update` refuses (exit 2) on anything not installed by
@@ -872,12 +1171,12 @@ function maintain::run() {
         maintain::hdr "UV (self-update, tools & cache prune)"
         if [[ "${commands[uv]}" == "${HOME}"/* && "${commands[uv]}" != *"/mise/installs/"* \
            && "${commands[uv]}" != *"/asdf/installs/"* ]]; then
-            uv self update || failures+=("uv self-update")
+            maintain::step "uv self-update" 10m uv self update
         fi
-        uv tool upgrade --all || failures+=("uv tools")
-        uv cache prune || failures+=("uv cache")
+        maintain::step "uv tools" 20m uv tool upgrade --all
+        maintain::step "uv cache" 10m uv cache prune
     fi
-    (( $+commands[pipx] )) && { maintain::hdr "Pipx packages"; pipx upgrade-all || failures+=("pipx") }
+    (( $+commands[pipx] )) && { maintain::hdr "Pipx packages"; maintain::step "pipx" 20m pipx upgrade-all }
     (( $+commands[pip] ))  && { maintain::hdr "Pruning Pip cache"; pip cache purge 2>/dev/null || true }
 
     # pynvim (vim/neovim Python provider): install.sh installs it but never bumps it. Upgrade
@@ -888,18 +1187,29 @@ function maintain::run() {
     # existing provider rather than installing one on a machine that never had it.
     if (( $+commands[mise] )) && mise exec -- python -c 'import pynvim' 2>/dev/null; then
         maintain::hdr "pynvim (vim python provider)"
-        mise exec -- python -m pip install --upgrade pynvim </dev/null || failures+=("pynvim")
+        maintain::step "pynvim" 10m mise exec -- python -m pip install --upgrade pynvim </dev/null
     fi
 
     # PHP ecosystem
-    (( $+commands[composer] )) && { maintain::hdr "Composer globals"; composer global update || failures+=("composer") }
+    (( $+commands[composer] )) && { maintain::hdr "Composer globals"; maintain::step "composer" 20m composer global update }
 
     # Compiled Languages (Go / Rust)
     (( $+commands[go] ))    && { maintain::hdr "Cleaning Go build cache"; go clean -cache -testcache || failures+=("go cache") }
-    (( $+commands[cargo] )) && (( $+commands[cargo-cache] )) && { maintain::hdr "Cargo cache prune"; cargo cache --remove-dir git-db,registry-sources || failures+=("cargo cache") }
+    (( $+commands[cargo] )) && (( $+commands[cargo-cache] )) && { maintain::hdr "Cargo cache prune"; maintain::step "cargo cache" 10m cargo cache --remove-dir git-db,registry-sources }
     # cargo-update refreshes whatever is still cargo-installed. dua-cli, qsv and yazi used
     # to be here; all three now come from gh-r, so this only covers leftovers.
-    (( $+commands[cargo-install-update] )) && { maintain::hdr "Cargo-installed binaries"; cargo install-update -a || failures+=("cargo install-update") }
+    #
+    # It is also INSTALLED here when missing, which is why the step below is no longer dead
+    # code: nothing in install.sh ever provided cargo-update, so the $+commands guard had
+    # never once passed on a machine built from this repo and the whole step was a no-op.
+    # --locked so the build uses the crate's own pinned dependency set. One ~5 minute
+    # compile on a fresh machine, never again.
+    if (( $+commands[cargo] )) && (( ! $+commands[cargo-install-update] )); then
+        maintain::hdr "Installing cargo-update (first run only)"
+        maintain::step "cargo-update install" 20m cargo install --locked cargo-update </dev/null
+        rehash
+    fi
+    (( $+commands[cargo-install-update] )) && { maintain::hdr "Cargo-installed binaries"; maintain::step "cargo install-update" 30m cargo install-update -a }
 
     # Atuin history sync — the atuin BINARY already updates via the zinit reset (phase 2);
     # this pushes/pulls shell history against the sync server. Guard on the session file:
@@ -907,13 +1217,91 @@ function maintain::run() {
     # book a spurious failure on every machine that doesn't use atuin's sync service.
     if (( $+commands[atuin] )) && [[ -f "${XDG_DATA_HOME:-${HOME}/.local/share}/atuin/session" ]]; then
         maintain::hdr "Atuin history sync"
-        atuin sync </dev/null || failures+=("atuin sync")
+        maintain::step "atuin sync" 5m atuin sync </dev/null
     fi
+
+    # Downloaded-toolchain caches: node-gyp headers, and the browser builds Playwright and
+    # Puppeteer fetch. Each tool downloads a new versioned directory and never removes the
+    # one it replaced, so they accumulate one generation per upgrade indefinitely — 2.0G
+    # across the three here (measured 2026-09-13). Every byte is re-downloaded on demand.
+    #
+    # KEEP-NEWEST rather than prune-by-age: mtime says when a directory was written, not
+    # whether anything still uses it, and a project pinned to an older Playwright would have
+    # its browsers deleted out from under it by an age rule. The newest revision per browser
+    # is the one a fresh `npx playwright install` resolves to.
+    maintain::hdr "Stale toolchain caches"
+    local -i tc_removed=0
+    local tc_cache="${XDG_CACHE_HOME:-${HOME}/.cache}"
+
+    # node-gyp: one directory per node version, named by version. Keep whatever mise has
+    # installed (the versions that can actually build today) plus the newest entry, so a
+    # non-mise node still leaves something behind.
+    if [[ -d "${tc_cache}/node-gyp" ]]; then
+        local -a gyp_all=( "${tc_cache}"/node-gyp/*(N/:t) )
+        if (( ${#gyp_all} > 1 )); then
+            local -aU gyp_keep=()
+            # `mise ls --installed node` prints "node  24.21.0  <config>  lts" — whitespace
+            # separated, version in field 2. Same (z)-split idiom as maintain::mise_prune.
+            if (( $+commands[mise] )); then
+                local gyp_line
+                for gyp_line in ${(f)"$(mise ls --installed node 2>/dev/null)"}; do
+                    gyp_keep+=( "${${(z)gyp_line}[2]}" )
+                done
+            fi
+            gyp_keep=( ${gyp_keep:#} )
+            # Newest on disk as a floor, so a machine whose node is not mise-managed still
+            # keeps a usable set rather than having every header directory removed.
+            gyp_keep+=( ${${(On)gyp_all}[1]} )
+            local gyp_v
+            for gyp_v in ${gyp_all:|gyp_keep}; do
+                print -r -- "    node-gyp: removing headers for ${gyp_v}"
+                rm -rf -- "${tc_cache}/node-gyp/${gyp_v}" && (( tc_removed++ ))
+            done
+        fi
+    fi
+
+    # Playwright / Puppeteer: "<name>-<version>" directories, keep the newest per name.
+    #
+    # The two lay out differently and BOTH have to work:
+    #   ms-playwright/chromium-1228              one level, integer revision
+    #   puppeteer/chrome/linux-146.0.7680.153    two levels, dotted version
+    # so the parent directories are enumerated rather than assumed — puppeteer's browser
+    # subdirectory is the grouping parent, not `puppeteer` itself. An earlier single-level
+    # loop matched nothing under puppeteer and silently pruned it forever.
+    #
+    # Group = everything before the first dash-then-digit, via `%%-[0-9]*` (longest suffix).
+    # A greedy `%-*` is wrong for the dotted form: it would split linux-146.0.7680.153 into
+    # group "linux-146.0.7680", making every patch release its own group and pruning nothing.
+    # chromium and chromium_headless_shell still separate correctly, since the underscore is
+    # not a dash. Entries with no version suffix (ms-playwright keeps a stray `b/`) fall in
+    # no group and are never touched.
+    #
+    # The `n` sort flag compares embedded digit runs numerically, so 1228 beats 1223 and
+    # .153 beats .99 — plain string order gets both wrong.
+    local tc_parent tc_name tc_group
+    local -a tc_parents=( "${tc_cache}/ms-playwright"(N/) "${tc_cache}"/puppeteer/*(N/) )
+    for tc_parent in "${tc_parents[@]}"; do
+        local -a tc_versioned=( "${tc_parent}"/*-[0-9]*(N/:t) )
+        (( ${#tc_versioned} )) || continue
+        local -aU tc_groups=( ${tc_versioned%%-[0-9]*} )
+        for tc_group in "${tc_groups[@]}"; do
+            local -a tc_revs=( ${(On)${(M)tc_versioned:#${tc_group}-[0-9]*}} )
+            (( ${#tc_revs} > 1 )) || continue
+            for tc_name in "${tc_revs[@]:1}"; do
+                print -r -- "    ${tc_parent:t}: removing superseded ${tc_name}"
+                rm -rf -- "${tc_parent}/${tc_name}" && (( tc_removed++ ))
+            done
+        done
+        unset tc_groups
+    done
+    (( tc_removed )) || print -r -- "    ✓ no superseded toolchain downloads"
+    fi  # phase 3
 
 
     # ----------------------------------------------------
     # 4. DEVOPS & CONTAINER HYGIENE (SAFE MODES)
     # ----------------------------------------------------
+    if maintain::phase_enabled 4; then
     print -r -- $'\n▸ [4/6] Containers & Cloud Tools'
 
     # Safe Docker prune: keeps volumes intact, only removes items older than 7 days
@@ -989,12 +1377,16 @@ function maintain::run() {
     fi
 
 
+    fi  # phase 4
+
+
     # ----------------------------------------------------
     # 5. SYSTEM CLEANUP & DOCUMENTATION REFRESH
     # ----------------------------------------------------
+    if maintain::phase_enabled 5; then
     print -r -- $'\n▸ [5/6] System Cleanup & Docs'
 
-    (( $+commands[tldr] )) && { maintain::hdr "Updating tldr pages"; tldr --update || failures+=("tldr") }
+    (( $+commands[tldr] )) && { maintain::hdr "Updating tldr pages"; maintain::step "tldr" 5m tldr --update }
 
     (( $+commands[mise] )) && { maintain::hdr "mise (prune superseded tool versions)"; maintain::mise_prune || failures+=("mise prune") }
 
@@ -1007,11 +1399,20 @@ function maintain::run() {
         find -L "${HOME}/.local/bin" -maxdepth 1 -type l -exec rm -f {} + 2>/dev/null
     fi
 
-    # Linux desktop only — HOST_OS 'linux' already excludes 'wsl' and 'darwin'. WSL has no
-    # real disk to TRIM and no desktop trash to empty; macOS handles all of this itself.
-    # Devcontainers skip all of it (ephemeral filesystem).
-    if [[ "${HOST_OS}" == "linux" && "${in_container}" != "true" ]]; then
-        if (( $+commands[fstrim] && can_sudo )); then
+    # Linux AND WSL — macOS handles all of this itself; devcontainers skip it entirely
+    # (ephemeral filesystem).
+    #
+    # WSL used to be excluded here along with darwin, on the reasoning that it has no real
+    # disk to TRIM and no desktop trash to empty. That is true of fstrim and of the desktop
+    # databases further down, but NOT of the journal: WSL runs systemd, journald logs to
+    # /var/log/journal exactly as on metal, and nothing ever vacuumed it. This box had
+    # accumulated 679M under a cleanup step that claimed to cap it at 500M. Coredumps and
+    # /var/crash are real on WSL for the same reason.
+    #
+    # fstrim stays linux-only below: against a virtual disk it is at best a no-op and the
+    # host-side reclaim it would enable is reported, not performed, by phase 6.
+    if [[ "${HOST_OS}" == (linux|wsl) && "${in_container}" != "true" ]]; then
+        if [[ "${HOST_OS}" == "linux" ]] && (( $+commands[fstrim] && can_sudo )); then
             maintain::hdr "SSD TRIM (fstrim -av)"
             "${sudo_cmd[@]}" fstrim -av || failures+=("fstrim")
         fi
@@ -1138,10 +1539,27 @@ function maintain::run() {
         for zf in "${ZDOTDIR}"/**/*.zwc(N); do [[ -f "${zf%.zwc}" ]] || rm -f "${zf}"; done
     fi
 
+    # /tmp sweep. Most distributions ship systemd-tmpfiles with a 10-day age rule, but that
+    # only fires where the timer is enabled — it is not under WSL, and not in a container —
+    # so build debris, extracted archives and editor scratch files sit there until reboot.
+    # The PowerShell side has swept %TEMP% on the same 30-day rule since it was written.
+    #
+    # Scoped hard: -uid only, mindepth 1, nothing newer than 30 days. Running as root would
+    # make this a system-wide /tmp wipe, which is emphatically not what a user maintenance
+    # pass should do, so it is skipped there. X11/Wayland/systemd sockets and the private
+    # per-service directories are left alone by the -uid filter plus their own mtimes.
+    if [[ -d /tmp ]] && (( EUID != 0 )); then
+        maintain::hdr "Sweeping /tmp (own files, >30 days)"
+        find /tmp -mindepth 1 -maxdepth 1 -uid "${UID}" -mtime +30 \
+            -exec rm -rf {} + 2>/dev/null
+    fi
+    fi  # phase 5
+
 
     # ----------------------------------------------------
     # 6. DIAGNOSTICS, INTEGRITY & SECURITY
     # ----------------------------------------------------
+    if maintain::phase_enabled 6; then
     print -r -- $'\n▸ [6/6] Health, Integrity & Security'
 
     maintain::hdr "Tool doctors"
@@ -1155,6 +1573,25 @@ function maintain::run() {
     # for a human to judge (some shadows are deliberate) rather than a broken step.
     maintain::hdr "PATH shadows"
     maintain::path_dupes
+
+    # XDG compliance. Same contract as the PATH-shadow check above: read-only, and a finding
+    # is a thing for a human to judge rather than a broken step — deciding whether ~/.rustup
+    # is dead weight or the only copy is exactly the judgement this cannot make for you.
+    #
+    # --quiet here: the verdict line plus the summary entry is what a maintenance pass needs,
+    # and it skips a ~1s du sweep of $HOME that the disk report already covers. Run the bare
+    # `xdg-audit` for the per-finding detail and the fix for each.
+    if (( $+functions[xdg_audit] )); then
+        maintain::hdr "XDG compliance"
+        local xdg_verdict
+        xdg_verdict="$(xdg_audit --quiet 2>/dev/null)"
+        xdg_verdict="${xdg_verdict##*$'\n'}"
+        if [[ "${xdg_verdict}" == *finding* ]]; then
+            maintain::health_warn "${xdg_verdict} — run 'xdg-audit' for detail"
+        elif [[ -n "${xdg_verdict}" ]]; then
+            print -r -- "    ✓ ${xdg_verdict}"
+        fi
+    fi
 
     # Permission audit — TIGHTEN ONLY (never loosens). Private key material and secret stores
     # must not be group/world-readable; chmod here only ever restricts to the standard modes,
@@ -1208,7 +1645,7 @@ function maintain::run() {
     done
     print -r -- "    Scanned ~/.config, ~/.local/bin, ~/  (ignored ${ignored} known runtime/lock link(s))"
     if (( ${#dangling} )); then
-        print -r -- "    ⚠️ ${#dangling} unexpected broken symlink(s):"
+        maintain::health_warn "${#dangling} unexpected broken symlink(s)"
         print -rl -- ${${dangling[@]}/#${HOME}/~}
     else
         print -r -- "    ✓ no unexpected broken symlinks"
@@ -1236,20 +1673,20 @@ function maintain::run() {
         for mt in "${managed[@]}"; do
             [[ -e "${mt}" ]] || continue                 # absent → install.sh skips it too
             if [[ ! -L "${mt}" || "${mt:A}" != "${dotf}"/* ]]; then
-                (( drift++ )); print -r -- "    ⚠️ drift: ${mt/#${HOME}/~} no longer links into the repo"
+                (( drift++ )); maintain::health_warn "drift: ${mt/#${HOME}/~} no longer links into the repo"
             fi
         done
         (( drift )) && print -r -- "    → run install.sh to repair managed symlinks"
         (( drift == 0 )) && print -r -- "    ✓ managed symlinks intact"
         if (( $+commands[git] )); then
             if [[ -n "$(git -C "${dotf}" status --porcelain 2>/dev/null)" ]]; then
-                print -r -- "    ⚠️ ~/.dotfiles has uncommitted changes"
+                maintain::health_warn "~/.dotfiles has uncommitted changes"
             else
                 print -r -- "    ✓ ~/.dotfiles working tree clean"
             fi
             local unpushed="$(git -C "${dotf}" log --oneline @{u}.. 2>/dev/null | wc -l)"
             unpushed="${unpushed// /}"
-            (( unpushed > 0 )) && print -r -- "    ⚠️ ~/.dotfiles has ${unpushed} unpushed commit(s)"
+            (( unpushed > 0 )) && maintain::health_warn "~/.dotfiles has ${unpushed} unpushed commit(s)"
         fi
     else
         print -r -- "    (dotfiles git repo not found at ${dotf})"
@@ -1265,15 +1702,15 @@ function maintain::run() {
         local merges="$("${sudo_cmd[@]}" find /etc \( -name '*.dpkg-dist' -o -name '*.dpkg-new' -o -name '*.ucf-dist' \) 2>/dev/null)"
         if [[ -n "${merges}" ]]; then
             (( pkg_issues++ ))
-            print -r -- "    ⚠️ pending config merges (review & merge):"
+            maintain::health_warn "pending config merges (review & merge):"
             print -r -- "${merges}" | while IFS= read -r sl; do print -r -- "        ${sl}"; done
         fi
         if (( can_sudo )); then
             local audit="$("${sudo_cmd[@]}" dpkg --audit 2>/dev/null)"
-            [[ -n "${audit}" ]] && { (( pkg_issues++ )); print -r -- "    ⚠️ dpkg --audit reported broken package state (run: sudo dpkg --audit)" }
+            [[ -n "${audit}" ]] && { (( pkg_issues++ )); maintain::health_warn "dpkg --audit reported broken package state (run: sudo dpkg --audit)" }
         fi
         local sec="$(LANG=C apt-get -s upgrade 2>/dev/null | grep -ciE '^Inst .*securi')"
-        (( sec > 0 )) && { (( pkg_issues++ )); print -r -- "    ⚠️ ${sec} pending security update(s) — run apt full-upgrade" }
+        (( sec > 0 )) && { (( pkg_issues++ )); maintain::health_warn "${sec} pending security update(s) — run apt full-upgrade" }
         if (( $+commands[apt-mark] )); then
             local held="$(apt-mark showhold 2>/dev/null)"
             if [[ -n "${held}" ]]; then
@@ -1314,7 +1751,7 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
     elif (( $+commands[pacman] )); then
         local -a pacnew=( /etc/**/*.pacnew(N) /etc/**/*.pacsave(N) )
         if (( ${#pacnew} )); then
-            print -r -- "    ⚠️ pending pacman config merges:"; print -rl -- ${pacnew[@]/#/        }
+            maintain::health_warn "pending pacman config merges:"; print -rl -- ${pacnew[@]/#/        }
         else
             print -r -- "    ✓ no .pacnew/.pacsave to merge"
         fi
@@ -1362,24 +1799,33 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
         fi
     fi
 
+    # Pending reboot — EVERY Debian-family host, not just servers.
+    #
+    # This check used to live inside the server block below, which meant the one machine
+    # you actually sit in front of never saw it: phase 1 runs a full-upgrade that can pull
+    # a new kernel, and the flag it drops was then read only on hosts where HOST_LOCATION
+    # happens to be "server". A desktop or WSL box could carry a pending reboot for weeks
+    # with the maintenance run reporting all clear. Cheap, read-only, and meaningful
+    # anywhere /var/run/reboot-required exists.
+    if [[ -f /var/run/reboot-required ]]; then
+        maintain::hdr "Pending reboot"
+        maintain::health_warn "REBOOT REQUIRED"
+        if [[ -f /var/run/reboot-required.pkgs ]]; then
+            local pkgs="$(head -10 /var/run/reboot-required.pkgs | tr '\n' ' ')"
+            print -r -- "      Packages: ${pkgs}"
+        fi
+    fi
+
     # Read-only server status report — highlights action items, never changes state.
     if [[ "${HOST_LOCATION:-}" == "server" && "${HOST_OS}" == "linux" ]]; then
         maintain::hdr "Server status"
         local -i srv_clean=1
-
-        if [[ -f /var/run/reboot-required ]]; then
-            srv_clean=0
-            print -r -- "    ⚠️ REBOOT REQUIRED"
-            if [[ -f /var/run/reboot-required.pkgs ]]; then
-                local pkgs="$(head -10 /var/run/reboot-required.pkgs | tr '\n' ' ')"
-                print -r -- "      Packages: ${pkgs}"
-            fi
-        fi
+        [[ -f /var/run/reboot-required ]] && srv_clean=0
 
         if (( $+commands[journalctl] && can_sudo )); then
             local err_count="$("${sudo_cmd[@]}" journalctl -b -p err --no-pager -q 2>/dev/null | wc -l)"
             err_count="${err_count// /}"
-            (( err_count > 0 )) && { srv_clean=0; print -r -- "    ⚠️ ${err_count} journal error(s) since boot — inspect: journalctl -b -p err" }
+            (( err_count > 0 )) && { srv_clean=0; maintain::health_warn "${err_count} journal error(s) since boot — inspect: journalctl -b -p err" }
         fi
 
         (( srv_clean )) && print -r -- "    ✓ no reboot required and no boot errors"
@@ -1472,7 +1918,7 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
                         if (days ~ /^[0-9]+$/) {
                             printf "%s: %s days\n", name ? name : "certificate", days
                         }
-                    }')"
+                    }' | LC_ALL=C sort -t: -k2,2n)"
                 if [[ -n "${certs}" ]]; then
                     local cert_line cert_days
                     print -r -- "${certs}" | while IFS= read -r cert_line; do print -r -- "    ${cert_line}"; done
@@ -1506,8 +1952,72 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
     # platform itself and cannot run from inside the distro (apt only updates the Ubuntu
     # userland). Surface it as a reminder — informational, never a recorded failure.
     if [[ "${HOST_OS}" == "wsl" ]]; then
-        maintain::hdr "WSL runtime"
+        maintain::hdr "WSL runtime & storage"
         print -r -- "    ℹ️ Run 'wsl --update' in Windows PowerShell to update the WSL kernel/runtime."
+
+        # The virtual disk only ever GROWS. ext4.vhdx is sparse-allocated: deleting files
+        # inside the distro frees space to the distro and returns nothing to Windows, so the
+        # file on the host keeps the high-water mark of everything ever written. Measured
+        # here on 2026-09-13: 209G allocated against 118G actually in use — 91G that no
+        # amount of cleaning INSIDE WSL can recover.
+        #
+        # Reported, never performed: reclaiming it needs `wsl --shutdown`, which would kill
+        # the shell running this function mid-phase. The command to run is printed instead.
+        #
+        # Two further Windows-side leaks show up in the same place, and both ARE removable
+        # from in here because they belong to sessions that no longer exist:
+        #   %TEMP%/<GUID>/swap.vhdx   a crashed session's swap file, orphaned (24G here)
+        #   %TEMP%/wsl-crashes/*.dmp  kernel crash dumps (140M here)
+        # Still only reported — a swap.vhdx belonging to a LIVE second distro would be
+        # indistinguishable without asking Windows which sessions are running, and deleting
+        # one out from under a running distro is not a risk worth taking unattended.
+        # zstat rather than shelling out to stat(1) per file. Loaded here, not assumed:
+        # aliases.zsh loads it too, but only when the function that needs it is called, and
+        # maintain::run must not depend on that having happened.
+        zmodload -F zsh/stat b:zstat 2>/dev/null
+        if (( $+commands[cmd.exe] && $+commands[wslpath] && $+builtins[zstat] )); then
+            local win_home win_temp
+            win_home="$(builtin cd /mnt/c && cmd.exe /c 'echo %LOCALAPPDATA%' 2>/dev/null </dev/null | tr -d '\r')"
+            [[ -n "${win_home}" ]] && win_home="$(wslpath -u "${win_home}" 2>/dev/null)"
+
+            if [[ -n "${win_home}" && -d "${win_home}" ]]; then
+                # -maxdepth 3: the distro GUID directory sits directly under wsl/.
+                local vhdx
+                for vhdx in "${win_home}"/wsl/**/ext4.vhdx(N.); do
+                    local vhdx_bytes="$(zstat +size "${vhdx}" 2>/dev/null)"
+                    [[ -n "${vhdx_bytes}" ]] || continue
+                    # Used bytes for / — the distro's own view of what is really occupied.
+                    local used_kb="$(command df -Pk / 2>/dev/null | awk 'NR==2 {print $3}')"
+                    local -i alloc_g=$(( vhdx_bytes / 1073741824 ))
+                    local -i used_g=$(( used_kb / 1048576 ))
+                    local -i slack_g=$(( alloc_g - used_g ))
+                    print -r -- "    ℹ️ ext4.vhdx: ${alloc_g}G allocated, ${used_g}G in use"
+                    if (( slack_g >= 20 )); then
+                        maintain::health_warn "~${slack_g}G reclaimable from ext4.vhdx (needs a Windows-side compact)"
+                        print -r -- "       wsl --shutdown"
+                        print -r -- "       Optimize-VHD -Path '$(wslpath -w "${vhdx}" 2>/dev/null)' -Mode Full"
+                    fi
+                done
+
+                win_temp="$(builtin cd /mnt/c && cmd.exe /c 'echo %TEMP%' 2>/dev/null </dev/null | tr -d '\r')"
+                [[ -n "${win_temp}" ]] && win_temp="$(wslpath -u "${win_temp}" 2>/dev/null)"
+                if [[ -n "${win_temp}" && -d "${win_temp}" ]]; then
+                    # +7 days: a live session rewrites its swap continuously, so anything
+                    # untouched for a week cannot belong to a running distro.
+                    local -a orphan_swap=( "${win_temp}"/*/swap.vhdx(N.md+7) )
+                    if (( ${#orphan_swap} )); then
+                        local swap_mb=0 sf
+                        for sf in "${orphan_swap[@]}"; do
+                            swap_mb=$(( swap_mb + $(zstat +size "${sf}" 2>/dev/null) / 1048576 ))
+                        done
+                        maintain::health_warn "${#orphan_swap} orphaned swap.vhdx in %TEMP% ($(( swap_mb / 1024 ))G) — from crashed WSL sessions"
+                        print -rl -- ${orphan_swap[@]/#/        }
+                    fi
+                    local -a wsl_dumps=( "${win_temp}"/wsl-crashes/*.dmp(N.) )
+                    (( ${#wsl_dumps} )) && maintain::health_warn "${#wsl_dumps} WSL crash dump(s) in %TEMP%/wsl-crashes"
+                fi
+            fi
+        fi
     fi
 
     # Disk-space report (read-only): show EVERY real filesystem with a ✓/⚠️ (≥90% = warn), then
@@ -1519,10 +2029,23 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
             flag = ($5+0 >= 90) ? "⚠️" : "✓"
             printf "    %s %-20s %4s used, %s free\n", flag, $6, $5, $4
         }'
+    # The ⚠️ above is drawn by awk in a subshell, so it can never reach health_warnings by
+    # itself. Re-derive the over-threshold set here so a filesystem at 96% shows up in the
+    # closing summary instead of only in the scrollback — which is precisely how a remote
+    # box in this fleet reached 3.1G free without anyone noticing.
+    local -a df_full=( ${(f)"$(command df -hP 2>/dev/null | awk '
+        NR>1 && $1 !~ /tmpfs|devtmpfs|overlay|udev|squashfs/ && $5+0 >= 90 { printf "%s at %s (%s free)\n", $6, $5, $4 }')"} )
+    df_full=( ${df_full:#} )
+    local df_line
+    for df_line in "${df_full[@]}"; do
+        maintain::health_warn "filesystem ${df_line}"
+    done
     if (( $+commands[dust] )); then
         print -r -- "    Largest paths under ~:"
         dust -d 1 -n 12 "${HOME}" 2>/dev/null | while IFS= read -r sl; do print -r -- "      ${sl}"; done
     fi
+
+    fi  # phase 6
 
     # Stop the sudo keep-alive before handing the terminal back (trap covers Ctrl-C).
     if [[ -n "${sudo_keepalive_pid}" ]]; then
