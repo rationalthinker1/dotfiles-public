@@ -248,11 +248,14 @@ function zi_audit() {
     local plugins_dir="${ZINIT[PLUGINS_DIR]:-${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/plugins}"
 
     # --- every local used below, declared exactly once --------------------------
-    local id ices entry rest cond idas icecond dir ice as_val pick_val src_val hit r d xpath
+    local id ices entry rest cond idas icecond dir ice as_val pick_val src_val hit r d xpath reg_id
     local mv_val cp_val bpick_val ver_val asset ref xfrom xto newer klass backup_size
     local -i findings=0 advisories=0 checked=0 pos bad_at limit rep hard soft unloaded=0
     local -A declared seen_twice conditional idas_of
     local -a parsed report decl_ices saved dropped stale payload hits orphans zwcs comps backups
+    # Named, not just counted: "1 plugin(s) not loaded yet" is unactionable on a host where
+    # it prints every single run, because nothing in the report says WHICH one.
+    local -a unloaded_ids=()
 
     # id -> declared ice names. A plugin declared inside an if/else (up) appears
     # twice with different ices; record that so the drop check can be skipped for it,
@@ -288,6 +291,12 @@ function zi_audit() {
         # id-as'…' overrides the install dir (zinit.zsh:356). Without this the plugin
         # reads as both not-installed and orphaned.
         dir="${plugins_dir}/${${idas_of[${id}]:-${id}}//\//---}"
+        # zinit registers an id-as'…' plugin under the LABEL, never the declared id, so the
+        # runtime check below must look it up the same way the dir above is resolved. Without
+        # this, every id-as plugin reads as permanently unloaded: graft (.zshrc:643) declares
+        # zdharma-continuum/null as'null' id-as'graft', and `graft` is what lands in
+        # ZINIT_REGISTERED_PLUGINS.
+        reg_id="${idas_of[${id}]:-${id}}"
         decl_ices=( ${=declared[${id}]} )
 
         # --- unknown ices: these truncate the declaration at the first miss ---------
@@ -507,7 +516,7 @@ function zi_audit() {
             # $path and completion links are written at LOAD time (zinit.zsh:1827-1836).
             # 48 of 51 declarations are turbo, so ungated this calls the whole config
             # broken in a young shell. Unloaded plugins are skipped and counted once.
-            if (( ${ZINIT_REGISTERED_PLUGINS[(Ie)${id}]} )); then
+            if (( ${ZINIT_REGISTERED_PLUGINS[(Ie)${reg_id}]} )); then
                 if [[ "${as_val}" == (command|program) ]]; then
                     # zinit prepends the matched pick's directory, else the plugin dir
                     # (zinit.zsh:1833) — computed the same way rather than guessed.
@@ -545,6 +554,7 @@ function zi_audit() {
                 done
             else
                 (( unloaded++ ))
+                unloaded_ids+=("${id}")
             fi
         fi
 
@@ -616,7 +626,12 @@ function zi_audit() {
     print -r -- ""
     # An audit run before turbo drains sees almost nothing loaded, so say so rather than
     # letting a near-empty runtime pass read as a clean bill of health.
-    (( unloaded )) && print -r -- "${unloaded} plugin(s) not loaded yet (turbo) — runtime checks skipped for those"
+    if (( unloaded )); then
+        print -r -- "${unloaded} plugin(s) not loaded yet (turbo) — runtime checks skipped for those:"
+        for id in "${unloaded_ids[@]}"; do
+            print -r -- "    ${id}"
+        done
+    fi
 
     # ziextract parks the previous extraction in ._backup on every gh-r update and never
     # reclaims it, so it accrues silently across the whole tree. One du over all of them
