@@ -144,7 +144,14 @@ function maintain::path_dupes() {
         install                                      # coreutils; a plugin dir leaks one
     )
 
-    local d f c
+    # A mise shim is not a shadow — it is a trampoline INTO the install sitting beside it,
+    # so the pair is one tool counted twice. That noise is structural, not per-command: on a
+    # host with mise-managed python+node+yarn it buried 12 of 25 findings, which is the exact
+    # failure the allowlist above exists to prevent. Filtered by SHAPE below rather than by
+    # name, so a newly managed toolchain doesn't silently reintroduce it.
+    local mise_data="${XDG_DATA_HOME:-${HOME}/.local/share}/mise"
+
+    local d f c l
     local -aU cands
     for d in ~/.local/share/mise/installs/*/*/bin(/N) ~/.local/share/zinit/plugins/*(/N) \
              ~/.local/share/zinit/polaris/bin(/N) ~/.cargo/bin(/N) \
@@ -157,11 +164,21 @@ function maintain::path_dupes() {
         (( ${expected[(Ie)${c}]} )) && continue
         local -aU locs reals
         locs=( ${(f)"$(whence -a -p -- ${c} 2>/dev/null)"} )
+        # Drop the shim only when its own install is ALSO on PATH — that is the redundant
+        # pair. A shim with no install beside it is genuinely masking a system copy (mise's
+        # node over apt's), which is a real finding and stays.
+        (( ${locs[(I)${mise_data}/installs/*]} )) && locs=( ${locs:#${mise_data}/shims/*} )
         (( ${#locs} > 1 )) || continue
         # Compare RESOLVED targets: /bin is a symlink to /usr/bin on Ubuntu, so the very
         # same file would otherwise be reported as a duplicate of itself on every box.
         reals=( ${locs[@]:A} )
-        (( ${#reals} > 1 )) && hits+=( "      ${c}: ${(j: :)locs}" )
+        (( ${#reals} > 1 )) || continue
+        # One path per line, PATH order preserved. The single-line form ran past 200 columns
+        # once mise entered the picture and wrapped into an unreadable block; the whole point
+        # is to compare paths against each other, which needs them aligned. ${HOME} collapses
+        # to ~ for the same reason — these are user-tree paths and the prefix is pure noise.
+        hits+=( "      ${c}" )
+        for l in ${locs}; do hits+=( "        - ${l/#${HOME}/~}" ); done
     done
 
     if (( ${#hits} )); then
