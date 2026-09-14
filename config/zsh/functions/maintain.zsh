@@ -121,6 +121,37 @@ function maintain::usage() {
     print -r -- "'exec zsh' to pick up updated command paths."
 }
 
+# Best-effort version string for one binary, for the shadow report below. Prints nothing
+# and returns 1 when the tool has no --version (bd, up) or does not answer in time.
+#
+# WHY exec at all: the report's whole claim is "a newer copy may be masked", and paths alone
+# cannot support it. A stale cargo eza 0.23.4 beat the zinit-managed 0.23.5 here for weeks
+# while every run printed the pair and said nothing about which was older.
+#
+# </dev/null matters more than the timeout: a binary that reads stdin when handed an
+# unrecognised flag otherwise hangs the whole maintenance run with no output. timeout is a
+# second belt and is coreutils-only — macOS has none in the base system, so it is optional.
+#
+# The parse takes the FIRST dotted-numeric token, which survives the shapes actually seen:
+# `v24.21.0`, `jq-1.8.1`, `pip 25.3 from …`, and qsv's 200-character feature banner. A bare
+# year cannot match because a `.` is required.
+function maintain::cmd_version() {
+    emulate -L zsh
+    # emulate -L zsh turns EXTENDED_GLOB off, and the parse below is built entirely from it
+    # — (#b), ## and [^0-9]# are all inert without this and the match silently never fires.
+    setopt local_options extended_glob
+    local bin="${1}" out w
+    local -a tmo=()
+    (( $+commands[timeout] )) && tmo=( timeout 2 )
+    out="$( ${tmo[@]} "${bin}" --version 2>&1 </dev/null )" || return 1
+    for w in ${=out}; do
+        [[ "${w}" == (#b)[^0-9]#([0-9]##(.[0-9]##)##)* ]] || continue
+        print -r -- "${match[1]}"
+        return 0
+    done
+    return 1
+}
+
 # Report commands that exist in more than one install location. This catches the failure
 # mode where a tool installed two ways leaves the OLDER copy winning on PATH forever, in
 # silence: a stale ~/.local/bin/gh 2.92.0 shadowed the zinit-managed 2.97.0 while maintain
@@ -151,7 +182,11 @@ function maintain::path_dupes() {
     # name, so a newly managed toolchain doesn't silently reintroduce it.
     local mise_data="${XDG_DATA_HOME:-${HOME}/.local/share}/mise"
 
-    local d f c l
+    local d f c l real win ver note
+    local -A vers
+    # Real version comparison, not string order. Ships with zsh; autoload is a no-op if a
+    # caller already did it.
+    autoload -Uz is-at-least
     local -aU cands
     for d in ~/.local/share/mise/installs/*/*/bin(/N) ~/.local/share/zinit/plugins/*(/N) \
              ~/.local/share/zinit/polaris/bin(/N) ~/.cargo/bin(/N) \
@@ -177,8 +212,26 @@ function maintain::path_dupes() {
         # once mise entered the picture and wrapped into an unreadable block; the whole point
         # is to compare paths against each other, which needs them aligned. ${HOME} collapses
         # to ~ for the same reason — these are user-tree paths and the prefix is pure noise.
+        # Probe each DISTINCT file once — /bin/x and /usr/bin/x are one binary, and paying
+        # two execs plus two timeouts to print the same string twice is pure waste.
+        vers=()
+        for l in ${locs}; do
+            real="${l:A}"
+            [[ -n "${vers[${real}]+x}" ]] || vers[${real}]="$(maintain::cmd_version "${l}")"
+        done
+        win="${vers[${locs[1]:A}]}"
         hits+=( "      ${c}" )
-        for l in ${locs}; do hits+=( "        - ${l/#${HOME}/~}" ); done
+        for l in ${locs}; do
+            ver="${vers[${l:A}]}"
+            note=""
+            # The finding this check exists for: a copy LATER in PATH is newer than the one
+            # that actually runs. is-at-least does a real version compare, so 0.23.10 does
+            # not read as older than 0.23.4 the way a string compare would.
+            if [[ -n "${ver}" && -n "${win}" && "${ver}" != "${win}" ]] && is-at-least "${win}" "${ver}"; then
+                note="  ⚠️ newer than the copy that runs"
+            fi
+            hits+=( "        - ${l/#${HOME}/~}${ver:+  ${ver}}${note}" )
+        done
     done
 
     if (( ${#hits} )); then
