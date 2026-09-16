@@ -203,10 +203,19 @@ inoremap <C-Del> <C-o>dw
 nnoremap <silent> <C-w> :call CloseBuffer()<CR>
 
 " Toggle terminal              Ctrl+` , Alt+F12 (IntelliJ)
+"
+" DIVERGES from the Vim config: the close half is <C-\><C-n>:quit<CR>, not
+" <C-w>:quit<CR>. In Vim, CTRL-W in terminal-job mode is 'termwinkey' and means
+" "escape the job, then take the next key as a window command". Neovim has no
+" 'termwinkey' and no terminal-mode mappings at all, so <C-w> is sent straight
+" to the job: pressing Ctrl+` to close typed ^W (delete-word-back in readline)
+" followed by the literal `:quit` into the shell and ran it as a command, and
+" the window never closed. <C-\><C-n> is Neovim's way out of terminal mode --
+" the <C-v> mapping further down already had it right.
 nnoremap <silent> <C-`> :botright terminal<CR>
-tnoremap <silent> <C-`> <C-w>:quit<CR>
+tnoremap <silent> <C-`> <C-\><C-n>:quit<CR>
 nnoremap <silent> <A-F12> :botright terminal<CR>
-tnoremap <silent> <A-F12> <C-w>:quit<CR>
+tnoremap <silent> <A-F12> <C-\><C-n>:quit<CR>
 
 " File explorer                Ctrl+B and Alt+1
 " Ctrl+B is the VSCode sidebar toggle; Alt+1 is IntelliJ's Project tool window,

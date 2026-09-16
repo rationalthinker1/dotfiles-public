@@ -1,0 +1,48 @@
+#compdef kernwatch
+# kernwatch — Linux kernel observability TUI (matthart1983/kernwatch)
+#
+# Hand-written, and here there was never a generator to hope for: kernwatch parses
+# its arguments by hand rather than with clap, which is also why it has no
+# --version flag at all (`--version` answers "Unknown argument"; --help carries
+# the version banner). Flags and the view list below come from the v0.4.1 binary's
+# own --help output.
+#
+# --trace needs kernel permissions, and sudo's secure_path will not see a
+# zinit-installed binary, so the working incantation is
+#   sudo "$(command -v kernwatch)" --trace
+# This file completes the flag either way; the note is here because the failure
+# mode ("command not found" under sudo) looks like a broken install and is not.
+
+function _kernwatch() {
+    local -a views
+
+    views=(
+        'dense:every panel at once'
+        'overview:the summary view'
+        'tasks:per-task runtime and state'
+        'scheduler:wake-to-run delay and run queues'
+        'memory:memory and pressure'
+        'block:block I/O'
+        'syscalls:syscall duration'
+        'irq:IRQ and softirq counters'
+        'cgroups:cgroup accounting'
+        'modules:loaded kernel modules'
+        'ebpf:BPF programs and links'
+        'dmesg:kernel log records'
+        'diagnose:observations and hypotheses'
+        'flame:CPU stack profiles and flame graphs'
+    )
+
+    _arguments -s -S \
+        '(- *)--help[print help (this is also the version banner)]' \
+        '(--replay --demo-tour)--demo[use a synthetic incident instead of the live host]' \
+        '(--demo --replay)--demo-tour[guided synthetic tour; any key takes control]' \
+        '(--demo --demo-tour)--replay=[read recorded frames without sampling the host]:recording:_files' \
+        '--view=[start in a named view]:view:((${views}))' \
+        '--at=[select a recorded time, in milliseconds (with --replay)]:milliseconds:' \
+        '(--render)--snapshot[print JSON and exit]' \
+        '(--snapshot)--render=[print one terminal frame at this size]:size (WIDTHxHEIGHT):(80x24 120x40 160x52)' \
+        '--trace[bounded 30s BPF capture; needs kernel permissions, so run it under sudo]'
+}
+
+_kernwatch "$@"

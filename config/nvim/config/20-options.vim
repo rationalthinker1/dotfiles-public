@@ -62,10 +62,16 @@ set number                  " absolute line numbers
 set cursorline              " highlight the line the cursor is on
 set ruler                   " line/column position in the bottom right
 set showcmd                 " show partially typed commands
-set noshowmode              " lightline already renders the mode
-set laststatus=2            " lightline requires this; the default (1) hides it
-                            " entirely when only one window is open
-set showtabline=2           " lightline-bufferline owns the tabline
+set noshowmode              " lualine already renders the mode
+" 3, not the 2 the Vim config uses: lualine runs with globalstatus=true
+" (lua/plugins/statusline.lua), i.e. ONE statusline for the whole layout, and
+" that is what laststatus=3 means. This file is sourced after the statusline
+" module, so the old `laststatus=2` actively undid lualine's own setting and
+" every split drew the current window's statusline; it was only put back by
+" lualine re-running setup() on ColorScheme, which `silent! colorscheme
+" cyberpunk` in 40-ui.vim does not guarantee.
+set laststatus=3            " one global statusline, matching lualine
+set showtabline=2           " lualine's tabline owns this
 set cmdheight=1             " one line for the command area
 set display=truncate        " mark a truncated last line with @@@ instead of hiding it
 set scrolloff=7             " keep 7 lines of context above/below the cursor

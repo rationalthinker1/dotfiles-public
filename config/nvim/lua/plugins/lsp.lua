@@ -110,6 +110,14 @@ vim.api.nvim_create_autocmd('LspAttach', {
     -- exactly as it drove coc's CursorHold highlight.
     if client:supports_method('textDocument/documentHighlight') then
       local hl = vim.api.nvim_create_augroup('nvim_lsp_highlight', { clear = false })
+      -- LspAttach fires once per CLIENT per buffer, and these autocmds are
+      -- buffer-local, so without this clear they accumulate: a second capable
+      -- client on the same buffer (tailwindcss alongside ts_ls on a .tsx)
+      -- doubles them, and every :LspRestart or crash-and-reattach adds another
+      -- pair for the life of the buffer. Nothing errors -- you just get N
+      -- document_highlight requests every 'updatetime' tick, which reads as
+      -- highlight flicker and CPU burn on hold.
+      vim.api.nvim_clear_autocmds({ group = hl, buffer = args.buf })
       vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
         group = hl,
         buffer = args.buf,
@@ -129,5 +137,19 @@ vim.api.nvim_create_autocmd('LspAttach', {
           { bufnr = args.buf })
       end, { buffer = args.buf, desc = 'Toggle inlay hints' })
     end
+  end,
+})
+
+-- The other half of the clear above: when the last client lets go of a buffer,
+-- the CursorHold handlers have nothing left to ask and any references already
+-- drawn would stay underlined until the next cursor move.
+vim.api.nvim_create_autocmd('LspDetach', {
+  group = vim.api.nvim_create_augroup('nvim_lsp_detach', { clear = true }),
+  callback = function(args)
+    if #vim.lsp.get_clients({ bufnr = args.buf }) > 1 then
+      return -- another client is still attached and still wants the highlights
+    end
+    vim.api.nvim_clear_autocmds({ group = 'nvim_lsp_highlight', buffer = args.buf })
+    pcall(vim.lsp.buf.clear_references)
   end,
 })

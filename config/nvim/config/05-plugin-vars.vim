@@ -1,9 +1,12 @@
 " ~/.config/nvim/config/05-plugin-vars.vim — plugin variables, set BEFORE plugins load.
 "
-" WHY THIS FILE COMES BEFORE 10-plugins.vim
+" WHY THIS FILE IS SOURCED BEFORE require('plugins')
+"
+" (In the Vim tree the file it comes before is config/10-plugins.vim, which has
+" no counterpart here: vim.pack.add() lives in lua/plugins/init.lua.)
 "
 " Many plugins read their configuration once, in their plugin/ file, at the
-" moment `plug#end()` puts them on 'runtimepath'. A variable set after that point
+" moment they land on 'runtimepath'. A variable set after that point
 " is simply ignored, and the plugin has already installed its defaults — usually
 " including mappings that then shadow yours.
 "

@@ -40,7 +40,11 @@ map('n', '<C-S-F5>', function() dap().restart() end, { desc = 'Debug: restart' }
 -- Breakpoints                     F9 (VSCode) · Ctrl+F8 (IntelliJ)
 map('n', '<F9>', function() dap().toggle_breakpoint() end, { desc = 'Debug: toggle breakpoint' })
 map('n', '<C-F8>', function() dap().toggle_breakpoint() end, { desc = 'Debug: toggle breakpoint' })
-map('n', '<S-F9>', function() dap().toggle_breakpoint() end, { desc = 'Debug: toggle breakpoint' })
+-- NOT <S-F9>: that is IntelliJ's start-debugging key and is bound above.
+-- Binding it here too silently won — vim.keymap.set overwrites without a word,
+-- so Shift+F9 toggled a breakpoint, the comment on line 31 said otherwise, and
+-- IntelliJ's start-debugging spelling was unreachable. Ctrl+F8 is IntelliJ's
+-- actual toggle-breakpoint key and already covers this.
 -- Conditional breakpoint
 map('n', '<leader>dB', function()
   vim.ui.input({ prompt = 'Breakpoint condition: ' }, function(cond)

@@ -27,6 +27,14 @@
 #      nothing has reloaded since. The file says one thing, the running process another, and
 #      reading the file tells you nothing. So the running value is compared against the file.
 #
+#      Attacked from two directions. The per-service checks compare one KNOWN setting against
+#      its running value, which is precise but only ever covers settings someone thought to
+#      add. sa::audit_config_drift compares MTIMES instead — if the file is newer than the
+#      process, the running process cannot be using it, whatever it says — which is cruder but
+#      needs no knowledge of any setting at all and therefore catches the ones nobody
+#      anticipated. On the host this was written for it found three in one pass, including an
+#      RTP port range whose only symptom would have been intermittent one-way audio.
+#
 #   3. UNBOUNDED GROWTH. A 10GB application log, an uncapped journal, 2000 rotated files in
 #      one directory. Each is invisible until a disk fills.
 #
@@ -44,6 +52,14 @@ typeset -g SERVICE_AUDIT_LOG_MAX_BYTES=$(( 500 * 1024 * 1024 ))
 
 # Restart count above which a unit is treated as flapping rather than merely running.
 typeset -g SERVICE_AUDIT_RESTART_WARN=5
+
+# A telephony channel older than this is a channel that never tore down, not a long call.
+# Six hours is far beyond any real call and far below the days-long ones this catches.
+typeset -g SERVICE_AUDIT_FS_CHANNEL_MAX_HOURS=6
+
+# A single call recording larger than this did not stop when the call did. At the 96 kbps
+# these are encoded at, 100 MB is roughly 2.4 hours of audio.
+typeset -g SERVICE_AUDIT_FS_RECORDING_MAX_MB=100
 
 # ---------------------------------------------------------------------------------------
 # Output helpers. Deliberately the same markers maintain uses (✓ ⚠️ ℹ️ ──) so that when this
@@ -95,6 +111,136 @@ function sa::sudo() {
     else
         return 127
     fi
+}
+
+# Resolve a tool that may live in an sbin directory, printing its absolute path.
+#
+# ufw, iptables and their neighbours live in /usr/sbin, which is on root's PATH and NOT on an
+# ordinary user's. So `(( ${+commands[ufw]} ))` answers "not installed" for every non-root
+# run, and a check gated on it returns early and reports nothing — indistinguishable, in the
+# output, from a clean result. That is the worst possible failure for an audit: it looks like
+# coverage. Returns non-zero only when the tool is genuinely absent.
+function sa::bin() {
+    local name="${1}" candidate
+    (( ${+commands[${name}]} )) && { print -r -- "${commands[${name}]}"; return 0 }
+    for candidate in /usr/sbin/"${name}" /sbin/"${name}" /usr/local/sbin/"${name}"; do
+        [[ -x "${candidate}" ]] && { print -r -- "${candidate}"; return 0 }
+    done
+    return 1
+}
+
+# Where does THIS host keep its FreeSWITCH config? Derived from the running process, never
+# assumed, because sa::fs_cli below needs it before fs_cli can be asked anything.
+#
+# Order, most authoritative first:
+#   1. an explicit `-conf <dir>` on the running command line, which overrides everything
+#   2. <prefix>/conf, where prefix comes from resolving /proc/<pid>/exe and stripping
+#      /bin/freeswitch — this is how a source build is laid out
+#   3. /etc/freeswitch, the Debian/Ubuntu package default
+#
+# Not resolved through readlink here: callers that want the real directory behind a symlink
+# resolve it themselves, and the vars.xml read below works either way.
+function sa::fs_conf_dir() {
+    local pid conf exe prefix
+    pid="$(systemctl show freeswitch -p MainPID --value 2>/dev/null)"
+    if [[ "${pid}" == <1-> ]]; then
+        local -a argv_fs=( ${(0)"$(sudo -n cat /proc/${pid}/cmdline 2>/dev/null || cat /proc/${pid}/cmdline 2>/dev/null)"} )
+        local i
+        for (( i = 1; i <= ${#argv_fs}; i++ )); do
+            [[ "${argv_fs[i]}" == "-conf" ]] && { conf="${argv_fs[i+1]}"; break }
+        done
+        [[ -d "${conf}" ]] && { print -r -- "${conf}"; return 0 }
+        exe="$(sudo -n readlink -f /proc/${pid}/exe 2>/dev/null || readlink -f /proc/${pid}/exe 2>/dev/null)"
+        prefix="${exe%/bin/freeswitch}"
+        [[ -n "${prefix}" && "${prefix}" != "${exe}" && -d "${prefix}/conf" ]] && { print -r -- "${prefix}/conf"; return 0 }
+    fi
+    [[ -d /etc/freeswitch ]] && { print -r -- /etc/freeswitch; return 0 }
+    return 1
+}
+
+# fs_cli that works when the audit runs as root.
+#
+# This is not a style preference, it is a correctness fix. `fs_cli -x` takes its credentials
+# from ~/.fs_cli_conf. An interactive user usually has one; ROOT USUALLY DOES NOT, and the
+# weekly audit runs from a systemd timer as root. Every bare `fs_cli -x` in this file returned
+# nothing on that run, so the entire FreeSWITCH section - uptime, channel count, stuck-channel
+# detection, sofia profiles, gateway registration, oversized recordings, RTP port range, seven
+# checks - was missing from every emailed report, and sa::fs_dir silently fell back to the
+# /etc/freeswitch guess on hosts where that is the wrong answer.
+#
+# Bare is still tried FIRST: it is cheaper, and it respects a user who has deliberately
+# configured their own ~/.fs_cli_conf pointing somewhere non-default. Only on empty output do
+# we go looking for the password.
+#
+# The password is read from vars.xml in the directory sa::fs_conf_dir found. That file is
+# typically 0640 root:freeswitch, so this path needs root or group membership - which is
+# exactly the case we are fixing.
+function sa::fs_cli() {
+    (( ${+commands[fs_cli]} )) || return 1
+    local out
+    out="$(fs_cli -x "${1}" -t 2000 2>/dev/null)"
+    [[ -n "${out}" ]] && { print -r -- "${out}"; return 0 }
+
+    if (( ! ${+_sa_fs_esl_args} )); then
+        typeset -ga _sa_fs_esl_args=()
+        local conf pw host port
+        conf="$(sa::fs_conf_dir)" || conf=""
+        if [[ -n "${conf}" && -r "${conf}/vars.xml" ]]; then
+            pw="$(grep -oP 'event_socket_password=\K[^"]+' "${conf}/vars.xml" 2>/dev/null | head -1)"
+            # listen-ip/listen-port may be literals or $${var} references back into vars.xml;
+            # only a literal is usable, and the defaults are right in every other case.
+            host="$(grep -oP 'name="listen-ip"\s+value="\K[^"$]+' "${conf}/autoload_configs/event_socket.conf.xml" 2>/dev/null | head -1)"
+            port="$(grep -oP 'name="listen-port"\s+value="\K[0-9]+' "${conf}/autoload_configs/event_socket.conf.xml" 2>/dev/null | head -1)"
+            [[ -n "${pw}" ]] && _sa_fs_esl_args=( -H "${host:-127.0.0.1}" -P "${port:-8021}" -p "${pw}" )
+        fi
+    fi
+
+    (( ${#_sa_fs_esl_args} )) || return 1
+    fs_cli "${_sa_fs_esl_args[@]}" -x "${1}" -t 2000 2>/dev/null
+}
+
+# Ask the RUNNING FreeSWITCH where one of its directories is, rather than assuming a layout.
+#
+# Installs disagree completely: a Debian package uses /etc/freeswitch with recordings under
+# /var/lib/freeswitch, a source build uses /usr/local/freeswitch/{conf,log,recordings}, some
+# deployments use /opt/freeswitch, and `freeswitch -conf <dir>` overrides any of them.
+# global_getvar reports what THIS process actually uses, which is the only answer that cannot
+# be out of date.
+#
+# Resolved with readlink -f because conf_dir is very often a symlink — on the host this was
+# written for, /usr/local/freeswitch/conf -> /etc/freeswitch. Comparing mtimes through the
+# unresolved path would stat the symlink instead of the files behind it.
+function sa::fs_dir() {
+    local name="${1}" val
+    val="$(sa::fs_cli "global_getvar ${name}" | head -1)"
+    [[ -n "${val}" && "${val}" != -ERR* ]] || return 1
+    readlink -f "${val}" 2>/dev/null || print -r -- "${val}"
+}
+
+# Every directory recordings might actually land in, one per line.
+#
+# ${recordings_dir} alone is NOT sufficient and trusting it is a real trap. A dialplan may
+# write anywhere it likes, and on the host this was written for it did: recordings_dir was an
+# empty /usr/local/freeswitch/recordings while every recording went to /var/recordings.
+# Checking only the global would have missed a 31.6 GiB runaway file sitting in the other one.
+#
+# So: the global, plus any directory the dialplan names in a record_session or recording_file
+# argument. Discovered from config rather than listed here, so this works on a host whose
+# dialplan records somewhere neither of us has thought of.
+function sa::fs_recording_dirs() {
+    local conf_dir="${1}"
+    local -aU dirs=()
+    local rec; rec="$(sa::fs_dir recordings_dir)" && [[ -d "${rec}" ]] && dirs+=( "${rec}" )
+
+    if [[ -d "${conf_dir}" ]]; then
+        local -a found d
+        found=( ${(f)"$(grep -rhoP '(?:record_session|recording_file)[^/]*\K/[A-Za-z0-9_./-]+' \
+            "${conf_dir}" 2>/dev/null | sed 's#/[^/]*$##' | sort -u)"} )
+        for d in ${found}; do
+            [[ -n "${d}" && -d "${d}" ]] && dirs+=( "${d:A}" )
+        done
+    fi
+    print -rl -- ${dirs}
 }
 
 # Is a systemd unit present and running? Used as the gate for service checks whose binary
@@ -448,7 +594,7 @@ function sa::audit_freeswitch() {
     # fs_status, not `status`: zsh's $status is a READ-ONLY alias for $?, so `local status`
     # aborts the function outright with "read-only variable". Third reserved name to bite
     # this file after `path` and `watch` — see the note above sa::audit_mysql.
-    local fs_status; fs_status="$(fs_cli -x 'status' -t 2000 2>/dev/null)"
+    local fs_status; fs_status="$(sa::fs_cli 'status')"
     if [[ -z "${fs_status}" ]]; then
         sa::warn "freeswitch is running but its event socket did not answer"
         sa::fix "check ESL config in autoload_configs/event_socket.conf.xml"
@@ -464,7 +610,7 @@ function sa::audit_freeswitch() {
         sa::ok "up ${(j:, :)parts[1,2]}"
     fi
 
-    local cur; cur="$(fs_cli -x 'show channels count' -t 2000 2>/dev/null | grep -oE '^[0-9]+')"
+    local cur; cur="$(sa::fs_cli 'show channels count' | grep -oE '^[0-9]+')"
     [[ "${cur}" == <-> ]] && { sa::info "${cur} active channel(s)"; sa::metric "freeswitch_channels" "${cur}" }
 
     # A sofia profile that is not RUNNING means that SIP leg is dead — registrations fail
@@ -472,7 +618,7 @@ function sa::audit_freeswitch() {
     # `sofia status` is TAB-separated: Name, Type, Data, State. Keying on the Type column is
     # what makes this reliable — a naive /profile/ match also catches the trailing summary
     # line ("1 profile 0 aliases") and reports a profile literally named "1".
-    local sofia; sofia="$(fs_cli -x 'sofia status' -t 2000 2>/dev/null)"
+    local sofia; sofia="$(sa::fs_cli 'sofia status')"
     if [[ -n "${sofia}" ]]; then
         local -a prof_down=( ${(f)"$(print -r -- "${sofia}" | awk -F'\t+' '$2=="profile" && $4 !~ /^RUNNING/ {gsub(/^ +| +$/,"",$1); print $1}')"} )
         prof_down=( ${prof_down:#} )
@@ -488,6 +634,219 @@ function sa::audit_freeswitch() {
         sa::metric "freeswitch_gateways_failing" ${#gw_bad}
         (( ${#gw_bad} )) && { sa::warn "SIP gateway(s) failing to register: ${(j:, :)gw_bad}"; sa::fix "fs_cli -x 'sofia profile external killgw <name>' then check credentials" }
     fi
+
+    # STUCK CHANNELS. A channel up for hours is not a long call, it is a channel that never
+    # tore down: the far end vanished without a BYE and nothing timed it out. Channel COUNT
+    # cannot see this — four channels looks like a busy switch, not a fault.
+    #
+    # This is the cheapest detector for an entire failure class. On 2026-09-13 the freeswitch
+    # host had four such channels aged 16.6 and 6.3 DAYS, and an earlier one had held
+    # record_session open for 32.8 days and written a 31.6 GiB mp3 — 43% of the root
+    # filesystem — before anyone noticed.
+    #
+    # `show channels` is CSV; created_epoch is column 4 and the state name is column 6.
+    local chans; chans="$(sa::fs_cli 'show channels')"
+    if [[ -n "${chans}" ]]; then
+        local -a stuck
+        stuck=( ${(f)"$(print -r -- "${chans}" | awk -F, -v now="$(date +%s)" -v maxh="${SERVICE_AUDIT_FS_CHANNEL_MAX_HOURS}" '
+            NR > 1 && $4 ~ /^[0-9]+$/ {
+                age = (now - $4) / 3600
+                if (age > maxh) printf "%s (%.1fh, %s)\n", substr($1, 1, 14), age, $6
+            }')"} )
+        stuck=( ${stuck:#} )
+        sa::metric "freeswitch_stuck_channels" ${#stuck}
+        if (( ${#stuck} )); then
+            sa::warn "${#stuck} channel(s) older than ${SERVICE_AUDIT_FS_CHANNEL_MAX_HOURS}h — almost certainly never torn down"
+            local ch; for ch in ${stuck[1,5]}; do sa::item "${ch}"; done
+            sa::fix "fs_cli -x 'uuid_kill <uuid>'; then set rtp-timeout-sec in the sofia profile so it cannot recur"
+        else
+            sa::ok "no channels older than ${SERVICE_AUDIT_FS_CHANNEL_MAX_HOURS}h"
+        fi
+    fi
+
+    # RUNAWAY RECORDINGS. The direct consequence of the above when record_session is running.
+    # Checked independently because the recording outlives the channel that made it: the
+    # channel is long gone, the file is still on disk, and nothing else will ever mention it.
+    local fs_conf; fs_conf="$(sa::fs_dir conf_dir)"
+    local rec_dir
+    for rec_dir in ${(f)"$(sa::fs_recording_dirs "${fs_conf}")"}; do
+        [[ -n "${rec_dir}" && -d "${rec_dir}" ]] || continue
+        local -a huge
+        huge=( ${(f)"$(find "${rec_dir}" -maxdepth 2 -type f -size +${SERVICE_AUDIT_FS_RECORDING_MAX_MB}M -printf '%s %p\n' 2>/dev/null | sort -rn | head -5)"} )
+        huge=( ${huge:#} )
+        sa::metric "freeswitch_oversized_recordings" ${#huge}
+        if (( ${#huge} )); then
+            sa::warn "${#huge} recording(s) over ${SERVICE_AUDIT_FS_RECORDING_MAX_MB}MB in ${rec_dir}"
+            local h; for h in ${huge}; do sa::item "$(sa::human ${h%% *}) — ${h#* }"; done
+            sa::fix "a call recording this large means the channel never hung up — check 'show channels' ages too"
+        else
+            sa::ok "no oversized recordings in ${rec_dir}"
+        fi
+    done
+
+    # RTP RANGE vs FIREWALL. A mismatch here does not raise an error anywhere: RTP simply
+    # gets allocated on a port the firewall drops, and the symptom is intermittent ONE-WAY
+    # AUDIO on a switch that reports itself perfectly healthy. Worth comparing because the
+    # config file and the running process can disagree — on 2026-09-13 this host had the
+    # range corrected in switch.conf.xml six days AFTER FreeSWITCH last started, so the
+    # running process still used the old one while the file looked right.
+    local sw_conf="${fs_conf}/autoload_configs/switch.conf.xml"
+    local fw_bin; fw_bin="$(sa::bin ufw)"
+    if [[ -n "${fs_conf}" && -r "${sw_conf}" ]] && [[ -n "${fw_bin}" ]]; then
+        local rtp_lo rtp_hi
+        rtp_lo="$(grep -oP 'rtp-start-port"\s+value="\K[0-9]+' "${sw_conf}" 2>/dev/null | head -1)"
+        rtp_hi="$(grep -oP 'rtp-end-port"\s+value="\K[0-9]+' "${sw_conf}" 2>/dev/null | head -1)"
+        if [[ -n "${rtp_lo}" && -n "${rtp_hi}" ]]; then
+            # Any live RTP socket outside the configured range proves the running process is
+            # not using the file's range, whatever the file says.
+            #
+            # Read the LOCAL port out of field 4 ONLY. An earlier version grepped every
+            # ":<digits>" on the line, which also caught the PEER port — so FreeSWITCH's own
+            # outbound DNS queries (ephemeral source port → 1.1.1.1:53) were reported as RTP
+            # bound outside the range. Two false alarms on a perfectly healthy box, on the
+            # first run after this check started working as root.
+            #
+            # Peer port 53 is skipped for the same reason: a connected DNS socket's local port
+            # is ephemeral by definition and says nothing about the RTP allocator.
+            #
+            # `ss -p` needs root to attach process names. Without it the freeswitch filter
+            # matches NOTHING, and the old code then printed "within range" having examined
+            # zero sockets — a false clean, which is the worst result an audit can produce. So
+            # it goes through sa::sudo and reports honestly when it cannot see.
+            local ss_out; ss_out="$(sa::sudo ss -unap 2>/dev/null | grep -F 'freeswitch')"
+            if [[ -z "${ss_out}" ]]; then
+                sa::skip "RTP port range (ss needs root to map sockets to freeswitch)"
+            else
+            local -a out_of_range
+            out_of_range=( ${(f)"$(print -r -- "${ss_out}" \
+                | awk -v lo="${rtp_lo}" -v hi="${rtp_hi}" '
+                    { lp = $4; sub(/.*:/, "", lp)
+                      pp = $5; sub(/.*:/, "", pp)
+                      if (lp !~ /^[0-9]+$/)         next
+                      if (pp == "53")               next
+                      if (lp == 5060 || lp == 5080) next
+                      if (lp < lo || lp > hi)       print lp }' | sort -un)"} )
+            out_of_range=( ${out_of_range:#} )
+            if (( ${#out_of_range} )); then
+                sa::warn "RTP bound outside the configured ${rtp_lo}-${rtp_hi} range: ${(j:, :)out_of_range[1,8]}"
+                sa::fix "config says ${rtp_lo}-${rtp_hi} but the RUNNING process disagrees — rtp-*-port is read at startup only, so restart FreeSWITCH"
+            else
+                sa::ok "RTP ports within the configured ${rtp_lo}-${rtp_hi} range"
+            fi
+            fi  # ss_out non-empty
+            # And the firewall has to allow that range, or in-range RTP is dropped instead.
+            if ! sa::sudo "${fw_bin}" status 2>/dev/null | grep -qF "${rtp_lo}:${rtp_hi}/udp"; then
+                sa::warn "ufw has no ${rtp_lo}:${rtp_hi}/udp allow rule matching the RTP range"
+                sa::fix "ufw allow ${rtp_lo}:${rtp_hi}/udp   # a mismatch shows up as one-way audio, never as an error"
+            fi
+        fi
+    fi
+}
+
+# Config files edited AFTER the service that reads them last started.
+#
+# This is the generic form of failure pattern 2, and the cheapest possible test for it. Where
+# the per-service checks compare one known setting against its running value, this needs no
+# knowledge of any setting at all: if the file is newer than the process, the running process
+# cannot be using it, whatever it says.
+#
+# It is worth its own check because the fix looks complete when it is not. Someone edits the
+# config, reads it back, sees the right value, and moves on — while the daemon keeps running
+# on the old one indefinitely. Nothing warns, nothing errors, and `systemctl is-active` is
+# perfectly happy.
+#
+# Three real instances on one host on 2026-09-13, all invisible until they were looked for:
+#   - switch.conf.xml rtp-end-port corrected 65534 -> 32768 six days after FreeSWITCH last
+#     started. Live RTP kept binding above the firewall's allowed range. The symptom of that
+#     is intermittent one-way audio, which never appears in any log.
+#   - event_socket.conf.xml listen-ip set to 127.0.0.1 in the same edit; the socket stayed
+#     bound to 0.0.0.0.
+#   - Both had sat that way for a month, and would have been applied silently and mid-call by
+#     the next certbot renewal, which restarts FreeSWITCH from a deploy hook.
+#
+# WHAT THIS CANNOT SEE, and why it is still worth having.
+#
+# An OUT-OF-BAND reload is invisible here. `fail2ban-client reload`, `nginx -s reload` and
+# `fs_cli -x reloadxml` all make the daemon re-read its config without telling systemd, and
+# none of ActiveEnterTimestamp, StateChangeTimestamp or ExecMainStartTimestamp move when they
+# run. So a service that WAS correctly reloaded still reports here.
+#
+# That is why the wording is "newer than the running process" and the fix is "confirm the
+# running value matches", not "this is broken, restart it". The check answers one question
+# honestly — is the file newer than the process — and leaves the conclusion to whoever knows
+# whether a reload happened.
+#
+# It is still worth having because the expensive failure is the opposite one: nobody reloaded
+# anything, everybody believes the edit is live, and it sits inert for months. And for
+# FreeSWITCH specifically a reload genuinely is not enough — rtp-start-port, rtp-end-port and
+# event_socket listen-ip are read at startup only, so `reloadxml` reports success and changes
+# nothing.
+#
+# Reports the file and the age gap; never reloads anything. Reloading a daemon because a file
+# looks newer is precisely the kind of unattended action that turns an audit into an outage.
+function sa::audit_config_drift() {
+    (( ${+commands[systemctl]} )) || return 0
+
+    # unit : config directory. Only pairs where the daemon reads the directory at STARTUP are
+    # useful here — a service that hot-reloads its config on change would report false drift.
+    local -a pairs=(
+        "nginx:/etc/nginx"
+        "php-fpm:/etc/php"
+        "postgresql:/etc/postgresql"
+        "mariadb:/etc/mysql"
+        "redis-server:/etc/redis"
+        "supervisor:/etc/supervisor"
+        "fail2ban:/etc/fail2ban"
+    )
+
+    # FreeSWITCH is added separately because its config directory is not a constant — a
+    # source build, a Debian package and a `-conf <dir>` override all put it somewhere
+    # different, so the running switch is asked instead of guessed. Falls back to the Debian
+    # default only when fs_cli cannot answer (switch down, socket wedged).
+    if (( ${+commands[fs_cli]} )) && sa::unit_active freeswitch; then
+        local fs_conf_dir; fs_conf_dir="$(sa::fs_dir conf_dir)"
+        [[ -d "${fs_conf_dir}" ]] || fs_conf_dir=/etc/freeswitch
+        [[ -d "${fs_conf_dir}" ]] && pairs=( "freeswitch:${fs_conf_dir}" ${pairs} )
+    fi
+
+    # Every local is declared ONCE, here, and only assigned inside the loop. `local x` on a
+    # name that already holds a value makes zsh PRINT it, so re-declaring inside the loop
+    # leaks "count=4" style lines into the report from the second iteration onward.
+    local -a drifted
+    local pair unit conf_dir started started_epoch newer count age_note f
+    local -i up_days
+    for pair in "${pairs[@]}"; do
+        unit="${pair%%:*}"
+        conf_dir="${pair#*:}"
+        [[ -d "${conf_dir}" ]] || continue
+        sa::unit_active "${unit}" || continue
+
+        started="$(systemctl show "${unit}" -p ActiveEnterTimestamp --value 2>/dev/null)"
+        [[ -n "${started}" ]] || continue
+        started_epoch="$(date -d "${started}" +%s 2>/dev/null)" || continue
+        [[ "${started_epoch}" == <-> ]] || continue
+
+        # -newermt on the unit's start time. Excludes the noise that is always newer and never
+        # meaningful: VCS metadata, editor leftovers, and the .bak files these edits generate.
+        newer="$(find "${conf_dir}" -type f \( -name '*.conf' -o -name '*.xml' -o -name '*.ini' -o -name '*.yaml' -o -name '*.yml' \) \
+            -newermt "@${started_epoch}" \
+            -not -path '*/.git/*' -not -name '*.bak*' -not -name '*~' -not -name '*.dpkg-*' \
+            -printf '%p\n' 2>/dev/null | head -5)"
+        [[ -n "${newer}" ]] || continue
+
+        count="$(print -r -- "${newer}" | grep -c .)"
+        # sa::human formats BYTES, not seconds — spell the uptime out rather than borrow it.
+        up_days=$(( ( $(date +%s) - started_epoch ) / 86400 ))
+        age_note=""
+        (( up_days > 0 )) && age_note="process is ${up_days}d old" || age_note="edited after it started"
+        drifted+=( "${unit}" )
+        sa::warn "${unit}: ${count} config file(s) newer than the running process — ${age_note}"
+        for f in ${(f)newer}; do sa::item "${f}"; done
+        sa::fix "confirm the running value matches, then if not: systemctl restart ${unit}"
+    done
+
+    sa::metric "config_drift_units" ${#drifted}
+    (( ${#drifted} )) || sa::ok "no service config edited since its process started"
 }
 
 function sa::audit_pm2() {
@@ -513,6 +872,128 @@ print(len(procs)); print(",".join(bad)); print(",".join(hot))
     [[ -n "${bad}" ]] && { sa::warn "pm2 process(es) not online: ${bad}"; sa::fix "pm2 logs <name> --err --lines 50" } \
                       || sa::ok "all ${total} pm2 process(es) online"
     [[ -n "${hot}" ]] && sa::warn "pm2 process(es) restarting repeatedly: ${hot}"
+}
+
+# WireGuard is the purest instance of failure pattern 1 on this list.
+#
+# When a peer stops handshaking the interface stays up, its routes stay installed, and
+# `systemctl is-active wg-quick@wg0` stays green — traffic for that peer simply goes
+# nowhere. Nothing is logged, because from the kernel's point of view nothing failed. The
+# only evidence is handshake age and the byte counters, so this reads those directly and
+# never infers health from unit state.
+function sa::audit_wireguard() {
+    local wg; wg="$(sa::bin wg)" || return 0
+    sa::hdr "WireGuard"
+
+    # `wg show` pulls key material out of the kernel and is root-only. Run unprivileged it
+    # exits 0 having printed nothing at all — indistinguishable from "no interfaces
+    # configured", which is the silent-coverage failure sa::bin exists to prevent.
+    local dump; dump="$(sa::sudo "${wg}" show all dump 2>/dev/null)"
+    [[ -n "${dump}" ]] || { sa::skip "wg peer state"; return 0 }
+
+    # `wg show all dump` is tab-separated in two shapes: an INTERFACE line of 5 fields
+    # (name, private key, public key, listen port, fwmark) and a PEER line of 9 (name,
+    # public key, preshared key, endpoint, allowed-ips, last handshake, rx, tx, keepalive).
+    # Field COUNT is the only reliable discriminator — a peer legitimately carries "(none)"
+    # in several columns, so matching on content would misclassify.
+    local -a iface_names=() never=() stale=() silent=() route_ifaces=()
+    local -A iface_port=()
+    local -i peers=0 now=${EPOCHSECONDS}
+    local -a f=()
+
+    while IFS=$'\t' read -r -A f; do
+        if (( ${#f} == 5 )); then
+            iface_names+=( "${f[1]}" ); iface_port[${f[1]}]="${f[4]}"
+        elif (( ${#f} == 9 )); then
+            (( peers++ ))
+            local ifn="${f[1]}" pub="${f[2]}" aips="${f[5]}" ka="${f[9]}"
+            local tag="${pub:0:8}"
+            local -i hs=${f[6]} rx=${f[7]} tx=${f[8]} age=0
+            (( hs > 0 )) && age=$(( now - hs ))
+
+            # A peer whose AllowedIPs is a subnet rather than a single /32 is routed
+            # THROUGH this host, which only works when ip_forward is on. Checked below,
+            # but only when such a peer actually exists — warning about forwarding on a
+            # pure client box would be noise.
+            [[ "${aips}" == */* && "${aips}" != */32* ]] && route_ifaces+=( "${ifn}" )
+
+            if (( hs == 0 )); then
+                never+=( "${ifn}/${tag}" )
+            elif (( age > 300 )) && [[ "${ka}" != off ]]; then
+                # persistent-keepalive is set, so this peer SHOULD re-handshake every
+                # couple of minutes. Silence is a dead tunnel, not an idle one.
+                stale+=( "${ifn}/${tag} last handshake ${age}s ago" )
+            elif (( rx == 0 || tx == 0 )); then
+                # Handshaking but one direction has never carried a byte: usually an
+                # AllowedIPs or routing mistake rather than a connectivity failure.
+                silent+=( "${ifn}/${tag} rx=$(sa::human ${rx}) tx=$(sa::human ${tx})" )
+            fi
+        fi
+    done <<< "${dump}"
+
+    sa::metric "wg_peers" ${peers}
+    sa::metric "wg_peers_broken" $(( ${#never} + ${#stale} ))
+
+    local p=""
+    if (( ${#never} )); then
+        sa::warn "${#never} wg peer(s) have NEVER completed a handshake"
+        for p in "${never[@]}"; do sa::item "${p}"; done
+        sa::fix "verify the peer's endpoint and public key, and that UDP reaches this host"
+    fi
+    if (( ${#stale} )); then
+        sa::warn "${#stale} wg peer(s) with keepalive set have stopped handshaking"
+        for p in "${stale[@]}"; do sa::item "${p}"; done
+        sa::fix "check the far end and the NAT/UDP path; the tunnel is down despite looking up"
+    fi
+    if (( ${#silent} )); then
+        sa::info "${#silent} wg peer(s) handshaking but carrying no traffic one way"
+        for p in "${silent[@]}"; do sa::item "${p}"; done
+    fi
+    (( ${#never} + ${#stale} )) || sa::ok "all ${peers} wg peer(s) handshaking"
+
+    # Every `local` below carries an explicit assignment, including the empty ones. zsh
+    # PRINTS "name=value" when typeset re-declares a parameter that already holds one and
+    # no new value is given — and these names are all set earlier, in the peer loop or on a
+    # previous iteration. A bare `local ifn` here leaked "ifn=wg0" onto stdout.
+    local ifn=""
+    for ifn in "${iface_names[@]}"; do
+        # wg-quick@ is what survives a reboot. An interface brought up by hand works
+        # perfectly right up until the box restarts, and is then simply gone.
+        if (( ${+commands[systemctl]} )) && ! systemctl is-enabled --quiet "wg-quick@${ifn}" 2>/dev/null; then
+            sa::warn "wg-quick@${ifn} not enabled — ${ifn} will not return after a reboot"
+            sa::fix "systemctl enable wg-quick@${ifn}"
+        fi
+
+        # A tunnel MTU left at the underlay's 1500 fragments every full-size packet. It
+        # presents as "small requests fine, large ones hang" and never as an error.
+        local mtu="$(ip -o link show "${ifn}" 2>/dev/null | grep -oE 'mtu [0-9]+' | awk '{print $2}')"
+        if [[ -n "${mtu}" ]] && (( mtu > 1440 )); then
+            sa::warn "${ifn} MTU is ${mtu} — high for a tunnel; large packets may hang while small ones succeed"
+            sa::fix "set MTU = 1420 under [Interface] in /etc/wireguard/${ifn}.conf"
+        fi
+
+        # The listen port must be reachable or no peer can ever handshake inbound. Only
+        # meaningful once ufw is actually enforcing; an inactive ufw is audit_firewall's
+        # finding to report, not this one's.
+        # NOT named `status`: that is one of zsh's read-only special parameters (an alias
+        # for $?), so assigning to it aborts the function with "read-only variable".
+        local port="${iface_port[${ifn}]}" ufw="" ufw_status=""
+        if [[ -n "${port}" && "${port}" != 0 ]] && ufw="$(sa::bin ufw)"; then
+            ufw_status="$(sa::sudo "${ufw}" status 2>/dev/null)"
+            if [[ "${ufw_status}" == *'Status: active'* ]] && ! print -r -- "${ufw_status}" | grep -qE "^${port}(/udp)?[[:space:]]"; then
+                sa::warn "${ifn} listens on UDP ${port} but ufw has no rule for it"
+                sa::fix "ufw allow ${port}/udp comment 'WireGuard ${ifn}'"
+            fi
+        fi
+    done
+
+    if (( ${#route_ifaces} )); then
+        local fwd; fwd="$(sysctl -n net.ipv4.ip_forward 2>/dev/null)"
+        if [[ "${fwd}" != 1 ]]; then
+            sa::warn "peers route subnets through this host but net.ipv4.ip_forward=${fwd:-unset}"
+            sa::fix "echo 'net.ipv4.ip_forward = 1' | sudo tee /etc/sysctl.d/99-wg-forward.conf && sudo sysctl --system"
+        fi
+    fi
 }
 
 function sa::audit_docker() {
@@ -558,12 +1039,21 @@ function sa::audit_mail() {
 }
 
 function sa::audit_firewall() {
-    (( ${+commands[ufw]} )) || return 0
+    # Resolved rather than tested with ${+commands[ufw]}: ufw lives in /usr/sbin, so that
+    # test is false for every non-root run and this whole section silently did nothing.
+    local ufw_bin; ufw_bin="$(sa::bin ufw)" || return 0
     sa::hdr "Firewall (UFW)"
-    local st; st="$(sa::sudo ufw status verbose 2>/dev/null)"
+    local st; st="$(sa::sudo "${ufw_bin}" status verbose 2>/dev/null)"
     if [[ -z "${st}" ]]; then sa::skip "UFW status"; return 0; fi
     if [[ "${st}" == *'Status: active'* ]]; then
-        local def="${${(M)${(f)st}:#Default:*}[1]}"
+        # Array first, then subscript — same trap as the jail list in sa::audit_fail2ban.
+        # A `:#` filter nested inside ${...} does not survive being subscripted: written as
+        # ${${(M)${(f)st}:#Default:*}[1]} this silently produced an EMPTY string, so the
+        # default policy - the single most important fact about a firewall - was dropped from
+        # the report and the line read as a bare "active". Note that ${${(z)x}[1]} and
+        # ${${(f)x}[1]} DO work; it is specifically the filter form that does not.
+        local -a def_lines=( ${(M)${(f)st}:#Default:*} )
+        local def="${def_lines[1]}"
         sa::ok "active${def:+ — ${def}}"
     else
         sa::warn "UFW is INACTIVE — the host is unfirewalled"
@@ -577,7 +1067,16 @@ function sa::audit_fail2ban() {
     local st; st="$(sa::sudo fail2ban-client status 2>/dev/null)"
     if [[ -z "${st}" ]]; then sa::skip "Fail2Ban jail status"; return 0; fi
 
-    local csv="${${${(M)${(f)st}:#*Jail list:*}[1]}##*:}"
+    # The matching line is captured into an ARRAY before it is subscripted. Writing this as
+    # one nested expansion - ${${(M)${(f)st}:#*Jail list:*}[1]} - looks equivalent and is not:
+    # the [1] is applied to the joined SCALAR, so it returned the first CHARACTER of the whole
+    # output ("S", from "Status") rather than the first matching line. Everything downstream
+    # then worked perfectly on garbage: the jail count was reported as 1 no matter how many
+    # jails existed, and the per-jail loop queried a jail named "S", so fail2ban_banned was
+    # always 0 and its run-over-run delta could never fire.
+    local -a jail_lines=( ${(M)${(f)st}:#*Jail list:*} )
+    (( ${#jail_lines} )) || { sa::skip "Fail2Ban jail list (unrecognised status output)"; return 0 }
+    local csv="${jail_lines[1]##*:}"
     local -a jails=( ${(s:,:)csv} ); jails=( ${jails//[[:space:]]/} ); jails=( ${jails:#} )
     sa::ok "daemon active — ${#jails} jail(s)"
     local j js banned
@@ -829,6 +1328,7 @@ function service_audit() {
     # the moment the block ended — the verdict would always read clean and the state file
     # would never gain a counter. --quiet is handled inside the print helpers instead.
     sa::audit_systemd
+    sa::audit_config_drift
     sa::audit_reboot
     sa::audit_nginx
     sa::audit_phpfpm
@@ -838,6 +1338,7 @@ function service_audit() {
     sa::audit_supervisor
     sa::audit_freeswitch
     sa::audit_pm2
+    sa::audit_wireguard
     sa::audit_docker
     sa::audit_mail
     sa::audit_firewall

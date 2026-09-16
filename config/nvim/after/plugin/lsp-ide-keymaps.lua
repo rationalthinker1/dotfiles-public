@@ -26,7 +26,7 @@ map('n', '<C-S-b>', vim.lsp.buf.type_definition, { desc = 'Go to type declaratio
 map('n', '<F2>', vim.lsp.buf.rename, { desc = 'Rename' })
 map('n', '<S-F6>', vim.lsp.buf.rename, { desc = 'Rename' })
 
--- Format document              Ctrl+Alt+L / <leader>F   (conform, see format.lua)
+-- Format document              Ctrl+Alt+L / <leader>f   (conform, see format.lua)
 map({ 'n', 'x' }, '<C-A-l>', function() require('conform').format({ async = true }) end,
   { desc = 'Format document' })
 -- NOT <leader>F — that is the file picker (config/31-keymap-ide.vim). This file

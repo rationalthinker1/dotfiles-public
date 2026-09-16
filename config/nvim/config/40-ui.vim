@@ -4,12 +4,20 @@
 " cyberpunk). Vim sourced all three in full and kept only the last, costing ~16ms
 " of startup for two schemes that were discarded immediately.
 
-" `syntax enable` rather than `syntax on`: `on` resets user highlight settings,
-" which is what silently undid the italic-comment override below. The old config
-" called both, in that order.
-if !exists('g:syntax_on')
-  syntax enable
-endif
+" No `syntax enable` here, deliberately. Neovim turns syntax on by itself once
+" init has finished, so the command is redundant -- and running it *during* init
+" is actively harmful: it sources runtime/syntax/syntax.vim, which pulls in
+" runtime/filetype.lua, which runs `doautoall filetypedetect BufRead`. That
+" fires FileType for the command-line argument's buffer while it is still
+" unloaded, and any handler that wants the buffer's text (treesitter, via this
+" config or via Nvim's own ftplugin/lua.lua) loads it then and there. Nvim
+" afterwards finds the buffer already loaded, takes the "no read needed" path
+" in do_ecmd(), and never applies 'foldlevelstart' -- so 'foldlevel' stays 0
+" against treesitter's folds and every file opens folded shut.
+"
+" (The Vim config keeps `syntax enable` -- Vim does not enable syntax on its
+" own, and `syntax on` there resets user highlight settings, which is what
+" silently undid the italic-comment override below.)
 
 set background=dark
 

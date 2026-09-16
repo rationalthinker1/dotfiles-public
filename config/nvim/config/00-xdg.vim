@@ -21,6 +21,13 @@
 " naming it keeps the two editors' netrw histories apart.
 let g:netrw_home = stdpath('state')
 
+" The one thing worth carrying over from the Vim file's viminfo line, which was
+" otherwise correctly dropped above: `%` restores the buffer list when nvim is
+" started with no file arguments. Neovim's 'shada' default
+" (!,'100,<50,s10,h,r/tmp/,r/private/) does not include it, so the port quietly
+" lost `vim`'s behaviour of reopening the last session's buffers.
+set shada^=%
+
 " Persistent undo. Neovim sets 'undodir' to stdpath('state').'/undo' already;
 " 'undofile' itself is off by default, so this is the one line that matters.
 set undofile

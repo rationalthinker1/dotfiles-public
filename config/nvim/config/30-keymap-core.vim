@@ -137,8 +137,8 @@ xnoremap > >gv
 " search itself — n and N still work, and @/ keeps the pattern (which matters,
 " because cgn and :%s//new/ both reuse it).
 "
-" Mostly a manual override: Vim 9.2's bundled `nohlsearch` package (packadd in
-" 10-plugins.vim) already drops the highlight as soon as the cursor moves. This
+" Mostly a manual override: the bundled `nohlsearch` package (packadd in
+" lua/plugins/init.lua) already drops the highlight as soon as the cursor moves. This
 " is for clearing it while standing still.
 noremap <silent> <leader><cr> :nohlsearch<cr>
 

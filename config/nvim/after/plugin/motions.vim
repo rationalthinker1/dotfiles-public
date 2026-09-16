@@ -1,5 +1,7 @@
 " Motion plugins — mappings only.
-" Variables (clever-f, smoothie, easymotion) live in config/05-plugin-vars.vim.
+" Variables (smoothie, smartword, asterisk) live in config/05-plugin-vars.vim.
+" clever-f and easymotion are gone; flash.nvim replaced both, and its config is
+" in lua/plugins/motions.lua.
 
 "--- (clever-f removed) ------------------------------------------------------
 " f/F/t/T are now flash.nvim's char mode; see lua/plugins/motions.lua.
@@ -11,8 +13,8 @@ map e  <Plug>(smartword-e)
 map ge <Plug>(smartword-ge)
 
 "--- vim-asterisk: * without the cursor jumping ----------------------------
-" incsearch.vim used to wrap all of these to clear 'hlsearch'; Vim 9.2's bundled
-" `nohlsearch` package (packadd in config/10-plugins.vim) does that on its own.
+" incsearch.vim used to wrap all of these to clear 'hlsearch'; the bundled
+" `nohlsearch` package (packadd in lua/plugins/init.lua) does that on its own.
 map *   <Plug>(asterisk-*)
 map g*  <Plug>(asterisk-g*)
 map #   <Plug>(asterisk-#)

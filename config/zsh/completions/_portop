@@ -1,0 +1,84 @@
+#compdef portop
+# portop — what's really using your ports? (padovanl/portop)
+#
+# Hand-written because upstream ships NO completion generator, and cannot cheaply
+# grow one: portop parses flags with Go's stdlib `flag` package, which has no
+# equivalent of cobra's `completion` subcommand or clap_complete. `portop
+# completion zsh` is not even a no-op — the word is taken as the TUI's filter
+# argument and it tries to open /dev/tty — so there is nothing upstream to capture
+# at atclone time the way vorjdux/txc's shipped _txc is captured.
+#
+# Go's flag package accepts -flag and --flag interchangeably. The double-dash form
+# is what portop's own usage text and README use, so that is what is offered here;
+# the single-dash spellings keep working, they are just not completed.
+#
+# Flag list verified against the v0.0.5 binary's --help, not from the README.
+
+function _portop_targets() {
+    # The ${...##[[:space:]]#} strips below use the `#` repeat operator, which is an
+    # EXTENDED_GLOB construct. .zshrc happens to set that globally, but a completion
+    # function runs under whatever options the caller has and must not rely on it —
+    # without this line the strips silently no-op and every candidate comes back with
+    # its PID column still attached. local_options restores the previous state on
+    # return. This is the idiom the stock _git completion uses.
+    setopt local_options extended_glob
+
+    local -a ports procs
+    local line addr
+
+    # The one positional is a port or a process name to pre-filter the TUI on, so
+    # the candidates worth offering are whatever is actually listening right now.
+    # ss is iproute2, present on every Linux this config targets; if it is missing
+    # the loop simply yields nothing rather than erroring.
+    if (( $+commands[ss] )); then
+        for line in ${(f)"$(ss -H -tuln 2>/dev/null)"}; do
+            # Column 5 is Local Address:Port. IPv6 rows are [::]:8080, so taking
+            # everything after the LAST colon is correct for both families.
+            addr="${${(z)line}[5]}"
+            [[ -n "${addr}" ]] && ports+=("${addr##*:}")
+        done
+    fi
+
+    # comm= prints the bare command name with no header line, so there is no path to
+    # strip — and stripping one would be actively wrong: kernel worker names contain
+    # a slash of their own (kworker/R-rcu_gp), which a ${...##*/} turns into
+    # "R-rcu_gp". They are dropped here rather than repaired, though: a kernel thread
+    # never owns a socket, so it can never be a useful filter for portop, and on an
+    # idle host they outnumber every real process several times over. Children of
+    # kthreadd (PID 2) is the precise test for one; a name-shaped heuristic is not.
+    local ppid comm
+    for line in ${(f)"$(ps -eo ppid=,comm= 2>/dev/null)"}; do
+        line="${line##[[:space:]]#}"
+        ppid="${line%%[[:space:]]*}"
+        # Split off the PID rather than using ${(z)}, so a command name that does
+        # contain a space survives intact.
+        comm="${${line#*[[:space:]]}##[[:space:]]#}"
+        [[ "${ppid}" == 2 || "${comm}" == kthreadd ]] && continue
+        procs+=("${comm}")
+    done
+    procs=( ${(u)procs} )
+
+    _alternative \
+        "ports:listening port:(${(u)ports})" \
+        "processes:process name:(${procs})"
+}
+
+function _portop() {
+    _arguments -s -S \
+        '(- *)--version[print the version and exit]' \
+        '(- *)--init-config[write a default config.yml and exit]' \
+        '(- *)--diff[compare live listening ports against the saved baseline (exit 3 on drift)]' \
+        '(- *)--save-baseline[record which ports are currently listening]' \
+        '--config=[read this config file instead of the default]:config file:_files -g "*.(yml|yaml)"' \
+        '--baseline-path=[baseline file path]:baseline file:_files -g "*.json"' \
+        '--interval=[TUI refresh interval (Go duration syntax)]:duration:(500ms 1s 2s 5s 10s)' \
+        '--listen[show only sockets in LISTEN state]' \
+        '--json[print a JSON snapshot and exit (non-interactive)]' \
+        '--watch-new[desktop-notify when a new LISTEN port appears]' \
+        '--no-dns[disable reverse DNS lookups on ESTABLISHED connections]' \
+        '--no-docker[disable Docker container association]' \
+        '--no-systemd[disable systemd unit association]' \
+        '1:port or process name:_portop_targets'
+}
+
+_portop "$@"

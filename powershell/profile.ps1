@@ -130,6 +130,15 @@ function Get-PathCommandMap {
     return $map
 }
 
+# The map is a snapshot of PATH as it stood at first probe. Anything that REWRITES PATH
+# mid-profile — `mise activate` in tools.ps1 is the only such thing today — must drop it,
+# or every later Test-Command still answers against the pre-activation PATH and reports
+# mise-managed tools (node, npm, nvim, …) as absent. Fragments are dot-sourced by this
+# file, so they share this scope and can call it directly.
+function Reset-PathCommandMap {
+    $script:PathCommandMap = $null
+}
+
 function Test-Command {
     param([Parameter(Mandatory)][string] $Name)
     return (Get-PathCommandMap).ContainsKey($Name)

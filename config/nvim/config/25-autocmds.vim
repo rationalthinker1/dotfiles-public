@@ -32,10 +32,17 @@ augroup vimrc_reload
         \ source $MYVIMRC | echomsg 'Reloaded ' . expand('%:t')
 augroup END
 
+" 'bufhidden' is buffer-local, so BufReadPost is the right event for it.
+" 'wrap', 'winfixwidth', 'number' and 'list' are WINDOW-local, and fugitive
+" blobs are routinely materialised by bufload() — gitsigns' blame, :0Gclog, the
+" diff views — where BufReadPost fires inside the throwaway autocommand window
+" and every window-local setting is discarded with it. BufWinEnter is the first
+" event that guarantees a real window, which is what 'winfixwidth' needs to
+" survive in order to stop fugitive panes resizing on <C-w>=.
 augroup vimrc_fugitive
   autocmd!
   autocmd BufReadPost fugitive://* setlocal bufhidden=delete
-  autocmd BufReadPost fugitive://* call s:FugitiveSettings()
+  autocmd BufWinEnter fugitive://* call s:FugitiveSettings()
 augroup END
 
 function! s:FugitiveSettings() abort

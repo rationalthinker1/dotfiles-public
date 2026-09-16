@@ -60,11 +60,17 @@ end
 -- The heavy part (17ms measured) waits for the first :CodeCompanion* command.
 -- The commands themselves exist from the first frame, because the keymaps below
 -- call them by name — see lua/util/lazy.lua for how the stubs work.
+-- All SIX commands codecompanion creates in setup(), not just the four the
+-- keymaps use: a name missing from this list does not exist until something
+-- else has loaded the plugin, so :CodeCompanionCLI raised E492 in a fresh
+-- session and tab-completion offered nothing.
 require('util.lazy').on_cmd({
   'CodeCompanion',
   'CodeCompanionChat',
   'CodeCompanionActions',
   'CodeCompanionCmd',
+  'CodeCompanionCLI',
+  'CodeCompanionCodeReview',
 }, setup)
 
 --- Keymaps.
@@ -79,5 +85,15 @@ map('v', '<leader>ca', '<cmd>CodeCompanionChat Add<cr>', { desc = 'Add selection
 map({ 'n', 'v' }, '<leader>ci', '<cmd>CodeCompanion<cr>', { desc = 'AI inline assist' })
 map({ 'n', 'v' }, '<leader>cp', '<cmd>CodeCompanionActions<cr>', { desc = 'AI action palette' })
 
--- `cc` as a command-line abbreviation, so :cc expands to :CodeCompanion.
-vim.cmd([[cnoreabbrev <expr> cc (getcmdtype() ==# ':' && getcmdline() ==# 'cc') ? 'CodeCompanion' : 'cc']])
+-- `ai` as a command-line abbreviation, so :ai expands to :CodeCompanion.
+--
+-- NOT `cc`, which this was at first: `:cc[!] [nr]` is Vim's "jump to quickfix
+-- error N". A command-line abbreviation fires on the next non-keyword
+-- character, at which point the line is still exactly `cc` — so the
+-- getcmdline() guard passes for `:cc<CR>` AND for `:cc 3`, and both expanded.
+-- Quickfix navigation opened the AI prompt instead, with "3" sent to the LLM,
+-- while :cnext/:cprev kept working, which made it look intermittent. This
+-- config is quickfix-aware on purpose (20-options.vim's 'switchbuf' names :cc
+-- explicitly, cfilter is packadded, 25-autocmds.vim maps <CR> in the qf
+-- window). `:ai` is not a Vim command, so it collides with nothing.
+vim.cmd([[cnoreabbrev <expr> ai (getcmdtype() ==# ':' && getcmdline() ==# 'ai') ? 'CodeCompanion' : 'ai']])

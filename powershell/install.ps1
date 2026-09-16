@@ -12,10 +12,15 @@
 
 .PARAMETER SkipTools
     Skip the winget CLI-tool installation step (modules and profile linking still run).
+
+.PARAMETER SkipSsh
+    Skip copying the repo's SSH keys into %USERPROFILE%\.ssh. Use on any machine where
+    the private keys should not land on the Windows side — a shared or work box.
 #>
 [CmdletBinding()]
 param(
-    [switch] $SkipTools
+    [switch] $SkipTools,
+    [switch] $SkipSsh
 )
 
 $ErrorActionPreference = 'Stop'
@@ -379,7 +384,89 @@ if ($existingLink -and @($existingLink.Target) -match '^\\\\wsl') {
 }
 
 #---------------------------------------------------------------------------------------
-# 4. Summary
+# 4. SSH keys
+#
+# Windows git.exe, VS Code and every other native tool use the Windows OpenSSH client,
+# which reads %USERPROFILE%\.ssh and has no view of WSL's ~/.ssh. Without this step a
+# native `git clone git@github.com:...` fails with "Permission denied (publickey)" while
+# the identical clone succeeds one shell over in WSL.
+#
+# Same reasoning as the profile copy above: COPIED to local disk, not pointed at over
+# \\wsl.localhost\. OpenSSH's permission check cannot read a UNC path's ACLs and refuses
+# the key outright rather than guessing.
+#
+# Two properties make this safe to re-run:
+#   - a destination already matching the source by hash is left untouched
+#   - a destination that DIFFERS is backed up first, so a key generated on this machine
+#     is never silently destroyed by a repo copy
+#---------------------------------------------------------------------------------------
+
+Write-Step 'SSH keys'
+
+$sshSource = Join-Path $repoRoot '.ssh'
+$sshTarget = Join-Path $env:USERPROFILE '.ssh'
+
+if ($SkipSsh) {
+    Write-Skip 'skipped (-SkipSsh)'
+} elseif (-not (Test-Path -LiteralPath $sshSource)) {
+    # The public clone carries no .ssh at all — not an error, just nothing to do.
+    Write-Skip "no .ssh in ${repoRoot} — nothing to deploy"
+} else {
+    if (-not (Test-Path -LiteralPath $sshTarget)) {
+        New-Item -ItemType Directory -Path $sshTarget -Force | Out-Null
+    }
+
+    # `rc` is a WSL-side hook sourced by sshd on login; it means nothing to the Windows
+    # client, so it is excluded rather than copied over and left to confuse.
+    $sshFiles = Get-ChildItem -LiteralPath $sshSource -File |
+        Where-Object { $_.Name -ne 'rc' }
+
+    $sshCopied = 0
+    foreach ($f in $sshFiles) {
+        $dst = Join-Path $sshTarget $f.Name
+
+        if (Test-Path -LiteralPath $dst) {
+            $srcHash = (Get-FileHash -LiteralPath $f.FullName).Hash
+            $dstHash = (Get-FileHash -LiteralPath $dst).Hash
+            if ($srcHash -eq $dstHash) {
+                Write-Skip "$($f.Name) already current"
+                continue
+            }
+
+            $backup = "${dst}.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+            Copy-Item -LiteralPath $dst -Destination $backup -Force
+            Write-Warn "$($f.Name) differed — backed up to $(Split-Path -Leaf $backup)"
+        }
+
+        Copy-Item -LiteralPath $f.FullName -Destination $dst -Force
+        $sshCopied++
+    }
+
+    # Copied off a UNC share these carry a Zone.Identifier, the same "downloaded from the
+    # internet" marker that makes script fragments unrunnable. Clear it here too.
+    Get-ChildItem -LiteralPath $sshTarget -File -ErrorAction SilentlyContinue |
+        Unblock-File -ErrorAction SilentlyContinue
+
+    # OpenSSH refuses a private key any other principal can read — "UNPROTECTED PRIVATE
+    # KEY FILE", and it is fatal, not a warning. A fresh %USERPROFILE%\.ssh inherits ACLs
+    # from the profile directory and always trips this, so inheritance is broken and the
+    # current user made sole grantee. Backups are matched too: they hold the same secret.
+    $me = "${env:USERDOMAIN}\${env:USERNAME}"
+    $privateKeys = Get-ChildItem -LiteralPath $sshTarget -File |
+        Where-Object { $_.Name -like 'id_*' -and $_.Name -notlike '*.pub' }
+
+    foreach ($key in $privateKeys) {
+        icacls $key.FullName /inheritance:r    | Out-Null
+        icacls $key.FullName /grant:r "${me}:(F)" | Out-Null
+        icacls $key.FullName /setowner $me     | Out-Null
+    }
+
+    Write-Ok "${sshCopied} file(s) -> ${sshTarget}"
+    Write-Ok "$($privateKeys.Count) private key(s) locked to ${me}"
+}
+
+#---------------------------------------------------------------------------------------
+# 5. Summary
 #---------------------------------------------------------------------------------------
 
 Write-Step 'Summary'

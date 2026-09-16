@@ -25,7 +25,7 @@ typeset -ga ZI_AUDIT_LINT=(
 
 # Informational only: never counted, never affect the exit code, never reach --ids.
 typeset -ga ZI_AUDIT_ADVISORY=(
-    zwc-orphan completion-broken completion-disabled conditional-absent
+    zwc-orphan completion-broken completion-disabled conditional-absent path-stale
 )
 
 function zi_audit::usage() {
@@ -57,7 +57,7 @@ function zi_audit::usage() {
     print -r -- "  extract-noexec     extract'' suppressed the chmod and nothing is +x"
     print -r -- ""
     print -r -- "Runtime state (needs the plugin to have loaded; turbo may defer that):"
-    print -r -- "  not-on-path        as'program' but its dir never reached \$path"
+    print -r -- "  not-on-path        as'program' and NOTHING under the plugin dir is in \$path"
     print -r -- "  not-in-fpath       a completion plugin missing from \$fpath"
     print -r -- "  completion-missing blockf/creinstall plugin with no _<name> installed"
     print -r -- ""
@@ -73,6 +73,8 @@ function zi_audit::usage() {
     print -r -- "  completion-broken  dangling symlink in zinit's completions dir"
     print -r -- "  completion-disabled  a completion installed but turned off by zi cdisable"
     print -r -- "  conditional-absent declared inside an if that is false on this host"
+    print -r -- "  path-stale         \$path points into the plugin but at a dir that is gone"
+    print -r -- "                     — a reinstall since this shell started; exec zsh"
     print -r -- ""
     print -r -- "Options:"
     print -r -- "  -q, --quiet   List only plugins with findings; suppress the OK lines."
@@ -248,18 +250,28 @@ function zi_audit() {
     local plugins_dir="${ZINIT[PLUGINS_DIR]:-${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/plugins}"
 
     # --- every local used below, declared exactly once --------------------------
-    local id ices entry rest cond idas icecond dir ice as_val pick_val src_val hit r d xpath reg_id
+    local id key ices entry rest cond idas icecond dir ice as_val pick_val src_val hit r d xpath
     local mv_val cp_val bpick_val ver_val asset ref xfrom xto newer klass backup_size
     local -i findings=0 advisories=0 checked=0 pos bad_at limit rep hard soft unloaded=0
-    local -A declared seen_twice conditional idas_of
+    local -A declared seen_twice conditional repo_of
     local -a parsed report decl_ices saved dropped stale payload hits orphans zwcs comps backups
+    local -a stale_path
     # Named, not just counted: "1 plugin(s) not loaded yet" is unactionable on a host where
     # it prints every single run, because nothing in the report says WHICH one.
     local -a unloaded_ids=()
 
-    # id -> declared ice names. A plugin declared inside an if/else (up) appears
-    # twice with different ices; record that so the drop check can be skipped for it,
-    # since only one branch is live and the other's ices would be false positives.
+    # KEY -> declared ice names, where the key is the id-as'…' label when there is one and
+    # the repo id otherwise. The label is what decides both the install dir (zinit.zsh:356)
+    # and the ZINIT_REGISTERED_PLUGINS entry, and two declarations may share a repo id while
+    # differing only in label: graft and intelephense both load zdharma-continuum/null
+    # as'null' under their own id-as. Keyed on the repo id, the second silently overwrote the
+    # first — so graft went entirely unaudited AND was reported as an orphan, and --ids would
+    # have named a directory (zdharma-continuum---null) that does not exist for maintain to
+    # wipe. repo_of keeps the id the GitHub API needs.
+    #
+    # A plugin declared inside an if/else (up) appears twice with different ices; record that
+    # so the drop check can be skipped for it, since only one branch is live and the other's
+    # ices would be false positives.
     #
     # Fields are unpacked with successive %%/# rather than ${(s.\t.)}: an ice-less
     # declaration emits an empty field, and splitting would silently drop it and shift
@@ -274,30 +286,33 @@ function zi_audit() {
         ices="${rest%%	*}";    rest="${rest#*	}"
         cond="${rest%%	*}";    rest="${rest#*	}"
         idas="${rest%%	*}";    icecond="${rest#*	}"
-        [[ -n "${declared[${id}]+x}" ]] && seen_twice[${id}]=1
-        declared[${id}]="${ices}"
-        (( ${cond:-0} )) && conditional[${id}]=1
+        key="${idas:-${id}}"
+        [[ -n "${declared[${key}]+x}" ]] && seen_twice[${key}]=1
+        declared[${key}]="${ices}"
+        repo_of[${key}]="${id}"
+        (( ${cond:-0} )) && conditional[${key}]=1
         # Ices chosen in an if/else and loaded once outside it (akavel/up, .zshrc:667):
         # only one branch is ever live, so comparing the other's names is a false drop.
         # This is NOT covered by seen_twice, which needs two `zi load` lines to trigger.
-        (( ${icecond:-0} )) && seen_twice[${id}]=1
-        [[ -n "${idas}" ]] && idas_of[${id}]="${idas}"
+        (( ${icecond:-0} )) && seen_twice[${key}]=1
     done
 
-    for id in ${(ko)declared}; do
-        (( ${#wanted} )) && [[ ${wanted[(Ie)${id}]} -eq 0 ]] && continue
+    for key in ${(ko)declared}; do
+        # The repo id, for the one check that needs it (ver-stale's GitHub request). Every
+        # other use — install dir, registration lookup, reporting — belongs to the key.
+        id="${repo_of[${key}]}"
+        # Both names are accepted as arguments: `zi-audit graft` and
+        # `zi-audit zdharma-continuum/null` should not silently check nothing.
+        if (( ${#wanted} )); then
+            (( ${wanted[(Ie)${key}]} || ${wanted[(Ie)${id}]} )) || continue
+        fi
         (( checked++ ))
         report=()
-        # id-as'…' overrides the install dir (zinit.zsh:356). Without this the plugin
-        # reads as both not-installed and orphaned.
-        dir="${plugins_dir}/${${idas_of[${id}]:-${id}}//\//---}"
-        # zinit registers an id-as'…' plugin under the LABEL, never the declared id, so the
-        # runtime check below must look it up the same way the dir above is resolved. Without
-        # this, every id-as plugin reads as permanently unloaded: graft (.zshrc:643) declares
-        # zdharma-continuum/null as'null' id-as'graft', and `graft` is what lands in
-        # ZINIT_REGISTERED_PLUGINS.
-        reg_id="${idas_of[${id}]:-${id}}"
-        decl_ices=( ${=declared[${id}]} )
+        # id-as'…' overrides the install dir (zinit.zsh:356), and the key already IS the
+        # label where one was declared. Without this the plugin reads as both not-installed
+        # and orphaned.
+        dir="${plugins_dir}/${key//\//---}"
+        decl_ices=( ${=declared[${key}]} )
 
         # --- unknown ices: these truncate the declaration at the first miss ---------
         pos=0
@@ -315,7 +330,7 @@ function zi_audit() {
             # Declared inside an `if`: absence is this host failing the condition, not
             # drift. zsh-syntax-highlighting (.zshrc:469) is desktop-and-not-SSH only, so
             # without this every server and SSH session reports a false finding.
-            if (( ${conditional[${id}]:-0} )); then
+            if (( ${conditional[${key}]:-0} )); then
                 report+=("conditional-absent: declared inside an if that is false here")
             else
                 report+=("not-installed (no ${dir:t})")
@@ -326,7 +341,7 @@ function zi_audit() {
             # --- declared vs saved -------------------------------------------------
             # Stops at a truncation point (already reported above) and is skipped for
             # conditionally-declared plugins, where the inactive branch would misfire.
-            if (( ! ${seen_twice[${id}]:-0} )); then
+            if (( ! ${seen_twice[${key}]:-0} )); then
                 dropped=()
                 limit=${#decl_ices}
                 (( bad_at )) && limit=$(( bad_at - 1 ))
@@ -516,7 +531,9 @@ function zi_audit() {
             # $path and completion links are written at LOAD time (zinit.zsh:1827-1836).
             # 48 of 51 declarations are turbo, so ungated this calls the whole config
             # broken in a young shell. Unloaded plugins are skipped and counted once.
-            if (( ${ZINIT_REGISTERED_PLUGINS[(Ie)${reg_id}]} )); then
+            # zinit registers an id-as'…' plugin under the LABEL, never the declared repo
+            # id — which is exactly what the key is.
+            if (( ${ZINIT_REGISTERED_PLUGINS[(Ie)${key}]} )); then
                 if [[ "${as_val}" == (command|program) ]]; then
                     # zinit prepends the matched pick's directory, else the plugin dir
                     # (zinit.zsh:1833) — computed the same way rather than guessed.
@@ -534,8 +551,23 @@ function zi_audit() {
                         fi
                         (( ${#hits} )) && xpath="${hits[1]:h}"
                     fi
-                    (( ${path[(Ie)${xpath}]} )) || \
-                        report+=("not-on-path: ${xpath/#${HOME}/~} is loaded but absent from \$path — something later rewrote PATH")
+                    if (( ! ${path[(Ie)${xpath}]} )); then
+                        # Before calling it broken: is some OTHER dir inside this plugin on
+                        # $path? A wipe+reinstall during this shell's life (maintain's
+                        # --zinit branch, `zinit-reset`, any `zi delete` + scheduler burst)
+                        # replaces a version-stamped payload dir — gh_2.100.0_linux_amd64
+                        # becomes gh_2.101.0_linux_amd64 — while THIS process keeps the
+                        # entry it was handed at load time. Nothing rewrote PATH and nothing
+                        # on disk is wrong; only this shell is behind, and `exec zsh` fixes
+                        # it. Measured: every gh-r plugin that changed version across a full
+                        # wipe reported not-on-path, on a config that was in fact healthy.
+                        stale_path=( ${(M)path:#${dir}/*} )
+                        if (( ${#stale_path} )); then
+                            report+=("path-stale: \$path still has ${stale_path[1]/#${HOME}/~}, but the payload is now ${xpath/#${HOME}/~} — reinstalled since this shell started; exec zsh")
+                        else
+                            report+=("not-on-path: ${xpath/#${HOME}/~} is loaded but nothing under the plugin dir is in \$path — something later rewrote PATH")
+                        fi
+                    fi
                 fi
 
                 # creinstall links _name into the completions dir; when it silently stops,
@@ -554,7 +586,7 @@ function zi_audit() {
                 done
             else
                 (( unloaded++ ))
-                unloaded_ids+=("${id}")
+                unloaded_ids+=("${key}")
             fi
         fi
 
@@ -579,10 +611,12 @@ function zi_audit() {
         done
 
         if (( ids_only )); then
-            (( rep )) && print -r -- "${id}"
+            # The KEY, not the repo id: maintain turns each line straight into a directory
+            # under PLUGINS_DIR, and for an id-as plugin the repo id names no such dir.
+            (( rep )) && print -r -- "${key}"
         elif (( hard )); then
             (( findings += hard, advisories += soft ))
-            print -r -- "✗ ${id}"
+            print -r -- "✗ ${key}"
             for r in "${report[@]}"; do
                 print -r -- "    ${r}"
             done
@@ -590,9 +624,9 @@ function zi_audit() {
             # ~ not ✗: maintain greps ✗ lines to decide what to repair, and an advisory is
             # explicitly not a repair request.
             (( advisories += soft ))
-            (( quiet )) || { print -r -- "~ ${id}"; for r in "${report[@]}"; do print -r -- "    ${r}"; done; }
+            (( quiet )) || { print -r -- "~ ${key}"; for r in "${report[@]}"; do print -r -- "    ${r}"; done; }
         elif (( ! quiet )); then
-            print -r -- "✓ ${id}"
+            print -r -- "✓ ${key}"
         fi
     done
 
@@ -602,17 +636,16 @@ function zi_audit() {
     # --- orphans: installed but no longer declared ------------------------------
     if (( ! ${#wanted} )); then
         orphans=()
-        # An id-as'…' plugin lives under its LABEL, so the dir does not reconstruct into
-        # a declared id; match those by label before falling back to the id mapping.
-        local -A idas_dirs=()
-        for id in ${(k)idas_of}; do
-            idas_dirs[${idas_of[${id}]//\//---}]=1
+        # Match FORWARD — key to directory name — rather than reconstructing an id from the
+        # directory. An id-as'…' plugin lives under its bare LABEL, which does not round-trip
+        # through `//---//`, and a repo whose own name contains --- would not either.
+        local -A declared_dirs=()
+        for key in ${(k)declared}; do
+            declared_dirs[${key//\//---}]=1
         done
         for d in ${plugins_dir}/*(N/); do
             [[ "${d:t}" == "_local---zinit" ]] && continue
-            (( ${idas_dirs[${d:t}]:-0} )) && continue
-            id="${${d:t}//---//}"
-            [[ -n "${declared[${id}]+x}" ]] || orphans+=("${d:t}")
+            (( ${declared_dirs[${d:t}]:-0} )) || orphans+=("${d:t}")
         done
         if (( ${#orphans} )); then
             (( findings += ${#orphans} ))

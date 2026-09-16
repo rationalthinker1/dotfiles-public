@@ -38,7 +38,8 @@ UNC path is the Internet zone, so the script is refused as "not digitally signed
 installed, the profile runs from local disk and needs no such flag. If the repo is already
 on a Windows drive, plain `pwsh -File .\powershell\install.ps1` is enough.
 
-Idempotent — safe to re-run. `-SkipTools` skips the package-install step.
+Idempotent — safe to re-run. `-SkipTools` skips the package-install step; `-SkipSsh`
+skips the SSH key copy.
 
 Each tool carries an id for **both** package managers: winget is tried first, scoop
 picks up whatever winget could not supply (`ouch` is scoop-only; `lazygit` needs the
@@ -49,6 +50,21 @@ It installs modules and CLI tools, then **copies** the profile to
 `%LOCALAPPDATA%\dotfiles\` and points `$PROFILE.CurrentUserAllHosts` there. Symlinking
 needs Developer Mode or an elevated shell; when unavailable it writes a stub that
 dot-sources the deployed copy instead, which works the same way.
+
+### SSH keys
+
+The last step copies the repo's `.ssh/` into `%USERPROFILE%\.ssh` and locks each private
+key's ACL to the current user. Windows git, VS Code and every other native tool use the
+Windows OpenSSH client, which reads that directory and has no view of WSL's `~/.ssh`;
+without this, `git clone git@github.com:…` fails with `Permission denied (publickey)`
+while the same clone succeeds one shell over in WSL.
+
+The keys are copied for the same reason the profile is — OpenSSH cannot read a UNC path's
+ACLs and refuses the key rather than guessing. A destination file already matching the
+repo by hash is left alone; one that differs is backed up before being replaced, so a key
+generated on the machine is never silently lost. `rc` is skipped (it is a WSL-side sshd
+hook). Pass **`-SkipSsh`** on any machine where the private keys should not land on the
+Windows side.
 
 ### Why a copy, not a link into the repo
 
@@ -333,6 +349,13 @@ Sharing a *file* is not enough on its own either: atuin and mise look in `%APPDA
 Windows, so `tools.ps1` points `ATUIN_CONFIG_DIR` and `MISE_CONFIG_FILE` at the deployed
 copies the way `.zshenv` points zsh at the tracked ones. Without that the two shells read
 different configs while appearing to share one.
+
+And pointing at the config is only half of mise: `tools.ps1` also runs `mise activate
+pwsh`. For a long time it ran only `mise completion powershell`, which gave the shell
+mise's **completions but none of its tools** — `mise use <tool>` reported a successful
+install and the next invocation of that tool was "not recognized as a name of a cmdlet".
+Tools pinned in `config/mise/config.toml` (`node`, `npm`, `yarn`, `neovim`, …) are on
+PATH in pwsh only because of that line.
 
 The rest of `.zshenv`'s XDG remapping (`NPM_CONFIG_*`, `GOPATH`, `PYTHONSTARTUP`, …) is
 deliberately **not** mirrored — that is Unix hygiene, and forcing XDG paths on Windows

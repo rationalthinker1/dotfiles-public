@@ -53,6 +53,25 @@ if ((Test-Command 'mise') -and (Test-Path $miseConfig) -and -not $env:MISE_CONFI
     $env:MISE_CONFIG_FILE = $miseConfig
 }
 
+# ACTIVATE mise. Without this, pwsh had mise's COMPLETIONS (see the completer section
+# below) but none of its TOOLS: nothing put mise on PATH, so `mise use npm` reported a
+# successful install and the very next `npm` was "not recognized as a name of a cmdlet".
+# The zsh side does both halves — `mise activate zsh` in .zshrc:1318 plus the shims dir
+# in .zshenv:212 — and only this file was missing its equivalent.
+#
+# Must run AFTER MISE_CONFIG_FILE above: activation resolves the tool list immediately,
+# and reads whichever config is pointed at when it runs.
+#
+# NOT via Get-ToolInitScript. That cache is keyed on the mise binary's mtime, but the
+# generated script hard-codes an absolute ${Env:PATH} computed at generation time — so a
+# cached copy would replay a stale PATH into every future shell until mise itself was
+# upgraded. Regenerate on each start instead; it is one subprocess.
+if (Test-Command 'mise') {
+    mise activate pwsh | Out-String | Invoke-Expression
+    # PATH just changed; the probe map built above no longer describes it.
+    Reset-PathCommandMap
+}
+
 # .zshenv:54 sets EDITOR=vim for zsh. Nothing set it here, so `ref -e` and `note` had
 # no editor to open. Prefer what is actually installed on Windows over a bare 'vim';
 # notepad is the guaranteed backstop, since it ships with the OS.

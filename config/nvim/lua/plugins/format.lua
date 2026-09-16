@@ -24,13 +24,15 @@ require('conform').setup({
     php = { 'php_cs_fixer' },
     python = { 'ruff_format' },
   },
-  -- Formatting stays EXPLICIT (Ctrl+Alt+L / <leader>F), matching the Vim
+  -- Formatting stays EXPLICIT (Ctrl+Alt+L / <leader>f), matching the Vim
   -- config. No format_on_save: the repo has files whose formatting is
   -- deliberate, and a silent reformat on every write is how those get churned.
   default_format_opts = { lsp_format = 'fallback', timeout_ms = 3000 },
 })
 
--- Used by the Ctrl+Alt+L / <leader>F mappings in config/31-keymap-ide.vim.
+-- Typed, not mapped: Ctrl+Alt+L and <leader>f call conform directly (see
+-- after/plugin/lsp-ide-keymaps.lua and lsp-keymaps.lua). This exists for the
+-- range form — `:'<,'>Format` — which a plain mapping cannot express.
 vim.api.nvim_create_user_command('Format', function(args)
   local range = nil
   if args.count ~= -1 then

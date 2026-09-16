@@ -63,7 +63,14 @@ uv = "latest"
 # To bump deliberately: `mise latest asdf:mise-plugins/mise-vim` to see what is current
 # (plain `mise latest vim` reports conda's useless version list), edit this line, then
 # `mise install`. The superseded build is reclaimed by `mise prune` in maintain phase 5.
-"asdf:mise-plugins/mise-vim" = "9.2.0926"
+#
+# os = ["linux", "macos"] because an asdf plugin is a directory of BASH SCRIPTS. This
+# file is the global config on the Windows side too (powershell/tools.ps1 points
+# MISE_CONFIG_FILE at it), where mise tried to exec the plugin's bin/list-all and got
+# "%1 is not a valid Win32 application. (os error 193)" on every `mise use`/`mise
+# install`. The gate makes mise skip the tool off-platform instead of failing on it.
+# Every other entry here is node/aqua/core, all of which have real Windows builds.
+"asdf:mise-plugins/mise-vim" = { version = "9.2.0926", os = ["linux", "macos"] }
 # Neovim sits ALONGSIDE vim, not instead of it. `vim` remains the daily driver
 # (config in .vim/); this is the parallel Neovim config in config/nvim/, kept so
 # the two can be compared without either one's breakage affecting the other.
@@ -92,3 +99,23 @@ uv = "latest"
 # aqua backend for prebuilt binaries; asdf would build it from Rust source.
 "aqua:tree-sitter/tree-sitter" = "0.27.0"
 yarn = "1"
+# npm and yarn are pinned HERE rather than per-project, so a bare `mise use npm` in some
+# repo stops being the thing that makes npm appear (it was, and it only half-worked).
+#
+# npm is deliberately a tool of its own even though node already bundles one: the bundled
+# copy is whatever node LTS shipped with, and it moves only when node does. mise's npm
+# shim wins on PATH, which is the point — but it also means `npm -v` will not match
+# `node -p process.versions.npm`. That divergence is expected, not a broken install.
+# It still RUNS on mise's node: aqua ships the npm CLI, which is JavaScript.
+npm = "latest"
+
+# gh is deliberately NOT here. zinit installs it from gh-r (.zshrc:1045) and that copy
+# wins on PATH, so declaring it in mise only produced a second, never-used install that
+# maintain's PATH-shadow audit then reported as a duplicate on every machine.
+#
+# The one thing lost with it: mise's shim dir is on PATH from .zshenv (all shells) while
+# zinit's gh is wait'2' in .zshrc (interactive only), so `gh` is no longer resolvable
+# from scripts, cron or `zsh -c`. Nothing in this repo calls it that way — maintain's
+# `gh extension upgrade` (maintain.zsh:903) runs interactively, after turbo has drained.
+# If a script ever needs it, give that script the plugin path rather than re-adding a
+# whole second install here.

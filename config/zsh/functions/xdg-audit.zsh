@@ -98,6 +98,13 @@ typeset -gA XDG_AUDIT_PARTIAL=(
     '.aws'         'AWS_CONFIG_FILE/AWS_SHARED_CREDENTIALS_FILE cover config+credentials only; .aws/cli is the SSO cache'
     '.ollama'      'OLLAMA_MODELS relocates the model blobs only; config.json and history have no override and stay here'
     '.yarn'        'YARN_CACHE_FOLDER governs the cache only; ~/.yarn/bin holds global binaries and has no override'
+    # DOTNET_CLI_HOME is read by the dotnet CLI. The .NET RUNTIME's X509/CRL store is not:
+    # PersistedFiles resolves ~/.dotnet/corefx from $HOME directly, so ANY self-contained
+    # .NET binary recreates it with no dotnet SDK installed anywhere. On a headless server
+    # that binary is usually VS Code Server's bundled vsce-sign, which verifies extension
+    # signatures against Microsoft's code-signing CRLs on every extension update — which is
+    # why this reappears, newer than the XDG copy, and read as divergent.
+    '.dotnet'      'DOTNET_CLI_HOME governs the CLI home only; ~/.dotnet/corefx is the runtime X509/CRL store, resolved from $HOME with no override (vsce-sign and any other self-contained .NET binary writes it)'
     # Both of these read their env var AND the hardcoded ~/.<name> default, on purpose. The
     # two trees are live at once by design, so there is nothing to reconcile and nothing to
     # delete — which is why they belong here rather than in the divergent class.

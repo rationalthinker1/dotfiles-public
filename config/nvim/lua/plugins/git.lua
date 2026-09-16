@@ -41,14 +41,18 @@ require('gitsigns').setup({
 -- ATTACH TO BUFFERS THAT ALREADY EXIST.
 --
 -- This module is deferred to BufReadPre (see init.lua), so gitsigns.setup()
--- runs *during* the BufReadPre of the very first file opened. gitsigns
--- registers its own attach autocmds inside setup(), so the event for that first
--- buffer has already passed and it is never attached.
+-- runs *during* the BufReadPre of the very first file opened, and gitsigns
+-- registers its own attach autocmds inside setup(). When that first buffer was
+-- never attached, the symptom was deceptive: gitsigns sets b:gitsigns_head from
+-- its repo scan, so the buffer LOOKS attached, while its cache entry is absent
+-- and none of the on_attach keymaps (]g, [g, gs, <leader>gu, Ctrl+Alt+Z) exist.
+-- Every one was silently dead on the first file of every session.
 --
--- The symptom is deceptive: gitsigns sets b:gitsigns_head from its repo scan,
--- so the buffer LOOKS attached, while its cache entry is absent and none of the
--- on_attach keymaps (]g, [g, gs, <leader>gu, Ctrl+Alt+Z) exist. Every one was
--- silently dead on the first file of every session.
+-- The installed gitsigns now registers on BufRead (not BufReadPre) and sweeps
+-- pre-existing buffers from setup() itself, so for THIS trigger the first
+-- buffer is covered either way. This stays as the belt to that braces: the
+-- trigger in init.lua is one edit away from being earlier again, and the
+-- failure mode is invisible.
 --
 -- Attached on the next BufEnter rather than immediately: at BufReadPre the
 -- buffer is not yet loaded, so an is-loaded guard skips it and an unguarded
@@ -62,7 +66,16 @@ vim.api.nvim_create_autocmd({ 'BufEnter', 'BufReadPost' }, {
     vim.schedule(function()
       local gs = require('gitsigns')
       for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-        if vim.bo[buf].buftype == '' and vim.api.nvim_buf_get_name(buf) ~= '' then
+        -- The is-loaded guard is not optional. `nvim a.ts b.ts c.ts` leaves
+        -- b.ts and c.ts as unloaded argument buffers that both pass the two
+        -- tests below, and attaching reads the buffer -- which would load them
+        -- during startup, and a buffer already loaded when Nvim gets round to
+        -- editing it never has 'foldlevelstart' applied (see
+        -- lua/plugins/treesitter.lua for the long version of that bug).
+        -- gitsigns guards internally too, but that is its defence, not ours.
+        if vim.api.nvim_buf_is_loaded(buf)
+          and vim.bo[buf].buftype == ''
+          and vim.api.nvim_buf_get_name(buf) ~= '' then
           pcall(gs.attach, buf)
         end
       end

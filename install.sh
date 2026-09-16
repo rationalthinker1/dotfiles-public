@@ -59,6 +59,15 @@ relative_path() {
     python3 -c "import os; print(os.path.relpath('${source}', '${target_dir}'))"
 }
 
+# True when a path physically resolves inside this dotfiles repo. Resolves both sides so it
+# still holds when ${DOTFILES_ROOT} (or an ancestor of the path) is itself a symlink.
+inside_dotfiles() {
+    local resolved root
+    resolved="$(readlink -f "${1}" 2>/dev/null || true)"
+    root="$(readlink -f "${DOTFILES_ROOT}" 2>/dev/null || echo "${DOTFILES_ROOT}")"
+    [[ -n "${resolved}" ]] && [[ "${resolved}" == "${root}" || "${resolved}" == "${root}"/* ]]
+}
+
 # Link one tracked dotfile into place, backing up whatever was there before.
 # Idempotent: a target already pointing at the right relative source is left untouched.
 # Extracted from the bulk symlink loop so individual links (notably config/mise/config.toml)
@@ -68,15 +77,58 @@ link_dotfile() {
     local target="${2}"
     local dotfile_source="${DOTFILES_ROOT}/${source_path}"
 
-    # Skip if source doesn't exist in dotfiles (e.g. password-store not yet committed)
-    [[ ! -e "${dotfile_source}" ]] && return 0
+    # Skip if source doesn't exist in dotfiles (e.g. password-store not yet committed).
+    # A *dangling* source is different: the tracked file itself is broken (an older install
+    # could leave a self-referential symlink there — see the self-aliasing guard below), and
+    # silently skipping would hide it.
+    if [[ ! -e "${dotfile_source}" ]]; then
+        [[ -L "${dotfile_source}" ]] &&
+            echo "  ⚠ ${dotfile_source} is a broken symlink — restore it with: git -C ${DOTFILES_ROOT} checkout -- ${source_path}" >&2
+        return 0
+    fi
 
-    # Ensure parent directory exists (needed before computing relative path)
-    ensure_dir "$(dirname "${target}")" "${BACKUP_DIR}"
+    local target_dir
+    target_dir="$(dirname "${target}")"
+
+    # Self-aliasing guard. A parent of the target may itself be a symlink into this repo —
+    # e.g. a legacy whole-directory link ~/.config/mise -> ~/.dotfiles/mise, from before mise
+    # was tracked at file level. The target then IS the tracked file: the backup branch below
+    # would "back up" and rm -rf the repo's own copy, and the relative path would collapse to
+    # the file's own basename, leaving ~/.dotfiles/mise/config.toml -> config.toml (a symlink
+    # to itself). Retire the stale directory link first so the file link lands in a real dir.
+    if [[ -L "${target_dir}" ]] && inside_dotfiles "${target_dir}"; then
+        echo "  Replacing legacy directory symlink: ${target_dir} -> $(readlink "${target_dir}")"
+        rm -f "${target_dir}"
+    fi
+
+    # Ensure parent directory exists (needed before computing relative path).
+    #
+    # ensure_dir rather than `mkdir -p`: master added it so a rerun survives the
+    # rust-coreutils userland Ubuntu 26.04 ships, which exits 1 on an existing directory.
+    # It also clears a parent symlink that resolves to NOTHING — the complement of the
+    # guard directly above, which clears one that still resolves, into this repo. Both have
+    # to go before the directory is created, and in this order: the repo-link is live, so
+    # ensure_dir's dangling test would pass over it and the aliased path would "succeed".
+    ensure_dir "${target_dir}" "${BACKUP_DIR}"
+
+    # Same aliasing, further up the tree: the target is a real file that lives inside the repo.
+    # Never back it up or delete it — that destroys tracked config. Report and skip instead.
+    if [[ -e "${target}" && ! -L "${target}" ]] && inside_dotfiles "${target}"; then
+        echo "  ⚠ Skipping ${target}: it resolves inside ${DOTFILES_ROOT} (aliased parent directory)" >&2
+        return 0
+    fi
 
     # Compute relative symlink path so it works across different $HOME environments (host vs container)
     local relative_source
-    relative_source="$(relative_path "${dotfile_source}" "$(dirname "${target}")")"
+    relative_source="$(relative_path "${dotfile_source}" "${target_dir}")"
+
+    # Refuse to link if the computed path doesn't resolve back to the tracked file — a
+    # self-referential or otherwise wrong link is worse than leaving the target alone.
+    if [[ -z "${relative_source}" ]] ||
+       [[ "$(readlink -f "${target_dir}/${relative_source}" 2>/dev/null || true)" != "$(readlink -f "${dotfile_source}")" ]]; then
+        echo "  ⚠ Skipping ${target}: computed link '${relative_source}' does not resolve to ${dotfile_source}" >&2
+        return 0
+    fi
 
     # Skip if target is already pointing to the correct relative source
     if [[ -L "${target}" ]]; then
@@ -85,14 +137,20 @@ link_dotfile() {
 
     # Backup if target exists and is not a symlink to THIS dotfiles repo
     if [[ -e "${target}" ]]; then
-        local resolved_path
-        resolved_path="$(readlink -f "${target}" 2>/dev/null || echo "")"
         # Only skip if symlink points to our dotfiles directory
-        if [[ ! -L "${target}" ]] || [[ "${resolved_path}" != "${DOTFILES_ROOT}"/* ]]; then
+        if [[ ! -L "${target}" ]] || ! inside_dotfiles "${target}"; then
             if [[ -f "${target}" || -d "${target}" ]]; then
                 echo "  Backing up existing: ${target}"
-                rsync -a "${target}" "${BACKUP_DIR}/" 2>/dev/null || true
-                rm -rf "${target}"
+                # Only drop the original once a copy actually landed in the backup dir —
+                # rsync may not be installed yet on a bare machine, and a silently failed
+                # backup followed by rm -rf loses the file outright.
+                if rsync -a "${target}" "${BACKUP_DIR}/" 2>/dev/null ||
+                   cp -a "${target}" "${BACKUP_DIR}/" 2>/dev/null; then
+                    rm -rf "${target}"
+                else
+                    echo "  ⚠ Skipping ${target}: could not back it up to ${BACKUP_DIR}" >&2
+                    return 0
+                fi
             fi
         fi
     fi
@@ -343,6 +401,13 @@ declare -A SHARED_LINKS=(
     [config/tmux]="${XDG_CONFIG_HOME:-${HOME}/.config}/tmux"
     [config/mise/config.toml]="${XDG_CONFIG_HOME:-${HOME}/.config}/mise/config.toml"
     [config/gh/config.yml]="${XDG_CONFIG_HOME:-${HOME}/.config}/gh/config.yml"
+    # config.yml ONLY, not the directory: portop also writes baseline.json beside it
+    # (--save-baseline), and that is per-machine runtime state which must never land in
+    # the repo. Same file-level treatment as mise and gh above, for the same reason.
+    # portop rewrites this file itself whenever the in-app settings screen (",") changes
+    # a theme or a keybinding, so edits made there show up as a diff in this repo —
+    # that is the point of tracking it, not a bug.
+    [config/portop/config.yml]="${XDG_CONFIG_HOME:-${HOME}/.config}/portop/config.yml"
     [config/git/ignore]="${XDG_CONFIG_HOME:-${HOME}/.config}/git/ignore"
     [config/git/aliases.gitconfig]="${XDG_CONFIG_HOME:-${HOME}/.config}/git/aliases.gitconfig"
     [mimeapps.list]="${XDG_CONFIG_HOME:-${HOME}/.config}/mimeapps.list"
@@ -362,7 +427,7 @@ declare -A SHARED_LINKS=(
 # ZSH_LINKS above.
 readonly -a MIGRATED_CONFIG_DIRS=(
     .aws alacritty atuin broot claude fzf gh git kitty mise
-    nvim password-store ranger ripgrep sheldon tmux zi zsh
+    nvim password-store portop ranger ripgrep sheldon tmux zi zsh
 )
 
 declare -A ZSH_LINKS=(
@@ -618,6 +683,43 @@ else
     echo "           back to regex syntax. Check the pin in config/mise/config.toml."
 fi
 
+# mise zsh completions.
+#
+# mise ships no completion file, and `mise activate zsh` (config/zsh/.zshrc) does not
+# install one — it only emits a teardown for completions something else registered. So
+# the zsh side had mise's TOOLS but no `mise ins<TAB>`, while the PowerShell side had the
+# exact mirror image: completions wired in powershell/tools.ps1 and, until recently, no
+# activation at all, which is why `mise use npm` there installed npm and left it off PATH.
+#
+# Generated to a file rather than eval'd at shell start: .zshrc caches its compinit for
+# 24h precisely to avoid per-start work, and an `eval "$(mise completion zsh)"` would add
+# back a subprocess on every shell. Regenerated unconditionally on each install run, so a
+# mise self-update above cannot leave a completion describing the previous version.
+echo ""
+if command -v mise &>/dev/null; then
+    zsh_site_functions="${XDG_DATA_HOME:-${HOME}/.local/share}/zsh/site-functions"
+    ensure_dir "${zsh_site_functions}"
+
+    # Write via a temp file: a failed/partial generation must not replace a working _mise
+    # with a truncated one that compinit would then load and error on.
+    if mise completion zsh > "${zsh_site_functions}/_mise.tmp" 2>/dev/null &&
+       [[ -s "${zsh_site_functions}/_mise.tmp" ]]; then
+        mv -f "${zsh_site_functions}/_mise.tmp" "${zsh_site_functions}/_mise"
+
+        # Drop the completion dump. .zshrc runs `compinit -C` for 24h after a successful
+        # dump, and -C trusts the dump WITHOUT rescanning fpath — so a brand new _mise
+        # would be invisible for up to a day. Removing it forces one full compinit on the
+        # next shell, which then re-caches. The .zwc is maintain's, and is equally stale.
+        zcompdump="${XDG_CACHE_HOME:-${HOME}/.cache}/zsh/zcompdump"
+        rm -f "${zcompdump}" "${zcompdump}.zwc"
+
+        echo "✓ mise zsh completions → ${zsh_site_functions}/_mise"
+    else
+        rm -f "${zsh_site_functions}/_mise.tmp"
+        echo "⚠ WARNING: could not generate mise zsh completions (mise completion zsh failed)"
+    fi
+fi
+
 # Verify vim has Python3 support. Gated on `mise which vim`: without it, `mise exec` would
 # try to auto-install the very tool that just failed, re-running a doomed build.
 echo ""
@@ -854,6 +956,12 @@ migrate_to_xdg "${HOME}/.node_repl_history" "${XDG_STATE_HOME:-${HOME}/.local/st
 migrate_to_xdg "${HOME}/.python_history"    "${XDG_STATE_HOME:-${HOME}/.local/state}/python_history"
 # Note the trailing /.dotnet: DOTNET_CLI_HOME is a HOME substitute and the CLI creates its
 # own .dotnet folder inside it, so the data belongs one level deeper than the variable.
+#
+# Expect the "already exists, reconcile manually" skip here on any machine that runs
+# VS Code Server: its bundled vsce-sign is a self-contained .NET binary, and the runtime's
+# X509/CRL store resolves ~/.dotnet/corefx from $HOME, NOT from DOTNET_CLI_HOME. So it
+# reappears after every migration, with no dotnet SDK installed anywhere. Nothing to
+# reconcile — xdg-audit classifies .dotnet as partial coverage for exactly this reason.
 migrate_to_xdg "${HOME}/.dotnet"            "${XDG_DATA_HOME:-${HOME}/.local/share}/dotnet/.dotnet"
 # Models only. ~/.ollama/config.json and ~/.ollama/history have no env override, so the
 # directory legitimately survives this — do not "tidy up" by moving the whole thing.

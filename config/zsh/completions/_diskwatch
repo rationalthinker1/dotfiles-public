@@ -1,0 +1,69 @@
+#compdef diskwatch
+# diskwatch — single-host disk diagnostics TUI (matthart1983/diskwatch)
+#
+# Hand-written because upstream ships no completion generator. diskwatch DOES parse
+# with clap, but it does not depend on clap_complete and exposes no `completions`
+# subcommand — `diskwatch completions zsh` answers "unexpected argument". So unlike
+# vorjdux/txc, whose clap_complete output ships inside the release tarball and is
+# just copied into place, this one has to be maintained by hand.
+#
+# Every flag, and every value set below, is taken from the v0.5.7 binary's own
+# --help rather than the README: the long help spells the accepted values out.
+# `--graph` genuinely accepts four spellings for two styles (braille and btop are
+# aliases of dots), which is why they are all listed.
+
+function _diskwatch() {
+    local -a tabs themes graphs views
+
+    tabs=(
+        'overview:the summary tab'
+        'devices:physical devices'
+        'volumes:APFS / mdraid volumes'
+        'fs:mounted filesystems'
+        'io:read/write throughput and latency'
+        'smart:SMART health and attributes'
+        'hot:files being written right now'
+        'insights:capacity growth and time-to-full'
+    )
+    themes=(
+        'terminal:resolve through the palette your terminal defines (default)'
+        'dark:diskwatch own designed palette'
+        'light:light palette'
+        'ocean:ocean palette'
+        'solarized:solarized palette'
+        'dracula:dracula palette'
+        'nord:nord palette'
+    )
+    graphs=(
+        'bars:block bars (default)'
+        'dots:btop-style braille, four levels per row'
+        'braille:alias of dots'
+        'btop:alias of dots'
+    )
+    views=(
+        'full:the full interface (default)'
+        'lite:one 80x24 screen, six keys'
+        'dense:six btop-style boxes, zero chrome rows'
+    )
+
+    _arguments -s -S \
+        '(- *)'{-h,--help}'[print help]' \
+        '(- *)'{-V,--version}'[print version]' \
+        '(- *)--write-config[write a commented config file at defaults, then exit]' \
+        '(- *)--diag[print collected state and exit without launching the TUI]' \
+        '--tab=[start on a specific tab]:tab:((${tabs}))' \
+        '--theme=[color theme]:theme:((${themes}))' \
+        '--graph=[chart style]:style:((${graphs}))' \
+        '--view=[start in a named view]:view:((${views}))' \
+        '(--no-graph-fade)--graph-fade[gradient charts; needs a real-RGB theme, so pair with --theme dark]' \
+        '(--graph-fade)--no-graph-fade[turn the gradient off, overriding a config file that enables it]' \
+        '(--dense --view)--lite[start in Lite]' \
+        '(--lite --view)--dense[start in the dense view]' \
+        '*--watch=[watch this path in Hot Files INSTEAD of the defaults (repeatable)]:path:_files -/' \
+        '*--watch-add=[watch this path IN ADDITION to the defaults (repeatable)]:path:_files -/' \
+        '(--no-config)--config=[read this config file instead of the default]:config file:_files' \
+        '(--config)--no-config[ignore any config file and run on built-in defaults]' \
+        '--force[allow --write-config to overwrite an existing config file]'
+}
+
+_diskwatch "$@"

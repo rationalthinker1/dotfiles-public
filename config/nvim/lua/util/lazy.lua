@@ -95,14 +95,29 @@ end
 --- @param loader fun() loads and configures the plugin
 function M.on_cmd(names, loader)
   local loaded = false
+
+  local function load()
+    if loaded then
+      return
+    end
+    loaded = true
+    for _, n in ipairs(names) do
+      pcall(vim.api.nvim_del_user_command, n)
+    end
+    loader()
+  end
+
   for _, name in ipairs(names) do
     vim.api.nvim_create_user_command(name, function(cmd)
-      if not loaded then
-        loaded = true
-        for _, n in ipairs(names) do
-          pcall(vim.api.nvim_del_user_command, n)
-        end
-        loader()
+      load()
+      -- A stub has to accept `!` to be able to forward one, but the real
+      -- command may not take one — and passing it through regardless turned
+      -- `:Mason!` into an E477 raised by the re-dispatch, from a command the
+      -- user never typed. Raise it here instead, where it reads like Vim's.
+      local real = vim.api.nvim_get_commands({ builtin = false })[name]
+      if cmd.bang and real and not real.bang then
+        vim.api.nvim_echo({ { 'E477: No ! allowed', 'ErrorMsg' } }, true, {})
+        return
       end
       vim.cmd({
         cmd = name,
@@ -114,6 +129,18 @@ function M.on_cmd(names, loader)
       nargs = '*',
       range = true,
       bang = true,
+      -- Completion cannot be copied from a command that does not exist yet, and
+      -- a stub without it is worse than it looks: `:MasonInstall <Tab>` offered
+      -- nothing on the dashboard but completed package names after any file had
+      -- been opened, which reads as a broken install rather than a lazy one.
+      -- So the first <Tab> pays the load and then asks the REAL command what it
+      -- would have completed. Tab is a deliberate keystroke; 17ms is a fine
+      -- price for it, and it only happens once.
+      complete = function(_, cmdline)
+        load()
+        local ok, items = pcall(vim.fn.getcompletion, cmdline, 'cmdline')
+        return ok and items or {}
+      end,
       desc = 'lazy-load ' .. name,
     })
   end

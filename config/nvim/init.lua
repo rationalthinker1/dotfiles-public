@@ -88,9 +88,12 @@ lazy.on_event('InsertEnter', function()
 end, { desc = 'blink.cmp + autopairs' })
 
 
--- Eager, deliberately. Both measured under 2ms, and both define user commands
--- (:ProjectFiles, :Find, :ExplorerToggle, :Format) that the vimscript keymaps
--- call by name — deferring them would leave a window where Ctrl+P raises E492.
+-- Eager, deliberately. Both measured under 2ms. picker defines :ExplorerToggle,
+-- which config/31-keymap-ide.vim's Ctrl+B calls by name, and sets up the
+-- snacks.picker functions behind Ctrl+P and the <leader> pickers; format
+-- defines :Format. Deferring either leaves a window where those raise E492.
+-- (:ProjectFiles, :Find, :History and friends come from after/plugin/fzf.vim
+-- and fzf.vim's own plugin file, not from here.)
 require('plugins.picker')
 require('plugins.format')
 -- Same reasoning: :CodeCompanionChat and friends are called by name from the

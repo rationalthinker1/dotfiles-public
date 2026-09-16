@@ -87,6 +87,10 @@ function maintain::usage() {
     print -r -- "  5. Cleanup & caches (TRIM, journal, coredumps, macOS/dev caches, DNS flush, zsh recompile, font/desktop DBs)"
     print -r -- "  6. Health, integrity & security (doctors, PATH shadows, XDG audit, broken-link & dotfiles audit, config-merge/security report, permission audit, pending reboot, disk report)"
     print -r -- "  7. Service audits — whatever this host actually runs (nginx, MariaDB, Redis, PHP-FPM, Supervisor, FreeSWITCH, PM2, Docker, mail, UFW, Fail2Ban, TLS, log growth, inodes). Skips what is absent."
+    print -r -- "     Also checks CONFIG DRIFT across every service: a config file newer than the process that"
+    print -r -- "     reads it cannot be in effect, whatever the file says. That one is generic — it needs no"
+    print -r -- "     knowledge of any individual setting — and it is how an edit that everyone believes is live"
+    print -r -- "     sits inert for months."
     print -r -- ""
     print -r -- "Options:"
     print -r -- "  --install   Run the dotfiles install.sh bootstrap first (skips its prompt)."
@@ -699,13 +703,30 @@ function maintain::run() {
     # single step stalls waiting for re-auth. macOS is primed too (softwareupdate needs
     # it). The loop self-exits if the parent shell dies; the trap tears it down on
     # normal return or Ctrl-C.
+    # `sudo -n true`, never `sudo -v`, as the "do I already have sudo?" probe. -v validates
+    # against sudo's *validate* pseudo-command, which `NOPASSWD: ALL` does not cover (sudo
+    # 1.9.13) — so on a NOPASSWD host -v demands a password even though every real command
+    # is free. On a server whose account is SSH-key-only, /etc/shadow has the password
+    # LOCKED, so no answer can ever satisfy that prompt: every run burned three failed
+    # attempts and "3 incorrect password attempts" before continuing. The probe below asks
+    # about an actual command, which is the thing maintain actually needs.
     local sudo_keepalive_pid=""
     if (( $+commands[sudo] && EUID != 0 )); then
-        print -r -- $'\n▸ Priming sudo (keep-alive for unattended run)'
-        if sudo -v 2>/dev/null; then
-            while kill -0 $$ 2>/dev/null; do sudo -n true 2>/dev/null; sleep 60; done &!
-            sudo_keepalive_pid=${!}
-            trap '[[ -n "${sudo_keepalive_pid}" ]] && kill "${sudo_keepalive_pid}" 2>/dev/null' EXIT INT TERM
+        if sudo -n true 2>/dev/null; then
+            # Already free — NOPASSWD, or a timestamp still warm from a moment ago. Nothing
+            # to prompt for, and nothing worth keeping alive under NOPASSWD.
+            :
+        elif [[ -t 0 ]]; then
+            print -r -- $'\n▸ Priming sudo (keep-alive for unattended run)'
+            if sudo -v 2>/dev/null; then
+                while kill -0 $$ 2>/dev/null; do sudo -n true 2>/dev/null; sleep 60; done &!
+                sudo_keepalive_pid=${!}
+                trap '[[ -n "${sudo_keepalive_pid}" ]] && kill "${sudo_keepalive_pid}" 2>/dev/null' EXIT INT TERM
+            fi
+        else
+            # No tty: sudo cannot prompt, so asking only produces "no tty present" noise.
+            # The privileged steps below each fail on their own and get recorded as such.
+            print -r -- $'\n▸ Skipping sudo prime (no tty — privileged steps may be skipped)'
         fi
     fi
 
