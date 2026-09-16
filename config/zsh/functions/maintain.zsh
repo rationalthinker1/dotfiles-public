@@ -645,12 +645,50 @@ function maintain::health_warn() {
 # an entry, so the summary still shows "apt" once rather than once per sub-command.
 # Functions stay unwrapped; they are filesystem work, and the network calls nested inside
 # them (zi_audit --online) carry their own per-request timeouts.
+#
+# --foreground, and why it is not optional. Without it, timeout(1) calls setpgid() and runs
+# the command in its OWN process group, which is NOT the terminal's foreground group:
+#
+#     $ script -qec 'timeout 8 cat' /dev/null     # cat reads the tty
+#         PID    PGID   TPGID STAT COMMAND
+#     1365101 1365101 1365097 S    timeout
+#     1365102 1365101 1365097 T    cat           ← stopped by SIGTTIN, PGID ≠ TPGID
+#
+# Two consequences, and together they are exactly the "maintain hangs on apt" report.
+# (1) Anything that reads the controlling terminal — a maintainer script, a needrestart or
+# whiptail dialog that DEBIAN_FRONTEND did not head off — is STOPPED by SIGTTIN the instant
+# it does so, and stays stopped: nothing in the pipeline is going to continue it.
+# (2) Ctrl-C is delivered by the tty driver to the FOREGROUND process group, so it lands on
+# the shell and never reaches the stopped command. The step then sits in state T until the
+# --kill-after deadline (30m for full-upgrade), unkillable from the keyboard — the only way
+# out is to close the terminal, which is what was happening.
+# --foreground keeps the command in the shell's own group: it can use the tty, and Ctrl-C
+# reaches it. The tradeoff coreutils documents is that timeout then signals only its DIRECT
+# child rather than the whole group. Every wrapped call here is a single binary, or `sudo`,
+# which forwards signals to the command it runs — so nothing depended on group delivery.
+# Probed once rather than assumed: BusyBox timeout has no --foreground, and `timeout` on a
+# stripped container may not be coreutils'. Memoised in a global because maintain::step is
+# called ~40 times a run.
+typeset -g _MAINTAIN_TIMEOUT_FG=""
+function maintain::timeout_fg() {
+    if [[ -z "${_MAINTAIN_TIMEOUT_FG}" ]]; then
+        if timeout --foreground 5 true 2>/dev/null; then
+            _MAINTAIN_TIMEOUT_FG=1
+        else
+            _MAINTAIN_TIMEOUT_FG=0
+        fi
+    fi
+    (( _MAINTAIN_TIMEOUT_FG ))
+}
+
 function maintain::step() {
     local label="${1}" limit="${2}"
     shift 2
 
     if (( $+commands[timeout] )); then
-        timeout --kill-after=30s "${limit}" "$@"
+        local -a timeout_cmd=( timeout --kill-after=30s )
+        maintain::timeout_fg && timeout_cmd+=( --foreground )
+        "${timeout_cmd[@]}" "${limit}" "$@"
     else
         "$@"
     fi
@@ -781,6 +819,13 @@ function maintain::run() {
         # `-y` only answers apt's OWN prompts; it does nothing for maintainer scripts.
         # needrestart's "Pending kernel upgrade" notice is the usual culprit.
         #
+        # Which is why every apt step below runs with stdin on /dev/null. The env vars are
+        # a request that nothing prompt; `< /dev/null` is the guarantee. A maintainer
+        # script that reads stdin anyway gets EOF and aborts that package — a failure in
+        # the summary, which is recoverable — instead of parking the run on an invisible
+        # half-drawn dialog. sudo is unaffected: it reads its password from /dev/tty, not
+        # stdin, so the keep-alive primed above still works.
+        #
         # `env` (rather than exporting) because sudo's env_reset drops DEBIAN_FRONTEND;
         # it also works unchanged when sudo_cmd is empty on root shells.
         local -a apt_env=( env DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a )
@@ -790,7 +835,19 @@ function maintain::run() {
         # still surface anything that needs a human.
         # Quoting is load-bearing: unquoted, zsh's EQUALS expansion fires on the `=--force-…`
         # tail and dies with "--force-confold not found".
-        local -a apt_opts=( -o 'Dpkg::Options::=--force-confold' -o 'Dpkg::Options::=--force-confdef' )
+        #
+        # DPkg::Lock::Timeout bounds the wait for the dpkg frontend lock. Ubuntu ships that
+        # setting scoped to the `apt` binary only (`binary::apt::DPkg::Lock::Timeout "120"`),
+        # so apt-get inherits nothing and spins on
+        #   E: Could not get lock /var/lib/dpkg/lock-frontend. It is held by process NNN
+        # once a second, for as long as apt-daily/unattended-upgrades — or an apt-get
+        # orphaned by a previous aborted run — holds it. 300s covers a normal
+        # unattended-upgrades pass; past that the step fails and says so.
+        local -a apt_opts=(
+            -o 'Dpkg::Options::=--force-confold'
+            -o 'Dpkg::Options::=--force-confdef'
+            -o 'DPkg::Lock::Timeout=300'
+        )
         # `full-upgrade` (not plain `upgrade`): it performs the upgrade AND resolves
         # dependency/kernel-meta changes that `upgrade` refuses to touch — the case where
         # a new package must be installed or an obsolete one removed to complete the set
@@ -809,10 +866,10 @@ function maintain::run() {
         # and can fill a small /boot partition), plus leftover /etc cruft. It only ever
         # touches packages apt already considers orphaned, so it is as safe as plain
         # autoremove, just more thorough.
-        maintain::step "apt" 10m "${sudo_cmd[@]}" "${apt_env[@]}" apt-get update \
-            && maintain::step "apt" 30m "${sudo_cmd[@]}" "${apt_env[@]}" apt-get "${apt_opts[@]}" full-upgrade -y \
-            && maintain::step "apt" 10m "${sudo_cmd[@]}" "${apt_env[@]}" apt-get autoremove --purge -y \
-            && maintain::step "apt" 5m "${sudo_cmd[@]}" "${apt_env[@]}" apt-get clean
+        maintain::step "apt" 10m "${sudo_cmd[@]}" "${apt_env[@]}" apt-get "${apt_opts[@]}" update < /dev/null \
+            && maintain::step "apt" 30m "${sudo_cmd[@]}" "${apt_env[@]}" apt-get "${apt_opts[@]}" full-upgrade -y < /dev/null \
+            && maintain::step "apt" 10m "${sudo_cmd[@]}" "${apt_env[@]}" apt-get "${apt_opts[@]}" autoremove --purge -y < /dev/null \
+            && maintain::step "apt" 5m "${sudo_cmd[@]}" "${apt_env[@]}" apt-get "${apt_opts[@]}" clean < /dev/null
     elif [[ "${in_container}" != "true" ]] && (( $+commands[pacman] && can_sudo )); then
         # Arch / Manjaro / EndeavourOS — parity with install.sh, which does the initial
         # -Syu. Without this, pacman boxes only got upgrades on a full install.sh re-run.
