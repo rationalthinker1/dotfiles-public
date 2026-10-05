@@ -349,6 +349,7 @@ readonly -a LINUX_PACKAGES=(
     python3-dev libpython3-dev  # Python dev headers (required for building vim with Python3 support)
     man-db less openssh-client software-properties-common  # Essential utilities
     strace gdb lsb-release shellcheck tree lsof ncdu  # Debugging & development tools
+    dnsutils  # dig/nslookup/nsupdate (transitional → bind9-dnsutils on Debian 11+/Ubuntu 20.10+)
     earlyoom  # Kills the biggest consumer before RAM+swap exhaustion takes the box down
     pass gnupg2 pinentry-curses  # Secret management
 		libx11-dev libxt-dev libxpm-dev libgtk-3-dev
@@ -376,6 +377,7 @@ readonly -a ARCH_PACKAGES=(
     python                        # Python + headers (required for building vim with Python3)
     man-db less openssh           # Essential utilities
     strace gdb lsb-release shellcheck tree lsof ncdu  # Debugging & development tools
+    bind                          # dig/nslookup (Arch's dnsutils equivalent)
     pass gnupg pinentry           # Secret management (gnupg provides gpg2, pinentry provides -curses)
     libx11 libxt libxpm gtk3
     # Not packaged in the official repos (AUR only): pdftk, wipe, software-properties-common
