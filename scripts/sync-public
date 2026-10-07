@@ -1,19 +1,17 @@
 #!/usr/bin/env zsh
 # ==============================================================================
-# sync-public — replay every unsynced master commit onto the public branch
+# sync-public — publish master's public-safe content onto the public branch
 #
-# Why this exists alongside git-hooks/post-commit: the hook is per-commit and
-# fire-and-forget. When it fails it prints an error into the tail of `git commit`
-# output — where it is easy to miss — and gives up. Nothing ever retries, so master
-# runs ahead of public silently and the gap only grows.
+# git-hooks/post-commit runs this (--go --snapshot --message-from=HEAD) after every
+# master commit. The hook used to cherry-pick on its own, and its most common failure
+# needed no bad luck: `git checkout public` refuses a dirty tree, which it usually is
+# when you commit one file out of several. Three commits went missing that way in one
+# sitting. Snapshot mode never checks out, so that failure is gone; a failed run (e.g.
+# offline) is repaired by simply running it again — the next commit does that too.
 #
-# Its most common failure needs no bad luck at all: `git checkout public` refuses
-# whenever the working tree is dirty, which it usually is when you commit one file
-# out of several. Three commits went missing that way in a single sitting, including
-# the one that had to reach public most.
-#
-# So this is the catch-up path. It compares by PATCH, not by hash — cherry-picked
-# commits have different hashes on public, and `git cherry` is the only comparison
+# Replay mode (no --snapshot) is the older, history-preserving path. It compares by
+# PATCH, not by hash — cherry-picked commits have different hashes on public, and
+# `git cherry` is the only comparison
 # that sees through that — then classifies every missing commit and applies the safe
 # ones oldest-first.
 #
@@ -35,21 +33,29 @@
 #   ./scripts/sync-public --all           # also consider commits predating the public branch
 #   ./scripts/sync-public --snapshot      # preview publishing master's CONTENT as one commit
 #   ./scripts/sync-public --go --snapshot # do it — the only path that closes a large gap
+#   ./scripts/sync-public --go --snapshot --message-from=HEAD
+#                                         # what git-hooks/post-commit runs: reuse that
+#                                         # commit's message when it is the only change
+#
+# Snapshot never checks anything out — it assembles public's next tree in a throwaway
+# index and moves the branch with update-ref — so it works on a dirty tree, which is
+# exactly the state a post-commit hook usually runs in.
 # ==============================================================================
 
 emulate -L zsh
 setopt extended_glob warn_create_global
 
 local -i dry_run=1 do_push=1 consider_all=0 snapshot=0
-local arg
+local arg message_from=""
 for arg in "$@"; do
     case "${arg}" in
         (--go)      dry_run=0 ;;
         (--no-push) do_push=0 ;;
         (--all)     consider_all=1 ;;
         (--snapshot) snapshot=1 ;;
+        (--message-from=?*) message_from="${arg#*=}" ;;
         (-h|--help)
-            print -r -- "usage: sync-public [--go] [--no-push] [--all] [--snapshot]"
+            print -r -- "usage: sync-public [--go] [--no-push] [--all] [--snapshot [--message-from=REV]]"
             exit 0
             ;;
         (*)
@@ -90,24 +96,9 @@ git remote get-url public >/dev/null 2>&1 || {
     exit 1
 }
 
-if [[ -n "$(git status --porcelain)" ]]; then
-    print -ru2 -- "sync-public: working tree is dirty — commit or stash first."
-    print -ru2 -- "  (this is the exact condition that makes the post-commit hook fail)"
-    git status --short >&2
-    exit 1
-fi
-
 local leaked
 local orig_branch
-orig_branch="$(git symbolic-ref --short HEAD)"
-
-# Always land back where we started, including on an error path or ^C.
-function _sp_restore() {
-    local now
-    now="$(git symbolic-ref --short HEAD 2>/dev/null)"
-    [[ "${now}" == "${orig_branch}" ]] || git checkout "${orig_branch}" >/dev/null 2>&1
-}
-trap _sp_restore EXIT INT TERM
+orig_branch="$(git symbolic-ref --short HEAD 2>/dev/null)"
 
 print -r -- "Fetching public…"
 git fetch public >/dev/null 2>&1 || {
@@ -136,45 +127,34 @@ fi
 #   - .gitignore and git-hooks/, which legitimately DIFFER on public and belong to it
 local divergent='^(\.gitignore$|git-hooks/)'
 
-function _sp_snapshot() {
-    local -a safe stale to_delete
-    local f spec
-    local -A keep
-
-    safe=( ${(f)"$(git ls-tree -r --name-only master \
-                    | grep -vE "${SENSITIVE_TREE_REGEX}" \
-                    | grep -vE "${divergent}")"} )
-    (( ${#safe} )) || { print -ru2 -- "sync-public: master has no safe files?"; return 1 }
-
-    git checkout public >/dev/null 2>&1 || {
-        print -ru2 -- "sync-public: could not checkout public"
-        return 1
+# Print the tree public WOULD hold if it published <rev>'s content: <rev>'s safe paths,
+# plus public's own copies of the divergent ones. A path master no longer carries is
+# simply absent, which is the deletion. Built in a throwaway index from two ls-tree
+# listings, so the working tree, HEAD and the real index are never touched — that is
+# what lets this run on a dirty tree. -z throughout: a path holding a quote or newline
+# is C-quoted otherwise, and would slip past both anchored regexes.
+function _sp_snapshot_tree() {
+    local rev="${1}" dir entry p
+    local MATCH MBEGIN MEND
+    local -a entries match mbegin mend
+    dir="$(mktemp -d)" || return 1
+    {
+        for entry in ${(0)"$(git ls-tree -r -z "${rev}")"}; do
+            p="${entry#*$'\t'}"
+            [[ "${p}" =~ ${SENSITIVE_TREE_REGEX} || "${p}" =~ ${divergent} ]] && continue
+            entries+=( "${entry}" )
+        done
+        (( ${#entries} )) || { print -ru2 -- "sync-public: ${rev} has no safe files?"; return 1 }
+        for entry in ${(0)"$(git ls-tree -r -z public)"}; do
+            p="${entry#*$'\t'}"
+            [[ "${p}" =~ ${divergent} ]] && entries+=( "${entry}" )
+        done
+        print -rN -- "${entries[@]}" \
+            | GIT_INDEX_FILE="${dir}/index" git update-index -z --index-info || return 1
+        GIT_INDEX_FILE="${dir}/index" git write-tree
+    } always {
+        rm -rf -- "${dir}"
     }
-
-    # Deletions first, computed against the CURRENT public tree: anything tracked here
-    # that master no longer carries as a safe path. Without this a file removed on
-    # master lives on forever in public.
-    for f in "${safe[@]}"; do keep[${f}]=1; done
-    stale=( ${(f)"$(git ls-files | grep -vE "${divergent}")"} )
-    for f in "${stale[@]}"; do (( ${+keep[${f}]} )) || to_delete+=( "${f}" ); done
-
-    # 385 paths overflow a command line, so both sides go through a pathspec file.
-    spec="$(mktemp)" || return 1
-    print -rl -- "${safe[@]}" > "${spec}"
-    git checkout master --pathspec-from-file="${spec}" 2>/dev/null || {
-        rm -f "${spec}"
-        print -ru2 -- "sync-public: failed to take master's files"
-        return 1
-    }
-    if (( ${#to_delete} )); then
-        print -rl -- "${to_delete[@]}" > "${spec}"
-        git rm -q --pathspec-from-file="${spec}" >/dev/null 2>&1
-    fi
-    rm -f "${spec}"
-
-    print -r -- "  files taken from master: ${#safe}"
-    print -r -- "  files removed:           ${#to_delete}"
-    return 0
 }
 
 if (( snapshot )); then
@@ -208,46 +188,101 @@ if (( snapshot )); then
         exit 0
     fi
 
-    _sp_snapshot || exit 1
-
-    leaked="$(sensitive_paths_in_tree)"
-    if [[ -n "${leaked}" ]]; then
-        print -ru2 -- "sync-public: sensitive path(s) tracked in the public tree — nothing pushed:"
-        print -ru2 -- "${leaked}"
-        git reset --hard public/master >/dev/null 2>&1
+    # update-ref under a checked-out branch would leave its working tree describing the
+    # old commit, so every file would read as a pending revert.
+    if [[ "${orig_branch}" == public ]]; then
+        print -ru2 -- "sync-public: 'public' is checked out — switch to master first"
         exit 1
     fi
 
-    if git diff --cached --quiet; then
+    local tree parent
+    tree="$(_sp_snapshot_tree master)" || exit 1
+    parent="$(git rev-parse public)" || exit 1
+
+    if [[ "${tree}" == "$(git rev-parse 'public^{tree}')" ]]; then
         print -r -- "Public already matches master's public-safe content — nothing to commit."
+    else
+        # Scan the tree about to be committed. Nothing has been written yet, so a hit
+        # needs no rollback.
+        leaked="$(sensitive_paths_in_tree "${tree}")"
+        if [[ -n "${leaked}" ]]; then
+            print -ru2 -- "sync-public: sensitive path(s) in the snapshot tree — nothing committed:"
+            print -ru2 -- "${leaked}"
+            exit 1
+        fi
+
+        # --message-from reuses that commit's message and authorship, but only when this
+        # snapshot is exactly that commit's change: it must be master's tip, public must
+        # already equal the snapshot of its parent (or earlier unsynced work would ride in
+        # under its message), and it must not touch a sensitive path (its message may
+        # describe what it changed there). Anything else gets the generic message.
+        local msg="🔄 chore(public): snapshot master's public-safe tree
+
+Publishes master's content as of $(git rev-parse --short master) as one commit rather than
+replaying its history. Excluded, as always: every sensitive path, plus .gitignore and
+git-hooks/, which legitimately differ on this branch."
+        local -a author_env=()
+        if [[ -n "${message_from}" ]]; then
+            if [[ "$(git rev-parse -q --verify "${message_from}")" != "$(git rev-parse master)" ]]; then
+                print -r -- "(${message_from} is not master's tip — using the generic message)"
+            elif [[ -n "$(sensitive_paths_in_commit "${message_from}")" ]]; then
+                print -r -- "(${message_from} touches a sensitive path — using the generic message)"
+            elif ! git rev-parse -q --verify "${message_from}^" >/dev/null \
+                || [[ "$(_sp_snapshot_tree "${message_from}^")" != "$(git rev-parse 'public^{tree}')" ]]; then
+                print -r -- "(public was behind before ${message_from} — using the generic message)"
+            else
+                msg="$(git log -1 --format=%B "${message_from}")"
+                author_env=(
+                    GIT_AUTHOR_NAME="$(git log -1 --format=%an "${message_from}")"
+                    GIT_AUTHOR_EMAIL="$(git log -1 --format=%ae "${message_from}")"
+                    GIT_AUTHOR_DATE="$(git log -1 --format=%aI "${message_from}")"
+                )
+            fi
+        fi
+
+        local commit
+        commit="$(print -r -- "${msg}" | env "${author_env[@]}" git commit-tree "${tree}" -p "${parent}")" || {
+            print -ru2 -- "sync-public: commit-tree failed"
+            exit 1
+        }
+        # The old value makes this a compare-and-swap: a concurrent move of public fails
+        # it rather than being silently overwritten.
+        git update-ref -m "sync-public: snapshot of $(git rev-parse --short master)" \
+            refs/heads/public "${commit}" "${parent}" || exit 1
+        print -r -- "Tree scan clean; committed $(git log -1 --format='%h %s' "${commit}")"
+    fi
+
+    # Push whenever local public is ahead — including a commit an earlier run made but
+    # failed to push, which the tree comparison above would otherwise call "in sync".
+    if [[ -z "$(git rev-list public/master..public)" ]]; then
         exit 0
     fi
-
-    git -c user.name="$(git config user.name)" -c user.email="$(git config user.email)" \
-        commit -q -m "🔄 chore(public): snapshot master's public-safe tree
-
-Catch-up sync. The per-commit hook had been failing silently, leaving public months
-behind, and replaying the backlog conflicts on patches that no longer apply. This
-publishes master's content as of $(git log -1 --format=%h master) instead of its history.
-
-Excluded, as always: every sensitive path, plus .gitignore and git-hooks/ which
-legitimately differ on this branch." || {
-        print -ru2 -- "sync-public: commit failed"
-        exit 1
-    }
-
-    print -r -- "Tree scan clean; snapshot committed."
     if (( ! do_push )); then
         print -r -- "--no-push given — push it yourself: git push public public:master"
         exit 0
     fi
-    git push public HEAD:master || {
-        print -ru2 -- "sync-public: push failed — the snapshot is committed locally"
+    git push -q public public:master || {
+        print -ru2 -- "sync-public: push failed — the snapshot is committed locally; re-run to retry"
         exit 1
     }
     print -r -- "Pushed to public."
     exit 0
 fi
+
+# Replay below checks out public, so it needs the clean tree snapshot does not.
+if [[ -n "$(git status --porcelain)" ]]; then
+    print -ru2 -- "sync-public: working tree is dirty — commit or stash first (or use --snapshot)."
+    git status --short >&2
+    exit 1
+fi
+
+# Always land back where we started, including on an error path or ^C.
+function _sp_restore() {
+    local now
+    now="$(git symbolic-ref --short HEAD 2>/dev/null)"
+    [[ "${now}" == "${orig_branch}" ]] || git checkout "${orig_branch}" >/dev/null 2>&1
+}
+trap _sp_restore EXIT INT TERM
 
 # ----------------------------------------------------------------- enumerate
 

@@ -1,38 +1,42 @@
 ---
 name: sync-public
 description: Publish master to the public dotfiles repo with ./scripts/sync-public. Use
-  whenever public needs catching up, the post-commit hook printed "Could not checkout
-  public branch" or "Cherry-pick failed", a commit was skipped as sensitive, or someone
-  asks to sync/publish/push to public. Covers which of the two modes to use, the
-  already-applied false positive that must never be hand-resolved, and what never syncs.
+  whenever public needs catching up, the post-commit hook printed "public NOT synced",
+  or someone asks to sync/publish/push to public. Covers the two modes (snapshot is the
+  default and what the hook runs), the already-applied false positive that must never
+  be hand-resolved in replay, and what never syncs.
 ---
 
 # sync-public
 
-`./scripts/sync-public` replays master onto the `public` branch, which pushes to the
-public repo's `master`. It is the catch-up path for `git-hooks/post-commit`, which is
-per-commit and fire-and-forget: when it fails it prints into the tail of `git commit`
-output, gives up, and nothing ever retries.
+`./scripts/sync-public` publishes master onto the `public` branch, which pushes to the
+public repo's `master`. **`git-hooks/post-commit` runs it after every master commit** as
+`--go --snapshot --message-from=HEAD`, so normally there is nothing to do by hand.
 
-**The hook's most common failure needs no bad luck.** `git checkout public` refuses a
-dirty tree, which it usually is when you commit one file out of several. Commit or stash
-everything first — including untracked files — or every mode below refuses too.
+When the hook prints `public NOT synced` (offline, push rejected, …), just re-run
+`./scripts/sync-public --go --snapshot`. It is idempotent: it pushes a local snapshot an
+earlier run committed but failed to push, and the next commit's hook retries anyway.
 
-## Pick the mode by the size of the gap
+## Modes
 
 Run the dry form first. Both default to a dry run; `--go` executes.
 
-| Gap | Command |
-|---|---|
-| A few commits | `./scripts/sync-public` → `--go` |
-| Large / months behind | `./scripts/sync-public --snapshot` → `--go --snapshot` |
-
-Replay cherry-picks each missing commit oldest-first. It only works while public's tree
-still resembles the one those patches were written against.
+| Mode | Command | Dirty tree |
+|---|---|---|
+| Snapshot (default, the hook's) | `./scripts/sync-public --snapshot` → `--go --snapshot` | fine |
+| Replay (keeps per-commit history) | `./scripts/sync-public` → `--go` | refuses |
 
 Snapshot publishes master's **content** as one commit instead of its history. It cannot
-conflict, because nothing is merged: every safe path is overwritten from master, every
-path master no longer carries is deleted, and the result is committed as-is.
+conflict, because nothing is merged: public's next tree is assembled in a throwaway
+index from master's safe paths plus public's own `.gitignore`/`git-hooks/`, and the
+branch is moved with `update-ref` — no checkout, so a dirty tree does not matter. With
+`--message-from=REV` it reuses REV's message and author, but only when the snapshot is
+exactly REV's change (REV is master's tip, public matched REV's parent, REV touches no
+sensitive path); otherwise it uses a generic `🔄 chore(public): snapshot …` message.
+
+Replay cherry-picks each missing commit oldest-first. It only works while public's tree
+still resembles the one those patches were written against — and after any snapshot,
+`git cherry` reports every pre-snapshot commit as missing forever. Prefer snapshot.
 
 Other flags: `--no-push` applies locally and leaves the push to you; `--all` also
 considers commits predating the public branch (~700 here — you almost never want this).
@@ -76,19 +80,19 @@ cannot drift. Two forms: `SENSITIVE_COMMIT_PATTERNS` ("may this commit be replay
 `.vim/config/90-local.vim` · `config/atuin/{key,session}` · any `.env` `.netrc` `.npmrc`
 `.pgpass`
 
-Also excluded from snapshot, and skipped by the hook as *commits*: **`.gitignore` and
-`git-hooks/`**. These legitimately differ between branches and belong to public.
+Also never taken from master: **`.gitignore` and `git-hooks/`**. These legitimately
+differ between branches and belong to public; snapshot keeps public's own copies.
 
-Consequence worth remembering: the hook skips whole **commits**, so a commit mixing a
-sensitive file with public-safe work syncs *neither* part. Split them.
+Snapshot filters by **path**, so a commit mixing a sensitive file with public-safe work
+publishes the safe half (under the generic message — the commit's own message may
+describe the secret). Replay still skips such commits whole.
 
 ## Why it is safe to run
 
-It fails closed at every step — repo sanity, clean tree, public is current, per-commit
-sensitive check, then a rescan of the whole tracked tree **after** applying and **before**
-pushing. Snapshot additionally filters sensitive paths out of the file list before writing
-anything (`scripts/sync-public:144`), so they never enter the tree to begin with. Any hit
-on the post-apply scan hard-resets to `public/master` and pushes nothing.
+It fails closed at every step — repo sanity, public is current, sensitive paths filtered
+out of the tree before it is built (`_sp_snapshot_tree`), then a rescan of the built tree
+**before** anything is committed or pushed. Replay adds a clean-tree check, a per-commit
+sensitive check, and a post-apply rescan that hard-resets to `public/master` on a hit.
 
 `.gitignore` is **not** what protects public — it only blocks *untracked* files from
 `git add`. A cherry-pick force-applies any file named in the operation, bypassing it
