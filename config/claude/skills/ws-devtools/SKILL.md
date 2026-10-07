@@ -11,7 +11,7 @@ plain host or devcontainer. Merged from long debugging sessions; current for the
 2026-07-23 build (`8071a75`; package version still 0.1.2 — these fixes are in git,
 not yet on npm, so a `npx -y ws-devtools` install predates them). Generic usage
 reference:
-`/home/razaf/Projects/ws-devtools/docs/using-from-another-project.md` (in devcontainers
+`~/Projects/ws-devtools/docs/using-from-another-project.md` (in devcontainers
 this is typically a read-only bind mount). Ignore any vendored `debug/ws-devtools/`
 copy inside a project — stale, not docs.
 
@@ -57,7 +57,7 @@ copy inside a project — stale, not docs.
 ```bash
 claude mcp add ws-devtools -s user -- npx -y -p ws-devtools ws-devtools-mcp
 # or pinned to a local checkout:
-claude mcp add ws-devtools -s user node /home/razaf/Projects/ws-devtools/dist/mcp.mjs
+claude mcp add ws-devtools -s user node ~/Projects/ws-devtools/dist/mcp.mjs
 claude mcp list   # → ws-devtools … ✔ Connected
 ```
 
@@ -143,7 +143,7 @@ Then the user re-clicks the extension icon (the tab was bound to the dead server
 ## §4. Arming the tab (human-only)
 
 1. Once: `chrome://extensions` → Developer mode → Load unpacked →
-   `/home/razaf/Projects/ws-devtools/dist/extension`.
+   `~/Projects/ws-devtools/dist/extension`.
 2. Open the target page, click the toolbar button to arm **that tab**.
 3. Auto-reconnects when the bridge (re)appears and survives navigation. Since the
    connect watchdog landed, a bridge restart is picked up in **~1 s** with no human

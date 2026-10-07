@@ -261,7 +261,7 @@ alias lt='eza --color=auto --long --header --group --all --group-directories-fir
 # Do NOT reach for erd (erdtree) here. It was tried and removed from the config entirely:
 # erd 3.1.2's threaded uid/gid lookup calls non-reentrant getpwuid()/getgrgid(), so
 # concurrent calls trample libc's shared static buffer and the owner column fills with raw
-# /etc/passwd records ("razaf x 1000:1000:,,, /home/razaf /usr/bin/zsh") that differ every
+# /etc/passwd records ("alice x 1000:1000:,,, /home/alice /usr/bin/zsh") that differ every
 # run — fabricated ownership, not a display quirk. --threads 1 avoids it but discards the
 # parallelism that was erd's only advantage here, and the project has been dormant since
 # Jul 2023. eza covers what it offered (--git-ignore above, --total-size for du-style
@@ -2195,8 +2195,8 @@ function rga() {
 # couple of seconds of a shell (or on a box where the download failed) it isn't on
 # PATH yet. curl does not speak xh's request language, so refuse the xh-only forms
 # rather than quietly issuing a different request than the one that was typed:
-# `https POST api.example.com name=raza` would otherwise make curl treat "POST" and
-# "name=raza" as two more URLs to fetch.
+# `https POST api.example.com name=alice` would otherwise make curl treat "POST" and
+# "name=alice" as two more URLs to fetch.
 # $1 is the scheme to assume for URLs written without one (curl >= 7.45).
 function _http_via_curl() {
 	local scheme="$1"; shift

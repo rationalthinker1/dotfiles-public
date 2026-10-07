@@ -682,7 +682,8 @@ elif mise exec -- tree-sitter --version &>/dev/null; then
     echo "✓ tree-sitter CLI present (nvim-treesitter can build parsers)"
 else
     echo "⚠ WARNING: tree-sitter CLI missing — nvim-treesitter will silently fall"
-    echo "           back to regex syntax. Check the pin in config/mise/config.toml."
+    echo "           back to regex syntax. Check the cargo:tree-sitter-cli pin in"
+    echo "           config/mise/config.toml (it builds from source; needs rust + cc)."
 fi
 
 # mise zsh completions.
@@ -1220,6 +1221,15 @@ if [[ -d "${git_hooks_dest}" ]]; then
             echo "✓ git hook installed: ${hook_name}"
         fi
     done
+    # Repo-local clean filter named in .gitattributes: keeps graft's baked absolute home
+    # (one machine's username) out of .claude/helpers/graft-*.cjs. Path is relative —
+    # git runs filters from the top of the working tree, so a moved clone keeps working.
+    if [[ "$(git -C "${DOTFILES_ROOT}" config --get filter.graft-baked.clean)" == "scripts/graft-baked-clean" ]]; then
+        echo "✓ git filter already configured: graft-baked"
+    else
+        git -C "${DOTFILES_ROOT}" config filter.graft-baked.clean "scripts/graft-baked-clean"
+        echo "✓ git filter configured: graft-baked"
+    fi
 else
     echo "⚠ .git/hooks directory not found — skipping git hooks"
 fi

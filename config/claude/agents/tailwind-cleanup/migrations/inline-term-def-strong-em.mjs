@@ -7,8 +7,9 @@
 
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 
-const DIR = '/home/razaf/Projects/electricity-voltage-concept/src/textbook';
+const DIR = join(homedir(), 'Projects/electricity-voltage-concept/src/textbook');
 
 const STRONG_CLS = 'text-text font-medium';
 const EM_CLS = 'italic text-text';

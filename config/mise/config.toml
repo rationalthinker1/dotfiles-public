@@ -96,8 +96,14 @@ uv = "latest"
 #   error: Error during "tree-sitter build": ENOENT ... 'tree-sitter'
 # and Neovim silently falls back to regex syntax.
 #
-# aqua backend for prebuilt binaries; asdf would build it from Rust source.
-"aqua:tree-sitter/tree-sitter" = "0.27.0"
+# cargo backend, NOT aqua: the upstream prebuilt binary links GLIBC_2.39, so on
+# Debian 12 (2.36), Ubuntu 22.04 (2.35) and older it dies with
+#   tree-sitter: ... version `GLIBC_2.39' not found
+# The npm package downloads that same binary. Building from source links against
+# whatever glibc the host has, so one pin works on every server, WSL and macOS.
+# Costs a one-time compile per version (rust + a C compiler, both already required).
+# Do not install cargo-binstall: mise would use it to fetch the prebuilt binary again.
+"cargo:tree-sitter-cli" = "0.27.0"
 yarn = "1"
 # npm and yarn are pinned HERE rather than per-project, so a bare `mise use npm` in some
 # repo stops being the thing that makes npm appear (it was, and it only half-worked).

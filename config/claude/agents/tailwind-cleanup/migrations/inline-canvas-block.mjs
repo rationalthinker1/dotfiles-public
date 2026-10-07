@@ -5,8 +5,9 @@
 
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 
-const ROOT = '/home/razaf/Projects/electricity-voltage-concept/src';
+const ROOT = join(homedir(), 'Projects/electricity-voltage-concept/src');
 
 function walk(dir, files = []) {
   for (const name of readdirSync(dir)) {

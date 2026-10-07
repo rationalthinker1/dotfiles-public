@@ -1,1 +1,4 @@
 config/zsh/.zsh_history binary
+# graft bakes this machine's home into these; the filter (scripts/graft-baked-clean, wired
+# by install.sh) commits os.homedir() instead, so no username lands in the repo.
+.claude/helpers/graft-*.cjs filter=graft-baked

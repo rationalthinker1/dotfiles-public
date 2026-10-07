@@ -4,8 +4,9 @@
 
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 
-const DIR = '/home/razaf/Projects/electricity-voltage-concept/src/labs';
+const DIR = join(homedir(), 'Projects/electricity-voltage-concept/src/labs');
 
 const H3_CLS = 'font-2 font-normal italic text-9 leading-1 my-4xl mb-xl text-text tracking-1';
 const P_CLS = 'mb-prose-3';

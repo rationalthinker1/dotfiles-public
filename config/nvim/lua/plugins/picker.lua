@@ -51,6 +51,13 @@ require('snacks').setup({
         { icon = ' ', key = 'q', desc = 'Quit', action = ':qa' },
       },
     },
+    -- The default sections end with { section = 'startup' }, which requires
+    -- lazy.nvim's lazy.stats. Plugins load via vim.pack here, so it errors
+    -- ("module 'lazy.stats' not found") in UIEnter on every launch.
+    sections = {
+      { section = 'header' },
+      { section = 'keys', gap = 1, padding = 1 },
+    },
   },
 
   -- File explorer, replacing NERDTree + nerdtree-git-plugin. Git status marks

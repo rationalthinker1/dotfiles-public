@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# wt-ssh HOST — ssh for Windows Terminal profiles. Resumes the remote folder that the
+# remote zsh last recorded (see _wt_record_cwd in config/zsh/hooks.zsh), so a duplicated
+# split pane opens in the same remote directory. Falls back to $HOME if nothing recorded.
+[[ $# -ge 1 ]] || { echo "usage: wt-ssh HOST" >&2; exit 2; }
+host=$1; shift
+exec ssh -t "$host" "$@" 'cd "$(cat ~/.cache/wt-last-cwd 2>/dev/null)" 2>/dev/null; exec "$SHELL" -l'

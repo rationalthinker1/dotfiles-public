@@ -1063,6 +1063,15 @@ function maintain::run() {
         (( ${#mise_bins} )) && path=( "${mise_bins[@]}" ${(@)path:#*/mise/installs/*} )
         rehash
     fi
+    # Global native addons, against whatever node is on PATH NOW. Must follow `mise
+    # upgrade` (and its PATH re-float): `zi update` above reinstalled graft under the
+    # outgoing node, so a node major bump in this same run would otherwise strand it
+    # until the next run. A no-op compile-wise when every addon still loads. Not
+    # maintain::step: it is a shell function (see the helper's CONSTRAINT note).
+    if (( $+commands[npm] && $+functions[npm_native_rebuild] )); then
+        maintain::hdr "Native node addons (npm global prefixes)"
+        npm_native_rebuild || failures+=("npm native rebuild")
+    fi
     (( $+commands[asdf] ))   && { maintain::hdr "Asdf plugins";      maintain::step "asdf" 20m asdf plugin update --all }
     (( $+commands[rustup] )) && { maintain::hdr "Rustup toolchains"; maintain::step "rustup" 30m rustup update }
     # `yes |` pre-answers sdkman's interactive "Do you want to install?" prompt. `sdk` is a

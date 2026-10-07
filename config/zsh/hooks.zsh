@@ -59,3 +59,23 @@ function load-local-conf() {
   esac
 }
 chpwd_functions+=(load-local-conf)
+
+# 🪟 Windows Terminal: report cwd (OSC 9;9) so duplicateTab / splitPane open in the same folder.
+# WSL-only: needs wslpath, and must not fire on remote servers where this config also runs.
+if [[ -n $WT_SESSION && -n $WSL_DISTRO_NAME && -z $SSH_CONNECTION ]] && (( $+commands[wslpath] )); then
+  function _wt_report_cwd() {
+    printf '\e]9;9;%s\e\' "$(wslpath -w "$PWD")"
+  }
+  precmd_functions+=(_wt_report_cwd)
+fi
+
+# 🪟 Remote side of Windows Terminal pane duplication: record the cwd so `scripts/wt-ssh`
+# can reopen it. Shared per host, so the most recently used folder wins.
+if [[ -n $SSH_CONNECTION ]]; then
+  function _wt_record_cwd() {
+    [[ -d ~/.cache ]] || mkdir -p ~/.cache
+    print -r -- $PWD >| ~/.cache/wt-last-cwd
+  }
+  chpwd_functions+=(_wt_record_cwd)
+  _wt_record_cwd
+fi

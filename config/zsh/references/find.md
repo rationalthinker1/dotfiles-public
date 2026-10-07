@@ -46,7 +46,7 @@ find . -newermt "2024-01-01"                    # Modified after date (GNU find)
 find . -perm 755                                # Exact permission match
 find . -perm -u+x                               # User has execute permission
 find . -perm /u+x,g+x                           # User OR group has execute
-find . -user raza                               # Owned by user
+find . -user "$USER"                            # Owned by user
 find . -group www-data                          # Owned by group
 find . -nouser                                  # Files with no matching user (orphaned)
 find . -nogroup                                 # Files with no matching group

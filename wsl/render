@@ -10,8 +10,8 @@
 #
 # Both have already caused real breakage from being hardcoded:
 #
-#   - `[user] default = raza` named an account that does not exist on this machine (the
-#     user is `razaf`). WSL falls back to root when it cannot resolve the configured
+#   - A hardcoded `[user] default = …` named another host's login, which did not exist on
+#     this machine. WSL falls back to root when it cannot resolve the configured
 #     default, so deploying that file would have handed the next session a root shell.
 #     /etc/wsl.conf had been hand-trimmed to work around it rather than fixed.
 #   - b39f25d wrote `memory = 10GB` "for this 16GB host" on a 32GB machine, halving the

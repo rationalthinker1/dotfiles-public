@@ -1,0 +1,16 @@
+#!/bin/sh
+# git clean filter for .claude/helpers/graft-*.cjs (see .gitattributes).
+#
+# graft rewrites those helpers on every machine — on a fresh clone and on every graft
+# version bump — with `const BAKED = "<absolute home>/.local/share/zinit/…"`. Committed
+# as-is, the file carries one machine's username and is wrong on every other host
+# (the helper then misses its fast path and, with graft in zinit's polaris rather than
+# `npm root -g`, silently no-ops). This normalizes the home prefix to os.homedir() on
+# the way INTO the index, so the repo stays username-free and a fresh clone works
+# before graft refreshes it. The working copy keeps whatever graft wrote, and git sees
+# no diff because both clean to the same bytes.
+#
+# Wired per clone by install.sh (filter.graft-baked.clean). A clone without that config
+# just passes the file through unfiltered — git does not fail on an unknown filter.
+# POSIX sh + sed -E: git runs this on every status/add, on every platform.
+exec sed -E 's#^const BAKED = "(/home/[^/"]+|/Users/[^/"]+|/root)/#const BAKED = require("os").homedir() + "/#'

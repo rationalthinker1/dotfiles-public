@@ -18,6 +18,11 @@
 --
 -- (jsonc is deliberately absent from the list below: nvim-treesitter reports
 -- it as an unsupported language, and json covers those buffers.)
+--
+-- (gitcommit is absent too: its parser.c is 3.3 MB and cc -O2 takes 8+ minutes
+-- on it, so every fresh server spent its first nvim sessions compiling it, and
+-- each new nvim hit "Lock file ... appears stale" until one build finished.
+-- Vim's regex gitcommit syntax covers commit messages fine.)
 
 local ts = require('nvim-treesitter')
 
@@ -30,7 +35,7 @@ local parsers = {
   'json', 'yaml', 'toml',
   'bash', 'dockerfile',
   'python',
-  'git_config', 'gitcommit', 'gitignore', 'diff',
+  'git_config', 'gitignore', 'diff',
   'regex',
 }
 
@@ -183,7 +188,7 @@ local function attach(buf)
   -- parsers in ~/.local/share/nvim/site/queries, installed by nvim-treesitter
   -- -- so the languages Neovim BUNDLES (c, lua, markdown, query, vim, vimdoc)
   -- have no nvim-treesitter queries at all, and of the installed ones diff,
-  -- dockerfile, gitcommit, gitignore, git_config, jsdoc, phpdoc and regex ship
+  -- dockerfile, gitignore, git_config, jsdoc, phpdoc and regex ship
   -- no indents.scm.
   --
   -- That matters because of how the miss fails. nvim-treesitter's indent.lua

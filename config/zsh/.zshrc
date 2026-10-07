@@ -670,16 +670,20 @@ zi load ast-grep/ast-grep
 #
 # run-atpull is load-bearing. The null repo never gets a new commit, so without it atpull
 # never fires, and graft would install once and stay frozen at that version forever —
-# there is no `ver`/tag for zinit to notice moving. Reinstalling unconditionally also
-# repairs the one failure this shape can hit: the grammars resolve a prebuilt addon per
-# node ABI, so a `mise upgrade` that bumps node LTS past the prebuilds in the installed
-# tree leaves graft dying with ERR_DLOPEN_FAILED until something reinstalls it.
+# there is no `ver`/tag for zinit to notice moving.
+#
+# npm_native_rebuild is load-bearing too (functions/npm-native.zsh). npm 12 blocks install
+# scripts by default, so the install alone leaves tree-sitter-kotlin — no linux prebuild,
+# it must compile — unbuilt, and graft dies with "No native build was found … abi=…" on
+# an unchanged node. The rebuild allows only the grammars' native-build scripts; graft's
+# own telemetry postinstall stays blocked. A later node major bump is repaired by
+# maintain calling the same function after `mise upgrade` — this atclone ran before it.
 #
 # Roughly 45 packages, ~35s on a fresh install and the same on every `zi update`; wait'2'
 # lucid keeps all of it off the startup path.
 if (( $+commands[npm] )); then
     zi ice wait'2' lucid id-as'graft' as'null' nocompile \
-        atclone'npm install --global --prefix "${ZPFX}" @nanonets/graft' \
+        atclone'npm install --global --prefix "${ZPFX}" @nanonets/graft && npm_native_rebuild "${ZPFX}"' \
         atpull'%atclone' run-atpull
     zi light zdharma-continuum/null
 fi
@@ -1238,7 +1242,7 @@ zi ice wait'2' lucid from'gh-r' as'program' extract'' mv'tealdeer* -> tldr' \
 zi load tealdeer-rs/tealdeer
 
 # 🌐 xh - HTTPie-style HTTP client in Rust; http() in aliases.zsh prefers it
-# Usage: `xh :3000/api/users name=raza` POSTs JSON; `xh -d example.com/file.zip` downloads
+# Usage: `xh :3000/api/users name=alice` POSTs JSON; `xh -d example.com/file.zip` downloads
 zi ice wait'2' lucid from'gh-r' as'command' pick'*/xh' nocompile'!'
 zi load ducaale/xh
 

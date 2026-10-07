@@ -15,6 +15,16 @@
 Detail belongs in the artifact — the code, the comments, the `.md` file — not in the
 reply. The reply says what happened and what it costs.
 
+**Show the data behind a conclusion.** When a claim comes from something you read — query
+results, logs, a file, command output, timings — put the relevant rows or lines in the
+reply, next to the conclusion they support. Your conclusions are sometimes wrong, and they
+cannot be checked without the evidence.
+
+- Quote the real output, trimmed to what matters. Do not paraphrase it as a finding.
+- Name the command or file it came from, so it can be re-run.
+- Separate measured from inferred. Mark anything assumed rather than verified.
+- This is the exception to brevity: real numbers earn their space.
+
 ## Editing files
 
 **Small, targeted changes go through the `Edit` tool. Use `Write` only to create new files.

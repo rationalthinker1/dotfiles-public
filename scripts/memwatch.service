@@ -5,9 +5,9 @@ After=multi-user.target
 
 [Service]
 Type=simple
-# A system unit cannot expand %h (it resolves to /root), so this path is literal.
-# install.sh rewrites it for the invoking user when it installs the unit.
-ExecStart=/home/raza/.local/bin/memwatch
+# A system unit cannot expand %h (it resolves to /root), so @HOME@ is a placeholder:
+# install.sh rewrites this whole line for the invoking user when it installs the unit.
+ExecStart=@HOME@/.local/bin/memwatch
 Restart=always
 RestartSec=5
 

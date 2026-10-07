@@ -5,8 +5,9 @@
 
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 
-const DIR = '/home/razaf/Projects/electricity-voltage-concept/src/textbook';
+const DIR = join(homedir(), 'Projects/electricity-voltage-concept/src/textbook');
 const P_CLS = 'mb-prose-1 last:mb-0';
 
 function rewrite(src) {

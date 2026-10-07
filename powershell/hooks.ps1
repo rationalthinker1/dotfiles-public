@@ -50,7 +50,7 @@ $script:DotfilesLocationHandlers += {
     if (-not (Test-Path -LiteralPath $dirrc)) { return }
 
     # Compare canonical paths with a trailing separator, so a sibling directory such as
-    # C:\Users\razaf-evil does not read as being inside C:\Users\razaf.
+    # C:\Users\alice-evil does not read as being inside C:\Users\alice.
     $home_ = [IO.Path]::GetFullPath($HOME).TrimEnd([IO.Path]::DirectorySeparatorChar)
     $here  = [IO.Path]::GetFullPath($PWD.Path).TrimEnd([IO.Path]::DirectorySeparatorChar)
     $trusted = $here -eq $home_ -or
