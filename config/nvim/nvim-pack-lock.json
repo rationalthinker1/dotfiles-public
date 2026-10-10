@@ -50,7 +50,7 @@
       "src": "https://github.com/rafamadriz/friendly-snippets"
     },
     "fzf": {
-      "rev": "a140afeb4d733cad3c96a56bf6db7e26853b6757",
+      "rev": "33a3456921a17c53f42f8610783b6d379d652d3e",
       "src": "https://github.com/junegunn/fzf"
     },
     "fzf.vim": {
@@ -66,7 +66,7 @@
       "src": "https://github.com/nvim-lualine/lualine.nvim"
     },
     "mason-lspconfig.nvim": {
-      "rev": "77e06f7d2fc127e6ef0a720b59acbc50757cff19",
+      "rev": "e17625cdc8c2650787467398e02c5d63a2cde966",
       "src": "https://github.com/mason-org/mason-lspconfig.nvim"
     },
     "mason-nvim-dap.nvim": {
@@ -102,7 +102,7 @@
       "src": "https://github.com/theHamsta/nvim-dap-virtual-text"
     },
     "nvim-lspconfig": {
-      "rev": "910f0c4d46aa186641518395bc7e6fffb4d23baf",
+      "rev": "c59fc922f718fa055f69f5f3bc888f23211571eb",
       "src": "https://github.com/neovim/nvim-lspconfig"
     },
     "nvim-nio": {
@@ -136,7 +136,7 @@
       "src": "https://github.com/nvim-lua/plenary.nvim"
     },
     "rainbow-delimiters.nvim": {
-      "rev": "3a0fc08dd39e8bf034a4cfef3f2845bd5f565a2e",
+      "rev": "b55decda611755171bc5bf8f4c99603a75de4b41",
       "src": "https://github.com/HiPhish/rainbow-delimiters.nvim"
     },
     "snacks.nvim": {
@@ -144,7 +144,7 @@
       "src": "https://github.com/folke/snacks.nvim"
     },
     "switch.vim": {
-      "rev": "297346b630943ebd4ea58598dfd30bae5debc739",
+      "rev": "a824d660dc97db9798be1b7103b1114b6c3da13d",
       "src": "https://github.com/AndrewRadev/switch.vim"
     },
     "targets.vim": {
