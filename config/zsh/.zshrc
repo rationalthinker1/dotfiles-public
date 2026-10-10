@@ -1022,22 +1022,10 @@ zi load sxyazi/yazi
 # The asset embeds the version, so the templates glob it; the tarball nests everything
 # under dua-v<ver>-<triple>/, hence pick'*/dua'.
 #
-# TEMPORARY PIN, 2026-09-10 — REMOVE THE `ver` ICE, not the plugin, when this clears.
-# dua-core-v4.0.0 (assetless) has held /releases/latest since 2026-09-07: three days,
-# against the 2s/1s/1s/71s/28h the window was measured at above. A fresh install
-# therefore fails outright — "gh-r: No GitHub release assets found for dua-core-v4.0.0"
-# — on every shell start, so this is no longer just a missed update. It still reads as
-# transient rather than the permanent case the paragraph above legislates for: it is a
-# MAJOR core bump the CLI has to migrate to, and upstream is committing CLI features
-# daily (#400 hide-panels, #398 fix-panic). v2.44.0 is the newest tag carrying assets
-# and its musl tarball matches the bpick unchanged.
-#
-# The pin is not trusted to be noticed: `zi-audit --online` (which maintain passes)
-# reports ver-stale as soon as a newer release carries a matching asset, which is
-# exactly the moment this ice should be deleted. Deliberately excluded from --ids —
-# a pinned plugin reinstalls perfectly, onto the same pinned tag, forever.
+# A `ver'v2.44.0'` pin rode out dua-core-v4.0.0 holding /releases/latest assetless from
+# 2026-09-07; removed 2026-10-10, when latest was v2.45.1 with assets. If it recurs, pin
+# again the same way — `zi-audit --online` reports ver-stale once a newer release ships.
 zi ice wait'2' lucid from'gh-r' as'program' pick'*/dua' nocompile'!' \
-    ver'v2.44.0' \
     bpick"$(gh_asset 'dua-v*-{arch}-unknown-linux-musl.tar.gz' 'dua-v*-{arch}-apple-darwin.tar.gz')"
 zi load Byron/dua-cli
 
