@@ -94,10 +94,11 @@ function maintain::usage() {
     print -r -- ""
     print -r -- "Options:"
     print -r -- "  --install   Run the dotfiles install.sh bootstrap first (skips its prompt)."
-    print -r -- "  --zinit     FULL zinit wipe + reinstall, ~400MB (skips its prompt). Not needed to"
-    print -r -- "              update: every run updates plugins and reinstalls any that drifted from"
-    print -r -- "              .zshrc. Use it after editing an ice VALUE in place, which the audit"
-    print -r -- "              cannot see (it compares ice names, not values)."
+    print -r -- "  --zinit     FULL zinit wipe + reinstall, ~400MB. Not needed to update: every run"
+    print -r -- "              updates plugins, reinstalls only the ones that drifted from .zshrc, and"
+    print -r -- "              offers the full wipe if that repair still fails. Use it after editing"
+    print -r -- "              an ice VALUE in place, which the audit cannot see (it compares ice"
+    print -r -- "              names, not values)."
     print -r -- "  --windows   On WSL only, run the deployed Windows maintain command after profile sync."
     print -r -- "              It suppresses the Windows bootstrap prompt and requests one UAC elevation."
     print -r -- "  --only N,…  Run ONLY these phases (1-7). 'maintain --only 6,7' is a read-only health"
@@ -109,12 +110,12 @@ function maintain::usage() {
     print -r -- "mirror fails the step instead of hanging the run forever."
     print -r -- ""
     print -r -- "Two steps are opt-in. Before the phases begin, maintain asks whether to run the"
-    print -r -- "dotfiles install.sh bootstrap and whether to do a FULL zinit wipe (both default N —"
-    print -r -- "a bare Enter skips them). Each prompt is suppressed when its flag is passed, and"
-    print -r -- "both are suppressed entirely when stdin is not a terminal, so scripted and cron"
-    print -r -- "runs skip them unless --install / --zinit are given. Declining the zinit prompt"
-    print -r -- "does NOT skip zinit: plugins are still updated and any that drifted from .zshrc"
-    print -r -- "are still reinstalled — only the wholesale ~400MB re-download is skipped."
+    print -r -- "dotfiles install.sh bootstrap (default N; --install skips the prompt). The FULL"
+    print -r -- "zinit wipe is never asked up front: plugins that drifted from .zshrc are deleted"
+    print -r -- "and reinstalled one by one, and only if they are STILL broken afterwards does"
+    print -r -- "maintain offer the wholesale ~400MB wipe ([w]ipe / [C]ontinue, default continue)."
+    print -r -- "Both prompts are skipped when stdin is not a terminal, so cron and scripted runs"
+    print -r -- "never block; pass --zinit to force the wipe there."
     print -r -- ""
     print -r -- "Primes sudo up front and keeps it alive so the run is unattended"
     print -r -- "(root shells run sudo-free). Devcontainers skip OS-level steps."
@@ -352,20 +353,20 @@ function maintain() {
         print -r -- "▸ Phases this run: ${phases_desc:-none}"
     fi
 
-    # Two opt-in steps are asked HERE, not inside maintain::run: that function's stdout is the
-    # tee pipe, and a prompt written into a pipe is exactly the trap that made the apt/debconf
-    # dialog unsteerable. Up here stdout is still the terminal, and asking before the long
-    # unattended phases start mirrors why sudo is primed up front — every question lands now,
-    # not ten minutes in.
+    # The install.sh opt-in is asked HERE, not inside maintain::run: that function's stdout is
+    # the tee pipe, and a prompt written into a pipe is exactly the trap that made the
+    # apt/debconf dialog unsteerable. Up here stdout is still the terminal, and asking before
+    # the long unattended phases start mirrors why sudo is primed up front. (The one prompt
+    # that does live inside maintain::run, the zinit wipe, talks to /dev/tty directly.)
     #
     # ZDOTDIR is ~/.config/zsh, a symlink into the repo, so :A resolves it before the :h hops
     # take the parents — a bare ${ZDOTDIR:h} would look in ~/.config and miss. Two hops, not
     # one: the link source is <repo>/config/zsh, so :A:h lands on config/ and :A:h:h on the
     # repo root.
     #
-    # Default for both prompts is N: a bare Enter, EOF, or a non-tty stdin (cron, CI,
-    # `maintain < /dev/null`) all mean skip. The matching --install / --zinit flags force the
-    # step on and suppress its prompt, so scripted runs stay fully unattended.
+    # Default is N: a bare Enter, EOF, or a non-tty stdin (cron, CI, `maintain < /dev/null`)
+    # all mean skip. --install forces the step on and suppresses the prompt, so scripted runs
+    # stay fully unattended.
     local install_script="${ZDOTDIR:A:h:h}/install.sh"
     if (( ! run_install )) && [[ -t 0 && -r "${install_script}" ]]; then
         local reply=""
@@ -373,51 +374,12 @@ function maintain() {
         [[ "${reply}" == [yY]* ]] && run_install=1
     fi
 
-    # State the zinit situation BEFORE asking about the wipe. The right answer depends
-    # entirely on it — how many plugins drifted, and whether anything is flagged — and the
-    # prompt used to arrive with none of that on screen, so the choice was a guess.
-    #
-    # Cheap enough to run here: zi-audit is read-only and touches only the filesystem (it
-    # compares each plugin's ._zinit metadata against .zshrc), no network and no plugin
-    # loading. --ids lists what a wipe would repair; the full pass supplies the verdict
-    # line, which also counts findings a wipe canNOT fix, such as declaration bugs.
-    if (( ! run_zinit )) && [[ -t 0 ]] && (( $+functions[zi_audit] )) && maintain::phase_enabled 2; then
-        local -a pre_drift
-        pre_drift=( ${(f)"$(zi_audit --ids 2>/dev/null)"} )
-        pre_drift=( ${pre_drift:#} )
-
-        local pre_verdict
-        pre_verdict="$(zi_audit --quiet 2>/dev/null)"
-        pre_verdict="${pre_verdict##*$'\n'}"
-        [[ -n "${pre_verdict}" ]] && print -r -- "▸ zinit: ${pre_verdict}"
-
-        if (( ${#pre_drift} )); then
-            print -r -- "    ${#pre_drift} plugin(s) drifted from .zshrc — a normal run repairs these:"
-            local zp
-            for zp in "${pre_drift[@]}"; do print -r -- "      • ${zp}"; done
-        else
-            print -r -- "    no drift — every plugin matches its .zshrc declaration"
-        fi
-        print -r -- "    Say y only if you edited what is INSIDE an ice — atclone'old' → atclone'new'."
-        print -r -- "    Adding or removing an ice shows up above; changing one's contents does not."
-    fi
-
-    # Only the FULL WIPE is opt-in. Answering N (or running non-interactively) still updates
-    # the plugins and still repairs any that drifted from .zshrc — it just does so
-    # incrementally instead of re-downloading ~400MB.
-    #
-    # The one case incremental repair cannot reach: editing what is INSIDE an ice while
-    # leaving its name alone, say atclone'rm -f qsv[a-z]*' becoming atclone'_qsv_prune'.
-    # zinit snapshots a plugin's ices into ._zinit/ at install time and replays THAT on
-    # every update, and zi_audit::declared keys on the ice NAME only — `${w%%[\'\"]*}`
-    # discards everything from the first quote on. Both sides still read "atclone", so
-    # nothing detects the change and the old value keeps firing forever. Only a wipe
-    # re-reads .zshrc and re-snapshots.
-    if (( ! run_zinit )) && [[ -t 0 ]] && maintain::phase_enabled 2; then
-        local zreply=""
-        read -r "zreply?▸ FULL zinit wipe + reinstall (~400MB)? Plugins update either way. [y/N] "
-        [[ "${zreply}" == [yY]* ]] && run_zinit=1
-    fi
+    # No up-front zinit wipe prompt. The full wipe is asked about only AFTER a targeted
+    # repair has failed (see the zinit block in maintain::run), when the broken plugins are
+    # on screen and the answer is no longer a guess. --zinit still forces it — and remains
+    # the ONLY way to reach the one case the audit cannot see: editing what is INSIDE an ice
+    # while leaving its name alone (atclone'old' → atclone'new'). zi_audit::declared keys on
+    # the ice NAME only, so both sides still read "atclone" and nothing ever fails.
 
     local log_dir="${XDG_STATE_HOME:-${HOME}/.local/state}/logs/maintain"
     mkdir -p "${log_dir}"
@@ -466,6 +428,41 @@ function maintain::zi_audit() {
     # Count can differ from the findings count in the verdict: one plugin may carry several.
     zi_flagged=( ${${${(M)${(f)out}:#✗ *}#✗ }/orphans*/orphans} )
     return ${rc}
+}
+
+# The full wipe: zinit-reset, then a verifying audit. Reached by --zinit, or by answering
+# w to maintain::zinit_offer_wipe after a per-plugin repair failed.
+function maintain::zinit_wipe() {
+    maintain::hdr "Resetting Zinit Plugins (full wipe, ~400MB)"
+    "${ZDOTDIR}/functions/zinit-reset" --go || failures+=("zinit reset")
+    # Drop stale command-hash entries pointing into the pre-wipe plugin dirs, so the
+    # steps after this resolve correctly. This only repairs THIS process — we run in
+    # a subshell (see the pipe in maintain()), so the calling shell keeps its stale hash
+    # regardless; that is what the closing `exec zsh` in the summary is for.
+    rehash
+    (( $+functions[zi_audit] )) && { maintain::hdr "Verifying zinit ices"; maintain::zi_audit || failures+=("zinit audit") }
+}
+
+# Ask whether to escalate a failed per-plugin repair to the full wipe. Returns 0 for wipe.
+# Talks to /dev/tty in BOTH directions: stdout here is the tee | awk pipe, and awk emits
+# whole lines only, so a prompt with no trailing newline would sit invisible until answered.
+# No tty on stdin (cron, CI, `maintain </dev/null`) means no prompt and continue.
+function maintain::zinit_offer_wipe() {
+    [[ -t 0 ]] && { : >/dev/tty } 2>/dev/null || return 1
+    local reply=""
+    {
+        print -r -- "  ${#} plugin(s) still broken after reinstalling them individually:"
+        print -rl -- "      • "${^@}
+        print -rn -- "▸ [w]ipe ALL zinit plugins + reinstall (~400MB), or [C]ontinue? "
+    } >/dev/tty
+    read -r reply </dev/tty
+    # Echo the decision on stdout so it lands in the log, which never saw the prompt.
+    if [[ "${reply}" == [wW]* ]]; then
+        print -r -- "  → full wipe (still broken: ${(j:, :)@})"
+        return 0
+    fi
+    print -r -- "  → continuing without a wipe (still broken: ${(j:, :)@})"
+    return 1
 }
 
 # mise never garbage-collects on its own: every `mise up` leaves the previous version
@@ -995,14 +992,7 @@ function maintain::run() {
     fi
 
     if (( run_zinit )); then
-        maintain::hdr "Resetting Zinit Plugins (full wipe, ~400MB)"
-        "${ZDOTDIR}/functions/zinit-reset" --go || failures+=("zinit reset")
-        # Drop stale command-hash entries pointing into the pre-wipe plugin dirs, so the
-        # steps below this line resolve correctly. This only repairs THIS process — we run in
-        # a subshell (see the pipe in maintain()), so the calling shell keeps its stale hash
-        # regardless; that is what the closing `exec zsh` in the summary is for.
-        rehash
-        (( $+functions[zi_audit] )) && { maintain::hdr "Verifying zinit ices"; maintain::zi_audit || failures+=("zinit audit") }
+        maintain::zinit_wipe
     elif (( $+functions[zi] )); then
         maintain::hdr "Updating zinit plugins"
         PAGER=cat GIT_PAGER=cat zi update --all --parallel --no-pager </dev/null \
@@ -1028,7 +1018,21 @@ function maintain::run() {
                 # shell plus a scheduler burst — the same primitive zinit-reset uses.
                 zsh -ic '@zinit-scheduler burst' >/dev/null 2>&1
                 rehash
-                maintain::zi_audit || failures+=("zinit drift unresolved")
+                if ! maintain::zi_audit; then
+                    # Re-ask --ids: only drift a wipe can repair justifies offering one. A ✗
+                    # outside that list is a .zshrc declaration bug (unknown-ice,
+                    # pick-no-match) or an orphan, and a wipe rebuilds it identically.
+                    local -a zi_still zi_decl
+                    zi_still=( ${(f)"$(zi_audit --ids 2>/dev/null)"} )
+                    zi_still=( ${zi_still:#} )
+                    zi_decl=( ${zi_flagged:|zi_still} )
+                    (( ${#zi_decl} )) && print -r -- "  fix in .zshrc, a wipe will not help: ${(j:, :)zi_decl}"
+                    if (( ${#zi_still} )) && maintain::zinit_offer_wipe "${zi_still[@]}"; then
+                        maintain::zinit_wipe
+                    else
+                        failures+=("zinit drift unresolved")
+                    fi
+                fi
             else
                 print -r -- "  no drift — every plugin matches its .zshrc declaration"
                 # --ids above only lists WIPE-REPAIRABLE drift; a full pass also reports the

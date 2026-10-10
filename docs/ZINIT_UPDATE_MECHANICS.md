@@ -160,8 +160,11 @@ The default path now has three parts, and only the wipe stays opt-in:
    construction. `--no-pager` is mandatory or it blocks forever on a pipe.
 2. `zi-audit --ids` — names the plugins whose on-disk metadata no longer matches `.zshrc`.
 3. Those get wiped and reinstalled via `zsh -ic '@zinit-scheduler burst'`, then re-audited.
+4. If the re-audit still lists wipe-repairable plugins, maintain names them and asks
+   `[w]ipe ALL … or [C]ontinue?` on `/dev/tty` (default continue; no tty means continue).
+   Flagged plugins outside `--ids` are reported as `.zshrc` fixes. A wipe would not help them.
 
-`--zinit` remains the full-wipe hammer. This replaces the earlier git-stamp/hunk-mapping
+There is no up-front wipe prompt any more. `--zinit` remains the full-wipe hammer. This replaces the earlier git-stamp/hunk-mapping
 idea: `zi-audit` detects drift directly and more precisely, with no stamp file.
 
 **Why `--ids` excludes some findings.** `unknown-ice` and `pick-no-match` are *declaration*
