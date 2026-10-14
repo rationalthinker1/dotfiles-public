@@ -43,15 +43,19 @@
 # sync_frequency = "10m"
 
 ## which search mode to use
-## possible values: prefix, fulltext, fuzzy, skim
-# search_mode = "fuzzy"
+## possible values: prefix, fulltext, fuzzy, daemon-fuzzy
+## dotfiles: daemon-fuzzy ranks by fuzzy match, then frecency (recency + frequency), from
+## an in-memory index in the daemon (see [daemon]). If the daemon is unreachable the TUI
+## silently degrades to plain "fuzzy", so a host where it can't start still works.
+search_mode = "daemon-fuzzy"
 
 ## which filter mode to use by default
 ## possible values: "global", "host", "session", "session-preload", "directory", "workspace"
 ## consider using search.filters to customize the enablement and order of filter modes
-## dotfiles: workspace-first — scope history to the current git project; falls back to
-## global when not inside a repo (workspace mode is auto-skipped outside a workspace).
-filter_mode = "workspace"
+## dotfiles: Ctrl+R is one merged list — every machine and session, ranked by relevance
+## (search_mode above). Atuin can't boost local results inside a global search; for
+## repo-scoped history press Ctrl+R again to cycle, or use Up-arrow (below).
+filter_mode = "global"
 
 ## With workspace filtering enabled, Atuin will filter for commands executed
 ## in any directory within a git repository tree (default: false).
@@ -64,13 +68,16 @@ workspaces = true
 ## which filter mode to use when atuin is invoked from a shell up-key binding
 ## the accepted values are identical to those of "filter_mode"
 ## leave unspecified to use same mode set in "filter_mode"
-## dotfiles: Up-arrow also honors workspace-first (repo history), else global.
+## dotfiles: Up-arrow stays local — the current repo's history (workspace). Outside a
+## repo, atuin matches workspace against cwd as a prefix: this directory and below.
 filter_mode_shell_up_key_binding = "workspace"
 
 ## which search mode to use when atuin is invoked from a shell up-key binding
 ## the accepted values are identical to those of "search_mode"
 ## leave unspecified to use same mode set in "search_mode"
-# search_mode_shell_up_key_binding = "fuzzy"
+## dotfiles: plain fuzzy keeps Up-arrow chronological (most recent first) rather than
+## frecency-ordered, so it still behaves like walking back through history.
+search_mode_shell_up_key_binding = "fuzzy"
 
 ## which style to use
 ## possible values: auto, full, compact
@@ -263,11 +270,14 @@ records = true
 
 [daemon]
 ## Enables using the daemon to sync.
-# enabled = false
+## dotfiles: on, because search_mode = "daemon-fuzzy" needs the daemon's search index.
+enabled = true
 
 ## Automatically start and manage the daemon when needed.
 ## Not compatible with `systemd_socket = true`.
-# autostart = false
+## dotfiles: on, so no systemd/launchd unit is needed. Headless servers and WSL without a
+## systemd user session get the daemon too.
+autostart = true
 
 ## How often the daemon should sync in seconds
 # sync_frequency = 300
@@ -309,10 +319,10 @@ records = true
 ## The list of enabled filter modes, in order of priority.
 ## The "workspace" mode is skipped when not in a workspace or workspaces = false.
 ## Default filter mode can be overridden with the filter_mode setting.
-## dotfiles: specific → broad. workspace (repo) is the default; skipped outside a repo, so
-## the non-repo fallback is "directory" (exact folder). Then the scoped session/host views,
-## with "global" (all machines & sessions) last. All six modes stay reachable via the Ctrl+R
-## toggle; the order is just their priority / cycle sequence.
+## dotfiles: specific → broad, as the Ctrl+R cycle order. Ctrl+R opens on "global" (set by
+## filter_mode), so the next press wraps round to workspace (repo), then directory, then the
+## session/host views. workspace is skipped in the cycle outside a repo. All six modes stay
+## reachable; the order is just their priority and cycle sequence.
 filters = [ "workspace", "directory", "session", "session-preload", "host", "global" ]
 
 [tmux]
