@@ -124,7 +124,7 @@ function zi_audit::declared() {
 
     local zshrc="${1}"
     local line joined="" ices="" idas="" name w
-    local -i cond=0 ice_cond=0
+    local -i cond=0 ice_cond=0 ice_if=0
     local -a raw words
 
     raw=( ${(f)"$(<${zshrc})"} )
@@ -162,7 +162,7 @@ function zi_audit::declared() {
                 # akavel/up (.zshrc:667) picks its ices in an if/else and loads once
                 # outside it, so only one branch's ices are ever live and comparing the
                 # other's would be a false drop.
-                ices="" idas="" ice_cond=${cond}
+                ices="" idas="" ice_cond=${cond} ice_if=0
                 for w in "${words[@]:2}"; do
                     # A trailing comment is tokenised too — stop before it.
                     [[ "${w}" == \#* ]] && break
@@ -173,11 +173,15 @@ function zi_audit::declared() {
                     [[ -n "${name}" ]] || continue
                     ices+="${name} "
                     [[ "${name}" == "id-as" ]] && idas="${${w#${name}}//[\'\"=]/}"
+                    # zinit's own if'…' ice gates the load like a shell `if` does — the
+                    # gh-r binaries carry if'[[ ${HOST_OS} != termux ]]' — so its absence is
+                    # conditional too. Not ice_cond: there is no other branch to misfire.
+                    [[ "${name}" == "if" ]] && ice_if=1
                 done
                 ;;
             (load|light)
-                (( ${#words} >= 3 )) && print -r -- "${words[3]}	${ices% }	${cond}	${idas}	${ice_cond}"
-                ices="" idas=""
+                (( ${#words} >= 3 )) && print -r -- "${words[3]}	${ices% }	$(( cond + ice_if ))	${idas}	${ice_cond}"
+                ices="" idas="" ice_if=0
                 ;;
             (for)
                 # `zi for` interleaves ices and ids in one command, ices applying to the id

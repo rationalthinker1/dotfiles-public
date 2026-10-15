@@ -9,7 +9,7 @@
 #   - .zshrc (ZSH interactive configuration)
 #
 # EXPORTS:
-#   HOST_OS           - "wsl", "darwin", "linux", "windows", "unknown"
+#   HOST_OS           - "wsl", "darwin", "linux", "termux", "windows", "unknown"
 #   HOST_LOCATION     - "desktop" or "server"
 #   IS_DEVCONTAINER   - "true" or "false"
 #
@@ -56,6 +56,12 @@ detect_os() {
                 HOST_OS="linux"
             fi
             ;;
+        linux-android*)
+            # Termux. Not "linux": bionic libc cannot run the glibc binaries .zshrc pulls
+            # from GitHub releases, so those carry if'[[ ${HOST_OS} != termux ]]' and the
+            # tools come from `pkg` instead (termux/install.sh).
+            HOST_OS="termux"
+            ;;
         darwin*)
             HOST_OS="darwin"
             ;;
@@ -80,6 +86,10 @@ detect_os() {
         HOST_LOCATION="server"
     elif [ "${HOST_OS}" = "darwin" ]; then
         HOST_LOCATION="desktop"
+    elif [ "${HOST_OS}" = "termux" ]; then
+        # A phone: no clipboard or browser from the shell. Decided here so the dpkg-query
+        # below — two forks on every shell start, and Termux does have dpkg — is skipped.
+        HOST_LOCATION="server"
     elif [ -n "${DISPLAY:-}" ] || [ -n "${WAYLAND_DISPLAY:-}" ]; then
         HOST_LOCATION="desktop"
     elif command -v dpkg-query >/dev/null 2>&1 && \

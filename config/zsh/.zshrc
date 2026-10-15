@@ -599,10 +599,25 @@ zi light z-shell/zsh-fancy-completions
 # 📁 Zoxide - Fast, smart directory jumper based on frequency
 # Usage: `z <pattern>` - jump to most-frequent matching directory
 _ZO_FZF_OPTS="--bind=ctrl-z:ignore --exit-0 --height=40% --inline-info --no-sort --reverse --select-1 --preview='eza -la {2..}'"
-zi ice lucid wait'1' as"command" from"gh-r" \
+zi ice if'[[ ${HOST_OS} != termux ]]' lucid wait'1' as"command" from"gh-r" \
     atclone"./zoxide init zsh --cmd z > init.zsh" \
     atpull"%atclone" src"init.zsh" nocompile'!'
 zi load ajeetdsouza/zoxide
+
+# Termux gets zoxide/atuin from `pkg` (their gh-r ices are if'…'-skipped there), so nothing
+# ran the atclone that writes init.zsh. Do it here, cached: regenerated only when the binary
+# is newer than the cache, so a shell start on a phone costs a stat, not a fork.
+function _termux_init() {
+    local tool="${1}" cache="${XDG_CACHE_HOME}/zsh/termux-init/${1}.zsh"
+    shift
+    (( $+commands[${tool}] )) || return 0
+    if [[ ! -s "${cache}" || "${commands[${tool}]}" -nt "${cache}" ]]; then
+        mkdir -p "${cache:h}"
+        "${tool}" "${@}" >| "${cache}" 2>/dev/null || return 0
+    fi
+    source "${cache}"
+}
+[[ "${HOST_OS}" == "termux" ]] && _termux_init zoxide init zsh --cmd z
 
 # 📁 BD - Quickly go back to a parent directory by name
 # Usage: `bd src` - jump back to /home/user/projects/src from deep subdirectory
@@ -627,7 +642,7 @@ zi light ap/rename
 # no completions/ dir — upstream ships those as a separate completions-<ver>.tar.gz asset.
 # No lucid — see the note above zsh-fancy-completions: it only suppresses the turbo
 # "Loaded" notice, and this line has no wait ice.
-zi ice from'gh-r' as'program' nocompile'!'
+zi ice if'[[ ${HOST_OS} != termux ]]' from'gh-r' as'program' nocompile'!'
 zi load eza-community/eza
 
 # ==============================================================================
@@ -638,7 +653,7 @@ zi load eza-community/eza
 # Usage: `rg "pattern"` - searches files recursively, respects .gitignore
 # Auto-pipes through less with `rg()` function in aliases.zsh
 export RIPGREP_CONFIG_PATH="${XDG_CONFIG_HOME}/ripgrep/.ripgreprc"
-zi ice wait'2' lucid from'gh-r' as'command' pick='*/rg' nocompile'!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick='*/rg' nocompile'!'
 zi load BurntSushi/ripgrep
 
 # 🌳 ast-grep - AST-based structural code search, lint, and rewriting (Rust, 20+ languages)
@@ -649,7 +664,7 @@ zi load BurntSushi/ripgrep
 # sbin dropped for the same reason as eza above (annex not installed → it silently ate
 # the nocompile that followed it). The asset drops both `ast-grep` and `sg` at the plugin
 # root, which as'program' already puts on PATH.
-zi ice wait'2' lucid from'gh-r' as'program' nocompile'!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'program' nocompile'!'
 zi load ast-grep/ast-grep
 
 # 🌱 graft - prebuilt code graph (symbols, file:line spans, call edges) for coding agents
@@ -710,13 +725,13 @@ fi
 # Usage: Already aliased to `cat` - shows line numbers and syntax colors
 # Original cat available as `rcat`
 export BAT_THEME="OneHalfDark"
-zi ice wait'2' lucid from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat" nocompile'!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' mv"bat* -> bat" pick"bat/bat" nocompile'!'
 zi load sharkdp/bat
 
 # 🔍 FD - Simple, fast alternative to `find`
 # Usage: `fd pattern` - finds files by name, faster than find
 # `fd -e js` - find by extension, `fd -t d` - find directories only
-zi ice wait'2' lucid from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd" nocompile'!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' mv"fd* -> fd" pick"fd/fd" nocompile'!'
 zi load sharkdp/fd
 
 # 🧼 SD - Intuitive find & replace CLI (better than sed)
@@ -724,7 +739,7 @@ zi load sharkdp/fd
 # `sd '\d+' '[$0]' file.txt` - regex with capture groups
 # The release tarball nests the binary in sd-vX.Y.Z-<triple>/, so `pick` is required
 # for zinit to find it — without it the plugin installs but `sd` never reaches PATH.
-zi ice wait'2' lucid from'gh-r' as'command' pick='*/sd' nocompile'!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick='*/sd' nocompile'!'
 zi load chmln/sd
 
 # 🧠 JQ - Command-line JSON processor
@@ -743,7 +758,7 @@ zi load chmln/sd
 # but an *update* leaves the re-downloaded binary 0644 and jq silently stops working the
 # next time upstream cuts a release. atpull'%atclone' repeats the chmod on every update.
 # cloudflared has the same bare-binary shape and survives only because it chmods too.
-zi ice wait'2' lucid from'gh-r' as'program' extract'' mv'jq* -> jq' pick'jq' nocompile'!' \
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'program' extract'' mv'jq* -> jq' pick'jq' nocompile'!' \
     atclone'chmod +x jq' atpull'%atclone'
 zi load jqlang/jq
 
@@ -758,9 +773,9 @@ zi load jqlang/jq
 # extract'' suppresses the bogus ziextract error, as with jqlang/jq above.
 function () {
     if [[ "${OSTYPE}" == darwin* ]]; then
-        zi ice wait'2' lucid from'gh-r' as'program' extract'' mv'up-* -> up' pick'up' nocompile'!'
+        zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'program' extract'' mv'up-* -> up' pick'up' nocompile'!'
     else
-        zi ice wait'2' lucid from'gh-r' as'program' extract'' pick'up' nocompile'!'
+        zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'program' extract'' pick'up' nocompile'!'
     fi
     zi load akavel/up
 }
@@ -995,14 +1010,14 @@ function _qsv_prune() {
     fi
     return 0
 }
-zi ice wait'2' lucid from'gh-r' as'program' pick'qsv' nocompile'!' \
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'program' pick'qsv' nocompile'!' \
     atclone'_qsv_prune' atpull'%atclone' \
     bpick"$(gh_asset 'qsv-*-{arch}-unknown-linux-{libc:gnu}.zip' 'qsv-*-apple-darwin.zip')"
 zi load dathere/qsv
 
 # 🗂️ Yazi - blazing fast terminal file manager
 # bpick names the .zip explicitly so it can't match the .deb shipped alongside it.
-zi ice wait'2' lucid from'gh-r' as'program' pick'*/yazi' nocompile'!' \
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'program' pick'*/yazi' nocompile'!' \
     bpick"$(gh_asset 'yazi-{arch}-unknown-linux-{libc}.zip' 'yazi-{arch}-apple-darwin.zip')"
 zi load sxyazi/yazi
 
@@ -1025,7 +1040,7 @@ zi load sxyazi/yazi
 # A `ver'v2.44.0'` pin rode out dua-core-v4.0.0 holding /releases/latest assetless from
 # 2026-09-07; removed 2026-10-10, when latest was v2.45.1 with assets. If it recurs, pin
 # again the same way — `zi-audit --online` reports ver-stale once a newer release ships.
-zi ice wait'2' lucid from'gh-r' as'program' pick'*/dua' nocompile'!' \
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'program' pick'*/dua' nocompile'!' \
     bpick"$(gh_asset 'dua-v*-{arch}-unknown-linux-musl.tar.gz' 'dua-v*-{arch}-apple-darwin.tar.gz')"
 zi load Byron/dua-cli
 
@@ -1034,7 +1049,7 @@ zi load Byron/dua-cli
 # ==============================================================================
 
 # 🔍 GitHub CLI - Essential for git-heavy workflow
-zi ice wait'2' lucid from'gh-r' as'command' pick='*/bin/gh' nocompile'!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick='*/bin/gh' nocompile'!'
 zi load cli/cli
 
 # 🧠 Atuin - Magical shell history with sync, stats, and better search
@@ -1042,35 +1057,36 @@ zi load cli/cli
 # Stores full context (directory, duration, exit code) and syncs across machines
 # The template names the file exactly so it can't match the atuin-server-* assets that
 # ship in the same release.
-zi ice as"command" from"gh-r" mv"atuin*/atuin -> atuin" \
+zi ice if'[[ ${HOST_OS} != termux ]]' as"command" from"gh-r" mv"atuin*/atuin -> atuin" \
     bpick"$(gh_asset 'atuin-{arch}-unknown-linux-{libc}.tar.gz' 'atuin-{arch}-apple-darwin.tar.gz')" \
     atclone"./atuin init zsh > init.zsh; ./atuin gen-completions --shell zsh > _atuin" \
     atpull"%atclone" src"init.zsh"
 zi light atuinsh/atuin
+[[ "${HOST_OS}" == "termux" ]] && _termux_init atuin init zsh
 
 # 📊 Bottom - Modern system monitor
 # pick'btm', not '*/btm': this asset extracts FLAT (btm + completion/ at the plugin root),
 # so the subdirectory glob matched nothing and the pick was a dead no-op. Harmless only
 # because as'command' puts the dir on PATH regardless. `zi-audit` flags this as
 # pick-no-match, which is also the alarm if upstream ever changes the layout back.
-zi ice wait'2' lucid from'gh-r' as'command' pick='btm' nocompile='!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick='btm' nocompile='!'
 zi load ClementTsang/bottom
 
 # ⚡ Hyperfine - Command benchmarking
-zi ice wait'2' lucid from'gh-r' as'command' pick='*/hyperfine' nocompile='!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick='*/hyperfine' nocompile='!'
 zi load sharkdp/hyperfine
 
 # 🧼 Dust - Fast Rust-based alternative to du
-zi ice wait'2' lucid from'gh-r' as'command' pick='*/dust' nocompile='!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick='*/dust' nocompile='!'
 zi load bootandy/dust
 
 # 🎨 Delta - Better git diffs with syntax highlighting
-zi ice wait'0' lucid from'gh-r' as'command' pick='*/delta' nocompile='!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'0' lucid from'gh-r' as'command' pick='*/delta' nocompile='!'
 zi load dandavison/delta
 
 # 📁 Duf - Modern df alternative
 # pick'duf', not '*/duf' — extracts flat (duf + duf.1 at the root); see btm above.
-zi ice wait'2' lucid from'gh-r' as'command' pick='duf' nocompile='!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick='duf' nocompile='!'
 zi load muesli/duf
 
 # 💽 Diskwatch - read-only disk diagnostics TUI (devices, volumes, filesystems, IO,
@@ -1102,7 +1118,7 @@ zi load muesli/duf
 # cannot also grab the .tar.gz if a future zinit stops deleting the archive.
 function () {
     local base="$(gh_asset 'diskwatch-linux-{arch}-static' 'diskwatch-macos-{arch}')"
-    zi ice wait'2' lucid from'gh-r' as'command' nocompile'!' \
+    zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' nocompile'!' \
         bpick"${base}.tar.gz" mv"${base} -> diskwatch" pick'diskwatch'
     zi load matthart1983/diskwatch
 }
@@ -1112,7 +1128,7 @@ function () {
 # doggo-linux-x86_64.tar.gz). zinit's auto-detection still infers the old capitalized
 # form and errors with "bpick ice found no release assets", so pin bpick explicitly.
 # Go binary, so there's no libc variant to choose — only os/arch.
-zi ice wait'2' lucid from'gh-r' as'command' pick='doggo' nocompile='!' \
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick='doggo' nocompile='!' \
     bpick"$(gh_asset 'doggo-linux-{arch}.tar.gz' 'doggo-darwin-{arch}.tar.gz')"
 zi load mr-karan/doggo
 
@@ -1133,22 +1149,22 @@ zi load mr-karan/doggo
 #
 # rm -rf ._backup for the reason documented on qsv above: zinit parks the previous
 # version there on every update, and this is a 39MB binary.
-zi ice wait'2' lucid from'gh-r' as'program' pick'cloudflared' nocompile'!' \
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'program' pick'cloudflared' nocompile'!' \
     bpick"$(gh_asset 'cloudflared-linux-{goarch}' 'cloudflared-darwin-{goarch}.tgz')" \
     mv'cloudflared-linux-* -> cloudflared' \
     atclone'rm -rf ._backup; chmod +x cloudflared' atpull'%atclone'
 zi load cloudflare/cloudflared
 
 # 🦎 Lazygit - TUI for git
-zi ice wait'2' lucid from'gh-r' as'command' pick='lazygit' nocompile='!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick='lazygit' nocompile='!'
 zi load jesseduffield/lazygit
 
 # 🐳 Lazydocker - TUI for docker
-zi ice wait'2' lucid from'gh-r' as'command' pick='lazydocker' nocompile='!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick='lazydocker' nocompile='!'
 zi load jesseduffield/lazydocker
 
 # 🔧 Procs - Modern ps alternative
-zi ice wait'2' lucid from'gh-r' as'command' pick='procs' nocompile='!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick='procs' nocompile='!'
 zi load dalance/procs
 
 # 🔌 Portop - htop-style TUI for ports: what's bound, and which process/unit/container
@@ -1172,7 +1188,7 @@ zi load dalance/procs
 # variant to choose. The tarball extracts FLAT (portop + README.md + LICENSE at the
 # root), so pick'portop', not '*/portop' — same layout as btm and duf above.
 if [[ "${OSTYPE}" == linux* ]]; then
-    zi ice wait'2' lucid from'gh-r' as'command' pick='portop' nocompile='!' \
+    zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick='portop' nocompile='!' \
         bpick"$(gh_asset 'portop_*_linux_{goarch}.tar.gz')"
     zi load padovanl/portop
 fi
@@ -1210,7 +1226,7 @@ fi
 if [[ "${OSTYPE}" == linux* ]]; then
     function () {
         local base="$(gh_asset 'kernwatch-linux-{arch}-static')"
-        zi ice wait'2' lucid from'gh-r' as'command' nocompile'!' \
+        zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' nocompile'!' \
             bpick"${base}.tar.gz" mv"${base} -> kernwatch" pick'kernwatch'
         zi load matthart1983/kernwatch
     }
@@ -1224,34 +1240,34 @@ fi
 # Literal `musl`, not {libc}: upstream publishes no gnu Linux build at all (v1.9.0), so
 # there is no choice to make and a placeholder would only invent a nonexistent asset.
 # Harmless — tldr shells out to a cache lookup, nothing musl's allocator can slow down.
-zi ice wait'2' lucid from'gh-r' as'program' extract'' mv'tealdeer* -> tldr' \
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'program' extract'' mv'tealdeer* -> tldr' \
     bpick"$(gh_asset 'tealdeer-linux-{arch}-musl' 'tealdeer-macos-{arch}')" \
     pick'tldr' nocompile'!'
 zi load tealdeer-rs/tealdeer
 
 # 🌐 xh - HTTPie-style HTTP client in Rust; http() in aliases.zsh prefers it
 # Usage: `xh :3000/api/users name=alice` POSTs JSON; `xh -d example.com/file.zip` downloads
-zi ice wait'2' lucid from'gh-r' as'command' pick'*/xh' nocompile'!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick'*/xh' nocompile'!'
 zi load ducaale/xh
 
 # 🔎 jless - interactive JSON viewer/pager
 # Usage: `jless data.json` or `curl -s api | jless`; hjkl/arrows navigate, / searches
 # The zip holds the binary at its root, so a bare pick suffices.
-zi ice wait'2' lucid from'gh-r' as'command' pick'jless' nocompile'!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick'jless' nocompile'!'
 zi load PaulJuliusMartinez/jless
 
 # 🧭 jnv - interactive jq playground (live filter over a JSON document)
 # Usage: `jnv data.json` or `curl -s api | jnv`; type a jq filter, see results live
 # bpick avoids dist-manifest.json/installer assets; tar.xz nests jnv-<triple>/jnv.
 # Same libc split as qsv (verified against v0.7.1): musl for x86_64, gnu for aarch64 Linux.
-zi ice wait'2' lucid from'gh-r' as'command' pick'*/jnv' nocompile'!' \
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick'*/jnv' nocompile'!' \
     bpick"$(gh_asset 'jnv-{arch}-unknown-linux-{libc:gnu}.tar.xz' 'jnv-{arch}-apple-darwin.tar.xz')"
 zi load ynqa/jnv
 
 # 📦 Ouch - universal (de)compressor; extract() in aliases.zsh prefers it
 # Usage: `ouch d file.tar.zst` extracts, `ouch c dir out.tar.gz` compresses,
 #        `ouch l archive.zip` lists contents
-zi ice wait'2' lucid from'gh-r' as'command' pick'*/ouch' nocompile'!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick'*/ouch' nocompile'!'
 zi load ouch-org/ouch
 
 # 🦇 bat-extras - batman/batgrep/batdiff/batwatch built on bat
@@ -1268,7 +1284,7 @@ zi load eth-p/bat-extras
 # Assets are named gping-Linux-musl-x86_64.tar.gz / gping-macOS-arm64.tar.gz (capitalized
 # OS); zinit can't infer them, so pin bpick. musl over gnu for the glibc reason in atuin.
 # The only upstream here that spells arm64 rather than aarch64, hence {arch2}.
-zi ice wait'2' lucid from'gh-r' as'command' pick'gping' nocompile'!' \
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick'gping' nocompile'!' \
     bpick"$(gh_asset 'gping-Linux-{libc}-{arch2}.tar.gz' 'gping-macOS-{arch2}.tar.gz')"
 zi load orf/gping
 
@@ -1277,23 +1293,23 @@ zi load orf/gping
 # Usage: `rga "invoice 2024" ~/Documents`; `rga --rg-help` for rg passthrough flags
 # The tarball nests rga + its required rga-preproc helper in a versioned dir; pick
 # puts that dir on PATH so both resolve.
-zi ice wait'2' lucid from'gh-r' as'program' pick'*/rga' nocompile'!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'program' pick'*/rga' nocompile'!'
 zi load phiresky/ripgrep-all
 
 # 🔢 Hexyl - hex viewer with colored output; xxd() in aliases.zsh prefers it
 # Usage: `hexyl file.bin | head`, `hexyl -n 128 file` for just the first 128 bytes
-zi ice wait'2' lucid from'gh-r' as'command' pick'*/hexyl' nocompile'!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick'*/hexyl' nocompile'!'
 zi load sharkdp/hexyl
 
 # 🧩 Grex - build a regex from example strings (pemistahl/grex)
 # Usage: `grex 2026-08-05 2025-12-31` → a pattern matching both; add more examples
 #        to generalize it
-zi ice wait'2' lucid from'gh-r' as'command' pick'grex' nocompile'!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick'grex' nocompile'!'
 zi load pemistahl/grex
 
 # 🎨 Pastel - generate, convert, and inspect terminal colors (sharkdp)
 # Usage: `pastel color ff8800`, `pastel distinct 5`, `pastel gradient red blue`
-zi ice wait'2' lucid from'gh-r' as'command' pick'*/pastel' nocompile'!'
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick'*/pastel' nocompile'!'
 zi load sharkdp/pastel
 
 # 🔤 txc - offline text utilities: 143 operations (encode, hash, case, convert,
@@ -1325,7 +1341,7 @@ zi load sharkdp/pastel
 # compinit, not by startup, since wait'2' loads it well after the first prompt.
 # The `*/` glob matches only the current version dir: zinit parks the previous one
 # under ._backup, and a leading dot is not matched by a bare *.
-zi ice wait'2' lucid from'gh-r' as'command' pick'*/txc' nocompile'!' \
+zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick'*/txc' nocompile'!' \
     bpick"$(gh_asset 'txc-*-linux-{arch}.tar.gz' 'txc-*-macos-{arch2}.tar.gz')" \
     atclone'cp -- */completions/_txc _txc' atpull'%atclone'
 zi load vorjdux/txc
@@ -1448,8 +1464,9 @@ source_if_exists "${ZDOTDIR}/.p10k.zsh"
 # 🧅 Bun – Fast JavaScript runtime and package manager
 # Auto-install on first interactive shell if missing (honors $BUN_INSTALL from .zshenv,
 # so the binary lands in ${BUN_INSTALL}/bin which is already on PATH). Idempotent: the
-# command check below skips this once bun is present.
-if (( ! $+commands[bun] )) && [[ ! -x "${BUN_INSTALL}/bin/bun" ]] && (( $+commands[curl] )); then
+# command check below skips this once bun is present. Never on Termux: bun ships no bionic
+# build, so the install can never succeed and would re-run `curl | bash` on every start.
+if [[ "${HOST_OS}" != "termux" ]] && (( ! $+commands[bun] )) && [[ ! -x "${BUN_INSTALL}/bin/bun" ]] && (( $+commands[curl] )); then
     echo "🧅 Installing bun to ${BUN_INSTALL}..." >&2
     curl -fsSL https://bun.sh/install | bash
     # Make bun available in the current session without restarting the shell
