@@ -16,7 +16,7 @@
 # Idempotent: every step checks before acting, so re-run it whenever the repo changes.
 #
 # OPTIONS:
-#   --no-font   skip the Nerd Font (installed by default; the other fonts/ never are)
+#   --no-font   skip the Nerd Font (MesloLGS NF, downloaded; nothing in fonts/ is used)
 # ==============================================================================
 
 set -euo pipefail
@@ -183,33 +183,37 @@ else
 fi
 
 #---------------------------------------------------------------------------------------
-# Font — Nerd Font only. p10k and eza icons need the glyphs; the rest of fonts/ is design
-# fonts for desktops, and Termux renders exactly one file (~/.termux/font.ttf) anyway.
+# Font — one Nerd Font, MesloLGS NF (powerlevel10k's own patched Meslo). Termux renders
+# exactly one file, ~/.termux/font.ttf, and nothing else in fonts/ is ever installed here.
+#
+# NOT the vendored "Space Mono Nerd Font Complete": that 2019 patch has an f+i ligature
+# whose target glyph the old patcher overwrote with a Material icon (phone-classic, at
+# U+FB01), and Android applies ligatures by default — so every "fi" drew as a telephone:
+# con☎g, ☎nd, dot☎les. MesloLGS NF has no f+i ligature at all.
 #---------------------------------------------------------------------------------------
+readonly FONT_URL="https://github.com/romkatv/powerlevel10k-media/raw/master/MesloLGS%20NF%20Regular.ttf"
+# sha256 of the Space Mono .ttf this script used to install: a font.ttf with this hash is
+# ours to replace, not a font someone picked by hand.
+readonly LEGACY_FONT_SHA256="1e9773d91160c245d8843cae90f195e2500f30d7fa16def46c16294a831bd405"
+
 if [[ "${want_font}" == true ]]; then
     hdr "Nerd Font"
-    font_zip="$(find "${DOTFILES_ROOT}/fonts" -maxdepth 1 -iname '*nerd*.zip' 2>/dev/null | sort | head -1)"
     font_dest="${HOME}/.termux/font.ttf"
-    if [[ -z "${font_zip}" ]]; then
-        echo "⚠ No *Nerd*.zip in ${DOTFILES_ROOT}/fonts — keeping the current font"
+    tmp="$(mktemp -d)"
+    if ! curl -fsSL --max-time 60 -o "${tmp}/font.ttf" "${FONT_URL}"; then
+        echo "⚠ Could not download MesloLGS NF — keeping the current font"
+    elif cmp -s "${tmp}/font.ttf" "${font_dest}"; then
+        echo "✓ MesloLGS NF already installed"
+    elif [[ -e "${font_dest}" ]] \
+        && [[ "$(sha256sum "${font_dest}" | cut -d' ' -f1)" != "${LEGACY_FONT_SHA256}" ]]; then
+        # A font.ttf that is not ours was chosen by hand — never clobber it.
+        echo "✓ Keeping your existing ${font_dest} (delete it and re-run for MesloLGS NF)"
     else
-        tmp="$(mktemp -d)"
-        unzip -qo "${font_zip}" -d "${tmp}"
-        font="$(find "${tmp}" -iname '*.ttf' | sort | head -1)"
-        if [[ -z "${font}" ]]; then
-            echo "⚠ $(basename "${font_zip}") holds no .ttf — keeping the current font"
-        elif cmp -s "${font}" "${font_dest}"; then
-            echo "✓ $(basename "${font}") already installed"
-        elif [[ -e "${font_dest}" ]]; then
-            # A font.ttf that is not ours was chosen by hand — never clobber it.
-            echo "✓ Keeping your existing ${font_dest} (delete it and re-run for $(basename "${font}"))"
-        else
-            mkdir -p "${font_dest%/*}"
-            cp "${font}" "${font_dest}"
-            echo "✓ Installed $(basename "${font}")"
-        fi
-        rm -rf "${tmp}"
+        mkdir -p "${font_dest%/*}"
+        cp "${tmp}/font.ttf" "${font_dest}"
+        echo "✓ Installed MesloLGS NF"
     fi
+    rm -rf "${tmp}"
 fi
 
 # Picks up termux.properties (linked above) and the font.
