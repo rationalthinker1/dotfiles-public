@@ -406,6 +406,16 @@ function maintain() {
     return ${ret}
 }
 
+# Load every pending turbo (wait'…') plugin now. Turbo only fires from an idle prompt, never
+# inside a running function — so without this, zi-audit saw ~40 plugins as "not loaded yet
+# (turbo)" and skipped their runtime checks, and no amount of waiting changed that. Safe to
+# call repeatedly (a drained queue is a no-op), and it only loads into maintain::run's
+# subshell, never the calling shell. Quiet: plugin atload chatter is not audit output.
+function maintain::zinit_drain() {
+    (( $+functions[@zinit-scheduler] )) && @zinit-scheduler burst >/dev/null 2>&1
+    return 0
+}
+
 # Run zi-audit, echo its output verbatim, and keep two things for the closing summary: the
 # LAST line — "N plugin(s) checked — all clean" / "… — N finding(s)" — in `zi_report`, and
 # the flagged plugin ids in `zi_flagged`. Captured rather than printed straight through
@@ -414,6 +424,7 @@ function maintain() {
 # An empty capture (zinit not loaded) leaves zi_report empty and the summary line is skipped.
 function maintain::zi_audit() {
     local out=""
+    maintain::zinit_drain
     # --online here, but NOT on the pre-flight pass above: this is the reported audit, and
     # ver-stale is the one finding that cannot be seen from the filesystem alone. It costs
     # one GitHub request per PINNED gh-r plugin — normally zero, since nothing here is
@@ -443,26 +454,67 @@ function maintain::zinit_wipe() {
     (( $+functions[zi_audit] )) && { maintain::hdr "Verifying zinit ices"; maintain::zi_audit || failures+=("zinit audit") }
 }
 
-# Ask whether to escalate a failed per-plugin repair to the full wipe. Returns 0 for wipe.
+# Delete each plugin's dir AND every completion link pointing into it, then reinstall them
+# all in one fresh shell. The links are the half that is easy to miss: zinit skips linking
+# any _name already present in the completions dir, dangling or not (already_symlinked in
+# .zinit-install-completions is a plain glob), so deleting the dir alone leaves a dead link
+# that blocks its own replacement forever — zi-audit's completion-missing + completion-broken
+# pair, which no number of dir-only reinstalls repairs. Disabled links (`zi cdisable`, no
+# leading _) are left alone: that state is deliberate.
+function maintain::zinit_reinstall() {
+    zmodload -F zsh/stat b:zstat
+    local zp zdir link
+    local -a target
+    for zp in "${@}"; do
+        zdir="${ZINIT[PLUGINS_DIR]}/${zp//\//---}"
+        # Only ever delete strictly beneath a known PLUGINS_DIR.
+        [[ -n "${zp}" && -n "${ZINIT[PLUGINS_DIR]}" && "${zdir}" == "${ZINIT[PLUGINS_DIR]}"/?* ]] || continue
+        print -r -- "    ${zp}"
+        # zinit links to the :A-resolved file, so match the resolved dir too.
+        for link in "${ZINIT[COMPLETIONS_DIR]}"/_*(N@); do
+            zstat -A target -L +link -- "${link}" 2>/dev/null || continue
+            [[ "${target[1]}" == ("${zdir}"|"${zdir:A}")/* ]] && rm -f -- "${link}"
+        done
+        [[ -d "${zdir}" ]] && rm -rf -- "${zdir}"
+    done
+    # Turbo (wait'…') never fires in a script, so the reinstall needs a fresh shell plus a
+    # scheduler burst — the same primitive zinit-reset uses.
+    zsh -ic '@zinit-scheduler burst' >/dev/null 2>&1
+    rehash
+}
+
+# Ask how to handle plugins a per-plugin repair left broken; the answer lands in REPLY:
+#   plugins  — delete just those plugins (dirs + completion links) and reinstall. Default.
+#   wipe     — the full zinit-reset.
+#   continue — leave them; also what a missing tty gets.
 # Talks to /dev/tty in BOTH directions: stdout here is the tee | awk pipe, and awk emits
 # whole lines only, so a prompt with no trailing newline would sit invisible until answered.
 # No tty on stdin (cron, CI, `maintain </dev/null`) means no prompt and continue.
 function maintain::zinit_offer_wipe() {
-    [[ -t 0 ]] && { : >/dev/tty } 2>/dev/null || return 1
+    REPLY="continue"
+    [[ -t 0 ]] && { : >/dev/tty } 2>/dev/null || return 0
     local reply=""
     {
         print -r -- "  ${#} plugin(s) still broken after reinstalling them individually:"
         print -rl -- "      • "${^@}
-        print -rn -- "▸ [w]ipe ALL zinit plugins + reinstall (~400MB), or [C]ontinue? "
+        print -rn -- "▸ [D]elete just these + reinstall, [w]ipe ALL zinit plugins + reinstall (~400MB), or [c]ontinue? "
     } >/dev/tty
     read -r reply </dev/tty
     # Echo the decision on stdout so it lands in the log, which never saw the prompt.
-    if [[ "${reply}" == [wW]* ]]; then
-        print -r -- "  → full wipe (still broken: ${(j:, :)@})"
-        return 0
-    fi
-    print -r -- "  → continuing without a wipe (still broken: ${(j:, :)@})"
-    return 1
+    case "${reply}" in
+        ([wW]*)
+            REPLY="wipe"
+            print -r -- "  → full wipe (still broken: ${(j:, :)@})"
+            ;;
+        ([cC]*)
+            print -r -- "  → continuing without a wipe (still broken: ${(j:, :)@})"
+            ;;
+        (*)
+            REPLY="plugins"
+            print -r -- "  → deleting + reinstalling just: ${(j:, :)@}"
+            ;;
+    esac
+    return 0
 }
 
 # mise never garbage-collects on its own: every `mise up` leaves the previous version
@@ -1000,24 +1052,14 @@ function maintain::run() {
 
         if (( $+functions[zi_audit] )); then
             maintain::hdr "Auditing zinit ices against .zshrc"
+            maintain::zinit_drain
             local -a zi_drifted
             zi_drifted=( ${(f)"$(zi_audit --ids 2>/dev/null)"} )
             zi_drifted=( ${zi_drifted:#} )
 
             if (( ${#zi_drifted} )); then
                 print -r -- "  ${#zi_drifted} plugin(s) drifted from .zshrc — reinstalling:"
-                local zp zdir
-                for zp in "${zi_drifted[@]}"; do
-                    zdir="${ZINIT[PLUGINS_DIR]}/${zp//\//---}"
-                    # Only ever delete a real directory strictly beneath PLUGINS_DIR.
-                    [[ -n "${zp}" && -d "${zdir}" && "${zdir}" == "${ZINIT[PLUGINS_DIR]}"/?* ]] || continue
-                    print -r -- "    ${zp}"
-                    rm -rf -- "${zdir}"
-                done
-                # Turbo (wait'…') never fires in a script, so the reinstall needs a fresh
-                # shell plus a scheduler burst — the same primitive zinit-reset uses.
-                zsh -ic '@zinit-scheduler burst' >/dev/null 2>&1
-                rehash
+                maintain::zinit_reinstall "${zi_drifted[@]}"
                 if ! maintain::zi_audit; then
                     # Re-ask --ids: only drift a wipe can repair justifies offering one. A ✗
                     # outside that list is a .zshrc declaration bug (unknown-ice,
@@ -1027,8 +1069,18 @@ function maintain::run() {
                     zi_still=( ${zi_still:#} )
                     zi_decl=( ${zi_flagged:|zi_still} )
                     (( ${#zi_decl} )) && print -r -- "  fix in .zshrc, a wipe will not help: ${(j:, :)zi_decl}"
-                    if (( ${#zi_still} )) && maintain::zinit_offer_wipe "${zi_still[@]}"; then
-                        maintain::zinit_wipe
+                    if (( ${#zi_still} )); then
+                        maintain::zinit_offer_wipe "${zi_still[@]}"
+                        case "${REPLY}" in
+                            (plugins)
+                                # One retry, no second prompt: still broken after this means
+                                # the cause is not on disk, and a summary line says so.
+                                maintain::zinit_reinstall "${zi_still[@]}"
+                                maintain::zi_audit || failures+=("zinit drift unresolved")
+                                ;;
+                            (wipe) maintain::zinit_wipe ;;
+                            (*)    failures+=("zinit drift unresolved") ;;
+                        esac
                     else
                         failures+=("zinit drift unresolved")
                     fi
