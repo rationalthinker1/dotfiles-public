@@ -32,6 +32,9 @@
 # Platform awareness (HOST_OS / HOST_LOCATION / IS_DEVCONTAINER from detect_os.sh):
 #   - Runs on WSL, Ubuntu desktop, Ubuntu server, and macOS; brew steps cover Linuxbrew.
 #   - Root shells work without sudo (sudo_cmd shim expands to nothing when EUID==0).
+#   - Termux counts as root-equivalent: the user owns $PREFIX, so the apt branch runs
+#     unprivileged against Termux's own apt (pkg is a wrapper over it); mise is skipped
+#     (.zshrc does not activate it there) and the bootstrap is termux/install.sh.
 #   - Devcontainers skip OS-level steps (apt/snap/flatpak/fstrim/journal/trash/…).
 #   - Servers get a read-only status report: reboot-required, failed systemd units,
 #     services needing restart, journal error count. It never changes state.
@@ -368,6 +371,7 @@ function maintain() {
     # all mean skip. --install forces the step on and suppresses the prompt, so scripted runs
     # stay fully unattended.
     local install_script="${ZDOTDIR:A:h:h}/install.sh"
+    [[ "${HOST_OS}" == "termux" ]] && install_script="${ZDOTDIR:A:h:h}/termux/install.sh"
     if (( ! run_install )) && [[ -t 0 && -r "${install_script}" ]]; then
         local reply=""
         read -r "reply?▸ Run dotfiles install.sh as part of this run? [y/N] "
@@ -783,6 +787,11 @@ function maintain::run() {
     local -a sudo_cmd
     (( EUID == 0 )) && sudo_cmd=() || sudo_cmd=(sudo)
     local can_sudo=$(( $+commands[sudo] || EUID == 0 ))
+    # Termux: everything maintain touches lives in $PREFIX, which the user owns — treat it
+    # as root. Forced even when a `sudo` exists there (the rooted-device package), because
+    # running Termux's apt as Android root breaks file ownership inside $PREFIX.
+    local -i is_termux=0
+    [[ "${HOST_OS}" == "termux" ]] && { is_termux=1; sudo_cmd=(); can_sudo=1 }
     local in_container="${IS_DEVCONTAINER:-false}"
 
     # Prime sudo up front so any password prompt lands now — not ten minutes into what
@@ -798,7 +807,7 @@ function maintain::run() {
     # attempts and "3 incorrect password attempts" before continuing. The probe below asks
     # about an actual command, which is the thing maintain actually needs.
     local sudo_keepalive_pid=""
-    if (( $+commands[sudo] && EUID != 0 )); then
+    if (( $+commands[sudo] && EUID != 0 && ! is_termux )); then
         if sudo -n true 2>/dev/null; then
             # Already free — NOPASSWD, or a timestamp still warm from a moment ago. Nothing
             # to prompt for, and nothing worth keeping alive under NOPASSWD.
@@ -860,7 +869,7 @@ function maintain::run() {
         # Apple's recommended (security/point-release) set.
         (( can_sudo )) && { maintain::hdr "macOS system updates (softwareupdate, recommended only)"; maintain::step "softwareupdate" 30m "${sudo_cmd[@]}" softwareupdate -ir }
     elif [[ "${in_container}" != "true" ]] && (( $+commands[apt-get] && can_sudo )); then
-        maintain::hdr "Apt (update, upgrade, autoremove, clean)"
+        maintain::hdr "Apt${${is_termux:#0}:+ (Termux)} (update, upgrade, autoremove, clean)"
         # A debconf dialog here is unrecoverable, not merely awkward: maintain::run's
         # stdout is a PIPE (the tee wrapper), so whiptail's cursor-positioning escapes
         # interleave with the log stream and paint an unusable screen, while stdin is
@@ -1099,7 +1108,7 @@ function maintain::run() {
 
     # Self-update only when mise is a standalone install (under $HOME). Package-manager
     # installs (brew/apt) can't self-update and would record a spurious failure.
-    if (( $+commands[mise] )); then
+    if (( $+commands[mise] && ! is_termux )); then
         maintain::hdr "Mise runtimes"
         maintain::step "mise" 30m mise upgrade
         [[ "${commands[mise]}" == "${HOME}"/* ]] && maintain::step "mise self-update" 10m mise self-update --yes
@@ -1702,7 +1711,7 @@ function maintain::run() {
 
     (( $+commands[tldr] )) && { maintain::hdr "Updating tldr pages"; maintain::step "tldr" 5m tldr --update }
 
-    (( $+commands[mise] )) && { maintain::hdr "mise (prune superseded tool versions)"; maintain::mise_prune || failures+=("mise prune") }
+    (( $+commands[mise] && ! is_termux )) && { maintain::hdr "mise (prune superseded tool versions)"; maintain::mise_prune || failures+=("mise prune") }
 
     # Nix store garbage collection (only when nix is installed)
     (( $+commands[nix-collect-garbage] )) && { maintain::hdr "Nix store garbage collection"; nix-collect-garbage -d || failures+=("nix gc") }
@@ -1880,7 +1889,7 @@ function maintain::run() {
     if [[ "${HOST_OS}" == "darwin" ]] && (( $+commands[brew] )); then
         brew doctor || print -r -- "    ⚠️ Homebrew doctor reported warnings."
     fi
-    (( $+commands[mise] )) && { mise doctor || print -r -- "    ⚠️ mise doctor reported issues." }
+    (( $+commands[mise] && ! is_termux )) && { mise doctor || print -r -- "    ⚠️ mise doctor reported issues." }
     (( $+commands[brew] + $+commands[mise] == 0 )) && print -r -- "    (no brew/mise on this host)"
 
     # Informational only: never recorded as a failure, since a shadowed command is a thing
