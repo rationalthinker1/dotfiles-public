@@ -206,8 +206,16 @@ setopt NO_HUP                     # Don't kill background jobs on shell exit
 setopt NO_CHECK_JOBS              # Don't warn about running jobs when exiting
 # e.g. "ls log*" → log1 log2 log10 (instead of log1 log10 log2)
 setopt NUMERIC_GLOB_SORT          # Sort globs numerically (file1, file2, file10 instead of file1, file10, file2)
-# e.g. "code *.jpg" also matches PHOTO.JPG and pic.Jpg
-setopt NO_CASE_GLOB               # Case-insensitive globbing (*.JPG matches *.jpg)
+# Globbing stays CASE-SENSITIVE (zsh's default) — deliberately no NO_CASE_GLOB. For a
+# one-off case-insensitive match use EXTENDED_GLOB's (#i): `ls (#i)*.jpg` matches PHOTO.JPG.
+# Tab completion is unaffected either way: its case-insensitivity is the matcher-list zstyle.
+#
+# NO_CASE_GLOB was set here once. It makes zsh readdir() EVERY path component of every
+# glob, and `emulate -L zsh` (what most plugins use) does not reset it, so it leaks into
+# their globs too. On Termux that was fatal: Android denies listing /data, so every absolute
+# glob under /data/data/com.termux matched nothing — the functions/*.zsh loop below sourced
+# no files (no maintain/update-all) and vcs_info found no backends ("configured unknown
+# backend: 'git'"). Elsewhere it was the same readdir cost on /mnt/c and network mounts.
 # e.g. "git show HEAD^" or "scp host:*.log ." passes the pattern through untouched
 unsetopt NOMATCH                  # Pass through unmatched globs literally instead of erroring (e.g. `git show HEAD^`, `scp host:*.log`)
 # SH_WORD_SPLIT is deliberately left OFF (zsh's default; it exists for sh/ksh emulation).
