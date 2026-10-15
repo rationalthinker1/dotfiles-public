@@ -1,0 +1,10 @@
+#!/data/data/com.termux/files/usr/bin/sh
+# Termux:Boot script — runs once when the phone boots (after Termux:Boot was opened once).
+# Copied to ~/.termux/boot by termux/install.sh.
+#
+# The wake lock keeps the CPU from sleeping, so sshd stays reachable with the screen off.
+# It costs battery; drop the line if you only ssh in while the phone is awake.
+termux-wake-lock
+# termux-services starts its runsvdir from a profile.d hook, so sourcing the profile is what
+# brings up every service enabled with `sv-enable` (install.sh enables sshd).
+. "${PREFIX}/etc/profile"

@@ -681,7 +681,9 @@ alias pnad="pnpm add -D"
 alias pr="pnpm remove"
 
 # Quick package.json operations
-alias pkg="vim package.json"
+# Not on Termux: there `pkg` IS the package manager, and this alias turned `pkg update`
+# into `vim package.json update`.
+[[ "${HOST_OS}" != "termux" ]] && alias pkg="vim package.json"
 alias pkgj="cat package.json | jq"  # Pretty print with jq
 
 # Git Aliases and functions

@@ -1512,7 +1512,10 @@ fi
 # ==============================================================================
 # mise - version manager for Node.js
 # ==============================================================================
-if (( $+commands[mise] )); then
+# Not on Termux: node/python come from `pkg` there, most of mise/config.toml has no bionic
+# build (npm@latest fails to even resolve, and mise re-warns on every prompt), and the
+# activate hook would shadow the working pkg binaries with shims that cannot run.
+if [[ "${HOST_OS}" != "termux" ]] && (( $+commands[mise] )); then
     eval "$(mise activate zsh)"
 
     # `mise activate` applies its PATH here at load, but zinit's turbo gh-r plugins prepend
@@ -1556,6 +1559,7 @@ for _fn_file in "${ZDOTDIR}/functions/"*.zsh(N); do
 done
 unset _fn_file
 source_if_exists "${ZDOTDIR}/hooks.zsh"
+[[ "${HOST_OS}" == "termux" ]] && source_if_exists "${ZDOTDIR}/termux.zsh"
 
 # Compile configuration files for faster loading
 function compile_if_needed() {
@@ -1571,6 +1575,7 @@ compile_if_needed "${ZDOTDIR}/.zshenv"
 compile_if_needed "${ZDOTDIR}/.zshrc"
 compile_if_needed "${ZDOTDIR}/aliases.zsh"
 compile_if_needed "${ZDOTDIR}/hooks.zsh"
+[[ "${HOST_OS}" == "termux" ]] && compile_if_needed "${ZDOTDIR}/termux.zsh"
 compile_if_needed "${ZDOTDIR}/.p10k.zsh"
 compile_if_needed "${ZDOTDIR}/local.zsh"
 

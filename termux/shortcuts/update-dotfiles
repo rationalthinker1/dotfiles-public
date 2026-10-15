@@ -1,0 +1,8 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# Termux:Widget shortcut — pull the dotfiles and re-run the Termux installer.
+# Copied (not linked) to ~/.shortcuts by termux/install.sh: Termux:Widget refuses scripts
+# whose real path is outside ~/.shortcuts. Edit here, then re-run install.sh.
+set -uo pipefail
+bash "${HOME}/.dotfiles/termux/install.sh"
+echo
+read -rp "Done — press Enter to close. "

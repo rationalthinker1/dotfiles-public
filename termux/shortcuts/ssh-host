@@ -1,0 +1,22 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# Termux:Widget shortcut — pick a Host from ~/.ssh/config with fzf and connect.
+# mosh first: it survives Wi-Fi <-> mobile-data switches and the screen sleeping. Falls back
+# to plain ssh when the host has no mosh-server (mosh exits non-zero before connecting).
+# No hostnames live in this file — the list comes from ~/.ssh/config on the phone.
+set -uo pipefail
+
+config="${HOME}/.ssh/config"
+if [[ ! -r "${config}" ]]; then
+    read -rp "No ${config} — add Host entries first. Enter to close. "
+    exit 1
+fi
+
+# Host lines, minus wildcard patterns (Host * / Host *.example) which are not targets.
+host="$(awk 'tolower($1) == "host" { for (i = 2; i <= NF; i++) if ($i !~ /[*?!]/) print $i }' "${config}" \
+    | sort -u | fzf --prompt='ssh> ' --height=100%)" || exit 0
+
+if command -v mosh &>/dev/null; then
+    mosh "${host}" || ssh "${host}"
+else
+    ssh "${host}"
+fi

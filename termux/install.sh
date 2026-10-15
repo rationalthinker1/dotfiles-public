@@ -17,7 +17,6 @@
 #
 # OPTIONS:
 #   --no-font   skip the Nerd Font (installed by default; the other fonts/ never are)
-#   --mise      also run `mise install` (compiles some tools from source; slow on a phone)
 # ==============================================================================
 
 set -euo pipefail
@@ -28,12 +27,10 @@ readonly BACKUP_DIR="${DOTFILES_ROOT}/backup"
 readonly XDG_CONFIG_HOME="${HOME}/.config"
 
 want_font=true
-want_mise=false
 while [[ $# -gt 0 ]]; do
     case "${1}" in
         --no-font) want_font=false ;;
-        --mise)    want_mise=true ;;
-        -h|--help) sed -n '2,21p' "${0}"; exit 0 ;;
+        -h|--help) sed -n '2,20p' "${0}"; exit 0 ;;
         *) echo "Unknown option: ${1}" >&2; exit 1 ;;
     esac
     shift
@@ -59,6 +56,8 @@ readonly -a TERMUX_PACKAGES=(
     # base
     git zsh tmux curl wget rsync openssh less man which procps tree file
     unzip zip 7zip make ncurses-utils termux-api termux-tools
+    # remote: mosh survives network switches; termux-services runs sshd (boot/ starts it)
+    mosh termux-services
     # editors
     vim neovim
     # CLI tools .zshrc installs from GitHub releases elsewhere
@@ -67,7 +66,8 @@ readonly -a TERMUX_PACKAGES=(
     sd ast-grep xh ouch gping hexyl grex pastel dua bottom procs doggo
     cloudflared jless jnv ripgrep-all
     # runtimes
-    python nodejs-lts uv mise
+    # No mise: .zshrc skips it on Termux — pkg already supplies these, built for bionic.
+    python nodejs-lts uv
     # secrets
     gnupg pass
 )
@@ -126,7 +126,6 @@ declare -A LINKS=(
     [config/nvim]="${XDG_CONFIG_HOME}/nvim"
     [config/broot]="${XDG_CONFIG_HOME}/broot"
     [config/ranger]="${XDG_CONFIG_HOME}/ranger"
-    [config/mise/config.toml]="${XDG_CONFIG_HOME}/mise/config.toml"
     [config/gh/config.yml]="${XDG_CONFIG_HOME}/gh/config.yml"
     [config/git/ignore]="${XDG_CONFIG_HOME}/git/ignore"
     [config/git/aliases.gitconfig]="${XDG_CONFIG_HOME}/git/aliases.gitconfig"
@@ -217,12 +216,41 @@ fi
 command -v termux-reload-settings &>/dev/null && termux-reload-settings || true
 
 #---------------------------------------------------------------------------------------
-# Optional: mise
+# Termux:Widget shortcuts + Termux:Boot scripts
 #---------------------------------------------------------------------------------------
-if [[ "${want_mise}" == true ]]; then
-    hdr "mise install"
-    mise install || echo "⚠ mise install had failures — tools from pkg above still work"
+# COPIED, unlike everything else here: Termux:Widget refuses a script whose real path is
+# outside ~/.shortcuts, so a symlink into the repo never shows up; boot/ gets the same
+# treatment so both behave alike. Only files that differ are rewritten, and nothing already
+# in those dirs that the repo does not ship is touched.
+hdr "Widget shortcuts + boot scripts"
+function sync_scripts() {
+    local src_dir="${1}" dest_dir="${2}" f dest
+    [[ -d "${src_dir}" ]] || return 0
+    mkdir -p "${dest_dir}"
+    for f in "${src_dir}"/*; do
+        [[ -f "${f}" ]] || continue
+        dest="${dest_dir}/$(basename "${f}")"
+        if cmp -s "${f}" "${dest}"; then
+            continue
+        fi
+        install -m 700 "${f}" "${dest}"
+        echo "  ✓ ${dest}"
+    done
+}
+sync_scripts "${DOTFILES_ROOT}/termux/shortcuts" "${HOME}/.shortcuts"
+sync_scripts "${DOTFILES_ROOT}/termux/boot" "${HOME}/.termux/boot"
+echo "  (need the Termux:Widget and Termux:Boot apps; open Termux:Boot once to arm it)"
+
+# sshd as a termux-services service, so the boot script brings it up. sv-enable only
+# persists the setting; it reports an error until the service daemon runs (next session).
+if command -v sv-enable &>/dev/null; then
+    if [[ -e "${PREFIX}/var/service/sshd/down" ]]; then
+        sv-enable sshd 2>/dev/null || true
+        [[ -e "${PREFIX}/var/service/sshd/down" ]] \
+            || echo "  ✓ sshd enabled (port 8022) — set a password with \`passwd\` or add ~/.ssh/authorized_keys"
+    fi
 fi
+
 
 #---------------------------------------------------------------------------------------
 # Plugins + default shell
