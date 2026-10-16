@@ -261,8 +261,10 @@ fi
 #---------------------------------------------------------------------------------------
 hdr "Zinit plugins"
 # Turbo plugins only load from an idle prompt, so force the whole queue through once here
-# rather than leaving the first interactive start to do it.
-zsh -ic '@zinit-scheduler burst' </dev/null >/dev/null 2>&1 \
+# rather than leaving the first interactive start to do it. TERM default: without one a
+# burst dies after its first install (zinit bug, see maintain::zinit_burst_child) — and this
+# script is exactly what gets run over ssh or from the update-dotfiles widget.
+TERM="${TERM:-xterm-256color}" zsh -ic '@zinit-scheduler burst' </dev/null >/dev/null 2>&1 \
     && echo "✓ Plugins installed" \
     || echo "⚠ Some plugins failed — open zsh and run zi-audit"
 

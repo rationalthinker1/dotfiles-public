@@ -415,9 +415,28 @@ function maintain() {
 # (turbo)" and skipped their runtime checks, and no amount of waiting changed that. Safe to
 # call repeatedly (a drained queue is a no-op), and it only loads into maintain::run's
 # subshell, never the calling shell. Quiet: plugin atload chatter is not audit output.
+#
+# Without a $TERM (cron, `ssh host maintain`), a burst that INSTALLS anything kills the shell
+# running it — see maintain::zinit_burst_child. zinit fixes its colours when it loads, so
+# exporting TERM here would be too late for this process; instead let a child with a TERM do
+# any installing first, after which the in-process burst only loads and is safe.
 function maintain::zinit_drain() {
-    (( $+functions[@zinit-scheduler] )) && @zinit-scheduler burst >/dev/null 2>&1
+    (( $+functions[@zinit-scheduler] )) || return 0
+    [[ -n "${TERM}" ]] || maintain::zinit_burst_child
+    @zinit-scheduler burst >/dev/null 2>&1
     return 0
+}
+
+# Run the turbo queue in a fresh interactive shell — installs whatever is missing. Turbo
+# (wait'…') never fires in a script, so a reinstall needs this; zinit-reset does the same.
+#
+# The TERM default is load-bearing. With no $TERM, zinit's colour codes come out empty, and
+# .zinit-forget-completion then runs `print -Prn "-value-,CMAKE_GENERATOR,-default-%f%b"`
+# (a compdump key, no `--`): print takes -v as "assign to a variable", "alue-,…" is not an
+# identifier, and that fatal error ends the shell straight after the FIRST plugin install —
+# one plugin per run, the rest never installed. Seen over `ssh` into Termux.
+function maintain::zinit_burst_child() {
+    TERM="${TERM:-xterm-256color}" zsh -ic '@zinit-scheduler burst' </dev/null >/dev/null 2>&1
 }
 
 # Run zi-audit, echo its output verbatim, and keep two things for the closing summary: the
@@ -481,9 +500,7 @@ function maintain::zinit_reinstall() {
         done
         [[ -d "${zdir}" ]] && rm -rf -- "${zdir}"
     done
-    # Turbo (wait'…') never fires in a script, so the reinstall needs a fresh shell plus a
-    # scheduler burst — the same primitive zinit-reset uses.
-    zsh -ic '@zinit-scheduler burst' >/dev/null 2>&1
+    maintain::zinit_burst_child
     rehash
 }
 

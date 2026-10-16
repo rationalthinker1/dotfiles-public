@@ -630,12 +630,12 @@ function _termux_init() {
 # 📁 BD - Quickly go back to a parent directory by name
 # Usage: `bd src` - jump back to /home/user/projects/src from deep subdirectory
 # Example: In /home/user/projects/src/components/ui → `bd projects` → /home/user/projects
-zi ice wait'2' lucid as'program' pick'bd' mv'bd -> bd'
+zi ice wait'2' lucid as'program' pick'bd'
 zi light vigneshwaranr/bd
 
 # 📁 Rename - Perl-based batch file renamer with regex support
 # Usage: `rename 's/\.txt$/.md/' *.txt` - rename all .txt files to .md
-zi ice wait'2' lucid as'program' pick'rename' mv'rename -> rename'
+zi ice wait'2' lucid as'program' pick'rename'
 zi light ap/rename
 
 # 📊 Eza - Modern ls replacement with colors, icons, and git integration

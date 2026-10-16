@@ -120,9 +120,12 @@ fi
 # Turbo (wait'…') defers loading to precmd, which never fires in a script.
 # @zinit-scheduler burst marks every pending task as timed-out and runs them
 # immediately — the supported way to drive installs non-interactively.
+# TERM default: without one, zinit's empty colour codes turn a `print -Prn` inside
+# .zinit-forget-completion into a fatal "not an identifier" that kills the shell after the
+# first install (see maintain::zinit_burst_child) — cron, ssh, anything without a tty.
 print -r -- "Wipe complete. Reinstalling (turbo burst; this downloads a lot)…"
 print -r -- ""
-zsh -ic '@zinit-scheduler burst'
+TERM="${TERM:-xterm-256color}" zsh -ic '@zinit-scheduler burst'
 
 print -r -- ""
 print -r -- "Done. New size: $(du -sh -- "${zinit_home}" 2>/dev/null | cut -f1)"
