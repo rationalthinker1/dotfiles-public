@@ -1490,7 +1490,7 @@ source_if_exists "${BUN_INSTALL}/_bun"
 # 🐱 Kitty terminal config + completions
 if (( $+commands[kitty] )); then
     export KITTY_CONFIG_DIRECTORY="${XDG_CONFIG_HOME}/kitty"
-    
+
     # Cache kitty completion (regenerate only when kitty binary changes)
     typeset kitty_comp="${ZSH_CACHE_DIR}/kitty_completion.zsh"
     if [[ ! -f "${kitty_comp}" ]] || [[ "${commands[kitty]}" -nt "${kitty_comp}" ]]; then
