@@ -249,7 +249,10 @@ echo "  (need the Termux:Widget and Termux:Boot apps; open Termux:Boot once to a
 # persists the setting; it reports an error until the service daemon runs (next session).
 if command -v sv-enable &>/dev/null; then
     if [[ -e "${PREFIX}/var/service/sshd/down" ]]; then
-        sv-enable sshd 2>/dev/null || true
+        # SVDIR explicitly: termux-services exports it only from profile.d, i.e. in LOGIN
+        # shells. Without it sv falls back to /var/service and fails with "unable to change
+        # to service directory" — which is how a first install left sshd disabled.
+        SVDIR="${SVDIR:-${PREFIX}/var/service}" sv-enable sshd 2>/dev/null || true
         [[ -e "${PREFIX}/var/service/sshd/down" ]] \
             || echo "  ✓ sshd enabled (port 8022) — set a password with \`passwd\` or add ~/.ssh/authorized_keys"
     fi
@@ -277,4 +280,13 @@ else
 fi
 
 hdr "Done"
-echo "Optional: termux-setup-storage   (expose shared storage as ~/storage)"
+# Shared storage. Without "All files access" Android's scoped storage lets Termux LIST
+# folders but see none of the files other apps made (DCIM showed 10 dirs, 0 files), so
+# `rm -rf` on a download fails with "Directory not empty". The Google Play build declares
+# MANAGE_EXTERNAL_STORAGE but termux-setup-storage alone never grants it; once it is on,
+# the app builds ~/storage by itself. The settings screen must be opened from the
+# foreground app — Android blocks it when launched over ssh.
+if [[ ! -d "${HOME}/storage" ]]; then
+    echo "Optional, for Downloads/DCIM/…: grant All files access, then ~/storage appears:"
+    echo "  am start -a android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION -d package:com.termux"
+fi

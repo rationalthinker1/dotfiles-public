@@ -1220,15 +1220,21 @@ function sa::audit_storage() {
     # Only real block devices. WSL alone mounts a dozen pseudo-filesystems that each report
     # the same meaningless 1%, and a report padded with eleven identical ✓ lines is one
     # nobody reads to the end of.
+    #
+    # Termux: only the data partition under $HOME. Every /apex, /vendor, /odm… mount there is
+    # a read-only Android system image built with its inodes nearly all used (one run flagged
+    # 21 of them at 85-100%) — nothing the user can or should act on.
     local line fs pct mount
     local -i checked=0
+    local -a df_paths=()
+    [[ "${HOST_OS}" == "termux" ]] && df_paths=( "${HOME}" )
     while IFS= read -r line; do
         fs="${${(z)line}[1]}"; pct="${${(z)line}[5]}"; mount="${${(z)line}[6]}"
         [[ "${fs}" == /dev/* ]] || continue
         [[ "${pct%\%}" == <-> ]] || continue
         (( checked++ ))
         (( ${pct%\%} >= 85 )) && { sa::warn "inodes ${pct} used on ${mount}"; sa::fix "find <path> -xdev -type f | wc -l   # locate the small-file sprawl" }
-    done < <(command df -iP 2>/dev/null | tail -n +2)
+    done < <(command df -iP "${df_paths[@]}" 2>/dev/null | tail -n +2)
     (( checked )) && sa::ok "inode usage healthy on ${checked} filesystem(s)"
 
     # fstab entries whose device is gone: the mount silently does not happen at boot, and

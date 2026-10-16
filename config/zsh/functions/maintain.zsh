@@ -792,7 +792,14 @@ function maintain::run() {
     # shell), which drops the summary line; zi_flagged is empty on a clean audit.
     local zi_report=""
     local -a zi_flagged
-    local initial_df="$(command df -h / | awk 'NR==2 {print $4}')"
+    # Which filesystems the disk report covers. Empty = all of them. Termux: `/` and every
+    # /apex, /vendor, /odm… mount are read-only Android system images, ~100% full BY DESIGN
+    # (a first run reported 50 "full" filesystems and `Storage Available: 0 ➔ 0`). What the
+    # user can actually fill is the data partition under $HOME, plus shared storage once
+    # termux-setup-storage has granted it.
+    local -a df_paths=()
+    [[ "${HOST_OS}" == "termux" ]] && df_paths=( "${HOME}" /storage/emulated/0(N) )
+    local initial_df="$(command df -h "${df_paths[1]:-/}" | awk 'NR==2 {print $4}')"
 
     print -r -- "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     print -r -- "          🚀 Starting System Maintenance          "
@@ -2246,7 +2253,7 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
     # list the biggest consumers under $HOME with the already-installed dust. Pseudo-filesystems
     # (tmpfs/overlay/squashfs) are excluded so containers, RAM disks, and snaps don't add noise.
     maintain::hdr "Disk usage"
-    command df -hP 2>/dev/null | awk '
+    command df -hP "${df_paths[@]}" 2>/dev/null | awk '
         NR>1 && $1 !~ /tmpfs|devtmpfs|overlay|udev|squashfs/ {
             flag = ($5+0 >= 90) ? "⚠️" : "✓"
             printf "    %s %-20s %4s used, %s free\n", flag, $6, $5, $4
@@ -2255,7 +2262,7 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
     # itself. Re-derive the over-threshold set here so a filesystem at 96% shows up in the
     # closing summary instead of only in the scrollback — which is precisely how a remote
     # box in this fleet reached 3.1G free without anyone noticing.
-    local -a df_full=( ${(f)"$(command df -hP 2>/dev/null | awk '
+    local -a df_full=( ${(f)"$(command df -hP "${df_paths[@]}" 2>/dev/null | awk '
         NR>1 && $1 !~ /tmpfs|devtmpfs|overlay|udev|squashfs/ && $5+0 >= 90 { printf "%s at %s (%s free)\n", $6, $5, $4 }')"} )
     df_full=( ${df_full:#} )
     local df_line
@@ -2318,7 +2325,7 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
         sudo_keepalive_pid=""
     fi
 
-    local final_df="$(command df -h / | awk 'NR==2 {print $4}')"
+    local final_df="$(command df -h "${df_paths[1]:-/}" | awk 'NR==2 {print $4}')"
     local elapsed=$(( SECONDS - start ))
 
     print -r -- $'\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -2327,8 +2334,10 @@ print(f"standard={standard} esm-apps={apps} esm-infra={infra} third-party={third
     print -r -- "   Storage Available: ${initial_df} ➔ ${final_df}"
     if [[ -n "${zi_report}" ]]; then
         print -r -- "   Zinit plugins:     ${zi_report}"
-        local zf
-        for zf in "${zi_flagged[@]}"; do print -r -- "        • ${zf}"; done
+        # A fresh name: `local zf` here re-declared the recompile loop's zf in the same scope,
+        # and a repeated `local` PRINTS the existing value — the stray "zf=…termux.zsh.zwc".
+        local flagged_id
+        for flagged_id in "${zi_flagged[@]}"; do print -r -- "        • ${flagged_id}"; done
     fi
     if (( ${#failures} )); then
         print -r -- "   ✗ ${#failures} step(s) failed:"

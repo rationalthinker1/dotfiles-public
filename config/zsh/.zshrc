@@ -704,7 +704,11 @@ zi load ast-grep/ast-grep
 #
 # Roughly 45 packages, ~35s on a fresh install and the same on every `zi update`; wait'2'
 # lucid keeps all of it off the startup path.
-if (( $+commands[npm] )); then
+#
+# Not on Termux: tree-sitter-cli refuses the platform outright ("Cannot install
+# tree-sitter-cli for platform android, architecture arm64"), so every `zi update` there
+# failed the atpull hook. The same goes for intelephense below.
+if [[ "${HOST_OS}" != "termux" ]] && (( $+commands[npm] )); then
     zi ice wait'2' lucid id-as'graft' as'null' nocompile \
         atclone'npm install --global --prefix "${ZPFX}" @nanonets/graft && npm_native_rebuild "${ZPFX}"' \
         atpull'%atclone' run-atpull
@@ -722,7 +726,8 @@ fi
 # Same shadow caveat as graft: a stray `npm i -g intelephense` in ~/.local/share/npm/bin
 # sits earlier on PATH and wins silently — maintain's path-dupe audit catches it, so keep
 # the global copy uninstalled rather than allowlisting the dupe.
-if (( $+commands[npm] )); then
+# Not on Termux: its protobufjs postinstall crashes in node's module loader there.
+if [[ "${HOST_OS}" != "termux" ]] && (( $+commands[npm] )); then
     zi ice wait'2' lucid id-as'intelephense' as'null' nocompile \
         atclone'npm install --global --prefix "${ZPFX}" intelephense' \
         atpull'%atclone' run-atpull
