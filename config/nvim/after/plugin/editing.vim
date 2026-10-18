@@ -12,6 +12,17 @@
 xmap ga <Plug>(EasyAlign)
 nmap ga <Plug>(EasyAlign)
 
+"--- vim-suda: replaces eunuch's :SudoWrite / :SudoEdit --------------------
+" eunuch's versions cannot prompt for the sudo password under Neovim (see
+" lua/plugins/init.lua). Keep the old names, routed through suda.
+if exists('g:loaded_eunuch') && exists(':SudaWrite') == 2
+  silent! delcommand SudoWrite
+  silent! delcommand SudoEdit
+  command! -bar SudoWrite SudaWrite
+  command! -bar -nargs=? -complete=file SudoEdit
+        \ execute 'edit' fnameescape('suda://' . fnamemodify(empty(<q-args>) ? expand('%') : <q-args>, ':p'))
+endif
+
 "--- vim-better-whitespace -------------------------------------------------
 nnoremap <silent> <leader>$ :StripWhitespace<CR>
 

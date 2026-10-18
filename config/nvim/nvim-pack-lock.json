@@ -231,6 +231,10 @@
       "rev": "ededcf7581962ee616cadab360d5966f3307f11a",
       "src": "https://github.com/honza/vim-snippets"
     },
+    "vim-suda": {
+      "rev": "c492741b4679b3cdd4d9e34138209784e061d916",
+      "src": "https://github.com/lambdalisue/vim-suda"
+    },
     "vim-surround": {
       "rev": "3d188ed2113431cf8dac77be61b842acb64433d9",
       "src": "https://github.com/tpope/vim-surround"

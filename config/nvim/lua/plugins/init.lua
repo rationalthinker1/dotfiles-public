@@ -80,7 +80,11 @@ vim.pack.add({
   gh('tpope/vim-surround'),
   gh('tpope/vim-repeat'),
   gh('tpope/vim-abolish'),
-  gh('tpope/vim-eunuch'),
+  gh('tpope/vim-eunuch'),              -- :Rename :Delete :Move :Chmod :Mkdir
+  -- eunuch's :SudoWrite runs sudo through :!, which has no tty in Neovim, so
+  -- the password prompt cannot be answered. suda prompts inside Neovim; the
+  -- eunuch names are forwarded to it in after/plugin/editing.vim.
+  gh('lambdalisue/vim-suda'),
   gh('tpope/vim-sleuth'),
   gh('tpope/vim-fugitive'),
   gh('junegunn/vim-easy-align'),
