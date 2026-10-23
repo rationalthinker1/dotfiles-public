@@ -1,0 +1,51 @@
+#compdef dc dcp dce dexec drexec dceb dcebr
+# The docker compose wrappers in aliases.zsh.
+#
+# dc, dcp and dce are thin prefixes of `docker compose`, `docker compose ps` and
+# `docker compose exec`, so they are completed by docker's OWN completion rather than a
+# copy of it: the command line is rewritten to the docker compose form it stands for and
+# handed to _docker. That works because the _docker docker ships is cobra-generated and
+# just forwards the words to `docker __complete`, which knows the compose plugin's
+# subcommands, flags and service names. An older contrib _docker without compose support
+# simply offers nothing here, which is no worse than before.
+#
+# dexec, drexec, dceb and dcebr take a compose SERVICE name, not a container, and
+# resolve it with `dc ps`/`dc exec`, which only succeed for a running service. So the
+# candidates are the running services, from `docker compose ps --services`. That is
+# called directly rather than through dc(): dc only adds IP_ADDRESS for the .yml to
+# interpolate, and an unset one costs a warning (discarded), not the service list.
+
+function _dc_running_services() {
+    local -a expl services
+    services=( ${(f)"$(command docker compose ps --services 2>/dev/null)"} )
+    _wanted services expl 'running compose service' compadd -a services
+}
+
+function _dc() {
+    (( $+commands[docker] )) || return 1
+
+    local -a prefix
+    case "${service}" in
+        dc)  prefix=(docker compose) ;;
+        dcp) prefix=(docker compose ps) ;;
+        dce) prefix=(docker compose exec) ;;
+        *)
+            # dexec/drexec: <service> <command…>; dceb/dcebr: <service> [script].
+            # What runs inside the container cannot be completed from out here.
+            if (( CURRENT == 2 )); then
+                _dc_running_services
+            else
+                _message 'command to run in the container'
+            fi
+            return
+            ;;
+    esac
+
+    (( $+functions[_docker] )) || return 1
+    # words[1] is the wrapper's own name; everything after it is passed through.
+    words=( "${prefix[@]}" "${(@)words[2,-1]}" )
+    (( CURRENT += ${#prefix} - 1 ))
+    _docker
+}
+
+_dc "$@"

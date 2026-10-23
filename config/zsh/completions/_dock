@@ -1,0 +1,18 @@
+#compdef dock
+# dock — the manual Docker lifecycle in functions/dock.zsh.
+#
+# One positional subcommand and nothing after it; the list mirrors the case arms in
+# dock(). help is offered too, but not its -h/--help spellings, which do the same thing.
+
+function _dock() {
+    local -a subcommands=(
+        'up:start the daemon, then reset every restart policy'
+        'down:stop running containers, then the daemon and its socket'
+        'status:daemon state, running containers, restart-policy drift'
+        'unpin:reset every container to restart=no'
+        'help:show usage'
+    )
+    (( CURRENT == 2 )) && _describe -t subcommands 'dock subcommand' subcommands
+}
+
+_dock "$@"

@@ -1,0 +1,26 @@
+#compdef ref
+# ref — the cheat-sheet viewer in functions/ref.zsh.
+#
+# Topics are the *.md files in ${ZDOTDIR}/references, globbed at completion time so a
+# newly added sheet is offered without regenerating anything. `ref -e` also accepts a
+# topic that does not exist yet (it creates the file), but only existing ones can be
+# offered, so a new name is simply typed out.
+
+function _ref_topics() {
+    local -a expl topics
+    # :t:r — the basename without .md, which is exactly what ref() appends .md to.
+    topics=( "${ZDOTDIR}"/references/*.md(N:t:r) )
+    _wanted topics expl 'reference topic' compadd -a topics
+}
+
+function _ref() {
+    # No -s: ref takes the multi-letter single-dash -ls, which option stacking would
+    # parse as -l -s.
+    _arguments \
+        '(- 1)'{-h,--help}'[show help]' \
+        '(- 1)'{-ls,--list}'[list available topics]' \
+        '(-h --help -ls --list)-e[open the topic in $EDITOR]' \
+        '1:reference topic:_ref_topics'
+}
+
+_ref "$@"
