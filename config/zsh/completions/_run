@@ -1,0 +1,51 @@
+#compdef run
+# run — the package-manager-agnostic script runner defined in aliases.zsh.
+#
+# Completes the "scripts" keys of ./package.json, with each script's command as its
+# description. Only the current directory is read, matching run() itself, which also
+# looks only at ./package.json and the lockfiles beside it.
+#
+# The JSON is parsed by node, falling back to bun, and NOT by jq: jq is not provisioned
+# by install.sh or mise, whereas node is in config/mise/config.toml on every machine and
+# bun is what a bun-only project has instead. A hand-rolled zsh parse was rejected: a
+# `}` or escaped quote inside a script's command string breaks any pattern-based split.
+
+function _run_scripts() {
+    [[ -f package.json ]] || return 1
+
+    local runtime
+    if (( $+commands[node] )); then
+        runtime="node"
+    elif (( $+commands[bun] )); then
+        runtime="bun"
+    else
+        return 1
+    fi
+
+    # Whitespace in a command is folded to single spaces so a multi-line script stays
+    # on one output line, and the tab separates key from command unambiguously.
+    local js='const s=JSON.parse(require("fs").readFileSync("package.json","utf8")).scripts||{};for(const[k,v]of Object.entries(s))console.log(k+"\t"+String(v).replace(/\s+/g," "))'
+
+    local -a scripts
+    local line
+    for line in ${(f)"$(command "${runtime}" -e "${js}" 2>/dev/null)"}; do
+        # _describe splits name from description on the first unescaped colon, and
+        # script names routinely contain one (build:prod), so escape them.
+        scripts+=("${${line%%$'\t'*}//:/\\:}:${line#*$'\t'}")
+    done
+
+    (( ${#scripts} )) || return 1
+    _describe -t scripts 'package.json script' scripts
+}
+
+function _run() {
+    # Past the script name, run() forwards everything to the package manager, so the
+    # remaining words are the script's own arguments; files are the useful default.
+    if (( CURRENT == 2 )); then
+        _run_scripts
+    else
+        _files
+    fi
+}
+
+_run "$@"
