@@ -1483,7 +1483,14 @@ source_if_exists "${ZDOTDIR}/.p10k.zsh"
 # build, so the install can never succeed and would re-run `curl | bash` on every start.
 if [[ "${HOST_OS}" != "termux" ]] && (( ! $+commands[bun] )) && [[ ! -x "${BUN_INSTALL}/bin/bun" ]] && (( $+commands[curl] )); then
     echo "🧅 Installing bun to ${BUN_INSTALL}..." >&2
-    curl -fsSL https://bun.sh/install | bash
+    # The installer appends to $HOME/.zshrc, and `bun completions` appends to $ZDOTDIR/.zshrc
+    # — a symlink into this repo. A scratch HOME with ZDOTDIR unset sends both writes to a
+    # throwaway file (BUN_INSTALL is passed explicitly, so the binary still lands in place);
+    # PATH and completions are already handled here and in .zshenv.
+    bun_scratch_home="$(mktemp -d)"
+    curl -fsSL https://bun.sh/install | env -u ZDOTDIR HOME="${bun_scratch_home}" BUN_INSTALL="${BUN_INSTALL}" bash
+    rm -rf "${bun_scratch_home}"
+    unset bun_scratch_home
     # Make bun available in the current session without restarting the shell
     add_to_path_if_exists "${BUN_INSTALL}/bin"
 fi
