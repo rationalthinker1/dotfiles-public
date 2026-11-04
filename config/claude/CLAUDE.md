@@ -25,6 +25,22 @@ cannot be checked without the evidence.
 - Separate measured from inferred. Mark anything assumed rather than verified.
 - This is the exception to brevity: real numbers earn their space.
 
+## Background processes
+
+**Whenever you start anything in the background — a command, a long run, a subagent — give me
+the command to follow its log, ready to paste:**
+
+```bash
+tail -f /absolute/path/to/its.log
+```
+
+- The full absolute path, in one piece. Never a shortened or relative one.
+- If the process writes no log of its own, redirect its output to a file in the scratchpad
+  and give me that file.
+- A subagent: tell it to append the output of its long commands to one log file at a path you
+  pick, and give me `tail -F` on that path (`-F` waits for the file to appear).
+- Give it again when the process restarts or writes to a new file.
+
 ## Editing files
 
 **Small, targeted changes go through the `Edit` tool. Use `Write` only to create new files.

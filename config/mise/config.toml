@@ -114,6 +114,7 @@ yarn = "1"
 # `node -p process.versions.npm`. That divergence is expected, not a broken install.
 # It still RUNS on mise's node: aqua ships the npm CLI, which is JavaScript.
 npm = "latest"
+jq = "latest"
 
 # gh is deliberately NOT here. zinit installs it from gh-r (.zshrc:1045) and that copy
 # wins on PATH, so declaring it in mise only produced a second, never-used install that
