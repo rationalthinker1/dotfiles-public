@@ -29,7 +29,7 @@ breakage affecting the other.
 | config | `~/.vimrc` + `~/.vim/` | `~/.config/nvim/` |
 | plugins | `~/.vim/plugged` | `~/.local/share/nvim/site/pack/core/opt` |
 | manager | vim-plug | `vim.pack`, into `site/pack/core/opt` |
-| lockfile | — | `config/nvim/nvim-pack-lock.json` (tracked) |
+| lockfile | — | `config/nvim/nvim-pack-lock.json` (per machine, gitignored) |
 | state | `~/.local/share/vim/viminfo` | `~/.local/state/nvim/` (shada) |
 
 Breaking one cannot break the other. `install.sh` provisions both.

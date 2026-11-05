@@ -1213,8 +1213,8 @@ function maintain::run() {
     # Neovim 0.12 uses its built-in vim.pack rather than vim-plug. Unlike the
     # interactive command, force=true makes the weekly headless run apply every resolved
     # update without opening a review buffer. vim.pack persists the resolved revisions in
-    # nvim-pack-lock.json, deliberately tracked with this config, so a changed lockfile is
-    # the expected record of plugin updates to review and commit.
+    # nvim-pack-lock.json, which is gitignored: each machine keeps its own pins, so there is
+    # nothing to review or commit after this step.
     if (( $+commands[nvim] )) && [[ -r "${XDG_CONFIG_HOME:-${HOME}/.config}/nvim/init.lua" ]]; then
         maintain::hdr "Neovim plugins (vim.pack update)"
         maintain::step "Neovim plugins" 20m nvim --headless -i NONE \

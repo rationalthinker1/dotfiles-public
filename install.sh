@@ -1060,8 +1060,8 @@ fi
 #
 # Neovim uses vim.pack (its built-in manager, 0.12+), NOT vim-plug — so there is
 # nothing to bootstrap. vim.pack.add() in lua/plugins/init.lua installs anything
-# missing on the first run, at the revisions pinned in the tracked
-# config/nvim/nvim-pack-lock.json. Starting Neovim once is the whole install.
+# missing on the first run (at the branch tip; config/nvim/nvim-pack-lock.json is
+# per machine and gitignored). Starting Neovim once is the whole install.
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Installing Neovim plugins"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

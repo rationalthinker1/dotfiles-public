@@ -15,11 +15,11 @@
 --    immediately, so this is if anything a cleaner fit.
 --
 -- 3. LOCKFILE. vim.pack writes nvim-pack-lock.json into stdpath('config'),
---    which is this directory — so it lands in the repo and IS TRACKED on
---    purpose. Upstream advises treating it as part of the config: with it
---    present every plugin installs at the pinned revision instead of drifting
---    to whatever the branch tip is. Do not edit it by hand; use
---    :lua vim.pack.update() and commit the result.
+--    which is this directory — so it lands in the repo, where it is GITIGNORED
+--    on purpose: this config is synced to machines that update at different
+--    times, and a tracked lock made a stale host downgrade plugins. A fresh
+--    machine therefore installs at the branch tip and writes its own lock.
+--    Do not edit it by hand; use :lua vim.pack.update().
 --
 -- Updating:   :lua vim.pack.update()   -> review the diff buffer, :write to
 --                                         confirm or :quit to discard.
