@@ -10,7 +10,7 @@
       "version": "1.0.0 - 2.0.0"
     },
     "codecompanion.nvim": {
-      "rev": "ac5b0c3f28a961846293a02a2e3b98754e981f16",
+      "rev": "282a9210ea92169bb7708cf4e79a950fb5f754a4",
       "src": "https://github.com/olimorris/codecompanion.nvim"
     },
     "colour-schemes": {
@@ -38,7 +38,7 @@
       "src": "https://github.com/DankNeon/vim"
     },
     "dracula": {
-      "rev": "e7817b4baccfb3529f709ac048c621f35cdbc5b3",
+      "rev": "c689958744a93851b870e17ede7e9cbd28bc7cf8",
       "src": "https://github.com/dracula/vim"
     },
     "flash.nvim": {
@@ -46,11 +46,11 @@
       "src": "https://github.com/folke/flash.nvim"
     },
     "friendly-snippets": {
-      "rev": "b4d01b0fdf3c9a549961c2f9ffe8dc09be166219",
+      "rev": "b2ea5c41a150ba72fb656eedb4ed0a86d138d945",
       "src": "https://github.com/rafamadriz/friendly-snippets"
     },
     "fzf": {
-      "rev": "b412a450538e5f4a1d7057732e75d945dafa18a6",
+      "rev": "26ff936df038b6a62ec42cf18db27b2ea2bb8ec3",
       "src": "https://github.com/junegunn/fzf"
     },
     "fzf.vim": {
@@ -58,7 +58,7 @@
       "src": "https://github.com/junegunn/fzf.vim"
     },
     "gitsigns.nvim": {
-      "rev": "fd780920613e541cbdfac41bf711583ed49f9249",
+      "rev": "1e9d0fbfe7ff848bc402d2c2e2854fb4eff2dce7",
       "src": "https://github.com/lewis6991/gitsigns.nvim"
     },
     "lualine.nvim": {
@@ -66,7 +66,7 @@
       "src": "https://github.com/nvim-lualine/lualine.nvim"
     },
     "mason-lspconfig.nvim": {
-      "rev": "27b98a54bc04d2e8649d2e701c89aec0d02c11a4",
+      "rev": "cd6c64d85c9871aaf759d26f2371029d6d674a48",
       "src": "https://github.com/mason-org/mason-lspconfig.nvim"
     },
     "mason-nvim-dap.nvim": {
@@ -82,7 +82,7 @@
       "src": "https://github.com/simonsmith/material.vim"
     },
     "nginx.vim": {
-      "rev": "a5991f38135d0c6c259d0b9f5e629ba33b891b9e",
+      "rev": "3f1ce6c24ba3b5bde979cfac2c017612d7bfd311",
       "src": "https://github.com/chr4/nginx.vim"
     },
     "nvim-autopairs": {
@@ -102,7 +102,7 @@
       "src": "https://github.com/theHamsta/nvim-dap-virtual-text"
     },
     "nvim-lspconfig": {
-      "rev": "77b7432d4770d23b277d37923e5a08a442d8bb07",
+      "rev": "d8d2fda7aae57030452ce8cd6e770b1eb704514e",
       "src": "https://github.com/neovim/nvim-lspconfig"
     },
     "nvim-nio": {
@@ -110,7 +110,7 @@
       "src": "https://github.com/nvim-neotest/nvim-nio"
     },
     "nvim-treesitter": {
-      "rev": "d3e4a28b63961ba972b0945d66c73b6eec969953",
+      "rev": "a9c4e1457e2e59f1b82c8f78dcdb3b2517555200",
       "src": "https://github.com/nvim-treesitter/nvim-treesitter",
       "version": "'main'"
     },
@@ -136,7 +136,7 @@
       "src": "https://github.com/nvim-lua/plenary.nvim"
     },
     "rainbow-delimiters.nvim": {
-      "rev": "b55decda611755171bc5bf8f4c99603a75de4b41",
+      "rev": "65734f76783705255d9ede8a6e4692e1572801a5",
       "src": "https://github.com/HiPhish/rainbow-delimiters.nvim"
     },
     "snacks.nvim": {

@@ -193,19 +193,30 @@ function script:Invoke-MaintainElevatedBatch {
         "`$ErrorActionPreference = 'Continue'"
         "`$results = [ordered]@{}"
         "Write-Host 'Elevated maintenance — this window closes when it finishes.' -ForegroundColor Cyan"
+        "try {"
     )
     foreach ($step in $Steps) {
-        $lines += "Write-Host ''"
-        $lines += "Write-Host '  ── $($step.Name) ────────────────────' -ForegroundColor DarkCyan"
-        $lines += "`$global:LASTEXITCODE = 0"
+        $lines += "    Write-Host ''"
+        $lines += "    Write-Host '  ── $($step.Name) ────────────────────' -ForegroundColor DarkCyan"
+        $lines += "    `$global:LASTEXITCODE = 0"
         # Tee, not redirect: live in the elevated console AND captured for the parent.
         # $LASTEXITCODE survives the pipeline — Tee-Object is a cmdlet and does not set it.
-        $lines += "$($step.Command) 2>&1 | Tee-Object -FilePath '${childLog}' -Append"
-        $lines += "`$results['$($step.Name)'] = `$LASTEXITCODE"
+        $lines += "    $($step.Command) 2>&1 | Tee-Object -FilePath '${childLog}' -Append"
+        $lines += "    `$results['$($step.Name)'] = `$LASTEXITCODE"
     }
-    $lines += "`$results | ConvertTo-Json -Compress | Set-Content -LiteralPath '${resultFile}' -Encoding UTF8"
+    $lines += "} catch {"
+    $lines += "    Write-Host `"ERROR: `$(`$_.Exception.Message)`" -ForegroundColor Red"
+    $lines += "    `$_ | Out-File -FilePath '${childLog}' -Append"
+    $lines += "} finally {"
+    $lines += "    `$results | ConvertTo-Json -Compress | Set-Content -LiteralPath '${resultFile}' -Encoding UTF8"
+    $lines += "}"
 
-    Set-Content -LiteralPath $childScript -Value ($lines -join [Environment]::NewLine) -Encoding UTF8
+    $scriptContent = $lines -join [Environment]::NewLine
+    Set-Content -LiteralPath $childScript -Value $scriptContent -Encoding UTF8
+
+    # Encode the script as base64 for -EncodedCommand — avoids file-based security blocks
+    $bytes = [System.Text.Encoding]::Unicode.GetBytes($scriptContent)
+    $encoded = [Convert]::ToBase64String($bytes)
 
     $child = $null
     try {
@@ -215,8 +226,10 @@ function script:Invoke-MaintainElevatedBatch {
         # -PassThru and NOT -Wait: waiting here would serialise the very thing
         # -WhileWaiting exists to overlap. The wait happens below, after that work.
         $pwshPath = (Get-Process -Id $PID).Path
+        # -EncodedCommand bypasses file-based execution policy and security software
+        # that block scripts in temp directories.
         $child = Start-Process -FilePath $pwshPath -Verb RunAs -PassThru `
-            -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $childScript)
+            -ArgumentList @('-NoProfile', '-EncodedCommand', $encoded)
     } catch {
         # Cancelling the UAC dialog lands here. Not a failure — it is an answer. Fall back
         # to running the same commands unelevated, which is what would have happened

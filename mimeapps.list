@@ -9,9 +9,13 @@ application/x-7z-compressed=peazip.desktop
 application/x-php=com.microsoft.VSCode.desktop
 text/plain=sublime_text.desktop
 application/xml=sublime_text.desktop
+text/csv=ai.storyteller.gridcraft.desktop
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=ai.storyteller.gridcraft.desktop
 
 [Added Associations]
 application/x-7z-compressed=peazip.desktop;
 application/x-php=com.microsoft.VSCode.desktop;
 text/plain=sublime_text.desktop;
 application/xml=sublime_text.desktop;
+text/csv=ai.storyteller.gridcraft.desktop;
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=ai.storyteller.gridcraft.desktop;
