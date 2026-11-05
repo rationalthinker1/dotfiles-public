@@ -15,6 +15,7 @@ redis-cli --tls                                  # Connect with TLS encryption
 ## 🔑 Key Operations
 
 ```bash
+# inside redis-cli (or prefix with `redis-cli` in a shell)
 SET key "value"                                  # Set a key
 GET key                                          # Get value of key
 DEL key                                          # Delete key
@@ -30,9 +31,10 @@ RANDOMKEY                                        # Return a random key
 ## ⏱️ Expiration
 
 ```bash
+# inside redis-cli
 EXPIRE key 3600                                  # Set TTL to 3600 seconds
 PEXPIRE key 5000                                 # Set TTL in milliseconds
-EXPIREAT key 1735689600                          # Expire at Unix timestamp
+EXPIREAT key 1893456000                          # Expire at Unix timestamp (this one = 2030-01-01 UTC; a past time deletes the key at once)
 TTL key                                          # Check remaining TTL (seconds, -1 = no expiry, -2 = gone)
 PTTL key                                         # Check remaining TTL (milliseconds)
 PERSIST key                                      # Remove expiration (make permanent)
@@ -42,6 +44,7 @@ SETEX key 300 "value"                            # SET + EXPIRE in one command (
 ## 📊 Data Types
 
 ```bash
+# inside redis-cli
 # Strings
 SET counter 0                                    # Set string value
 INCR counter                                     # Increment by 1
@@ -94,6 +97,7 @@ ZREM leaderboard "carol"                         # Remove member
 ## 📡 Pub/Sub
 
 ```bash
+# inside redis-cli
 SUBSCRIBE channel1                               # Subscribe to channel (blocking)
 PSUBSCRIBE "news:*"                              # Subscribe to pattern
 PUBLISH channel1 "hello"                         # Publish message to channel
@@ -104,13 +108,14 @@ PUBSUB NUMSUB channel1                           # Count subscribers for channel
 ## 🔍 Server and Diagnostics
 
 ```bash
+# inside redis-cli
 INFO                                             # Full server info (memory, clients, stats)
 INFO memory                                      # Memory usage details
 INFO replication                                 # Replication status
 INFO keyspace                                    # Database key counts
 DBSIZE                                           # Key count in current database
 MONITOR                                          # Watch all commands in real-time (debug only)
-SLOWLOG GET 10                                   # Show 10 slowest queries
+SLOWLOG GET 10                                   # Show the 10 most recent slow queries (not the 10 slowest)
 CLIENT LIST                                      # List connected clients
 CLIENT KILL ID <id>                              # Disconnect a client
 CONFIG GET maxmemory                             # Get config value
@@ -121,15 +126,16 @@ LASTSAVE                                         # Timestamp of last successful 
 ## 💾 Persistence
 
 ```bash
+# inside redis-cli
 BGSAVE                                           # Trigger background RDB snapshot
 BGREWRITEAOF                                     # Trigger AOF rewrite
-DEBUG SLEEP 0                                    # (test) does nothing, useful for latency testing
 ```
 
 ## 🧹 Flush and Cleanup
 
 ```bash
-FLUSHDB                                          # Delete all keys in current database
+# inside redis-cli
+FLUSHDB                                          # ⚠️ Delete all keys in current database (no confirmation)
 FLUSHALL                                         # Delete all keys in ALL databases (dangerous)
 OBJECT ENCODING key                              # Show internal encoding of key
 MEMORY USAGE key                                 # Bytes used by key (Redis 4.0+)
@@ -141,13 +147,13 @@ MEMORY USAGE key                                 # Bytes used by key (Redis 4.0+
 redis-cli PING                                              # Quick health check (returns PONG)
 redis-cli INFO keyspace                                     # Key counts per database
 redis-cli --scan --pattern "session:*" | wc -l              # Count keys matching pattern (safe)
-redis-cli --scan --pattern "cache:*" | xargs redis-cli DEL  # Delete keys matching pattern
+redis-cli --scan --pattern "cache:*" | xargs -r -d '\n' redis-cli UNLINK  # ⚠️ Delete keys matching pattern (GNU xargs; no undo)
 redis-cli --bigkeys                                         # Find largest keys per type
 redis-cli --memkeys                                         # Memory usage per key sampling
 redis-cli --stat                                            # Live stats (ops/sec, memory, clients)
 redis-cli --latency                                         # Measure latency to server
 redis-cli --rdb /tmp/dump.rdb                               # Download RDB snapshot
-redis-cli KEYS "temp:*" | xargs redis-cli DEL               # Bulk delete (small datasets only)
+redis-cli KEYS "temp:*" | head -20                          # Preview keys (KEYS blocks the server; small datasets only)
 redis-cli -n 0 --scan --pattern "*" --count 1000 | head -20 # Sample keys from DB 0
 ```
 
@@ -158,6 +164,7 @@ redis-cli -n 0 --scan --pattern "*" --count 1000 | head -20 # Sample keys from D
 # MONITOR tanks performance — never use in production
 # FLUSHALL is not undoable — there is no confirmation prompt
 # Default database is 0 — Redis has 16 DBs (0-15) but most apps only use 0
+# DEBUG SLEEP N blocks the whole server; DEBUG is disabled by default in Redis 7.0+ — avoid
 # redis-cli returns (nil) for missing keys, not an error
 # TTL returns -1 (no expiry) or -2 (key doesn't exist) — check both
 ```

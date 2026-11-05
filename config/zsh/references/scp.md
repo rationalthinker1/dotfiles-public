@@ -21,7 +21,7 @@ scp -r user@host:/path/dir/ .                   # Download directory recursively
 ```bash
 scp -P 2222 file.txt user@host:/path/           # Use non-default SSH port
 scp -i ~/.ssh/id_ed25519 file.txt user@host:/path/  # Use specific identity/key file
-scp -o StrictHostKeyChecking=no file.txt user@host:/path/  # Skip host key verification
+scp -o StrictHostKeyChecking=no file.txt user@host:/path/  # ⚠️ Skips host key verification (insecure, no MITM warning)
 scp -F ~/.ssh/config_custom file.txt myhost:/path/   # Use custom SSH config file
 ```
 
@@ -37,15 +37,15 @@ scp -v file.txt user@host:/path/                # Verbose mode (debug SSH connec
 ## 🔀 Remote to Remote
 
 ```bash
-scp user1@host1:/path/file.txt user2@host2:/path/   # Copy between two remotes (via local)
-scp -3 user1@host1:/path/file.txt user2@host2:/path/ # Copy between remotes through local machine
+scp user1@host1:/path/file.txt user2@host2:/path/   # Copy between two remotes (via local since OpenSSH 9.0; direct before)
+scp -3 user1@host1:/path/file.txt user2@host2:/path/ # Force routing through local machine (any version)
 ```
 
 ## 📦 Multiple Files
 
 ```bash
 scp file1.txt file2.txt user@host:/path/        # Upload multiple files
-scp user@host:"/path/{a.txt,b.txt}" .           # Download multiple files (brace expansion)
+scp user@host:/path/a.txt user@host:/path/b.txt .  # Download multiple files (remote brace expansion needs -O on OpenSSH 9.0+)
 scp user@host:"/path/*.log" /tmp/               # Download with wildcard (quote to prevent local expansion)
 ```
 
@@ -88,10 +88,10 @@ scp -rC user@host:/var/www/html/ ./backup_$(date +%Y%m%d)/
 
 ```bash
 # Port flag is uppercase -P (not lowercase -p which preserves attributes)
-# Remote paths with spaces: scp user@host:"/path/my\ file.txt" .
+# Remote paths with spaces: scp user@host:"/path/my\ file.txt" .   (legacy protocol; on 9.0+ SFTP mode try plain quotes, or use -O)
 # Wildcard patterns must be quoted to prevent LOCAL shell expansion
 # scp does NOT support exclude patterns — use rsync for that
-# scp copies through local machine by default for remote-to-remote — use -3 explicitly
-# OpenSSH 9.0+ deprecated scp protocol in favor of sftp backend — behavior may differ
+# Remote-to-remote goes through local by default only on OpenSSH 9.0+ (direct host1->host2 before) — -3 forces it
+# OpenSSH 9.0+ deprecated scp protocol in favor of sftp backend — remote globs/braces may differ (-O = legacy)
 ```
 

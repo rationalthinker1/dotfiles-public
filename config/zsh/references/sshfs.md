@@ -13,7 +13,7 @@ sshfs user@host:~/ /mnt/home                    # Mount remote home directory
 ```bash
 sshfs -p 2222 user@host:/path /mount            # Non-default SSH port
 sshfs -o IdentityFile=~/.ssh/id_ed25519 user@host:/path /mount  # Specific key file
-sshfs -o StrictHostKeyChecking=no user@host:/path /mount         # Skip host key check
+sshfs -o StrictHostKeyChecking=no user@host:/path /mount         # ⚠️ Skip host key check (insecure, no MITM warning)
 sshfs -o ProxyJump=bastion user@host:/path /mount                # Connect through jump host
 sshfs -C user@host:/path /mount                 # Enable SSH compression
 ```
@@ -21,12 +21,12 @@ sshfs -C user@host:/path /mount                 # Enable SSH compression
 ## 📊 Performance Options
 
 ```bash
-sshfs -o cache=yes user@host:/path /mount                  # Enable caching (faster reads)
-sshfs -o cache_timeout=600 user@host:/path /mount          # Cache TTL in seconds
+sshfs -o cache=yes user@host:/path /mount                  # Enable caching (sshfs 2.x only; removed in 3.x)
+sshfs -o cache_timeout=600 user@host:/path /mount          # Cache TTL in seconds (sshfs 2.x only; 3.x uses dir_cache/dcache_timeout)
 sshfs -o ServerAliveInterval=15 user@host:/path /mount     # Send keepalive every 15s
 sshfs -o ServerAliveCountMax=3 user@host:/path /mount      # Disconnect after 3 missed keepalives
 sshfs -o Ciphers=aes128-ctr user@host:/path /mount         # Use faster cipher
-sshfs -o big_writes user@host:/path /mount                 # Enable large write requests
+sshfs -o big_writes user@host:/path /mount                 # Large write requests (sshfs 2.x only; no-op/error on 3.x)
 ```
 
 ## 🔒 Permissions and Access
@@ -45,7 +45,7 @@ sshfs -o ro user@host:/path /mount              # Mount read-only
 ```bash
 fusermount -u /local/mount                      # Unmount (Linux)
 umount /local/mount                             # Unmount (macOS or Linux with root)
-fusermount -uz /local/mount                     # Lazy unmount (force, even if busy)
+fusermount -uz /local/mount                     # Lazy unmount (detaches now, cleans up when no longer busy)
 ```
 
 ## 🔁 Reconnection Options
@@ -66,7 +66,7 @@ sshfs user@host:/remote/path /local/mount \
   -o ServerAliveInterval=15 \
   -o ServerAliveCountMax=3 \
   -o cache=yes \
-  -o cache_timeout=300
+  -o cache_timeout=300    # cache options: sshfs 2.x only, drop both on 3.x
 
 # Breakdown:
 #   allow_other       Other users can access the mount
@@ -122,7 +122,7 @@ sshfs -o debug,sshfs_debug,loglevel=debug user@host:/path /mount
 ```bash
 # allow_other requires: echo "user_allow_other" >> /etc/fuse.conf
 # Create mount point before mounting: mkdir -p /local/mount
-# Stale mounts after disconnect: fusermount -uz /mount to force cleanup
+# Stale mounts after disconnect: fusermount -uz /mount (lazy unmount) to clean up
 # sshfs is FUSE-based — file operations are slower than local or NFS
 # Large file operations (git, builds) are slow — use rsync or scp instead
 # macOS requires macFUSE: brew install macfuse && brew install sshfs

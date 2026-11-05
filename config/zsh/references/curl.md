@@ -25,7 +25,8 @@ curl -X DELETE https://api.example.com/data/1   # DELETE request
 
 ```bash
 curl -d "key=value&foo=bar" https://api.example.com          # POST form data (application/x-www-form-urlencoded)
-curl -d @data.json https://api.example.com                   # POST data from file
+curl -d @data.json https://api.example.com                   # POST data from file (strips CR/LF; use --data-binary for exact bytes)
+curl --data-binary @data.json https://api.example.com        # POST file exactly as-is (preferred for JSON)
 curl -F "file=@photo.jpg" https://api.example.com/upload     # Multipart file upload
 curl -F "file=@photo.jpg" -F "name=avatar" https://api.example.com  # File + form field
 curl --data-raw '{"key":"value"}' https://api.example.com    # POST raw string (no @ interpretation)
@@ -52,7 +53,7 @@ curl -I https://example.com                     # HEAD request (headers only)
 curl -i https://example.com                     # Include response headers in output
 curl -w "%{http_code}" -o /dev/null -s URL      # Print only HTTP status code
 curl -w "%{time_total}\n" -o /dev/null -s URL   # Print request time
-curl -w "\n%{http_code} %{size_download} %{time_total}s\n" -sS URL  # Status + size + time
+curl -w "\n%{http_code} %{size_download} %{time_total}s\n" -sS URL  # Body, then status + size + time (add -o /dev/null to drop body)
 curl -D headers.txt https://example.com         # Dump response headers to file
 ```
 
@@ -110,8 +111,10 @@ curl -K config.txt                                       # Read options from fil
 curl -sS https://api.example.com/data | jq "."                        # Fetch and pretty-print JSON
 curl -sw "%{http_code} %{time_total}s\n" -o /dev/null URL             # Quick endpoint check
 curl -u user:pass -X POST -H "Content-Type: application/json" \
-  -d @payload.json https://api.example.com                             # Authenticated JSON POST
+  --data-binary @payload.json https://api.example.com                  # Authenticated JSON POST
+# ⚠️ Pipes remote code straight into a shell unreviewed; safer: download, read, then run
 curl -sL https://raw.githubusercontent.com/user/repo/main/install.sh | bash  # Pipe install script
+curl -sLo install.sh https://raw.githubusercontent.com/user/repo/main/install.sh && less install.sh && bash install.sh  # Inspect first
 cat urls.txt | xargs -P 8 -I {} curl -sO {}                           # Parallel download from list
 for i in {1..5}; do curl -sw "$i: %{http_code} %{time_total}s\n" -o /dev/null URL; done  # Simple load test
 ```

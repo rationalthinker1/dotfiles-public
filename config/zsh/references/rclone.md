@@ -14,7 +14,7 @@ rclone size remote:path/                        # Total size and file count
 
 ```bash
 rclone config                                   # Interactive config wizard (add/edit/delete remotes)
-rclone config show                              # Show all configured remotes
+rclone config show                              # Show all configured remotes (⚠️ prints secrets/tokens in clear)
 rclone listremotes                              # List remote names only
 rclone config file                              # Show config file path
 rclone about remote:                            # Show quota/space usage on remote
@@ -26,8 +26,9 @@ rclone about remote:                            # Show quota/space usage on remo
 rclone copy src/ remote:dest/                   # Copy files (source → remote, no deletes)
 rclone copy remote:src/ local_dir/              # Copy files (remote → local)
 rclone sync src/ remote:dest/                   # Sync: make dest match source (DELETES extras in dest)
-rclone sync remote:src/ local_dir/              # Sync remote to local
-rclone bisync local/ remote:path/               # Bidirectional sync (experimental)
+rclone sync remote:src/ local_dir/              # ⚠️ Sync remote to local (DELETES local files not on remote)
+rclone bisync local/ remote:path/ --resync      # Bidirectional sync, first run only (experimental)
+rclone bisync local/ remote:path/               # Bidirectional sync, later runs (fails until --resync has run once)
 rclone move src/ remote:dest/                   # Move files (deletes from source after transfer)
 rclone moveto local.txt remote:file.txt         # Move/rename single file
 ```
@@ -38,7 +39,7 @@ rclone moveto local.txt remote:file.txt         # Move/rename single file
 rclone mkdir remote:newdir/                     # Create directory on remote
 rclone rmdir remote:emptydir/                   # Remove empty directory
 rclone purge remote:dir/                        # Remove directory and ALL contents (dangerous)
-rclone delete remote:path/                      # Delete files (keep directory structure)
+rclone delete remote:path/                      # ⚠️ Delete files recursively (keeps directory structure; try --dry-run)
 rclone deletefile remote:file.txt               # Delete single file
 rclone cat remote:file.txt                      # Print file contents to stdout
 rclone copyto remote:file.txt local.txt         # Copy single file
@@ -85,7 +86,7 @@ rclone ls crypt_remote:                          # List decrypted filenames
 ```bash
 rclone mount remote:path/ /mnt/remote/ &         # Mount remote as local filesystem
 rclone mount remote: /mnt/remote/ --daemon        # Mount as background daemon
-fusermount -u /mnt/remote/                        # Unmount (Linux)
+fusermount -u /mnt/remote/                        # Unmount (Linux; fuse3-only distros: fusermount3 -u)
 umount /mnt/remote/                               # Unmount (macOS)
 rclone mount remote: /mnt/r/ --vfs-cache-mode full  # Full caching (best for read/write)
 rclone mount remote: /mnt/r/ --read-only          # Read-only mount
@@ -98,7 +99,7 @@ rclone check src/ remote:dest/                   # Compare source and dest (repo
 rclone check src/ remote:dest/ --one-way         # Check source files exist on dest
 rclone hashsum MD5 remote:path/                  # Show MD5 hashes of files
 rclone md5sum remote:path/                       # Same as hashsum MD5
-rclone dedupe remote:path/                       # Find and handle duplicate files
+rclone dedupe remote:path/                       # Find and handle duplicates (⚠️ interactive; can delete — try --dry-run)
 ```
 
 ## 🔗 Common Combos
@@ -116,11 +117,11 @@ rclone copy ~/Photos/ remote:photos/ --include "*.{jpg,png,heic}" --max-age 30d 
 # Dry run before destructive sync
 rclone sync local/ remote:dest/ --dry-run -v
 
-# Serve remote as HTTP (quick file sharing)
-rclone serve http remote:path/ --addr :8080
+# Serve remote as HTTP (quick file sharing; ⚠️ ":8080" would bind all interfaces with no auth)
+rclone serve http remote:path/ --addr 127.0.0.1:8080
 
-# Serve remote as WebDAV
-rclone serve webdav remote:path/ --addr :8080
+# Serve remote as WebDAV (add --user/--pass before exposing beyond localhost)
+rclone serve webdav remote:path/ --addr 127.0.0.1:8080
 
 # Copy between two remotes (cloud-to-cloud)
 rclone copy gdrive:src/ s3:bucket/dest/ -P
@@ -137,7 +138,7 @@ rclone lsd remote: --max-depth 1
 # purge is recursive delete with no confirmation — be very careful
 # mount requires FUSE: sudo apt install fuse3 (Linux) or macFUSE (macOS)
 # --transfers and --checkers multiply bandwidth usage — tune for your connection
-# bisync is experimental — test with --dry-run first
+# bisync is experimental — first run needs --resync; test with --dry-run first
 # Config file may contain credentials — protect it: chmod 600 ~/.config/rclone/rclone.conf
 ```
 

@@ -5,15 +5,13 @@
 ```
 site:example.com                     # Limit results to a specific domain
 intitle:"keyword"                    # Page title contains keyword
-allintitle:"key1 key2"              # Page title contains ALL keywords
+allintitle:key1 key2                # Page title contains ALL keywords (bare terms, no quotes)
 inurl:"keyword"                      # URL contains keyword
-allinurl:"key1 key2"               # URL contains ALL keywords
+allinurl:key1 key2                  # URL contains ALL keywords (bare terms, no quotes)
 intext:"keyword"                     # Page body contains keyword
 filetype:pdf                         # Match specific file type
 ext:pdf                              # Same as filetype (alternative syntax)
-cache:example.com                    # Google's cached version of a page
-related:example.com                  # Sites similar to domain
-info:example.com                     # Summary info about a domain
+# Removed by Google (no longer work): cache: (2024), related: (2023), info:
 ```
 
 ## 🔧 Boolean and Modifiers
@@ -23,9 +21,9 @@ info:example.com                     # Summary info about a domain
 keyword1 OR keyword2                 # Match either term
 keyword1 | keyword2                  # Same as OR
 -keyword                             # Exclude term from results
-+keyword                             # Force include term
+"keyword"                            # Force include a term (the old +keyword was dropped ~2011)
 *                                    # Wildcard (fill in the blank)
-AROUND(3) keyword1 keyword2          # Words within 3 words of each other
+keyword1 AROUND(3) keyword2          # Words within 3 words of each other
 ```
 
 ## 📁 File Discovery by Site
@@ -55,7 +53,7 @@ site:{site} intitle:"index of" filetype:sql        # SQL files in open directori
 site:{site} inurl:admin              # Admin panels
 site:{site} inurl:login              # Login pages
 site:{site} intitle:"dashboard"      # Dashboards
-site:{site} filetype:env "DB_PASSWORD"    # Exposed .env files with DB creds
+site:{site} "DB_PASSWORD" "APP_KEY"       # Exposed .env contents (Google has no env filetype; may return little)
 site:{site} filetype:log "password"       # Passwords leaked in logs
 site:{site} "phpinfo()"                   # Exposed PHP info pages
 site:{site} intitle:"index of" ".git"     # Exposed git repositories
@@ -99,9 +97,9 @@ site:{site} inurl:wp-admin               # WordPress admin pages
 "confluence" inurl:viewpage {keyword}              # Confluence wiki pages
 
 # --- Premium File Hosts ---
-"https://uploadgig.com/file/download" {keyword}    # UploadGig
-"https://rapidgator.net/file/" {keyword}           # Rapidgator
-"http://nitroflare.com/view/" {keyword}            # NitroFlare
+"uploadgig.com/file/download" {keyword}            # UploadGig
+"rapidgator.net/file/" {keyword}                   # Rapidgator
+"nitroflare.com/view/" {keyword}                   # NitroFlare
 "katfile.com/download/" {keyword}                  # KatFile
 "filefox.cc/" {keyword}                            # FileFox
 "ddownload.com/" {keyword}                         # DDownload
@@ -118,20 +116,20 @@ site:{site} inurl:wp-admin               # WordPress admin pages
 "zippyshare.com/v/" {keyword}                      # ZippyShare (defunct, archive)
 "4shared.com/file/" {keyword}                      # 4Shared
 "sendspace.com/file/" {keyword}                    # SendSpace
-"transfer.sh/" {keyword}                           # Transfer.sh CLI uploads
+"transfer.sh/" {keyword}                           # Transfer.sh CLI uploads (defunct, archive)
 "wetransfer.com/downloads/" {keyword}              # WeTransfer
-"anonfiles.com/" {keyword}                         # AnonFiles
+"anonfiles.com/" {keyword}                         # AnonFiles (defunct, archive)
 "gofile.io/d/" {keyword}                           # GoFile
 "pixeldrain.com/u/" {keyword}                      # Pixeldrain
 "filebin.net/" {keyword}                           # FileBin
-"bayfiles.com/" {keyword}                          # BayFiles
+"bayfiles.com/" {keyword}                          # BayFiles (defunct, archive)
 
 # --- Code / Text Snippets ---
 "gist.github.com/" {keyword}                       # GitHub Gists
 "pastebin.com/" {keyword}                          # Pastebin
 "paste.ee/" {keyword}                              # Paste.ee
-"ghostbin.co/" {keyword}                           # Ghostbin
-"hastebin.com/" {keyword}                          # Hastebin
+"ghostbin.co/" {keyword}                           # Ghostbin (defunct, archive)
+"hastebin.com/" {keyword}                          # Hastebin (defunct, archive)
 
 # --- Torrent / P2P Indexes ---
 "magnet:?xt=urn:btih:" {keyword}                   # Magnet links indexed by Google

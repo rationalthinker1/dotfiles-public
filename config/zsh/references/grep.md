@@ -71,7 +71,7 @@ grep -cP "\t" file                   # Count lines containing tabs
 
 ```bash
 grep -r "TODO" . | wc -l                         # Count all TODOs in project
-grep -rl "old_func" . | xargs sed -i "s/old_func/new_func/g"  # Rename across files
+grep -rlZ "old_func" . | xargs -0 sed -i "s/old_func/new_func/g"  # ⚠️ Rewrites files in place; commit first (GNU sed; BSD needs -i '')
 ps aux | grep "[n]ginx"                           # Find process (excludes grep itself)
 grep -rn "FIXME\|TODO\|HACK" --include="*.py" .  # Find all code annotations
 history | grep "docker"                           # Search command history

@@ -19,7 +19,7 @@ jq ".users[-1]" file.json                       # Last element of array
 jq ".users[2:5]" file.json                      # Array slice (index 2 to 4)
 jq ".users | length" file.json                  # Array length
 jq "keys" file.json                             # Get all keys of object
-jq "values" file.json                           # Get all values of object
+jq ".[]" file.json                              # Get all values of object
 jq "has(\"name\")" file.json                    # Check if key exists (true/false)
 ```
 
@@ -162,11 +162,12 @@ cat data.json | jq -r '.[].url' | xargs -P 4 -I {} curl -sO {}
 ## ⚠️ Gotchas
 
 ```bash
-# Strings in jq filters need escaped quotes: jq '.status == "active"'
+# Single-quote the filter and write plain quotes inside: jq '.status == "active"'
+#   (escape \" only when the filter is double-quoted)
 # Use -r for raw strings — without it, output includes surrounding quotes
 # null propagates: .missing.field returns null, not an error
 # .foo? suppresses errors for missing keys (optional access)
-# jq processes line-by-line — use -s (slurp) to read entire file as one array
+# jq reads a stream of JSON values, running the filter on each — use -s (slurp) to collect them into one array
 # Shell variable in jq: use --arg, not direct interpolation (avoids injection)
 # Empty result from select() produces no output (not null) — may look like it hangs
 ```

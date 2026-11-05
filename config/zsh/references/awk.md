@@ -66,7 +66,7 @@ awk '{sum += $1} END{print sum}' file                      # Sum a column
 awk '{sum += $1} END{print sum/NR}' file                   # Average a column
 awk 'BEGIN{print 2^10}'                                    # Power: 1024
 awk '{print $1 * $2}' file                                 # Multiply two fields
-awk '$1 > max {max=$1} END{print max}' file                # Max value in column
+awk 'NR==1||$1>max{max=$1} END{print max}' file            # Max value in column (safe for negatives)
 awk '{if($1<min||NR==1) min=$1} END{print min}' file       # Min value
 ```
 
@@ -83,7 +83,7 @@ awk '{gsub(/^ +| +$/, ""); print}' file     # Trim leading/trailing spaces
 awk '{print substr($0, 5)}' file            # Substring from position 5
 awk '{print substr($0, 5, 10)}' file        # Substring: pos 5, length 10
 awk '{print index($0, "foo")}' file         # Position of "foo" in line (0 = not found)
-awk '{split($0, arr, ",")}' file            # Split field into array on delimiter
+awk '{split($1, arr, ",")}' file            # Split field 1 into array on delimiter (use $0 for whole line)
 ```
 
 ## 📦 Arrays
@@ -101,7 +101,7 @@ awk '{if($1 in seen) print "dup:", $1; seen[$1]=1}' file
 # Delete array element
 awk '{arr[$1]=$2} END{delete arr["key"]; for(k in arr) print k, arr[k]}' file
 
-# Multi-dimensional array
+# Arrays of arrays (gawk only; fails in mawk/BSD awk — use arr[$1,$2] there)
 awk '{matrix[$1][$2]++} END{for(r in matrix) for(c in matrix[r]) print r,c,matrix[r][c]}' file
 ```
 
@@ -179,8 +179,8 @@ awk 'seen[$2]++' file
 ## ⚠️ Gotchas
 
 ```bash
-# Field separator -F' ' is NOT the same as the default — default splits on any whitespace
-# and trims leading whitespace; -F' ' treats each space as a separator
+# Field separator -F' ' (single space) IS the default: splits on any whitespace run and
+# trims leading whitespace. For literal single-space separators use -F'[ ]'
 # Use $1=$1 to rebuild $0 with OFS applied (e.g., after changing OFS)
 # awk arrays are associative — for(k in arr) order is undefined
 # Integer comparison: $1 > 10 works; string comparison: $1 > "10" does lexicographic

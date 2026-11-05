@@ -27,7 +27,7 @@ nginx -V                                        # Show version + compile options
 ## 📁 Key Paths
 
 ```bash
-# Config:
+# Config (sites-available/enabled and snippets are the Debian/Ubuntu layout; RHEL/Arch/source builds use conf.d only):
 /etc/nginx/nginx.conf                           # Main config
 /etc/nginx/sites-available/                     # Site configs (available)
 /etc/nginx/sites-enabled/                       # Active symlinks
@@ -45,7 +45,7 @@ nginx -V                                        # Show version + compile options
 /run/nginx.pid                                  # PID file
 ```
 
-## 🌐 Site Management (sites-available pattern)
+## 🌐 Site Management (Debian/Ubuntu sites-available pattern)
 
 ```bash
 # Enable a site:
@@ -101,7 +101,8 @@ sudo nginx -t && sudo systemctl reload nginx
 
 # SSL / HTTPS:
 # server {
-#     listen 443 ssl http2;
+#     listen 443 ssl;
+#     http2 on;                 # nginx >= 1.25.1 (older: listen 443 ssl http2;)
 #     server_name example.com;
 #     ssl_certificate /etc/letsencrypt/live/example.com/fullchain.pem;
 #     ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
@@ -141,9 +142,9 @@ sudo awk '{print $7}' /var/log/nginx/access.log | sort | uniq -c | sort -rn | he
 sudo awk '{print $9}' /var/log/nginx/access.log | sort | uniq -c | sort -rn
 
 # Find 5xx errors
-sudo grep " 50[0-9] " /var/log/nginx/access.log | tail -20
+sudo awk '$9 ~ /^5/' /var/log/nginx/access.log | tail -20
 
-# Requests per minute (last hour)
+# Requests per minute during the clock hour one hour ago (GNU date; default combined log format)
 sudo awk -v d="$(date -d '1 hour ago' '+%d/%b/%Y:%H')" '$4 ~ d {print substr($4,14,5)}' /var/log/nginx/access.log | sort | uniq -c
 ```
 
@@ -177,11 +178,11 @@ echo | openssl s_client -servername example.com -connect example.com:443 2>/dev/
 
 ```bash
 # Always nginx -t before reload — a bad config will crash nginx on restart
-# sites-enabled should contain SYMLINKS, not copies — edit the files in sites-available
+# (Debian/Ubuntu) sites-enabled should contain SYMLINKS, not copies — edit the files in sites-available
 # Missing semicolons in config cause cryptic "unexpected }" errors
 # try_files with proxy_pass: use try_files $uri @backend, not try_files $uri proxy_pass
-# worker_connections * worker_processes = max concurrent connections
+# worker_connections * worker_processes = max concurrent connections (as a reverse proxy each client uses 2, so ~half as many clients)
 # Logs can grow huge — configure logrotate or use access_log off for static assets
-# On Ubuntu: default site is /etc/nginx/sites-enabled/default — remove it for production
+# On Debian/Ubuntu: default site is /etc/nginx/sites-enabled/default — remove it for production
 ```
 

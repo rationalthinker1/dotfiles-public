@@ -78,7 +78,7 @@ find . -name "*.tmp" -delete                    # Delete matching files
 find . -name "*.sh" -exec chmod +x {} \;        # Run command on each match (one at a time)
 find . -name "*.log" -exec rm {} +              # Run command in batches (faster, like xargs)
 find . -type f -exec grep -l "TODO" {} +        # Find files containing "TODO"
-find . -name "*.bak" -exec mv {} /tmp/ \;       # Move all .bak files to /tmp
+find . -name "*.bak" -exec mv -n {} /tmp/ \;    # Move all .bak files to /tmp (-n: don't overwrite same-named files)
 find . -type f -name "*.txt" -exec wc -l {} +   # Count lines in all .txt files
 find . -name "*.jpg" -execdir convert {} {}.png \;  # Run in file's directory (not cwd)
 ```
@@ -121,6 +121,7 @@ find / -type f -perm -o+w 2>/dev/null
 find / -type f -perm -4000 2>/dev/null
 
 # Find and replace text across files
+# ⚠️ In-place, no backup (use -i.bak to keep one); BSD/macOS sed needs -i '' instead
 find . -name "*.py" -exec sed -i 's/old_func/new_func/g' {} +
 
 # Cleanup empty directories recursively (bottom-up)
@@ -147,6 +148,6 @@ find src/ -type d -exec mkdir -p dest/{} \;
 # Always test with -print before -delete or -exec rm
 # -name uses shell glob patterns (not regex) — use -regex for regex
 # -prune stops descent into directory — must come before other tests in expression
-# GNU find vs BSD find (macOS): -printf, -regex, -daystart are GNU extensions
+# GNU find vs BSD find (macOS): -printf and -daystart are GNU extensions; -regex exists on BSD but needs -E for ERE
 ```
 

@@ -45,7 +45,7 @@ C-a [                                           # Enter scrollback/copy mode (na
 C-a ]                                           # Paste from buffer
 # In copy mode: Space to start selection, Space again to copy, then C-a ] to paste
 C-a Esc                                         # Enter copy mode (same as C-a [)
-C-a h                                           # Write scrollback to file (hardcopy)
+C-a h                                           # Write visible window to file (hardcopy; scrollback needs :hardcopy -h file)
 C-a H                                           # Toggle logging to file (screenlog.N)
 
 # Misc
@@ -120,7 +120,7 @@ screen -x shared                                # User 2 attaches to same sessio
 # C-a S splits but doesn't create a shell — press C-a c in the new region
 # C-a s (lowercase) sends XOFF and freezes terminal — press C-a q to unfreeze
 # screen -r fails if session is attached elsewhere — use screen -d -r to force
-# Copy mode uses vi or emacs keys depending on $EDITOR
+# Copy mode uses vi-like keys (h/j/k/l, /, ?) — not tied to $EDITOR
 # Scrollback default is only 100 lines — set defscrollback in .screenrc
 # screen sessions survive SSH disconnect but NOT server reboot
 ```

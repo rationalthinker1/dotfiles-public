@@ -18,8 +18,7 @@ sudo fail2ban-client status                     # List all active jails
 sudo fail2ban-client status sshd                # Show status of sshd jail (banned IPs, stats)
 sudo fail2ban-client banned                     # List all currently banned IPs across all jails
 sudo fail2ban-client get sshd banip             # List banned IPs for specific jail
-sudo fail2ban-client get sshd currentlyban      # Count of currently banned IPs
-sudo fail2ban-client get sshd totalban          # Total bans since start (including expired)
+sudo fail2ban-client status sshd                # Currently banned count + total banned count (see "Currently banned"/"Total banned")
 ```
 
 ## 🔒 Ban and Unban
@@ -28,7 +27,7 @@ sudo fail2ban-client get sshd totalban          # Total bans since start (includ
 sudo fail2ban-client set sshd banip 1.2.3.4    # Manually ban an IP
 sudo fail2ban-client set sshd unbanip 1.2.3.4  # Unban an IP
 sudo fail2ban-client unban 1.2.3.4             # Unban IP from all jails
-sudo fail2ban-client unban --all               # Unban ALL IPs from all jails
+sudo fail2ban-client unban --all               # Unban ALL IPs from all jails  # ⚠️ releases every current ban
 ```
 
 ## 📁 Key Paths
@@ -56,6 +55,8 @@ sudo fail2ban-client unban --all               # Unban ALL IPs from all jails
 
 ```bash
 # Create /etc/fail2ban/jail.local for overrides:
+# ⚠️ The trailing "# ..." notes below are for reading only. In a real file put comments on
+#    their own line (inline needs " ;"), or '#...' becomes part of the value.
 
 # [DEFAULT]
 # bantime  = 1h                                 # Ban duration (default: 10m)
@@ -96,8 +97,8 @@ sudo fail2ban-regex /var/log/auth.log "Failed password .* from <HOST>"
 # Test filter with verbose output:
 sudo fail2ban-regex --print-all-matched /var/log/auth.log /etc/fail2ban/filter.d/sshd.conf
 
-# Test against a single log line:
-echo 'Failed password for root from 1.2.3.4 port 22 ssh2' | sudo fail2ban-regex - /etc/fail2ban/filter.d/sshd.conf
+# Test against a single log line (needs full syslog prefix; positional arg is the log line or file):
+sudo fail2ban-regex 'Nov  5 10:00:00 host sshd[1234]: Failed password for root from 1.2.3.4 port 22 ssh2' /etc/fail2ban/filter.d/sshd.conf
 ```
 
 ## 🔧 Jail Management
@@ -106,7 +107,7 @@ echo 'Failed password for root from 1.2.3.4 port 22 ssh2' | sudo fail2ban-regex 
 sudo fail2ban-client start sshd                 # Start a specific jail
 sudo fail2ban-client stop sshd                  # Stop a specific jail
 sudo fail2ban-client reload sshd                # Reload a specific jail
-sudo fail2ban-client add myjail                 # Add a new jail at runtime
+sudo fail2ban-client add myjail auto            # Create jail at runtime (backend arg required; then configure with `set` commands)
 sudo fail2ban-client get sshd maxretry          # Get jail setting
 sudo fail2ban-client set sshd maxretry 3        # Change jail setting at runtime
 sudo fail2ban-client get sshd bantime           # Get ban duration
@@ -177,14 +178,14 @@ sudo grep "Failed password" /var/log/auth.log | awk '{print $(NF-3)}' | sort | u
 ## 🔗 Common Combos
 
 ```bash
-# Quick setup from scratch
-sudo apt install fail2ban && sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local && sudo vim /etc/fail2ban/jail.local
+# Quick setup from scratch (jail.local holds only your overrides; never copy jail.conf)
+sudo apt install fail2ban && sudo vim /etc/fail2ban/jail.local   # write [DEFAULT] / [sshd] overrides only
 
 # Check if IP is currently banned (across all jails)
 sudo fail2ban-client banned | grep "1.2.3.4"
 
-# Unban IP and whitelist it permanently
-sudo fail2ban-client unban 1.2.3.4 && echo "# Add to jail.local [DEFAULT] ignoreip"
+# Unban IP and whitelist it permanently: unban, add IP to ignoreip in jail.local [DEFAULT], reload
+sudo fail2ban-client unban 1.2.3.4 && sudo vim /etc/fail2ban/jail.local && sudo fail2ban-client reload
 
 # Full status overview
 sudo fail2ban-client status && echo "---" && sudo fail2ban-client status sshd
@@ -200,12 +201,12 @@ sudo fail2ban-regex /var/log/auth.log /etc/fail2ban/filter.d/sshd.conf --print-a
 
 ```bash
 # NEVER edit jail.conf or fail2ban.conf — always use jail.local or jail.d/ overrides
-# jail.local overrides jail.conf — if you define [sshd] in jail.local, all settings must be there
+# jail.local overrides jail.conf per key — [sshd] in jail.local only needs the keys you change
 # ignoreip: ALWAYS whitelist your own IP — you can lock yourself out via SSH
 # bantime, findtime accept suffixes: s (seconds), m (minutes), h (hours), d (days), w (weeks)
 # fail2ban-regex tests filters but doesn't actually ban — use it for debugging only
 # Bans use iptables by default — on systems with nftables/firewalld, change banaction
-# After editing jail.local: sudo fail2ban-client reload (not just systemctl reload)
+# After editing jail.local: sudo fail2ban-client reload (systemctl reload runs the same reload)
 # Check log rotation: if logs rotate, fail2ban may stop monitoring — ensure logpath is correct
 ```
 

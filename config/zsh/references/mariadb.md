@@ -6,9 +6,9 @@
 mariadb -u root -p                              # Connect as root (prompts for password)
 mariadb -u root -p dbname                       # Connect directly to a database
 mariadb -u user -p -h 192.168.1.10              # Connect to remote host
-mariadb -u user -p -P 3307                      # Connect on non-default port
+mariadb -u user -p -h 127.0.0.1 -P 3307         # Non-default port (needs -h/--protocol=tcp; localhost uses the socket and ignores -P)
 mariadb -u user -p -S /var/run/mysqld/mysqld.sock  # Connect via Unix socket
-mariadb --defaults-file=~/.my.cnf               # Use custom config file
+mariadb --defaults-file="$HOME/.my.cnf"         # Use custom config file (must be the first option; ~ is not expanded after =)
 ```
 
 ## 💾 Dump and Backup (mariadb-dump / mysqldump)
@@ -51,7 +51,7 @@ mariadb -u root -p -e "SHOW VARIABLES LIKE '%max_connections%'"  # Check setting
 
 SHOW DATABASES;                                  -- List all databases
 CREATE DATABASE mydb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;  -- Create database
-DROP DATABASE mydb;                              -- Delete database
+DROP DATABASE mydb;                              -- ⚠️ Deletes database and all its data, no confirmation
 USE mydb;                                        -- Switch to database
 
 SHOW TABLES;                                     -- List tables
@@ -74,10 +74,9 @@ SELECT table_name, table_rows, data_length, index_length
 CREATE USER 'app'@'localhost' IDENTIFIED BY 'password';               -- Create local user
 CREATE USER 'app'@'%' IDENTIFIED BY 'password';                       -- Create user (any host)
 GRANT ALL PRIVILEGES ON mydb.* TO 'app'@'localhost';                  -- Grant all on database
-GRANT SELECT, INSERT, UPDATE ON mydb.* TO 'readonly'@'%';            -- Limited privileges
+GRANT SELECT ON mydb.* TO 'readonly'@'%';                             -- Read-only privileges
 REVOKE ALL PRIVILEGES ON mydb.* FROM 'app'@'localhost';               -- Revoke privileges
 DROP USER 'app'@'localhost';                                          -- Delete user
-FLUSH PRIVILEGES;                                                      -- Reload grant tables
 SELECT user, host FROM mysql.user;                                     -- List all users
 ```
 
@@ -97,8 +96,8 @@ SHOW MASTER STATUS\G                             -- Replication status (primary)
 ## 🧰 Output Formatting
 
 ```bash
-mariadb -u root -p -e "SELECT * FROM users" --batch    # Tab-separated output (scriptable)
-mariadb -u root -p -e "SELECT * FROM users" --batch -N # Tab-separated, no headers
+mariadb -u root -p -e "SELECT * FROM users" --batch dbname    # Tab-separated output (scriptable)
+mariadb -u root -p -e "SELECT * FROM users" --batch -N dbname # Tab-separated, no headers
 mariadb -u root -p -e "SELECT * FROM users\G" dbname   # Vertical format (one column per line)
 mariadb -u root -p --html -e "SELECT * FROM users" db   # HTML table output
 mariadb -u root -p --xml -e "SELECT * FROM users" db    # XML output
@@ -107,8 +106,8 @@ mariadb -u root -p --xml -e "SELECT * FROM users" db    # XML output
 ## 🔗 Common Combos
 
 ```bash
-# Dump remote DB, restore locally
-mariadb-dump -u root -p -h remote_host dbname | mariadb -u root -p local_db
+# Dump remote DB, restore locally (no -p: two prompts in one pipeline collide — put creds in ~/.my.cnf or use MYSQL_PWD)
+mariadb-dump -u root -h remote_host dbname | mariadb -u root local_db
 
 # Dump, compress, and copy to remote server
 mariadb-dump -u root -p dbname | gzip | ssh user@host "cat > /backups/dump.sql.gz"
@@ -116,14 +115,14 @@ mariadb-dump -u root -p dbname | gzip | ssh user@host "cat > /backups/dump.sql.g
 # Quick table size report
 mariadb -u root -p -e "SELECT table_name, ROUND(data_length/1024/1024, 2) AS 'Size (MB)' FROM information_schema.tables WHERE table_schema='mydb' ORDER BY data_length DESC"
 
-# Export query result to CSV
+# Export query result to naive CSV (GNU sed; no quoting — breaks on commas, quotes, NULL; use SELECT ... INTO OUTFILE or a real tool for real CSV)
 mariadb -u root -p -e "SELECT * FROM users" --batch -N dbname | sed 's/\t/,/g' > users.csv
 
-# Copy table between databases
-mariadb-dump -u root -p source_db table1 | mariadb -u root -p target_db
+# Copy table between databases (no -p: two prompts collide — use ~/.my.cnf or MYSQL_PWD)
+mariadb-dump -u root source_db table1 | mariadb -u root target_db
 
-# Kill all queries running longer than 60 seconds
-mariadb -u root -p -e "SELECT id FROM information_schema.processlist WHERE time > 60 AND command != 'Sleep'" --batch -N | xargs -I {} mariadb -u root -p -e "KILL {}"
+# ⚠️ Kill all user queries running longer than 60 seconds (needs creds in ~/.my.cnf, one connection per id)
+mariadb -u root -e "SELECT id FROM information_schema.processlist WHERE time > 60 AND command NOT IN ('Sleep','Binlog Dump','Binlog Dump GTID') AND user NOT IN ('system user','event_scheduler')" --batch -N | xargs -I {} mariadb -u root -e "KILL {}"
 ```
 
 ## ⚠️ Gotchas

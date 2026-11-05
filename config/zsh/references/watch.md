@@ -15,10 +15,10 @@ watch "df -h"                                   # Monitor disk usage in real-tim
 watch -n 5 command                              # Run every 5 seconds (custom interval)
 watch -n 0.5 command                            # Run every 0.5 seconds (fast refresh)
 watch -d command                                # Highlight differences between updates
-watch -d=cumulative command                     # Highlight all changes since start (persistent)
+watch -d=permanent command                      # Highlight all changes since start (persistent)
 watch -t command                                # Hide the header (title bar)
 watch -g command                                # Exit when output changes (trigger mode)
-watch -e command                                # Exit on error (non-zero exit code)
+watch -e command                                # On command error: freeze display, exit after a keypress
 watch -b command                                # Beep on error
 watch -p command                                # Precise timing (try to run exactly on interval)
 watch -c command                                # Interpret ANSI color sequences
@@ -54,7 +54,7 @@ watch -n 2 "pgrep -a node"                      # Watch Node.js processes
 ```bash
 watch -n 1 "ss -s"                              # Socket statistics summary
 watch -n 5 "curl -so /dev/null -w '%{http_code}' https://example.com"  # HTTP health check
-watch -n 2 "netstat -tulanp 2>/dev/null | grep ESTABLISHED | wc -l"    # Active connection count
+watch -n 2 "netstat -tanp 2>/dev/null | grep ESTABLISHED | wc -l"    # Active connection count
 watch -d -n 5 "dig +short example.com"          # Watch DNS resolution changes
 ```
 
@@ -83,8 +83,8 @@ watch -n 3 "tail -5 build.log"
 # Watch queue length (Redis)
 watch -n 1 "redis-cli LLEN myqueue"
 
-# Watch database connections
-watch -n 2 "mariadb -u root -p -e 'SHOW PROCESSLIST' --batch | wc -l"
+# Watch database connections (watch has no tty for a password prompt — use ~/.my.cnf or MYSQL_PWD)
+watch -n 2 "mariadb -u root -e 'SHOW PROCESSLIST' --batch | wc -l"
 
 # Watch git status for changes
 watch -n 5 -d "git status --short"
@@ -106,7 +106,7 @@ watch -n 5 -d "git status --short"
 # Piped commands must be quoted: watch "cmd1 | cmd2" (not watch cmd1 | cmd2)
 # watch runs command via sh, not zsh — ZSH-specific syntax won't work
 # -n accepts decimals on GNU watch but not all implementations
-# -g only checks stdout — stderr changes are ignored
+# -g exits when the command's output changes — wrap in "cmd 2>&1" if you need stderr compared too
 # watch -c may not work if command doesn't force color (use --color=always)
 # On macOS: brew install watch (not installed by default)
 ```

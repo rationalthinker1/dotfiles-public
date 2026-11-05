@@ -63,7 +63,6 @@ fd -u                               # Alias for -HI (unrestricted)
 fd --max-depth 2                    # Limit search depth
 fd --min-depth 2                    # Skip top-level results
 fd --prune                          # Don't descend into matched directories
-fd --follow                         # Follow symlinks
 fd --no-ignore-vcs                  # Ignore .gitignore but respect .fdignore
 fd --threads 4                      # Limit number of threads
 fd --show-errors                    # Show filesystem errors (permission denied, etc.)
@@ -72,7 +71,7 @@ fd --show-errors                    # Show filesystem errors (permission denied,
 ## ⚡ Exec and Batch Actions
 
 ```bash
-fd -e log -x rm {}                  # Delete each .log file one at a time
+fd -e log -x rm {}                  # Delete each .log file one at a time  # ⚠️ destructive; preview with echo
 fd -e jpg -x convert {} {.}.png     # Convert each .jpg to .png
 fd -e rs -X wc -l                   # Count lines across all .rs files (single invocation)
 fd -e bak -x mv {} {.}             # Remove .bak extension from each file
@@ -89,9 +88,10 @@ fd "test" -x echo {/}              # Print only filenames of matches
 ## 🔗 Common Combos
 
 ```bash
-fd -e tmp -0 | xargs -0 rm                   # Null-safe delete of all .tmp files
+fd -e tmp -0 | xargs -0 rm                   # Null-safe delete of all .tmp files  # ⚠️ destructive
 fd -t f -e js | head -20                      # Preview first 20 JS files found
-fd -t d -e "" "node_modules" -x rm -rf {}     # Remove all node_modules dirs
+# ⚠️ Destructive: preview first by swapping `rm -rf` for `echo`
+fd -t d -H -I --prune '^node_modules$' -x rm -rf {}  # Remove all node_modules dirs
 fd -H "^\.env" --max-depth 2                  # Find .env files near project root
 fd -e go -X wc -l | tail -1                   # Total line count of all Go files
 fd -t f --changed-within 30m                  # Files you touched in the last 30 minutes
