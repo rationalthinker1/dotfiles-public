@@ -377,6 +377,11 @@ zstyle ':fzf-tab:complete:kill:*' fzf-preview '[[ $group == "[process ID]" ]] &&
 zstyle ':fzf-tab:complete:git-(add|diff|restore):*' fzf-preview 'git diff --color=always $word'
 zstyle ':fzf-tab:complete:git-log:*' fzf-preview 'git log --color=always $word'
 zstyle ':fzf-tab:complete:git-show:*' fzf-preview 'git show --color=always $word'
+# `ref <TAB>` / `ref -e <TAB>`: render the highlighted cheat sheet. $word is the candidate
+# under the cursor (a bare topic name); ZDOTDIR is exported, so fzf's shell expands it.
+# cat fallback because bat is zi-turbo loaded (wait'2') and may not be on PATH yet.
+zstyle ':fzf-tab:complete:ref:*' fzf-preview '(bat --color=always --style=plain --language=markdown "${ZDOTDIR}/references/${word}.md" 2>/dev/null || cat "${ZDOTDIR}/references/${word}.md")'
+zstyle ':fzf-tab:complete:ref:*' fzf-flags '--preview-window=right:60%:wrap'
 zstyle ':fzf-tab:*' switch-group ',' '.'
 zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 
@@ -480,6 +485,18 @@ if [[ -d "${_zsh_repo_functions}" ]]; then
     fpath=("${_zsh_repo_functions}" "${(@)fpath:#${_zsh_repo_functions}}")
 fi
 unset _zsh_repo_functions
+
+# Completions SHIPPED BY grok's installer land in ${GROK_HOME}/completions/zsh (_grok).
+# The installer would append its own `fpath=(...)` + `compinit -C` to this file; that
+# compinit has no -d, so it reloads the stale default ${ZDOTDIR}/.zcompdump over the
+# real dump and silently drops every hand-written completion (_ref, _run, _dock). Here
+# instead: same shape as the two blocks above — prepended BEFORE compinit, deduped via
+# ${(@)fpath:#…}, and -d-guarded so a missing directory never reaches compaudit.
+typeset _zsh_grok_functions="${GROK_HOME}/completions/zsh"
+if [[ -d "${_zsh_grok_functions}" ]]; then
+    fpath=("${_zsh_grok_functions}" "${(@)fpath:#${_zsh_grok_functions}}")
+fi
+unset _zsh_grok_functions
 
 # Initialize ZSH completion system before any plugins that depend on it (e.g. fzf-tab)
 # compinit silently fails to save its dump if the parent directory is missing

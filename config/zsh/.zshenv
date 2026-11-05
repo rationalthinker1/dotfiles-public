@@ -59,6 +59,12 @@ export BUN_INSTALL="${XDG_CONFIG_HOME}/bun"
 export PNPM_HOME="${XDG_CONFIG_HOME}/pnpm"
 export CLAUDE_CONFIG_DIR="${XDG_CONFIG_HOME}/claude"
 export CODEX_HOME="${XDG_CONFIG_HOME}/codex"
+# grok (xAI CLI) keeps its binary, completions and sessions under this directory. Its own
+# installer defaults to ~/.grok; GROK_HOME relocates it. Moving it is a one-time
+# `mv ~/.grok "${GROK_HOME}"`, and until then `grok` is not on PATH (the dead-entry filter
+# below drops "${GROK_HOME}/bin"). The installer appends its own PATH/fpath/compinit block
+# to .zshrc on each run; delete that block (a bare `compinit -C` there clobbers _comps).
+export GROK_HOME="${XDG_CONFIG_HOME}/grok"
 export GNUPGHOME="${XDG_CONFIG_HOME}/gnupg"
 export PASSWORD_STORE_DIR="${XDG_CONFIG_HOME}/password-store"
 export FNM_PATH="${XDG_CONFIG_HOME}/.fnm"
@@ -196,6 +202,7 @@ path=(
   "${XDG_DATA_HOME}/yarn/global/node_modules/.bin"
   "${BUN_INSTALL}/bin"
   "${PNPM_HOME}/bin"
+  "${GROK_HOME}/bin"
   "${FNM_PATH}"
   $path
   # mise SHIMS, deliberately LAST.
