@@ -1875,32 +1875,38 @@ function killport() {
 # Smart package manager runner - detects npm/yarn/pnpm/bun
 function run() {
   if [[ $# -lt 1 ]]; then
-    echo "Usage: run <script>|install [args]"
+    echo "Usage: run <script>|install|outdated|upgrade [args]"
     echo "Example: run dev"
     return 1
   fi
 
-  # "install" installs dependencies rather than running a script: `npm run install` and
-  # `bun run install` look for a package.json script of that name and fail without one.
-  # An empty array expands to no words at all, even quoted.
+  # "install", "outdated" and "upgrade" are package manager commands rather than scripts:
+  # `npm run install` and `bun run outdated` look for a package.json script of that name
+  # and fail without one. An empty array expands to no words at all, even quoted.
   local -a run_subcommand=(run)
-  [[ "${1}" == "install" ]] && run_subcommand=()
+  [[ "${1}" == (install|outdated|upgrade) ]] && run_subcommand=()
+
+  # "upgrade" means updating dependencies, which bun, pnpm and npm call "update". This is
+  # not cosmetic: `bun upgrade` replaces the Bun binary itself. Yarn 1 keeps the original
+  # words because it is the reverse: `yarn upgrade` is the command, `yarn update` a script.
+  local -a update_args=("$@")
+  [[ "${1}" == "upgrade" ]] && update_args[1]="update"
 
   # bun is checked first: it writes bun.lockb (<1.2) or bun.lock (1.2+), but bun
   # projects frequently still carry a package-lock.json from before the switch, which
   # would otherwise fall through to npm below.
   if [[ -f "bun.lockb" ]] || [[ -f "bun.lock" ]]; then
     echo "📦 Using Bun"
-    bun "${run_subcommand[@]}" "$@"
+    bun "${run_subcommand[@]}" "${update_args[@]}"
   elif [[ -f "yarn.lock" ]]; then
     echo "📦 Using Yarn"
     yarn "$@"
   elif [[ -f "pnpm-lock.yaml" ]]; then
     echo "📦 Using pnpm"
-    pnpm "$@"
+    pnpm "${update_args[@]}"
   elif [[ -f "package-lock.json" ]] || [[ -f "package.json" ]]; then
     echo "📦 Using npm"
-    npm "${run_subcommand[@]}" "$@"
+    npm "${run_subcommand[@]}" "${update_args[@]}"
   else
     echo "❌ No package.json found"
     return 1

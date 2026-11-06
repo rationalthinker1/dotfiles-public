@@ -1,8 +1,8 @@
 #compdef run
 # run — the package-manager-agnostic script runner defined in aliases.zsh.
 #
-# Completes "install" plus the "scripts" keys of ./package.json, with each script's command
-# as its description. Only the current directory is read, matching run() itself, which also
+# Completes "install", "outdated", "upgrade" and the "scripts" keys of ./package.json, with
+# each script's command as its description. Only the current directory is read, matching run() itself, which also
 # looks only at ./package.json and the lockfiles beside it.
 #
 # The JSON is parsed by node, falling back to bun, and NOT by jq: jq is not provisioned
@@ -34,9 +34,15 @@ function _run_scripts() {
         scripts+=("${${line%%$'\t'*}//:/\\:}:${line#*$'\t'}")
     done
 
-    # run() treats "install" as a dependency install, so a script of that name is
-    # unreachable through it and must not be offered with its own command as description.
-    scripts=(${scripts:#install:*} "install:install dependencies with the detected package manager")
+    # run() hands "install", "outdated" and "upgrade" to the package manager, so a script
+    # of any of those names is unreachable through it and must not be offered with its own
+    # command as description.
+    scripts=(
+        ${scripts:#(install|outdated|upgrade):*}
+        "install:install dependencies with the detected package manager"
+        "outdated:list outdated dependencies with the detected package manager"
+        "upgrade:update dependencies within their package.json ranges"
+    )
     _describe -t scripts 'package.json script' scripts
 }
 
