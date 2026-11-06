@@ -100,6 +100,12 @@ local leaked
 local orig_branch
 orig_branch="$(git symbolic-ref --short HEAD 2>/dev/null)"
 
+# Keep bare `public` meaning the local branch. Git 2.48+ fetches recreate
+# refs/remotes/public/HEAD, which also matches that name, so every `public` in this script
+# printed "refname 'public' is ambiguous". The setting stops that on each machine that syncs.
+git config remote.public.followRemoteHEAD never
+git remote set-head public --delete >/dev/null 2>&1
+
 print -r -- "Fetching public…"
 git fetch public >/dev/null 2>&1 || {
     print -ru2 -- "sync-public: could not fetch the public remote"
