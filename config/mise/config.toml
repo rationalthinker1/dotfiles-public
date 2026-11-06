@@ -68,8 +68,9 @@ uv = "latest"
 # file is the global config on the Windows side too (powershell/tools.ps1 points
 # MISE_CONFIG_FILE at it), where mise tried to exec the plugin's bin/list-all and got
 # "%1 is not a valid Win32 application. (os error 193)" on every `mise use`/`mise
-# install`. The gate makes mise skip the tool off-platform instead of failing on it.
-# Every other entry here is node/aqua/core, all of which have real Windows builds.
+# install`. The gate makes mise skip the tool off-platform instead of failing on it, but
+# version resolution still runs list-all and warns, so tools.ps1 also sets
+# MISE_DISABLE_TOOLS for it on Windows. Every other entry here is node/aqua/core, all of which have real Windows builds.
 "asdf:mise-plugins/mise-vim" = { version = "9.2.0926", os = ["linux", "macos"] }
 # Neovim sits ALONGSIDE vim, not instead of it. `vim` remains the daily driver
 # (config in .vim/); this is the parallel Neovim config in config/nvim/, kept so

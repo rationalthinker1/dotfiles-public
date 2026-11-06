@@ -53,6 +53,16 @@ if ((Test-Command 'mise') -and (Test-Path $miseConfig) -and -not $env:MISE_CONFI
     $env:MISE_CONFIG_FILE = $miseConfig
 }
 
+if (Test-Command 'mise') {
+    # The os gate on this tool in config.toml stops it installing, but mise 2026.9 still
+    # runs the plugin's bash list-all to resolve versions, warning "%1 is not a valid Win32
+    # application" on every outdated/upgrade/doctor/reshim. Disabling it silences that.
+    if (-not $env:MISE_DISABLE_TOOLS) { $env:MISE_DISABLE_TOOLS = 'asdf:mise-plugins/mise-vim' }
+    # winget's Links\mise.exe has no mise-shim.exe beside it, so the default "exe" mode warns
+    # and falls back to file shims anyway. Ask for what actually happens.
+    if (-not $env:MISE_WINDOWS_SHIM_MODE) { $env:MISE_WINDOWS_SHIM_MODE = 'file' }
+}
+
 # ACTIVATE mise. Without this, pwsh had mise's COMPLETIONS (see the completer section
 # below) but none of its TOOLS: nothing put mise on PATH, so `mise use npm` reported a
 # successful install and the very next `npm` was "not recognized as a name of a cmdlet".
@@ -70,6 +80,18 @@ if (Test-Command 'mise') {
     mise activate pwsh | Out-String | Invoke-Expression
     # PATH just changed; the probe map built above no longer describes it.
     Reset-PathCommandMap
+}
+
+# pnpm refuses every global command with ERR_PNPM_GLOBAL_BIN_DIR_NOT_IN_PATH until its
+# global bin dir is on PATH. .zshenv handles this for zsh; `pnpm setup` would do it by
+# rewriting the persistent user PATH, which this profile deliberately leaves alone.
+if ($env:LOCALAPPDATA -and (Test-Command 'pnpm')) {
+    if (-not $env:PNPM_HOME) { $env:PNPM_HOME = Join-Path $env:LOCALAPPDATA 'pnpm' }
+    $pnpmBin = Join-Path $env:PNPM_HOME 'bin'
+    if (($env:PATH -split [IO.Path]::PathSeparator) -notcontains $pnpmBin) {
+        $env:PATH = "${pnpmBin}$([IO.Path]::PathSeparator)${env:PATH}"
+        Reset-PathCommandMap
+    }
 }
 
 # .zshenv:54 sets EDITOR=vim for zsh. Nothing set it here, so `ref -e` and `note` had
@@ -103,7 +125,12 @@ if ($init) { . $init }
 $global:DotfilesHasAtuin = Test-Command 'atuin'
 if ($global:DotfilesHasAtuin) {
     $init = Get-ToolInitScript -Name 'atuin' -Generator { atuin init powershell }
-    if ($init) { . $init }
+    if ($init) {
+        # atuin's script replaces a loaded Atuin module itself, but warns as it does, and
+        # `reload` always hits that. Removing it first is the same swap without the warning.
+        Remove-Module Atuin -ErrorAction Ignore
+        . $init
+    }
 }
 
 #---------------------------------------------------------------------------------------

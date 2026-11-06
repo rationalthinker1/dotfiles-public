@@ -24,7 +24,7 @@
 #   2. Runtimes & modules    PowerShell modules, mise, rustup, gh extensions, Claude Code
 #   3. Global packages       npm, pnpm, yarn, uv, pipx, cargo, atuin sync
 #   4. Dotfiles deployment   refresh the local-disk copy from the repo (`dotsync`)
-#   5. Cleanup & caches      scoop/npm/pnpm/yarn/pip/uv/go caches, %TEMP% older than 30d
+#   5. Cleanup & caches      mise prune, scoop/npm/pnpm/yarn/pip/uv/go caches, %TEMP% older than 30d
 #   6. Health & integrity    PATH shadows, dead PATH entries, pending reboot, disk report
 #
 # Phase 4 is the one with no zsh equivalent, and it is the reason this function matters
@@ -100,7 +100,12 @@ function script:Invoke-MaintainStep {
         # A non-terminating error inside a step is information, not a reason to stop.
         $previous = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
-        try { & $Body } finally { $ErrorActionPreference = $previous }
+        # Through Write-Host, because Start-Transcript does not record a native command's
+        # direct console output: the log said "rustup: exit 1" and never why. The cost is
+        # that tools see a pipe and drop their progress bars. $LASTEXITCODE survives this.
+        try {
+            & $Body 2>&1 | ForEach-Object { Write-Host "$_" }
+        } finally { $ErrorActionPreference = $previous }
 
         if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -notin $OkExit) {
             Write-MaintainWarn "${Name}: exit ${LASTEXITCODE}"
@@ -249,10 +254,14 @@ function script:Invoke-MaintainElevatedBatch {
         & $WhileWaiting
     }
 
-    # Wait-Process rather than $child.WaitForExit(): with -Verb RunAs the object comes back
-    # from ShellExecute, whose handle is not always usable for WaitForExit.
+    # Poll, because an unelevated process cannot wait on an elevated one. Wait-Process needs
+    # a handle and gets "Access is denied", and -ErrorAction hid that, so it returned in
+    # milliseconds: every step reported "no result recorded" while winget was still running.
+    # $child.WaitForExit() has the same handle problem. Get-Process -Id needs no such access.
     Write-MaintainSkip 'waiting for the elevated window to finish'
-    Wait-Process -Id $child.Id -ErrorAction SilentlyContinue
+    while ($child -and (Get-Process -Id $child.Id -ErrorAction SilentlyContinue)) {
+        Start-Sleep -Seconds 1
+    }
 
     if (Test-Path -LiteralPath $childLog) {
         Get-Content -LiteralPath $childLog | Write-Host
@@ -378,7 +387,7 @@ Full-spectrum Windows maintenance — update, sync, clean, and verify — in six
   2. Runtimes & modules    PowerShell modules, mise, rustup, gh extensions, Claude Code
   3. Global packages       npm, pnpm, yarn, uv, pipx, cargo, atuin sync
   4. Dotfiles deployment   refresh %LOCALAPPDATA%\dotfiles from the repo (dotsync)
-  5. Cleanup & caches      scoop/npm/pnpm/yarn/pip/uv/go caches, %TEMP% older than 30 days
+  5. Cleanup & caches      mise prune, scoop/npm/pnpm/yarn/pip/uv/go caches, %TEMP% older than 30 days
   6. Health & integrity    PATH shadows, dead PATH entries, pending reboot, disk report
 
 Options:
@@ -706,9 +715,15 @@ function maintain {
             Invoke-MaintainStep 'cargo (installed binaries)' { cargo install-update -a }
         } else { Write-MaintainStepSkipped 'cargo-update not installed (cargo install cargo-update)' }
 
-        if (Test-Command 'atuin') {
+        # Guard on the session file, as maintain.zsh does: without a login `atuin sync` exits
+        # 1, booking a failure on every run of a machine that doesn't use the sync service.
+        if (-not (Test-Command 'atuin')) {
+            Write-MaintainStepSkipped 'atuin not installed'
+        } elseif (-not (Test-Path (Join-Path $HOME '.local\share\atuin\session'))) {
+            Write-MaintainStepSkipped 'atuin sync (not logged in; run atuin login to enable)'
+        } else {
             Invoke-MaintainStep 'atuin sync' { atuin sync }
-        } else { Write-MaintainStepSkipped 'atuin not installed' }
+        }
 
         #-------------------------------------------------------------------------------
         # 4. DOTFILES DEPLOYMENT
@@ -733,6 +748,10 @@ function maintain {
         } else {
             Write-MaintainPhase '[5/6] Cleanup & caches'
 
+            # Superseded versions and tools dropped from config.toml. Nothing removed them
+            # here, so gh's leftover shim kept shadowing the winget install long after gh
+            # left the config. maintain.zsh does the same in its own phase 5.
+            if (Test-Command 'mise')  { Invoke-MaintainStep 'mise prune'  { mise prune --yes } }
             if (Test-Command 'scoop') { Invoke-MaintainStep 'scoop cache' { scoop cache rm '*' } }
             if (Test-Command 'npm')   { Invoke-MaintainStep 'npm cache'   { npm cache verify } }
             if (Test-Command 'pnpm')  { Invoke-MaintainStep 'pnpm store'  { pnpm store prune } }

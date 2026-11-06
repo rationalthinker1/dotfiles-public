@@ -21,7 +21,9 @@ Set-PSReadLineOption -ShowToolTips
 # Predictive IntelliSense — the zsh-autosuggestions analogue
 #---------------------------------------------------------------------------------------
 
-if ($psrl.Version -ge [version]'2.2.0') {
+# Not when output is redirected: PSReadLine then rejects prediction with an error, which
+# any `pwsh ... > file` run of this profile would print.
+if ($psrl.Version -ge [version]'2.2.0' -and -not [Console]::IsOutputRedirected) {
     # HistoryAndPlugin picks up CompletionPredictor when it is installed; falls back to
     # plain History when it is not, so this is safe either way.
     Set-PSReadLineOption -PredictionSource HistoryAndPlugin

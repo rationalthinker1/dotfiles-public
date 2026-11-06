@@ -242,7 +242,7 @@ not exist here.
 | 2. Runtimes & modules | PowerShell modules, `mise upgrade`, `rustup update`, `gh extension upgrade --all`, `claude update` |
 | 3. Global packages | npm, pnpm, uv (self + tools), pipx, `cargo install-update`, `atuin sync` |
 | 4. Dotfiles deployment | `dotsync` — refresh `%LOCALAPPDATA%\dotfiles` from the repo |
-| 5. Cleanup & caches | scoop/npm/pnpm/yarn/uv/pip/go caches, `%TEMP%` entries older than 30 days |
+| 5. Cleanup & caches | `mise prune`, scoop/npm/pnpm/yarn/uv/pip/go caches, `%TEMP%` entries older than 30 days |
 | 6. Health & integrity | PATH shadows, dead PATH entries, pending reboot, disk report |
 
 ```powershell

@@ -187,17 +187,26 @@ function Get-ToolInitScript {
 
     if (Test-Path $cacheFile) { return $cacheFile }
 
-    # Drop stale generations for this tool before writing the new one.
-    Get-ChildItem -Path $cacheDir -Filter "${Name}-*.ps1" -ErrorAction SilentlyContinue |
-        Remove-Item -Force -ErrorAction SilentlyContinue
-
+    # A generator can be a mise shim, and running a shim installs every missing tool in the
+    # config first. Profile load must never start an install: a toolchain that failed to
+    # install made every `reload` retry it and print the failure. Restored in finally.
+    $previousAutoInstall = $env:MISE_EXEC_AUTO_INSTALL
+    $env:MISE_EXEC_AUTO_INSTALL = '0'
+    $global:LASTEXITCODE = 0
     try {
         $generated = & $Generator | Out-String
     } catch {
         Write-Warning "dotfiles: '${Name}' init failed: $($_.Exception.Message)"
         return $null
+    } finally {
+        $env:MISE_EXEC_AUTO_INSTALL = $previousAutoInstall
     }
-    if ([string]::IsNullOrWhiteSpace($generated)) { return $null }
+    # A failed generator's partial output must not be cached as the tool's init script.
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($generated)) { return $null }
+
+    # Only now drop stale generations, so a failed run above costs no working cache entry.
+    Get-ChildItem -Path $cacheDir -Filter "${Name}-*.ps1" -ErrorAction SilentlyContinue |
+        Remove-Item -Force -ErrorAction SilentlyContinue
 
     Set-Content -Path $cacheFile -Value $generated -Encoding UTF8
     return $cacheFile
