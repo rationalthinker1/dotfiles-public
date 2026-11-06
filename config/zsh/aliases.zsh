@@ -1875,17 +1875,23 @@ function killport() {
 # Smart package manager runner - detects npm/yarn/pnpm/bun
 function run() {
   if [[ $# -lt 1 ]]; then
-    echo "Usage: run <script>"
+    echo "Usage: run <script>|install [args]"
     echo "Example: run dev"
     return 1
   fi
+
+  # "install" installs dependencies rather than running a script: `npm run install` and
+  # `bun run install` look for a package.json script of that name and fail without one.
+  # An empty array expands to no words at all, even quoted.
+  local -a run_subcommand=(run)
+  [[ "${1}" == "install" ]] && run_subcommand=()
 
   # bun is checked first: it writes bun.lockb (<1.2) or bun.lock (1.2+), but bun
   # projects frequently still carry a package-lock.json from before the switch, which
   # would otherwise fall through to npm below.
   if [[ -f "bun.lockb" ]] || [[ -f "bun.lock" ]]; then
     echo "📦 Using Bun"
-    bun run "$@"
+    bun "${run_subcommand[@]}" "$@"
   elif [[ -f "yarn.lock" ]]; then
     echo "📦 Using Yarn"
     yarn "$@"
@@ -1894,7 +1900,7 @@ function run() {
     pnpm "$@"
   elif [[ -f "package-lock.json" ]] || [[ -f "package.json" ]]; then
     echo "📦 Using npm"
-    npm run "$@"
+    npm "${run_subcommand[@]}" "$@"
   else
     echo "❌ No package.json found"
     return 1
