@@ -63,7 +63,7 @@ readonly -a TERMUX_PACKAGES=(
     # CLI tools .zshrc installs from GitHub releases elsewhere
     fzf ripgrep fd bat eza zoxide atuin git-delta dust hyperfine jq yq
     lazygit gh direnv tealdeer duf glow broot yazi fastfetch
-    sd ast-grep xh ouch gping hexyl grex pastel dua bottom procs doggo
+    sd ast-grep xh ouch gping hexyl grex pastel bottom procs doggo
     cloudflared jless jnv ripgrep-all
     # runtimes
     # No mise: .zshrc skips it on Termux — pkg already supplies these, built for bionic.

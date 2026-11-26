@@ -1053,23 +1053,6 @@ zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'program' pick'
     bpick"$(gh_asset 'yazi-{arch}-unknown-linux-{libc}.zip' 'yazi-{arch}-apple-darwin.zip')"
 zi load sxyazi/yazi
 
-# 💽 dua - disk usage analyzer; `dua i` opens the interactive tree browser
-# Byron/dua-cli publishes TWO release series: `dua-core-vX.Y.Z` library tags (no assets)
-# and `vX.Y.Z` binary tags. /releases/latest may point to a library tag, leaving gh-r
-# with no assets. This atclone queries the API for the newest v* tag with assets, then
-# downloads the matching binary tarball. Runs once on install, atpull on `zi update`.
-zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid as'program' id-as'dua-cli' \
-    atclone'
-        local pat=${$(gh_asset "dua-v*-{arch}-unknown-linux-musl.tar.gz" \
-            "dua-v*-{arch}-apple-darwin.tar.gz")//\*/.*}
-        local url=$(curl -fsSL "https://api.github.com/repos/Byron/dua-cli/releases" | \
-            jq -r --arg p "^${pat}$" '\''[.[] | select(.tag_name | test("^v[0-9]"))
-                | select(.assets | length > 0)][0].assets[]
-                | select(.name | test($p)) | .browser_download_url'\'')
-        [[ -n "${url}" ]] && curl -fsSL "${url}" | tar xz
-    ' atpull'%atclone' pick'*/dua' nocompile'!'
-zi light zdharma-continuum/null
-
 # ==============================================================================
 # ADDITIONAL MODERN CLI TOOLS
 # ==============================================================================
@@ -1116,7 +1099,7 @@ zi ice if'[[ ${HOST_OS} != termux ]]' wait'2' lucid from'gh-r' as'command' pick=
 zi load muesli/duf
 
 # 💽 Diskwatch - read-only disk diagnostics TUI (devices, volumes, filesystems, IO,
-# SMART, hot files, insights across 8 tabs). Complements dust/duf/dua: those answer
+# SMART, hot files, insights across 8 tabs). Complements dust/duf: those answer
 # "what is eating the space", this answers "what is the hardware actually doing".
 # Usage: `diskwatch`; 1-8 switch tabs. No system deps on Linux; `smartmontools`
 # (smartctl) is optional and unlocks the full SMART attribute table instead of the

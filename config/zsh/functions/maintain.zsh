@@ -1527,8 +1527,8 @@ function maintain::run() {
     # Compiled Languages (Go / Rust)
     (( $+commands[go] ))    && { maintain::hdr "Cleaning Go build cache"; go clean -cache -testcache || failures+=("go cache") }
     (( $+commands[cargo] )) && (( $+commands[cargo-cache] )) && { maintain::hdr "Cargo cache prune"; maintain::step "cargo cache" 10m cargo cache --remove-dir git-db,registry-sources }
-    # cargo-update refreshes whatever is still cargo-installed. dua-cli, qsv and yazi used
-    # to be here; all three now come from gh-r, so this only covers leftovers.
+    # cargo-update refreshes whatever is still cargo-installed. qsv and yazi used to be
+    # here; both now come from gh-r, so this only covers leftovers.
     #
     # It is also INSTALLED here when missing, which is why the step below is no longer dead
     # code: nothing in install.sh ever provided cargo-update, so the $+commands guard had
