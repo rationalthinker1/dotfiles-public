@@ -455,8 +455,8 @@ function zi_audit() {
             if [[ -n "${bpick_val}" && -r "${dir}/._zinit/url" ]]; then
                 asset="${${"$(<"${dir}/._zinit/url")"}:t}"
                 # Case-INSENSITIVE on purpose: zinit lowercases the whole URL before
-                # storing it (which is also why Byron/dua-cli is recorded as
-                # byron/dua-cli), so 'gping-Linux-…' comes back as 'gping-linux-…'.
+                # storing it (which is also why ClementTsang/bottom is recorded as
+                # clementtsang/bottom), so 'gping-Linux-…' comes back as 'gping-linux-…'.
                 # A case-sensitive compare reports every mixed-case asset as a mismatch.
                 if [[ -n "${bpick_val}" && -n "${asset}" && "${(L)asset}" != ${~${(L)bpick_val}} ]]; then
                     report+=("bpick-mismatch: downloaded '${asset}' but bpick is '${bpick_val}'")
